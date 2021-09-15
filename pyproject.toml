@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "arkitekt"
+version = "0.1.3"
+description = "rpc and node backbone"
+authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
+license = "CC BY-NC 3.0"
+packages = [{include = "arkitekt"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+herre = "0.1.2"
+docstring-parser = "^0.10"
+inflection = "^0.5.1"
+websockets = "^10.0"
+
+[tool.poetry.dev-dependencies]
+pytest = "^6.2.5"
+pytest-aiohttp = "^0.3.0"
+tox = "^3.24.3"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

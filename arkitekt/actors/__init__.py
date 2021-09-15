@@ -1,0 +1,1 @@
+from .actify import define
