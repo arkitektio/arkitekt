@@ -95,6 +95,14 @@ PORTS_FR = """
       ... on StructureReturnPort {
         identifier
       }
+      ... on ListReturnPort {
+        child {
+          __typename
+          ... on StructureReturnPort {
+            identifier
+          }
+        }
+      }
   }
 """
 

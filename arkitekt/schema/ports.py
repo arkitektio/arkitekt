@@ -155,9 +155,6 @@ DictKwargPort.update_forward_refs()
 class ReturnPort(Port):
     pass
 
-    @classmethod
-    def from_params(cls, identifier=None, **kwargs):
-        return cls(__typename=cls.__name__, key=identifier, identifier=identifier, **kwargs) # We ensure creation of a proper object
 
 class StructureReturnPort(ReturnPort, StructureExpandShrink):
     identifier: str
@@ -170,7 +167,6 @@ class StringReturnPort(ReturnPort, StringExpandShrink):
 
 ListReturnPort = ForwardRef('ListReturnPort')
 class ListReturnPort(ReturnPort, ListExpandShrink):
-    default: Optional[list]
     child: Union[IntReturnPort, StructureReturnPort, StringReturnPort, ListReturnPort]
 
 ListReturnPort.update_forward_refs()

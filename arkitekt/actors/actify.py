@@ -103,7 +103,6 @@ def convert_kwarg_to_kwargport(cls, **kwargs):
     raise ConversionError(f"No Factory for Arg Type {cls.__name__} Conversion found")
 
 def convert_return_to_returnport(cls, **kwargs):
-
     # Typing Support
     if hasattr(cls, "_name"):
         # We are dealing with a Typing Var?
@@ -170,6 +169,7 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
         else:
             kwargs.append(convert_kwarg_to_kwargport(cls, widget=widget, key=key, default=value.default))
 
+
     function_output = sig.return_annotation
     try:
         # Raises type error if we use it with a class but needed here because typing is actually not a class but an Generic Alias :rolling_eyes::
@@ -177,8 +177,11 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
               for cls in function_output.__args__:
                   returns.append(convert_return_to_returnport(cls))
 
+        returns.append(convert_return_to_returnport(cls)) # Other types will be converted to normal lists and shit
+
     except AttributeError:
-        returns.append(convert_return_to_returnport(function_output))
+        if function_output.__name__ != "_empty": # Is it not empty
+            returns.append(convert_return_to_returnport(function_output))
 
     # Documentation Parsing 
 

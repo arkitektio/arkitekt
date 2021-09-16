@@ -4,6 +4,7 @@ from qtpy import QtWidgets
 from arkitekt.ui.qtwidgets.base import UIPortMixin
 from arkitekt.schema.ports import *
 from herre.wards.graphql import ParsedQuery
+from herre.access.model import GraphQLModel
 
 registry = get_widget_registry()
 
@@ -23,7 +24,7 @@ class QTListSearchWidget(QtWidgets.QWidget, UIPortMixin):
         self.build_ui()
         self.selected_value = None
         self.child: StructureArgPort = self.port.child
-        self.structure: Type[GraphQLModel] = get_packer_registry().get_structure(self.child.identifier)
+        self.structure = get_packer_registry().get_structure(self.child.identifier)
         assert issubclass(self.structure, GraphQLModel), "Selected Port is not a GraphQL Model. Search widget will not work"
 
 

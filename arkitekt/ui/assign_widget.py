@@ -2,13 +2,11 @@ from abc import abstractmethod
 from arkitekt.ui.qtwidgets.base import UIPortMixin
 
 from pydantic.main import BaseModel
-from arkitekt.models.graphql import GraphQLModel
 from arkitekt.packers.registry import get_packer_registry
 from re import search
 from typing import Any, Generic, Type, TypeVar
 from arkitekt.schema.ports import ArgPort, KwargPort, ListArgPort, ListKwargPort, Port, StructureArgPort, StructureKwargPort
 from arkitekt.schema.widgets import SearchWidget
-from PyQt5.QtWidgets import QFormLayout, QGroupBox, QLabel, QLineEdit
 from qtpy import QtWidgets
 from arkitekt.schema.node import Node
 from itertools import zip_longest
@@ -47,30 +45,30 @@ class AssignWidget(QtWidgets.QDialog):
         self.build_ui()
 
     def build_args_widget(self):
-        self.argsWidget = QGroupBox("Args")
-        self.argsLayout = QFormLayout()
+        self.argsWidget = QtWidgets.QGroupBox("Args")
+        self.argsLayout = QtWidgets.QFormLayout()
 
         for arg, port in zip_longest(self.set_args, self.node.args):
             if arg: 
                 self.populated_args.append(arg)
             else:
                 widget = build_qtwidget_for_argport(port)
-                self.argsLayout.addRow(QLabel(parent=self, text=port.label or port.key), widget)
+                self.argsLayout.addRow(QtWidgets.QLabel(parent=self, text=port.label or port.key), widget)
                 self.populated_args.append(widget)
 
         self.argsWidget.setLayout(self.argsLayout)
         return self.argsWidget
 
     def build_kwargs_widget(self):
-        self.kwargsWidget = QGroupBox("Kwargs")
-        self.kwargsLayout = QFormLayout()
+        self.kwargsWidget = QtWidgets.QGroupBox("Kwargs")
+        self.kwargsLayout = QtWidgets.QFormLayout()
 
         for port in self.node.kwargs:
             if port.key in self.set_kwargs: 
                 self.populated_kwargs[port.key] = self.set_kwargs[port.key]
             else:
                 widget = build_qtwidget_for_kwargport(port)
-                self.kwargsLayout.addRow(QLabel(parent=self, text=port.label or port.key), widget)
+                self.kwargsLayout.addRow(QtWidgets.QLabel(parent=self, text=port.label or port.key), widget)
                 self.populated_kwargs[port.key] = widget
 
         self.kwargsWidget.setLayout(self.kwargsLayout)
