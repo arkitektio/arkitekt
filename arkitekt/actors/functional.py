@@ -4,7 +4,7 @@ from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMes
 from arkitekt.messages.postman.assign.assign_return import AssignReturnMessage
 from arkitekt.messages.postman.assign.assign_yield import AssignYieldsMessage
 from arkitekt.messages.postman.assign.assign_done import AssignDoneMessage
-
+from arkitekt.threadvars import assign_message
 from arkitekt.messages.postman.assign.bounced_forwarded_assign import BouncedForwardedAssignMessage
 from arkitekt.actors.base import Actor
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 class FunctionalActor(Actor):
     pass
 
-
-assign_message = contextvars.ContextVar("assign_message")
 
 
 

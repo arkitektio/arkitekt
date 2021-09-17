@@ -118,8 +118,8 @@ DETAIL_NODE_FR = """
 
 
 NODE_GET_QUERY = ParsedQuery("""
-query Node($id: ID, $package: String, $interface: String){
-  node(id: $id, package: $package, interface: $interface){
+query Node($id: ID, $package: String, $interface: String, $template: ID){
+  node(id: $id, package: $package, interface: $interface, template: $template){
     """+ DETAIL_NODE_FR +"""
   }
 }

@@ -1,4 +1,7 @@
 from abc import abstractmethod
+from contextvars import Context
+from arkitekt.messages.postman.reserve.reserve_transition import ReserveState
+from arkitekt.monitor.monitor import Monitor
 from arkitekt.ui.sync_funcs import fill_args_kwargs_graphically
 from arkitekt.schema.enums import NodeType
 from arkitekt.schema.ports import DictArgPort, DictKwargPort, DictReturnPort, IntArgPort, IntKwargPort, IntReturnPort, ListArgPort, ListKwargPort, ListReturnPort, StringArgPort, StringKwargPort, StringReturnPort, StructureArgPort, StructureKwargPort, StructureReturnPort
@@ -24,8 +27,29 @@ class Node(GraphQLModel):
     type: Optional[NodeType]
 
 
-    def reserve(self, loop=None, monitor = None, ignore_node_exceptions=False, bounced=None, **params) -> Reservation:
-        return Reservation(self, loop=loop, monitor=monitor, ignore_node_exceptions=ignore_node_exceptions, bounced=bounced, **params)
+    def reserve(self, reference: str = None,
+        provision: str = None, 
+        monitor: Monitor = None,
+        ignore_node_exceptions=False,
+        transition_hook=None,
+        with_log=False,
+        enter_on=[ReserveState.ACTIVE], 
+        exit_on=[ReserveState.ERROR, ReserveState.CANCELLED],
+        context: Context =None,
+        loop=None,
+         **params) -> Reservation:
+        return Reservation(self, 
+        reference=reference,
+        provision=provision,
+        monitor=monitor,
+        transition_hook=transition_hook,
+        with_log=with_log,
+        enter_on=enter_on,
+        ignore_node_exceptions=ignore_node_exceptions,
+        exit_on=exit_on,
+        context=context,
+        loop = loop ,             
+         **params)
 
 
     async def call_async_func(self,*args,  reserve_params={}, **kwargs):

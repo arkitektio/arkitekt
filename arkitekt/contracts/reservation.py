@@ -171,6 +171,7 @@ class Reservation:
 
         # State management
         self.transition_hook = transition_hook
+        assert self.transition_hook is None or asyncio.iscoroutinefunction(self.transition_hook), "Transition Hook must be either a coroutine or set to None"
         self.exit_states = exit_on
         self.enter_states = enter_on
         self.current_state = ReserveState.STARTING
