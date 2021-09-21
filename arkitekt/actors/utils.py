@@ -1,37 +1,26 @@
-from bergen.console import console
-from bergen.debugging import DebugLevel
-from bergen.handlers import AssignHandler, ReserveHandler, ProvideHandler
-import contextvars
-from bergen.legacy.utils import get_running_loop
+from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
+from arkitekt.legacy.utils import get_running_loop
+from arkitekt.threadvars import get_current_assign, get_current_transport
+from arkitekt.messages.postman.log import LogLevel
 
 
-assign_handler_context  = contextvars.ContextVar('assign_handler', default=None)
-provide_handler_context = contextvars.ContextVar("provide_handler", default=None)
+async def log_async(message, level: LogLevel = LogLevel.INFO):
+    transport = get_current_transport()
+    assign =get_current_assign()
 
-bounce_context = contextvars.ContextVar("bounce_context", default=None)
-queue_context = contextvars.ContextVar("queue_context", default=None)
+    message = AssignLogMessage(
+        data = {
+            "message": str(message),
+            "level": level
+        },
+        meta = {**assign.meta.dict(exclude={"type"})}
+    )
 
-
-
-async def log_async(message, level: DebugLevel = DebugLevel.INFO):
-    handler: AssignHandler = assign_handler_context.get()
-    await handler.log(message, level)
-
-
-def useUser():
-    context = bounce_context.get()
-    assert context is not None, "You cannot get the App if you are not running inside a (functional Actor)"
-    return context.user
-
-
-def useApp():
-    context = bounce_context.get()
-    assert context is not None, "You cannot get the App if you are not running inside a (functional Actor)"
-    return context.app
+    await transport.forward(message)
 
 
 
-def log(message: str, level: DebugLevel = DebugLevel.INFO):
+def log(message: str, level: LogLevel = LogLevel.INFO):
     """ Logs a message
 
     Depending on both the configuration of Arkitekt and the overwrite set on the
@@ -44,13 +33,9 @@ def log(message: str, level: DebugLevel = DebugLevel.INFO):
     Returns:
         [Future]: Returns a future if currently running in an event loop
     """
-    message = str(message)
-
     try:
-        event_loop = get_running_loop()
+        event_loop = get_running_loop() # Check if we are in an event loop
     except RuntimeError:
-        sync_q = queue_context.get()
-        sync_q.put(("log", (message, level)))
-        sync_q.join()
+        raise NotImplementedError("Threaded is not functional right now")
     else:
         return log_async(message, level=level)

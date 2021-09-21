@@ -410,6 +410,7 @@ class Reservation:
 
 
     async def cancel(self):
+        self.is_closing = True
         self.stream_task.cancel()
         try:
             await self.stream_task
@@ -419,8 +420,9 @@ class Reservation:
     async def start(self):
         return await self.__aenter__()
 
-    async def end(self):
-        await self.__aexit__()
+    async def end(self, timeout=3):
+        #TODO: implement timeout
+        await self.cancel()
 
     async def __aenter__(self):
         if self.panel: self.panel.start()
@@ -443,7 +445,6 @@ class Reservation:
 
 
     async def __aexit__(self, type, value, traceback):
-        self.is_closing = True
 
         await self.cancel()
         if self.panel: self.panel.end()

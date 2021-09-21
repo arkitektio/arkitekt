@@ -1,7 +1,7 @@
 
 
 from herre.access.object import GraphQLObject
-from typing import List, Optional
+from typing import List, Optional, Union
 
 
 class Widget(GraphQLObject):
@@ -26,6 +26,8 @@ class QueryWidget(Widget):
 class SearchWidget(Widget):
     query: Optional[str]
 
+class IntWidget(Widget):
+    pass
 
 class SliderWidget(Widget):
     """ A Slider widget enables
@@ -40,3 +42,6 @@ class SliderWidget(Widget):
     """
     min: Optional[int]
     max: Optional[int]
+
+
+AllWidgets = Union[SearchWidget, IntWidget, SliderWidget, QueryWidget, ValueWidget]

@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from arkitekt.schema.widgets import QueryWidget, SearchWidget, SliderWidget
+from arkitekt.schema.widgets import AllWidgets, QueryWidget, SearchWidget, SliderWidget
 from arkitekt.packers.structure import Structure
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, validator
@@ -25,7 +25,7 @@ class Port(GraphQLObject):
     
 
 class ArgPort(Port):
-    widget: Optional[Union[SearchWidget, SliderWidget]]
+    widget: Optional[AllWidgets]
 
     def _repr_html_list(self):
         nana =  f"""
@@ -120,7 +120,7 @@ DictArgPort.update_forward_refs()
 #Kwargs
 
 class KwargPort(Port):
-    widget: Optional[Union[SearchWidget, SliderWidget]]
+    widget: Optional[AllWidgets]
 
 
 class IntKwargPort(KwargPort, IntExpandShrink):

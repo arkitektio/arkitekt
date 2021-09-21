@@ -4,7 +4,7 @@ from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMes
 from arkitekt.messages.postman.assign.assign_return import AssignReturnMessage
 from arkitekt.messages.postman.assign.assign_yield import AssignYieldsMessage
 from arkitekt.messages.postman.assign.assign_done import AssignDoneMessage
-from arkitekt.threadvars import assign_message
+from arkitekt.threadvars import assign_message, transport
 from arkitekt.messages.postman.assign.bounced_forwarded_assign import BouncedForwardedAssignMessage
 from arkitekt.actors.base import Actor
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
@@ -35,10 +35,15 @@ class FunctionalFuncActor(FunctionalActor):
             logger.info("Assigning Number two")
             args, kwargs = await expand_inputs(self.template.node, message.data.args, message.data.kwargs) if self.expand_inputs else (message.data.args, message.data.kwargs)
             
+            transport.set(self.transport)
             assign_message.set(message)
-            returns = await self.assign(*args, **kwargs)
-            assign_message.set(None)
 
+
+            returns = await self.assign(*args, **kwargs)
+
+
+            assign_message.set(None)
+            transport.set(None)
             await self.transport.forward(AssignReturnMessage(data={
                 "returns": await shrink_outputs(self.template.node, returns) if self.shrink_outputs else returns
             }, meta = {
@@ -83,6 +88,7 @@ class FunctionalGenActor(FunctionalActor):
         try:
             args, kwargs = await expand_inputs(self.template.node, message.data.args, message.data.kwargs) if self.expand_inputs else (message.data.args, message.data.kwargs)
             
+            transport.set(self.transport)
             assign_message.set(message)
 
             async for returns in self.assign(*args, **kwargs):
@@ -95,6 +101,8 @@ class FunctionalGenActor(FunctionalActor):
 
 
             assign_message.set(None)
+            transport.set(None)
+
 
             await self.transport.forward(AssignDoneMessage(data={
                 "returns": await shrink_outputs(self.template.node, returns) if self.shrink_outputs else returns

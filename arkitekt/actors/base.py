@@ -1,5 +1,6 @@
 
 
+from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
 from arkitekt.messages.postman.log import LogLevel
 from arkitekt.monitor.monitor import get_current_monitor
 from herre.console.context import get_current_console
@@ -56,9 +57,23 @@ class Actor:
         assert self._template is not None, "We can only access the template after this Actor has been provisioned"
         return self._template
 
-    def log(self, message: str, level = LogLevel.INFO):
+
+    async def log(self, message, level = LogLevel.INFO):
         if self.panel: self.panel.log(message, level=level)
         logger.info("{level}: {message}")
+
+
+    async def provide_log(self, message: str, level = LogLevel.INFO):
+        await self.transport.forward(ProvideLogMessage(
+                data= {
+                    "level": level,
+                    "message": message
+                },
+                meta=self.provision.meta.dict(exclude={"type"})
+            ))
+
+        if self.panel: self.panel.log(message, level=level)
+        logger.info(f"Provide Log: {level}: {message}")
 
 
     def run(self, *args, **kwargs):
@@ -113,12 +128,12 @@ class Actor:
             ))
 
             while True:
-                self.log("Waiting for assignmements")
+                await self.log("Waiting for assignmements")
                 message = await self.in_queue.get()
                 logger.info(f"Received Message {message}")
                 
                 if isinstance(message, BouncedForwardedAssignMessage):
-                    self.log("Assigningment received")
+                    await self.log("Assigningment received")
                     task = self.loop.create_task(self.on_assign(message))
                     self.runningAssignments[message.meta.reference] = task
 
@@ -137,7 +152,7 @@ class Actor:
 
 
         except Exception as e:
-            self.log(f"Provision Exception {str(e)}")
+            await self.log(f"Provision Exception {str(e)}")
             await self.transport.forward(ProvideTransitionMessage(
                 data= {
                     "state": ProvideState.ERROR,
