@@ -83,11 +83,12 @@ class Actor:
         await self.in_queue.put(message)
 
 
-    async def on_provide(self):
+    async def on_provide(self, message: BouncedProvideMessage):
+        print("Getting Called Here")
         return None
 
 
-    async def on_unprovide(self):
+    async def on_unprovide(self, message: BouncedProvideMessage):
         return None
 
 
@@ -114,7 +115,7 @@ class Actor:
 
 
 
-            await self.on_provide()
+            await self.on_provide(self.provision)
 
             await self.transport.forward(ProvideTransitionMessage(
                 data= {
@@ -177,7 +178,7 @@ class Actor:
                 }
             ))
 
-            await self.on_unprovide()
+            await self.on_unprovide(self.provision)
 
 
             logger.info("Doing Whatever needs to be done to cancel!")

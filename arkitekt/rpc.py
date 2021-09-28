@@ -29,8 +29,8 @@ class RPC():
         self.auto_login = auto_login
         self.auto_connect = auto_connect
         self.transport: Transport = None
-        self.herre = get_current_herre() 
-        self.loop = get_current_herre().loop
+        self.herre = get_current_herre(**kwargs) 
+        self.loop = self.herre.loop
         self.ward: ArkitektWard = get_ward_registry().get_ward_instance("arkitekt")
         self.scopes = self.herre.grant.scopes
 
@@ -87,10 +87,7 @@ class RPC():
         
         
     async def connect(self):
-
-        if not self.herre.logged_in:
-            assert self.auto_login, "Herre is not logged in and auto_login was set to false. Please login with Herre first!"
-            await self.herre.login()
+        assert self.herre.logged_in, "Herre is not logged in and auto_login was set to false. Please login with Herre first!"
 
         if not self.ward.connected:
             assert self.auto_connect, "We have not connected to Arkitekt before and autoconnect was set to false. Please connect a ward before or set auto_connect to True"

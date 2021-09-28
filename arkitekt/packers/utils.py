@@ -1,7 +1,9 @@
 from herre.console.context import get_current_console
 from typing import Any, Dict, List, Tuple
 import asyncio
+import logging
 
+logger = logging.getLogger(__name__)
 
 class SerializationError(Exception):
     """Serialization Error
@@ -46,6 +48,7 @@ async def shrink_inputs(node, *args, **kwargs) -> Tuple[List[Any], Dict[str, Any
     Returns:
         Tuple[List[Any], Dict[str, Any]]: Parsed Args as a List, Parsed Kwargs as a dict
     """
+    assert len(node.args) == len(args), "Missmatch in Arg Length"
     
 
 
@@ -63,6 +66,7 @@ async def shrink_inputs(node, *args, **kwargs) -> Tuple[List[Any], Dict[str, Any
             for port in node.kwargs
         }
     except Exception as e:
+        logger.exception(e)
         raise ShrinkingError(f"Couldn't shrink KeywordArguments {kwargs}") from e
 
     return shrinked_args, shrinked_kwargs
@@ -85,6 +89,7 @@ async def expand_inputs(node, args: List[Any], kwargs: Dict[str, Any]) -> Tuple[
     Returns:
         Tuple[List[Any], Dict[str, Any]]: Expanded Args, Expanded Kwargs
     """
+    assert len(node.args) == len(args), "Missmatch in Arg Length"
 
     expanded_args_futures = [port.expand(arg) for port, arg in zip(node.args, args)]
     try:
@@ -119,7 +124,9 @@ async def shrink_outputs(node, returns) -> List[Any]:
     Returns:
         List[Any]: Parsed Returns
     """
-    if not isinstance(returns, list) and not isinstance(returns, tuple): returns = [returns] # We are dealing with a single output, convert it to a proper port like structure
+    if returns is None: returns = []
+    if not isinstance(returns, list) and not isinstance(returns, tuple): returns = [returns]
+    assert len(node.returns) == len(returns), "Missmatch in Return Length" # We are dealing with a single output, convert it to a proper port like structure
     shrinked_returns_future = [port.shrink(val) for port, val in zip(node.returns, returns)]
     try:
         return await asyncio.gather(*shrinked_returns_future)
@@ -143,6 +150,7 @@ async def expand_outputs(node, returns) -> List[Any]:
     Returns:
         List[Any]: The Expanded Returns
     """
+    assert len(node.returns) == len(returns), "Missmatch in Return Length"
     
     expanded_returns_future = [port.expand(val) for port, val in zip(node.returns, returns)]
     try:
@@ -152,4 +160,5 @@ async def expand_outputs(node, returns) -> List[Any]:
         else:
             return returns
     except Exception as e:
+        logger.exception(e)
         raise ExpandingError(f"Couldn't expand Returns {returns}") from e

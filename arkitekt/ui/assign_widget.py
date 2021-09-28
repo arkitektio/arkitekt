@@ -39,8 +39,9 @@ class AssignWidget(QtWidgets.QDialog):
         self.args_kwargs_tuple = ([],{})
 
 
-        assert len(self.set_args) < len(self.node.args), "Was provided more Args than node accepts"
+        assert len(self.set_args) <= len(self.node.args), "Was provided more Args than node accepts"
 
+        
 
         self.build_ui()
 
@@ -98,6 +99,7 @@ class AssignWidget(QtWidgets.QDialog):
         self.layout.addWidget(self.kwargsWidget)
         self.layout.addWidget(self.buttonBox)
         self.setLayout(self.layout)
+
 
     def on_accept(self):
         done_args = []

@@ -1,12 +1,12 @@
 from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
 from arkitekt.legacy.utils import get_running_loop
-from arkitekt.threadvars import get_current_assign, get_current_transport
+from arkitekt.threadvars import get_current_assign, get_current_transport, get_current_janus
 from arkitekt.messages.postman.log import LogLevel
 
 
 async def log_async(message, level: LogLevel = LogLevel.INFO):
     transport = get_current_transport()
-    assign =get_current_assign()
+    assign = get_current_assign()
 
     message = AssignLogMessage(
         data = {
@@ -36,6 +36,8 @@ def log(message: str, level: LogLevel = LogLevel.INFO):
     try:
         event_loop = get_running_loop() # Check if we are in an event loop
     except RuntimeError:
-        raise NotImplementedError("Threaded is not functional right now")
+        sync_q = get_current_janus()
+        sync_q.put(("log", (message, level)))
+        sync_q.join()
     else:
         return log_async(message, level=level)

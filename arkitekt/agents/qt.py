@@ -1,6 +1,9 @@
 
 
 
+from herre.auth import get_current_herre
+from arkitekt.threadvars import get_current_assign
+from PyQt5.QtCore import QObject, pyqtSignal
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import BouncedForwardedUnassignMessage
 from arkitekt.messages.postman.provide.provide_transition import ProvideState, ProvideTransitionMessage
@@ -25,14 +28,170 @@ from typing import Callable, Dict, List, Tuple, Type
 from arkitekt.agents.base import Agent, AgentException, parse_params
 import logging
 from herre.console import get_current_console
+import uuid
+
 
 logger = logging.getLogger(__name__)
 
 
-class AppAgent(Agent):
+
+
+
+
+
+def qt_to_async(insignal, outsignal, futureMap, function):
+
+    def sync_function_in_qt_loop(reference, *args, **kwargs):
+        returns = function(*args, **kwargs)
+        print("Hallosss")
+        if returns: 
+            if isinstance(returns, tuple):
+                outsignal.emit(reference, *returns)
+            else:
+                outsignal.emit(reference, returns)
+        else:
+            outsignal.emit(reference)
+
+    def set_future(*args):
+        reference = args[0]
+        print("Hallo", args)
+        if len(args) == 1:
+            print("Setting None")
+            futureMap[reference].set_result(None)
+        if len(args) == 2:
+            print("Setting Result")
+            futureMap[reference].set_result(args[1])
+        if len(args) > 2:
+            print("Setting Result Tuple")
+            futureMap[reference].set_result(*args[1])
+
+
+    insignal.connect(sync_function_in_qt_loop)
+    outsignal.connect(set_future)
+
+
+    async def wrapped(*args, **kwargs):
+        loop = asyncio.get_event_loop()
+        reference = str(uuid.uuid4())
+        future = loop.create_future()
+        futureMap[reference] = future
+        insignal.emit(reference, *args, **kwargs)
+        return await future
+
+
+    return wrapped
+
+
+class QtAgentGeneralWorker(QObject):
+    provideInSignal = pyqtSignal(str, BouncedProvideMessage)
+    provideOutSignal = pyqtSignal(str)
+    provideErrorSignal = pyqtSignal(str, Exception)
+
+    assignInSignal = pyqtSignal(str,tuple, dict)
+    assignOutSignal =  pyqtSignal(str, tuple)
+    assignErrorSignal = pyqtSignal(str, Exception)
+
+    unprovideInSignal = pyqtSignal(str, BouncedProvideMessage)
+    unprovideOutSignal = pyqtSignal(str)
+    unprovideErrorSignal = pyqtSignal(str, Exception)
+
+    def __init__(self, *args,  qt_assign=None, loop= None, qt_on_provide = None, qt_on_unprovide = None, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.assignInSignal.connect(self.assign_function_in_qtloop) # insignal will be set dymaically by qt agent
+        self.assignOutSignal.connect(self.set_assign_future_qtloop)
+        self.assignErrorSignal.connect(self.set_error_future_qtloop)
+
+        self.provideInSignal.connect(self.provide_function_in_qtloop)
+        self.provideOutSignal.connect(self.set_provide_future_qtloop)
+        self.provideErrorSignal.connect(self.set_error_future_qtloop)
+
+        self.unprovideInSignal.connect(self.unprovide_function_in_qtloop)
+        self.unprovideOutSignal.connect(self.set_unprovide_future_qtloop)
+        self.unprovideErrorSignal.connect(self.set_error_future_qtloop)
+
+
+        self.futureMap = {}
+        self.loop = loop or get_current_herre().loop
+        self.qt_assign = qt_assign
+        assert self.qt_assign is not None, "You need to provide an assign Function"
+        self.qt_on_provide = qt_on_provide
+        self.qt_on_unprovide = qt_on_unprovide
+
+    def provide_function_in_qtloop(self, reference, *args, **kwargs):
+        try:
+            returns = self.qt_on_provide(*args, **kwargs) if self.qt_on_provide else None
+            self.provideOutSignal.emit(reference)
+        except Exception as e:
+            self.provideErrorSignal.emit(reference, e)
+
+    def unprovide_function_in_qtloop(self, reference, *args, **kwargs):
+        try:
+            returns = self.qt_on_unprovide(*args, **kwargs) if self.qt_on_unprovide else None
+            self.unprovideOutSignal.emit(reference)
+        except Exception as e:
+            self.unprovideErrorSignal.emit(reference, e)
+
+    def set_provide_future_qtloop(self, reference):
+        self.loop.call_soon_threadsafe(self.futureMap[reference].set_result, None)
+
+    def set_unprovide_future_qtloop(self, reference):
+        self.loop.call_soon_threadsafe(self.futureMap[reference].set_result, None)
+    
+    def set_assign_future_qtloop(self, reference, returns):
+        if len(returns) == 1:
+            print("Setting None")
+            self.loop.call_soon_threadsafe(self.futureMap[reference].set_result, returns[0])
+        if len(returns) >= 2:
+            print("Setting Result")
+            self.loop.call_soon_threadsafe(self.futureMap[reference].set_result, returns)
+
+
+    def assign_function_in_qtloop(self, reference, args, kwargs):
+        try:
+            returns = self.qt_assign(*args, **kwargs)
+            if isinstance(returns, tuple):
+                self.assignOutSignal.emit(reference, returns)
+            else:
+                self.assignOutSignal.emit(reference, (returns,))
+        except Exception as e:
+            self.assignErrorSignal.emit(reference, e)
+
+
+    def set_error_future_qtloop(self, reference, exception):
+        self.loop.call_soon_threadsafe(self.futureMap[reference].set_exception, exception)
+    
+
+    async def on_provide(self, message):
+        print(self, message)
+        reference = str(uuid.uuid4())
+        future = self.loop.create_future()
+        self.futureMap[reference] = future
+        self.provideInSignal.emit(reference, message)
+        return await future
+
+
+    async def on_unprovide(self,message):
+        reference = str(uuid.uuid4())
+        future = self.loop.create_future()
+        self.futureMap[reference] = future
+        self.unprovideInSignal.emit(reference,message)
+        return await future
+
+    async def assign(self, *args, **kwargs):
+        reference = str(uuid.uuid4())
+        future = self.loop.create_future()
+        self.futureMap[reference] = future
+        self.assignInSignal.emit(reference, args, kwargs)
+        return await future
+
+
+
+
+
+class QtAgent(Agent):
     ACTOR_PENDING_MESSAGE = "Actor is Pending"
 
-    def __init__(self, *args, strict=False, **kwargs) -> None:
+    def __init__(self, qtApp, *args, strict=False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.potentialNodes: List[Tuple[Node, Callable]] = []
@@ -40,6 +199,11 @@ class AppAgent(Agent):
         self.approvedTemplates: List[Tuple[Template, Callable]] = []
         self.approvedActors: Dict[str, Type[Actor]] = {}
         self.strict = strict
+        self.qtApp = qtApp
+        self.assignFutures = {}
+        self.provideFutures = {}
+        self.unprovideFutures = {}
+        self.appWorkers = {}
 
         # Running Actors indexed by their ID
         self.runningActors: Dict[str, Actor] = {}
@@ -195,9 +359,14 @@ class AppAgent(Agent):
 
             if len(args) == 0:
                 defined_node = define(function=function, widgets=widgets)
-                defined_actor = actify(function, on_provide=on_provide, on_unprovide=on_unprovide, **params)
 
+                for arg in defined_node.args:
+                    print(arg.to_type())
+                    
+                worker = QtAgentGeneralWorker(parent=self.qtApp, qt_assign=function, qt_on_provide=on_provide, qt_on_unprovide=on_unprovide, loop=self.loop)
+                self.appWorkers[defined_node.interface] = worker
 
+                defined_actor = actify(worker.assign, on_provide=worker.on_provide, on_unprovide=worker.on_unprovide, **params)
                 self.potentialNodes.append((defined_node, defined_actor, params))
 
             if len(args) == 1:
@@ -257,38 +426,43 @@ class AppAgent(Agent):
 
     async def aprovide(self):
         # Connection Started
-        if not self.connected: 
-            await self.connect()
+        print("Hallo")
+        try:
+            if not self.connected: 
+                await self.connect()
 
-        
-        if self.monitor: self.monitor.__enter__()
-        if self.panel: self.panel.start()
+            
+            if self.monitor: self.monitor.__enter__()
+            if self.panel: self.panel.start()
 
-        if self.potentialNodes:
-            for defined_node, defined_actor, params in self.potentialNodes:
-                # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
-                # id so we are trying to send them to arkitekt)
-                try:
-                    arkitekt_node = await Node.asyncs.create(**defined_node.dict(as_input=True))
-                    self.potentialTemplates.append((arkitekt_node, defined_actor, params))   
-                except WardException as e:
-                    raise AgentException(f"Couldn't create Node for defintion {defined_node}") from e
+            if self.potentialNodes:
+                for defined_node, defined_actor, params in self.potentialNodes:
+                    # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
+                    # id so we are trying to send them to arkitekt)
+                    try:
+                        arkitekt_node = await Node.asyncs.create(**defined_node.dict(as_input=True))
+                        self.potentialTemplates.append((arkitekt_node, defined_actor, params))   
+                    except WardException as e:
+                        raise AgentException(f"Couldn't create Node for defintion {defined_node}") from e
 
-        if self.potentialTemplates:
-            # This is an arkitekt Node and we can generate potential Templates
-            for arkitekt_node, defined_actor, params in self.potentialTemplates:
-                try:
-                    params = await parse_params(params) # Parse the parameters for template creation
-                    arkitekt_template = await Template.asyncs.create(node=arkitekt_node, params=params)
-                    self.approvedTemplates.append((arkitekt_template, defined_actor, params))  
-                except WardException as e:
-                    raise AgentException(f"Couldn't approve template for node {arkitekt_node}") from e
+            if self.potentialTemplates:
+                # This is an arkitekt Node and we can generate potential Templates
+                for arkitekt_node, defined_actor, params in self.potentialTemplates:
+                    try:
+                        params = await parse_params(params) # Parse the parameters for template creation
+                        arkitekt_template = await Template.asyncs.create(node=arkitekt_node, params=params)
+                        self.approvedTemplates.append((arkitekt_template, defined_actor, params))  
+                    except WardException as e:
+                        raise AgentException(f"Couldn't approve template for node {arkitekt_node}") from e
 
 
-        if self.approvedTemplates:
-            for arkitekt_template, defined_actor, params in self.approvedTemplates:
-                self.approvedActors[arkitekt_template.id] = defined_actor
-                if self.panel: self.panel.add_to_actor_map(arkitekt_template, defined_actor) 
-        
-        
-        await self.providing_loop()
+            if self.approvedTemplates:
+                for arkitekt_template, defined_actor, params in self.approvedTemplates:
+                    self.approvedActors[arkitekt_template.id] = defined_actor
+                    if self.panel: self.panel.add_to_actor_map(arkitekt_template, defined_actor) 
+            
+            
+            await self.providing_loop()
+        except Exception as e:
+            logger.exception(e)
+            raise e

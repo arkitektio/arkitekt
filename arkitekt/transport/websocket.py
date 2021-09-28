@@ -22,6 +22,10 @@ class WebsocketTransportConfig(TransportConfig):
     def protocol(self):
         return "wss" if self.secure else "ws"
 
+    class Config:
+        yaml_group = "arkitekt.postman"
+        env_prefix = "arkitekt_postman_"
+
 
 class ConnectionFailedError(Exception):
     pass

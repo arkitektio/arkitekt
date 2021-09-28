@@ -231,18 +231,23 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
     })
 
 
-async def async_none(self):
+async def async_none(self, message):
     return None
 
 
 def actify(function_or_actor, bypass_shrink=False, bypass_expand=False, transpilers: Dict[str, Transpiler] = None, on_provide=None, on_unprovide=None, **params):
     if isactor(function_or_actor): return function_or_actor
+    is_method = inspect.ismethod(function_or_actor)
+
+    actor_name = f"GeneratedActor{function_or_actor.__name__.capitalize()}"
+
+
     is_coroutine = inspect.iscoroutinefunction(function_or_actor)
     is_asyncgen = inspect.isasyncgenfunction(function_or_actor)
 
     is_generatorfunction = inspect.isgeneratorfunction(function_or_actor)
     is_function = inspect.isfunction(function_or_actor)
-
+    print(on_provide)
     class_attributes = {
         "assign": staticmethod(function_or_actor),
         "expand_inputs": not bypass_expand,
@@ -252,7 +257,6 @@ def actify(function_or_actor, bypass_shrink=False, bypass_expand=False, transpil
         "on_unprovide": on_unprovide if on_unprovide else async_none,
     }
 
-    actor_name = f"GeneratedActor{function_or_actor.__name__.capitalize()}"
     if is_coroutine:
         return type(actor_name,(FunctionalFuncActor,), class_attributes)
     elif is_asyncgen:

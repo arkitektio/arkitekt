@@ -1,14 +1,17 @@
 from arkitekt.schema.negotiation import Transcript
-from herre.config.model import BaseConfig
+from herre.config.herre import BaseConfig
 from herre.wards.graphql import ParsedQuery, GraphQLWard
 from herre.auth import HerreClient
 
 
 class ArkitektConfig(BaseConfig):
-    _group = "arkitekt"
     host: str
     port: int
     secure: bool
+
+    class Config:
+        yaml_group = "arkitekt"
+        env_prefix = "arkitekt_"
 
 
 class ArkitektWard(GraphQLWard):

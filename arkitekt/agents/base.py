@@ -49,12 +49,13 @@ class AgentException(Exception):
     
 class Agent():
 
-    def __init__(self, auto_login=True, auto_connect=True, loop=None, register=True,  with_monitor=True, **kwargs) -> None:
+    def __init__(self, auto_login=True, auto_connect=True, loop=None, register=True,  with_monitor=False, **kwargs) -> None:
         self.auto_login = auto_login
         self.auto_connect = auto_connect
 
-        self.herre = get_current_herre() 
-        self.loop = get_current_herre().loop
+        self.herre = get_current_herre(**kwargs) 
+        self.loop = self.herre.loop
+        
         self.ward: ArkitektWard = get_ward_registry().get_ward_instance("arkitekt")
         self.monitor = Monitor("Agent") if with_monitor else None
         self.panel = self.monitor.create_agent_panel(self) if self.monitor else None
@@ -67,7 +68,7 @@ class Agent():
             set_current_agent(self)
 
 
-        super().__init__(**kwargs)
+        super().__init__()
 
 
     @property
@@ -89,10 +90,7 @@ class Agent():
         
         
     async def connect(self):
-
-        if not self.herre.logged_in:
-            assert self.auto_login, "Herre is not logged in and auto_login was set to false. Please login with Herre first!"
-            await self.herre.login()
+        assert self.herre.logged_in, "Herre is not logged in and auto_login was set to false. Please login with Herre first!"
 
         if not self.ward.connected:
             assert self.auto_connect, "We have not connected to Arkitekt before and autoconnect was set to false. Please connect a ward before or set auto_connect to True"
@@ -128,8 +126,9 @@ class Agent():
         raise NotImplementedError("Please Overwrite")
 
 
-    def provide(self, with_monitor=False):
-        return loopify(self.aprovide())
+    def provide(self, as_task=False):
+        assert self.herre.logged_in, "Herre is not logged in and auto_login was set to false. Please login with Herre first!"
+        return loopify(self.aprovide(), as_task=as_task)
 
 
 
