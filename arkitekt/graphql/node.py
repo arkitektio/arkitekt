@@ -16,6 +16,9 @@ PORTS_FR = """
         ... on SearchWidget {
           query
         }
+        ... on StringWidget {
+          placeholder
+        }
         ... on SliderWidget {
               min
               max  
@@ -25,8 +28,8 @@ PORTS_FR = """
       ... on StructureArgPort {
         identifier
       }
-      ... on IntArgPort {
-        default
+      ... on EnumArgPort {
+        options
       }
       ... on ListArgPort {
         child {
@@ -37,9 +40,6 @@ PORTS_FR = """
           label
           ... on StructureArgPort {
             identifier
-          }
-          ... on IntArgPort {
-            default
           }
         }
         
@@ -59,6 +59,9 @@ PORTS_FR = """
         ... on SearchWidget {
           query
         }
+        ... on StringWidget {
+          placeholder
+        }
         ... on SliderWidget {
           min
           max
@@ -70,6 +73,9 @@ PORTS_FR = """
       }
       ... on IntKwargPort {
         default
+      }
+      ... on EnumKwargPort {
+        options
       }
       ... on ListKwargPort {
         child {

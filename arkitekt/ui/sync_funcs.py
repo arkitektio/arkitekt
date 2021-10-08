@@ -1,4 +1,3 @@
-from herre.graphical import GraphicalBackend
 from herre import get_current_herre
 
 class UserDeniedAssignation(Exception):

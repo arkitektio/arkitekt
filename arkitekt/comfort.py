@@ -1,7 +1,7 @@
-from herre.loop import loopify
-from herre.auth import get_current_herre
 from arkitekt.schema import Node
 import asyncio
+
+from koil.loop import koil
 
 
 async def node_to_action(package=None, interface=None, interactive=False) -> Node:
@@ -20,7 +20,7 @@ def use(package=None, interface=None, interactive=False) -> Node:
         Node: The Node
         
     """
-    return loopify(node_to_action(package=package, interface=interface))
+    return koil(node_to_action(package=package, interface=interface))
 
 
 async def ause(package=None, interface=None, interactive=False) -> Node:

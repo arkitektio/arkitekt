@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from enum import Enum
 from arkitekt.schema.widgets import AllWidgets, QueryWidget, SearchWidget, SliderWidget
 from arkitekt.packers.structure import Structure
 from typing import Any, Dict, List, Optional, Union
@@ -45,23 +46,46 @@ class ArgPort(Port):
 class IntExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return int(value)
+        return int(value) if value else None
 
     async def shrink(self, instance,**kwargs):
-       return int(instance)
+       return int(instance) if instance else None
 
 
     def to_type(self):
         return int
 
+class BoolExpandShrink:
+
+    async def expand(self, value,**kwargs):
+        return bool(value) if value else None
+
+    async def shrink(self, instance,**kwargs):
+       return bool(instance) if instance else None
+
+    def to_type(self):
+        return bool
+
+
+class EnumExpandShrink:
+
+    async def expand(self, value,**kwargs):
+        return next((key for key, optionvalue in self.options.items() if optionvalue == value), None) if value else None
+
+    async def shrink(self, instance,**kwargs):
+       return self.options[instance] if instance else None
+
+    def to_type(self):
+        return Enum
+
 
 class StringExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return str(value)
+        return str(value) if value else None
 
     async def shrink(self, instance,**kwargs):
-        return str(instance)
+        return str(instance) if instance else None
 
     def to_type(self):
         return str
@@ -91,11 +115,11 @@ class StructureExpandShrink:
 class ListExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return await asyncio.gather(*[self.child.expand(item,**kwargs) for item in value])
+        return await asyncio.gather(*[self.child.expand(item,**kwargs) for item in value]) if value else None
 
     async def shrink(self, instance,**kwargs):
         assert isinstance(instance, list), f"ListPorts only accept lists! Got {instance}"
-        return await asyncio.gather(*[self.child.shrink(item,**kwargs) for item in instance])
+        return await asyncio.gather(*[self.child.shrink(item,**kwargs) for item in instance]) if instance else None
 
     def to_type(self):
         return List[self.child.to_type()]
@@ -103,27 +127,31 @@ class ListExpandShrink:
 class DictExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return {key: await self.child.expand(item,**kwargs) for key, item in value.items()}
+        return {key: await self.child.expand(item,**kwargs) for key, item in value.items()} if value else None
 
     async def shrink(self, instance,**kwargs):
-        return {key: await self.child.shrink(item,**kwargs) for key, item in instance.items()}
+        return {key: await self.child.shrink(item,**kwargs) for key, item in instance.items()} if instance else None
 
     def to_type(self):
         return Dict[self.child.to_type()]
 
 
 # Args
-
-
+class EnumArgPort(ArgPort, EnumExpandShrink):
+    options: Optional[dict]
+    pass
 
 class IntArgPort(ArgPort, IntExpandShrink):
+    pass
+
+class BoolArgPort(ArgPort, BoolExpandShrink):
     pass
 
 class StringArgPort(ArgPort, StringExpandShrink):
     pass
 
 
-class StructureArgPort(ArgPort,StructureExpandShrink):
+class StructureArgPort(ArgPort, StructureExpandShrink):
     identifier: str
 
 
@@ -148,10 +176,21 @@ DictArgPort.update_forward_refs()
 class KwargPort(Port):
     widget: Optional[AllWidgets]
 
-
 class IntKwargPort(KwargPort, IntExpandShrink):
     default: Optional[int]
 
+class BoolKwargPort(KwargPort, BoolExpandShrink):
+    default: Optional[bool]
+
+class EnumKwargPort(KwargPort, EnumExpandShrink):
+    default: Any
+    options: Optional[dict]
+    pass
+
+    @classmethod
+    def from_params(cls, widget=None, default=None, **kwargs):
+        port = cls(__typename=cls.__name__, widget= widget.dict() if widget else None, default=default._value_, **kwargs) # We ensure creation of a proper object)
+        return port
 
 class StringKwargPort(KwargPort, StringExpandShrink):
     default: Optional[str]
@@ -188,6 +227,9 @@ class StructureReturnPort(ReturnPort, StructureExpandShrink):
 class IntReturnPort(ReturnPort, IntExpandShrink):
     pass
 
+class BoolReturnPort(ReturnPort, BoolExpandShrink):
+    pass
+
 class StringReturnPort(ReturnPort, StringExpandShrink):
     pass
 
@@ -203,4 +245,9 @@ class DictReturnPort(ReturnPort, DictExpandShrink):
     child: Union[IntReturnPort, StructureReturnPort, StringReturnPort, ListReturnPort, DictReturnPort]
 
 DictReturnPort.update_forward_refs()
+
+
+AllArgPort = Union[StructureArgPort, StringArgPort, IntArgPort, ListArgPort, DictArgPort, EnumArgPort, BoolArgPort]
+AllKwargPort = Union[StructureKwargPort, StringKwargPort, IntKwargPort, ListKwargPort, DictKwargPort, EnumKwargPort, BoolKwargPort]
+AllReturnPort = Union[StructureReturnPort, StringReturnPort, IntReturnPort, ListReturnPort, DictReturnPort, BoolReturnPort]
 

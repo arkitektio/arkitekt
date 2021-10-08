@@ -1,7 +1,10 @@
+from pydantic.main import BaseModel
+from arkitekt.config import TransportProtocol
 from arkitekt.transport.base import Transport, TransportConfig
 from arkitekt.messages.utils import expandToMessage
 from arkitekt.messages.base import MessageMetaExtensionsModel, MessageModel
-from herre.config.base import BaseConfig
+from arkitekt.transport.registry import register_transport
+from herre.herre import get_current_herre
 from enum import Enum
 import websockets
 import json
@@ -12,7 +15,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class WebsocketTransportConfig(TransportConfig):
+class WebsocketTransportConfig(BaseModel):
     host: str
     port: int
     secure: bool = False
@@ -22,40 +25,51 @@ class WebsocketTransportConfig(TransportConfig):
     def protocol(self):
         return "wss" if self.secure else "ws"
 
-    class Config:
-        yaml_group = "arkitekt.postman"
-        env_prefix = "arkitekt_postman_"
-
 
 class ConnectionFailedError(Exception):
     pass
 
-
+@register_transport(TransportProtocol.WEBSOCKET)
 class WebsocketTransport(Transport):
+    configClass = WebsocketTransportConfig
+    config: WebsocketTransportConfig
 
 
-    def __init__(self, config = None, broadcast=None, **kwargs) -> None:
-
-        super().__init__(broadcast)
-        self.config = config or WebsocketTransportConfig.from_file("bergen.yaml", **kwargs)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
         self.retries = 5
         self.time_between_retries = 5
         self.connection_alive = False
         self.connection_dead = False
 
 
-    async def connect(self):
-        assert self.herre.logged_in, "Needs to be logged in order to connect"
+    async def aconnect(self):
+        if not self.herre.logged_in:
+            await self.herre.alogin()
 
         self.send_queue = asyncio.Queue()
-        self.connection =  create_task(self.connection_task())
+        self.connection_task =  create_task(self.websocket_loop())
 
-    async def connection_task(self, retry=0):
+
+    async def adisconnect(self):
+        print("Calling here?")
+        self.connection_task.cancel()
+
+        try:
+            await self.connection_task
+        except asyncio.CancelledError:
+            print("Websocket Transport succesfully cancelled")
+    
+
+
+    async def websocket_loop(self, retry=0):
+        send_task = None
+        receive_task = None
 
         assert retry < self.retries, "Exceeded number of retries! Postman is disconnected"
         try:
             try:
-                async with websockets.connect(f"{self.config.protocol}://{self.config.host}:{self.config.port}/{self.config.route}/?token={self.herre.grant.access_token}") as client:
+                async with websockets.connect(f"{self.config.protocol}://{self.config.host}:{self.config.port}{self.config.route}/?token={self.herre.grant.access_token}") as client:
 
                     send_task = create_task(self.sending(client))
                     receive_task = create_task(self.receiving(client))
@@ -77,7 +91,7 @@ class WebsocketTransport(Transport):
                 raise ConnectionFailedError from e
 
         except ConnectionFailedError as e:
-            logger.error("Connection failed Retrying")
+            logger.error("Connection to failed Retrying")
             await asyncio.sleep(self.time_between_retries)
             await self.connection_task(retry=retry + 1)
 
@@ -87,21 +101,36 @@ class WebsocketTransport(Transport):
 
         except asyncio.CancelledError as e:
             logger.info("Got Canceleld")
+            if send_task and receive_task:
+                 send_task.cancel()
+                 receive_task.cancel()
+
+            cancellation = await asyncio.gather(send_task, receive_task, return_exceptions=True)
+            print("Cancelled Both Tasks")
+
+
+            raise e
 
 
     async def sending(self, client):
-        while True:
-            message = await self.send_queue.get()
-            logger.info(">>>>>> " + message)
-            await client.send(message)
-            self.send_queue.task_done()
+        try:
+            while True:
+                message = await self.send_queue.get()
+                logger.info(">>>>>> " + message)
+                await client.send(message)
+                self.send_queue.task_done()
+        except asyncio.CancelledError as e:
+            print("Sending Task sucessfully Cancelled")
 
 
     async def receiving(self, client):
-        async for message in client:
-            logger.info("<<<<<<< " + message)
-            message = expandToMessage(json.loads(message))
-            await self.broadcast(message)
+        try:
+            async for message in client:
+                logger.info("<<<<<<< " + message)
+                message = expandToMessage(json.loads(message))
+                await self.broadcast(message)
+        except asyncio.CancelledError as e:
+            print("Receiving Task sucessfully Cancelled")
 
 
     async def forward(self, message: MessageModel):

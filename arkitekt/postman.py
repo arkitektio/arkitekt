@@ -1,15 +1,17 @@
 import asyncio
+from arkitekt.config import TransportProtocol
 from arkitekt.messages.base import MessageModel
+from arkitekt.transport.registry import TransportRegistry, get_current_transport_registry
 from arkitekt.transport.websocket import WebsocketTransport
 from arkitekt.transport.base import Transport
-from arkitekt.actors.actify import define
-from arkitekt.schema.node import Node
 from arkitekt.ward import ArkitektWard
-from arkitekt.schema.negotiation import PostmanProtocol, Transcript
+from herre.herre import Herre, get_current_herre
 from herre.wards.registry import get_ward_registry
-from herre.auth import get_current_herre
 from arkitekt.legacy.utils import *
 from arkitekt.registry import set_current_rpc
+from koil.koil import Koil, get_current_koil
+from konfik.config.base import Config
+from konfik.konfik import Konfik, get_current_konfik
 
 try:
     from rich.traceback import install
@@ -22,39 +24,46 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class RPC():
 
-    def __init__(self, auto_login=True, auto_connect=True, loop=None, register=True, **kwargs) -> None:
+
+class PostmanConfig(Config):
+    type: TransportProtocol
+    kwargs: dict
+
+    class Config:
+        group = "arkitekt.postman"
+
+
+class Postman:
+
+    def __init__(self, *args, auto_login=True, auto_connect=True, loop=None, register=True, herre: Herre = None, koil: Koil = None, konfik: Konfik = None, transport_registry: TransportRegistry = None, **kwargs) -> None:
 
         self.auto_login = auto_login
         self.auto_connect = auto_connect
         self.transport: Transport = None
-        self.herre = get_current_herre(**kwargs) 
-        self.loop = self.herre.loop
+        self.herre = herre or get_current_herre() 
+        self.koil = koil or get_current_koil()
+        self.konfik = konfik or get_current_konfik()
+        self.loop = self.koil.loop
         self.ward: ArkitektWard = get_ward_registry().get_ward_instance("arkitekt")
+        self.transport_registry = transport_registry or get_current_transport_registry()
         self.scopes = self.herre.grant.scopes
 
-        self._connected = False
+        self.connected = False
         self.queues = {}
 
         if register:
             set_current_rpc(self)
 
 
-        super().__init__(**kwargs)
+        super().__init__(*args, **kwargs)
 
 
-    @property
-    def connected(self):
-        """Is this client connected
 
-        Returns:
-            [type]: [description]
-        """
-        return self._connected
-
-    async def disconnect(self):
-        await self.ward.disconnect()
+    async def adisconnect(self):
+        await self.ward.adisconnect()
+        print("nosinsoins")
+        await self.transport.adisconnect()
 
 
     async def broadcast(self, message: MessageModel):
@@ -86,34 +95,34 @@ class RPC():
         await self.transport.forward(message)
         
         
-    async def connect(self):
-        assert self.herre.logged_in, "Herre is not logged in and auto_login was set to false. Please login with Herre first!"
+    async def aconnect(self):
+        if not self.konfik.loaded:
+            await self.konfik.aload()
+
+        if not self.herre.logged_in:
+            await self.herre.alogin()
 
         if not self.ward.connected:
             assert self.auto_connect, "We have not connected to Arkitekt before and autoconnect was set to false. Please connect a ward before or set auto_connect to True"
-            await self.ward._connect()
+            await self.ward.aconnect()
 
 
+        self.config = PostmanConfig.from_konfik(konfik=self.konfik)
         self.transcript = self.ward.transcript
+        self.transport = self.transport_registry.get_transport_for_protocol(self.config.type)(self.config.kwargs, broadcast=self.broadcast)
 
-        # Setup Postman
-        postman_type = self.transcript.postman.type
-
-        if postman_type == PostmanProtocol.WEBSOCKET:
-            self.transport = WebsocketTransport(**self.transcript.postman.kwargs, broadcast=self.broadcast, route="all")
-
-        await self.transport.connect()
-        self._connected = True
+        await self.transport.aconnect()
+        self.connected = True
 
 
     async def __aenter__(self):
-        await self.connect()
+        await self.aconnect()
         return self
 
 
             
     async def __aexit__(self, *args, **kwargs):
-        await self.disconnect()
+        await self.adisconnect()
 
 
 

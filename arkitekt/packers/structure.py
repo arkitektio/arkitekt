@@ -29,3 +29,4 @@ class Structure(ABC):
         raise NotImplementedError("Every Structure needs to implement a shrink Method")
 
         
+

@@ -5,11 +5,9 @@ from arkitekt.messages.postman.log import LogLevel
 from arkitekt.monitor.monitor import get_current_monitor
 from herre.console.context import get_current_console
 from arkitekt.packers.utils import shrink_outputs
-from arkitekt.schema.node import Node
 from re import template
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import BouncedForwardedUnassignMessage
-from herre.auth import get_current_herre
 from arkitekt.messages.postman.assign.assign_critical import AssignCriticalMessage
 from typing import Dict
 from arkitekt.messages.postman.assign.assign_return import AssignReturnMessage
@@ -19,13 +17,14 @@ from arkitekt.messages.base import MessageModel
 from arkitekt.messages.postman.provide.provide_transition import ProvideState
 from arkitekt.transport.base import Transport
 from arkitekt.packers.transpilers.base import Transpiler
-from herre.loop import loopify
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 import asyncio
 from asyncio.tasks import Task
 from arkitekt.messages.postman.provide import ProvideTransitionMessage
 import logging
 from arkitekt.schema.template import Template
+from koil.koil import Koil, get_current_koil
+from koil.loop import koil
 
 
 
@@ -37,10 +36,11 @@ class Actor:
     expand_inputs = True
     shrink_outputs = True
 
-    def __init__(self, provision: BouncedProvideMessage, transport: Transport, loop = None, monitor=None) -> None:
+    def __init__(self, provision: BouncedProvideMessage, transport: Transport, koil: Koil = None, monitor=None) -> None:
         self.provision = provision
         self.transport = transport
-        self.loop = loop or get_current_herre().loop
+        self.koil = koil or get_current_koil()
+        self.loop = self.koil.loop
         self.console = get_current_console()
         self.monitor = monitor or get_current_monitor()
         self.panel = self.monitor.create_actor_panel(self) if self.monitor else None
@@ -77,7 +77,7 @@ class Actor:
 
 
     def run(self, *args, **kwargs):
-        return loopify(self.arun(*args, **kwargs))
+        return koil(self.arun(*args, **kwargs))
 
     async def acall(self, message: MessageModel):
         await self.in_queue.put(message)

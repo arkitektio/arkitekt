@@ -1,10 +1,11 @@
+from enum import Enum
 from os import strerror
 from arkitekt.packers.transpilers.base import Transpiler
 from arkitekt.actors.base import Actor
 from arkitekt.packers.structure import Structure
 from arkitekt.schema.node import Node
 from arkitekt.schema.enums import NodeType
-from arkitekt.schema.ports import ArgPort, DictArgPort, DictKwargPort, DictReturnPort, IntArgPort, IntKwargPort, IntReturnPort, KwargPort, ListArgPort, ListKwargPort, ListReturnPort, ReturnPort, StringArgPort, StringKwargPort, StringReturnPort, StructureArgPort, StructureKwargPort, StructureReturnPort
+from arkitekt.schema.ports import ArgPort, BoolArgPort, BoolKwargPort, BoolReturnPort, DictArgPort, DictKwargPort, DictReturnPort, EnumArgPort, EnumKwargPort, IntArgPort, IntKwargPort, IntReturnPort, KwargPort, ListArgPort, ListKwargPort, ListReturnPort, ReturnPort, StringArgPort, StringKwargPort, StringReturnPort, StructureArgPort, StructureKwargPort, StructureReturnPort
 from arkitekt.actors.functional import FunctionalFuncActor, FunctionalGenActor, FunctionalThreadedFuncActor, FunctionalThreadedGenActor
 from arkitekt.packers.transpilers.registry import get_transpiler_registry
 
@@ -52,6 +53,9 @@ def convert_arg_to_argport(cls, **kwargs) -> ArgPort:
 
     if inspect.isclass(cls):
         # Generic Cases
+
+        if issubclass(cls, bool): return BoolArgPort.from_params(**kwargs) # catch bool is subclass of int
+        if issubclass(cls, Enum): return EnumArgPort.from_params(options={key: value._value_ for key,value in cls.__members__.items()},**kwargs)
         if issubclass(cls, int): return IntArgPort.from_params(**kwargs)
         if issubclass(cls, str): return StringArgPort.from_params(**kwargs)
 
@@ -87,6 +91,9 @@ def convert_kwarg_to_kwargport(cls, **kwargs):
     
     if inspect.isclass(cls):
         # Generic Cases
+
+        if issubclass(cls, bool): return BoolKwargPort.from_params(**kwargs) # bool subclass of int therefore before
+        if issubclass(cls, Enum): return EnumKwargPort.from_params(options={key: value._value_ for key,value in cls.__members__.items()},**kwargs)
         if issubclass(cls, int): return IntKwargPort.from_params(**kwargs)
         if issubclass(cls, str): return StringKwargPort.from_params(**kwargs)
 
@@ -117,6 +124,8 @@ def convert_return_to_returnport(cls, **kwargs):
     # Generic Cases
     if inspect.isclass(cls):
         # Generic Cases
+
+        if issubclass(cls, bool): return BoolReturnPort.from_params(**kwargs)
         if issubclass(cls, int): return IntReturnPort.from_params(**kwargs)
         if issubclass(cls, str): return StringReturnPort.from_params(**kwargs)
 

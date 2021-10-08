@@ -124,8 +124,8 @@ async def shrink_outputs(node, returns) -> List[Any]:
     Returns:
         List[Any]: Parsed Returns
     """
-    if returns is None: returns = []
-    if not isinstance(returns, list) and not isinstance(returns, tuple): returns = [returns]
+    if returns is None: returns = ()
+    if not isinstance(returns, tuple): returns = [returns]
     assert len(node.returns) == len(returns), "Missmatch in Return Length" # We are dealing with a single output, convert it to a proper port like structure
     shrinked_returns_future = [port.shrink(val) for port, val in zip(node.returns, returns)]
     try:

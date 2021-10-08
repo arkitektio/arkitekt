@@ -29,6 +29,13 @@ class SearchWidget(Widget):
 class IntWidget(Widget):
     pass
 
+class BoolWidget(Widget):
+    pass
+
+class StringWidget(Widget):
+    placeholder: Optional[str]
+    pass
+
 class SliderWidget(Widget):
     """ A Slider widget enables
     a slider from min to max with
@@ -44,4 +51,4 @@ class SliderWidget(Widget):
     max: Optional[int]
 
 
-AllWidgets = Union[SearchWidget, IntWidget, SliderWidget, QueryWidget, ValueWidget]
+AllWidgets = Union[SearchWidget, IntWidget, SliderWidget, QueryWidget, ValueWidget, StringWidget, BoolWidget]

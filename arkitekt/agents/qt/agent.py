@@ -1,6 +1,9 @@
 
 
-
+from arkitekt.agents.qt.actor import QtActor
+from herre.herre import get_current_herre
+from arkitekt.threadvars import get_current_assign
+from qtpy.QtCore import QObject, Signal
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import BouncedForwardedUnassignMessage
 from arkitekt.messages.postman.provide.provide_transition import ProvideState, ProvideTransitionMessage
@@ -25,14 +28,31 @@ from typing import Callable, Dict, List, Tuple, Type
 from arkitekt.agents.base import Agent, AgentException, parse_params
 import logging
 from herre.console import get_current_console
+import uuid
+from koil import get_current_koil
 
 logger = logging.getLogger(__name__)
 
 
-class AppAgent(Agent):
+class AgentSignals(QObject):
+    provide = Signal(BouncedProvideMessage)
+    unprovide = Signal(BouncedUnprovideMessage)
+    provide_transition = Signal(ProvideTransitionMessage)
+
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+
+
+
+
+
+
+class QtAgent(Agent, QObject):
     ACTOR_PENDING_MESSAGE = "Actor is Pending"
 
-    def __init__(self, *args, strict=False, **kwargs) -> None:
+    def __init__(self, qtApp, *args, strict=False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.potentialNodes: List[Tuple[Node, Callable]] = []
@@ -40,6 +60,13 @@ class AppAgent(Agent):
         self.approvedTemplates: List[Tuple[Template, Callable]] = []
         self.approvedActors: Dict[str, Type[Actor]] = {}
         self.strict = strict
+        self.qtApp = qtApp
+        self.assignFutures = {}
+        self.provideFutures = {}
+        self.unprovideFutures = {}
+        self.appWorkers = {}
+
+        self.signals = AgentSignals(parent=qtApp)
 
         # Running Actors indexed by their ID
         self.runningActors: Dict[str, Actor] = {}
@@ -49,7 +76,6 @@ class AppAgent(Agent):
         print(future)
 
     async def on_bounced_provide(self, message: BouncedProvideMessage):
-        
         if message.data.template in self.approvedActors:
             if message.meta.reference in self.runningActors:
                 if self.strict: raise AgentException("Already Running Provision Received Again. Right now causing Error. Might be omitted")
@@ -57,6 +83,7 @@ class AppAgent(Agent):
                     "message": "Provision was running on this Instance. Probably a freaking race condition",
                     "state": ProvideState.ACTIVE
                     }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
+                self.signals.provide_transition.emit(again_provided)
                 await self.transport.forward(again_provided)
             else:
                 actor = self.approvedActors[message.data.template](message, self.transport, monitor=self.monitor)
@@ -75,7 +102,6 @@ class AppAgent(Agent):
         
         logger.info(f"Cancelling {actor}")
         self.runningTasks[message.data.provision].cancel()
-
 
     async def on_bounced_assign(self, message: BouncedForwardedAssignMessage):
 
@@ -104,6 +130,8 @@ class AppAgent(Agent):
     
     async def handle_bounced_provide(self, message: BouncedProvideMessage):
         try:
+
+            self.signals.provide.emit(message)
             await self.on_bounced_provide(message)
 
             progress = ProvideLogMessage(data={
@@ -116,10 +144,12 @@ class AppAgent(Agent):
 
         except Exception as e:
             logger.error(e)
+
             critical_error = ProvideTransitionMessage(data={
             "message": str(e),
             "state": ProvideState.CRITICAL
             }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
+            self.signals.provide_transition.emit(critical_error)
             await self.transport.forward(critical_error)
 
 
@@ -187,26 +217,26 @@ class AppAgent(Agent):
             raise e
 
 
-    def register(self, *args, widgets={}, transpilers: Dict[str, Transpiler] = None, on_provide = None, on_unprovide = None, **params):
+    def register(self, function_or_node, widgets={}, transpilers: Dict[str, Transpiler] = None, on_provide = None, on_unprovide = None, on_assign = None, timeout=500, **params) -> QtActor:
 
-        def real_decorator(function):
-            # Simple bypass for now
-            def wrapped_function(*args, **kwargs):
-                return function(*args, **kwargs)
+        # Simple bypass for now
 
-            if len(args) == 0:
-                defined_node = define(function=function, widgets=widgets)
-                defined_actor = actify(function, on_provide=on_provide, on_unprovide=on_unprovide, **params)
+        if isinstance(function_or_node, Node):
+            raise NotImplementedError("Dont know how to handle this yet")
+
+        else:
+            defined_node = define(function=function_or_node, widgets=widgets)
+
+            worker = QtActor(parent=self.qtApp, qt_assign=on_assign, qt_on_provide=on_provide, qt_on_unprovide=on_unprovide, loop=self.loop, timeout = timeout)
+            self.appWorkers[defined_node.interface] = worker
+            defined_actor = actify(worker.assign, on_provide=worker.on_provide, on_unprovide=worker.on_unprovide, **params)
+            self.potentialNodes.append((defined_node, defined_actor, params))
 
 
-                self.potentialNodes.append((defined_node, defined_actor, params))
+        return worker
 
-            if len(args) == 1:
-                print("Hallo")
-                # We are registering this as a template
-                
-
-            return wrapped_function
 
     
-        return real_decorator
+   
+
+    

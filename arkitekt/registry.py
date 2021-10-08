@@ -3,12 +3,13 @@ CURRENT_RPC = None
 CURRENT_AGENT = None
 
 
-def get_current_rpc(force_creation=False, **kwargs):
+def get_current_postman(force_creation=True, **kwargs):
     global CURRENT_RPC
     if CURRENT_RPC is None and force_creation:
-        from arkitekt.rpc import RPC
-        CURRENT_RPC = RPC(**kwargs)
+        from arkitekt.postman import Postman
+        CURRENT_RPC = Postman(**kwargs)
     return CURRENT_RPC
+
 
 
 def set_current_rpc(arkitekt, overwrite=False):
@@ -16,7 +17,7 @@ def set_current_rpc(arkitekt, overwrite=False):
     CURRENT_RPC = arkitekt
 
 
-def get_current_agent(force_creation=False, **kwargs):
+def get_current_agent(force_creation=True, **kwargs):
     global CURRENT_AGENT
     if CURRENT_AGENT is None and force_creation:
         from arkitekt.agents import AppAgent

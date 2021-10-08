@@ -3,7 +3,6 @@ from typing import Any, List, Optional, Union
 
 from herre.access.model import GraphQLModel
 from arkitekt.schema.node import Node
-from herre.loop import loopify, loopify_gen
 from herre.wards.graphql import ParsedQuery
 
 

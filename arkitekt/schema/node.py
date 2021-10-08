@@ -2,16 +2,16 @@ from abc import abstractmethod
 from contextvars import Context
 from arkitekt.messages.postman.reserve.reserve_transition import ReserveState
 from arkitekt.monitor.monitor import Monitor
-from arkitekt.ui.sync_funcs import fill_args_kwargs_graphically
 from arkitekt.schema.enums import NodeType
-from arkitekt.schema.ports import DictArgPort, DictKwargPort, DictReturnPort, IntArgPort, IntKwargPort, IntReturnPort, ListArgPort, ListKwargPort, ListReturnPort, StringArgPort, StringKwargPort, StringReturnPort, StructureArgPort, StructureKwargPort, StructureReturnPort
+from arkitekt.schema.ports import AllArgPort, AllKwargPort, AllReturnPort
 from arkitekt.graphql.node import NODE_CREATE_QUERY, NODE_GET_QUERY
 from enum import Enum
 from typing import Any, List, Optional, Union
 from arkitekt.contracts.reservation import Reservation
 from herre.access.model import GraphQLModel
-from herre.loop import loopify, loopify_gen
 from rich.table import Table
+
+from koil.loop import koil, koil_gen
 
 
 
@@ -21,9 +21,9 @@ class Node(GraphQLModel):
     description: Optional[str]
     package: Optional[str]
     interface: Optional[str]
-    args: Optional[List[Union[StructureArgPort, StringArgPort, IntArgPort, ListArgPort, DictArgPort]]]
-    kwargs: Optional[List[Union[StructureKwargPort, StringKwargPort, IntKwargPort, ListKwargPort, DictKwargPort]]]
-    returns: Optional[List[Union[StructureReturnPort, StringReturnPort, IntReturnPort, ListReturnPort, DictReturnPort]]]
+    args: Optional[List[AllArgPort]]
+    kwargs: Optional[List[AllKwargPort]]
+    returns: Optional[List[AllReturnPort]]
     type: Optional[NodeType]
 
 
@@ -34,7 +34,7 @@ class Node(GraphQLModel):
         transition_hook=None,
         with_log=False,
         enter_on=[ReserveState.ACTIVE], 
-        exit_on=[ReserveState.ERROR, ReserveState.CANCELLED],
+        exit_on=[ReserveState.ERROR, ReserveState.CANCELLED, ReserveState.CRITICAL],
         context: Context =None,
         loop=None,
          **params) -> Reservation:
@@ -76,13 +76,11 @@ class Node(GraphQLModel):
         Returns:
             Any: Generator or Function
         """
-        if fill_graphical: args, kwargs = fill_args_kwargs_graphically(self, args, kwargs)
-
         if self.type == NodeType.FUNCTION:
-            return loopify(self.call_async_func(*args, **kwargs))
+            return koil(self.call_async_func(*args, **kwargs))
 
         if self.type == NodeType.GENERATOR:
-            return loopify_gen(self.call_async_gen(*args, **kwargs))
+            return koil_gen(self.call_async_gen(*args, **kwargs))
 
 
     class Meta:

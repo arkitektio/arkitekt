@@ -1,7 +1,6 @@
 from arkitekt.monitor.monitor import get_current_monitor
 from herre.console.context import get_current_console
 from uuid import uuid4
-from herre.auth import get_current_herre
 from arkitekt.packers.utils import expand_outputs, shrink_inputs
 from asyncio.futures import Future
 from arkitekt.messages.postman.log import LogLevel
@@ -11,12 +10,17 @@ from arkitekt.contracts.exceptions import AssignmentException
 from arkitekt.messages import *
 from arkitekt.schema.enums import NodeType
 from arkitekt.messages.postman.reserve.params import ReserveParams
+from arkitekt.postman import Postman
 from rich.table import Table
 from rich.panel import Panel
 from arkitekt.monitor import Monitor, current_monitor
-from arkitekt.registry import get_current_rpc
+from arkitekt.registry import get_current_postman
 import asyncio
 import logging
+from herre.herre import Herre, get_current_herre
+
+from koil.koil import Koil, get_current_koil
+from koil.loop import koil, koil_gen
 
 logger = logging.getLogger(__name__)
 
@@ -136,9 +140,11 @@ class Reservation:
         transition_hook=None,
         with_log=False,
         enter_on=[ReserveState.ACTIVE], 
-        exit_on=[ReserveState.ERROR, ReserveState.CANCELLED],
+        exit_on=[ReserveState.ERROR, ReserveState.CANCELLED, ReserveState.CRITICAL],
         context: Context =None,
-        loop=None,
+        koil: Koil = None,
+        herre: Herre = None,
+        postman: Postman = None,
          **params) -> None:
 
         self.monitor: Monitor = monitor or get_current_monitor()
@@ -146,10 +152,10 @@ class Reservation:
 
 
         self.console = get_current_console()
-
-        self.herre = get_current_herre()
-        self.loop = loop or self.herre.loop
-        self.rpc = get_current_rpc(force_creation=True)
+        self.herre = herre or get_current_herre()
+        self.koil = koil or get_current_koil()
+        self.loop = self.koil.loop
+        self.postman = postman or get_current_postman(force_creation=True)
         
         assert "can_assign" in self.herre.grant.scopes, "Cannot assign to nodes if can_assign is not in scopes"
 
@@ -197,14 +203,15 @@ class Reservation:
     async def transition_state(self, message: ReserveTransitionMessage):
         # Once we acquire a reserved resource our contract (the inner part of the context can start)
         if self.transition_hook: await self.transition_hook(self, message.data.state)
-        
+        print("iosnisnosinseo", self.exit_states)
+        print(message.data.state)
         if message.data.state in self.exit_states:
-
+            print("oisndoisdnosdinodsin")
             if self.enter_future.done():
                 self.log(f"We have transitioned to a critical State {message.data.message}. Terminating on Next Call")
             else:
                 self.log("Cancelling Reservation")
-                self.enter_future.set_exception(Exception(message.data.message))
+                raise Exception(message.data.message)
 
             if not self.is_closing: 
                 self.log(f"Received Exitstate: {message.data.state}. Closing reservation at next assignment", level=LogLevel.CRITICAL)
@@ -215,6 +222,7 @@ class Reservation:
                 logger.info("We are already entered.")
             else:
                 self.enter_future.set_result(message.meta.reference)
+
 
 
         self.old_state = self.current_state
@@ -238,7 +246,7 @@ class Reservation:
         context = context or self.context
         assign_reference = str(uuid.uuid4())
         assign_message = build_assign_message(assign_reference, self.reference, shrinked_args, shrinked_kwargs, with_log=with_log, context=context)
-        assignation_queue = await self.rpc.stream_replies_to_queue(assign_message)
+        assignation_queue = await self.postman.stream_replies_to_queue(assign_message)
 
         try:
             while True:
@@ -277,7 +285,7 @@ class Reservation:
             
 
             self.log(f"Cancellation Condition {unassign_message}")
-            await self.rpc.transport.forward(unassign_message)
+            await self.postman.transport.forward(unassign_message)
 
             while True:
                 message = await assignation_queue.get()
@@ -303,7 +311,7 @@ class Reservation:
         context = context or self.context
         assign_reference = str(uuid.uuid4())
         assign_message = build_assign_message(assign_reference, self.reference, shrinked_args, shrinked_kwargs, with_log=with_log, context=context)
-        assignation_queue = await self.rpc.stream_replies_to_queue(assign_message)
+        assignation_queue = await self.postman.stream_replies_to_queue(assign_message)
 
         try:
             while True:
@@ -337,7 +345,7 @@ class Reservation:
             un_assign_reference = str(uuid.uuid4())
             unassign_message = build_unassign_messsage(un_assign_reference, assign_reference, context=context)
             
-            await self.rpc.transport.forward(unassign_message)
+            await self.postman.transport.forward(unassign_message)
 
 
             while True:
@@ -357,7 +365,7 @@ class Reservation:
     async def stream_worker(self):
 
         reserve_message = build_reserve_message(reference=self.reference, node_id=self.node.id, params_dict=self.params.dict())
-        reservation_queue = await self.rpc.stream_replies_to_queue(reserve_message)
+        reservation_queue = await self.postman.stream_replies_to_queue(reserve_message)
 
         try:
             while True: 
@@ -385,7 +393,7 @@ class Reservation:
             unreserve_reference = str(uuid.uuid4())
             unreserve_message = build_unreserve_messsage(unreserve_reference, self.reference,  context=self.context)
             
-            await self.rpc.transport.forward(unreserve_message)
+            await self.postman.transport.forward(unreserve_message)
 
 
             while True:
@@ -427,9 +435,11 @@ class Reservation:
     async def __aenter__(self):
         if self.panel: self.panel.start()
 
+        close_postman = False
         # Check connection level
-        if not self.rpc.connected:
-            await self.rpc.connect()
+        if not self.postman.connected:
+            close_postman = True
+            await self.postman.aconnect()
 
         self.is_closing = False
         
@@ -441,6 +451,14 @@ class Reservation:
             return self
 
         except Exception as e:
+            logger.exception(e)
+            print("Waitign for postman disconnect")
+            if close_postman: await self.postman.adisconnect()
+            await self.cancel()
+
+
+
+            print("Postman disconnected")
             raise CouldNotReserveError(f"Could not Reserve Reservation {self.reference} for Node {self.node}") from e
 
 
@@ -463,11 +481,17 @@ class Reservation:
 
 
     def stream(self, *args, bypass_shrink=False, bypass_expand=False, persist=True, **kwargs):
-        return self.stream_async(*args, bypass_shrink=bypass_shrink, bypass_expand=bypass_expand, persist=persist, **kwargs)
+        return koil_gen(self.stream_async(*args, bypass_shrink=bypass_shrink, bypass_expand=bypass_expand, persist=persist, **kwargs))
 
-        
     def assign(self, *args, bypass_shrink=False, bypass_expand=False, persist=True, **kwargs):
-        return self.assign_async(*args, bypass_shrink=bypass_shrink, bypass_expand=bypass_expand, persist=persist, **kwargs)
+        return koil(self.assign_async(*args, bypass_shrink=bypass_shrink, bypass_expand=bypass_expand, persist=persist, **kwargs))
+
+    def __enter__(self):
+        return koil(self.__aenter__())
+
+    def __exit__(self,*args, **kwargs):
+        return koil(self.__aexit__(*args, **kwargs))
+
 
 
 
