@@ -116,7 +116,7 @@ class WebsocketTransport(Transport):
         try:
             while True:
                 message = await self.send_queue.get()
-                logger.info(">>>>>> " + message)
+                print(">>>>>> " + message)
                 await client.send(message)
                 self.send_queue.task_done()
         except asyncio.CancelledError as e:
@@ -126,7 +126,7 @@ class WebsocketTransport(Transport):
     async def receiving(self, client):
         try:
             async for message in client:
-                logger.info("<<<<<<< " + message)
+                print("<<<<<<< " + message)
                 message = expandToMessage(json.loads(message))
                 await self.broadcast(message)
         except asyncio.CancelledError as e:

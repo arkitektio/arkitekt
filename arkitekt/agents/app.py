@@ -32,15 +32,8 @@ logger = logging.getLogger(__name__)
 class AppAgent(Agent):
     ACTOR_PENDING_MESSAGE = "Actor is Pending"
 
-    def __init__(self, *args, strict=False, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-
-        self.potentialNodes: List[Tuple[Node, Callable]] = []
-        self.potentialTemplates: List[Tuple[Node, Callable]] = []
-        self.approvedTemplates: List[Tuple[Template, Callable]] = []
-        self.approvedActors: Dict[str, Type[Actor]] = {}
-        self.strict = strict
-
         # Running Actors indexed by their ID
         self.runningActors: Dict[str, Actor] = {}
         self.runningTasks: Dict[str, asyncio.Task] = {}
@@ -50,20 +43,22 @@ class AppAgent(Agent):
 
     async def on_bounced_provide(self, message: BouncedProvideMessage):
         
-        if message.data.template in self.approvedActors:
-            if message.meta.reference in self.runningActors:
+        if message.data.template in self.templateActorsMap:
+            if message.meta.reference not in self.runningActors:
+                # Didn not exist before
+                actor = self.templateActorsMap[message.data.template] # creating out little Actor
+                self.runningActors[message.meta.reference] = actor
+                task = self.loop.create_task(actor.arun(message, self))
+                task.add_done_callback(self.on_task_done)
+                self.runningTasks[message.meta.reference] = task
+                
+            else:
                 if self.strict: raise AgentException("Already Running Provision Received Again. Right now causing Error. Might be omitted")
                 again_provided = ProvideTransitionMessage(data={
                     "message": "Provision was running on this Instance. Probably a freaking race condition",
                     "state": ProvideState.ACTIVE
                     }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
                 await self.transport.forward(again_provided)
-            else:
-                actor = self.approvedActors[message.data.template](message, self.transport, monitor=self.monitor)
-                self.runningActors[message.meta.reference] = actor
-                task = self.loop.create_task(actor.arun())
-                task.add_done_callback(self.on_task_done)
-                self.runningTasks[message.meta.reference] = task
 
         else:
             raise AgentException("No approved actors for this template")
@@ -194,17 +189,21 @@ class AppAgent(Agent):
             def wrapped_function(*args, **kwargs):
                 return function(*args, **kwargs)
 
+            
+            defined_actor = actify(function, on_provide=on_provide, on_unprovide=on_unprovide, **params)
+
             if len(args) == 0:
                 defined_node = define(function=function, widgets=widgets)
-                defined_actor = actify(function, on_provide=on_provide, on_unprovide=on_unprovide, **params)
-
-
-                self.potentialNodes.append((defined_node, defined_actor, params))
+                self.templatedNewNodes.append((defined_node, defined_actor, params))
 
             if len(args) == 1:
-                print("Hallo")
+                if isinstance(args[0], str):
+                    self.templatedUnqueriedNodes.append(({"q": args[0]}, defined_actor, params))
+
+                if isinstance(args[0], Node):
+                    self.templatedNodes.append((args[0], defined_actor, params))
+
                 # We are registering this as a template
-                
 
             return wrapped_function
 

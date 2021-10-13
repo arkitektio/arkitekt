@@ -1,8 +1,8 @@
 
 
+from typing import Dict
+from arkitekt.actors.actify import define
 from arkitekt.agents.qt.actor import QtActor
-from herre.herre import get_current_herre
-from arkitekt.threadvars import get_current_assign
 from qtpy.QtCore import QObject, Signal
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import BouncedForwardedUnassignMessage
@@ -10,26 +10,17 @@ from arkitekt.messages.postman.provide.provide_transition import ProvideState, P
 from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
 from arkitekt.messages.postman.assign.assign_critical import AssignCriticalMessage
 from arkitekt.messages.postman.assign.bounced_forwarded_assign import BouncedForwardedAssignMessage
-from arkitekt.messages.postman.assign.bounced_assign import BouncedAssignMessage
-from arkitekt.messages.postman.provide.provide_critical import ProvideCriticalMessage
 from arkitekt.messages.postman.log import LogLevel
 from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
 import asyncio
-from herre.wards.base import WardException
-from arkitekt.actors.actify import actify, define
 from arkitekt.actors.base import Actor
 from arkitekt.messages.postman.unprovide.bounced_unprovide import BouncedUnprovideMessage
-from arkitekt.messages.base import MessageDataModel, MessageModel
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
-from arkitekt.schema.template import Template
 from arkitekt.schema.node import Node
 from arkitekt.packers.transpilers import Transpiler
-from typing import Callable, Dict, List, Tuple, Type
-from arkitekt.agents.base import Agent, AgentException, parse_params
+from arkitekt.agents.base import Agent, AgentException
 import logging
-from herre.console import get_current_console
 import uuid
-from koil import get_current_koil
 
 logger = logging.getLogger(__name__)
 
@@ -42,11 +33,6 @@ class AgentSignals(QObject):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-
-
-
-
-
 
 
 class QtAgent(Agent, QObject):
@@ -64,6 +50,7 @@ class QtAgent(Agent, QObject):
         self.provideFutures = {}
         self.unprovideFutures = {}
         self.appWorkers = {}
+
 
         # Running Actors indexed by their ID
         self.runningActors: Dict[str, Actor] = {}

@@ -7,8 +7,7 @@ from herre import Herre
 from herre.herre import get_current_herre
 from koil import Koil
 from koil.koil import get_current_koil
-from konfik.config.base import Config
-from konfik.konfik import Konfik, get_current_konfik
+from fakts import Fakts, get_current_fakts, Config
 import pydantic
 
 
@@ -21,17 +20,18 @@ class TansportConfigError(Exception):
 class Transport(object):
     configClass = TransportConfig
 
-    def __init__(self, config_dict, broadcast = None, herre: Herre = None, koil: Koil = None, konfik: Konfik = None, **kwargs) -> None:
+    def __init__(self, config_dict, broadcast = None, herre: Herre = None, koil: Koil = None, fakts: Fakts = None, **kwargs) -> None:
         self._broadcast = broadcast
         assert self._broadcast is not None, "Please provide a broadcaster that receives messages"
         self.herre = herre or get_current_herre()
         self.koil = koil or get_current_koil()
+        self.fakts = fakts or get_current_fakts()
         self.loop = self.koil.loop
 
         try:
             self.config = self.configClass(**config_dict)
         except pydantic.error_wrappers.ValidationError as e:
-            raise TansportConfigError(f"Found a non valid Configuration {config_dict}") from e
+            raise TansportConfigError(f"Non valid Configuration {config_dict}") from e
 
 
     @abstractmethod

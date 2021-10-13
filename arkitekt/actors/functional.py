@@ -1,4 +1,5 @@
 import threading
+from typing import Any, Coroutine
 from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
 import contextvars
 from arkitekt.messages.postman.assign.assign_critical import AssignCriticalMessage
@@ -6,6 +7,7 @@ from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMes
 from arkitekt.messages.postman.assign.assign_return import AssignReturnMessage
 from arkitekt.messages.postman.assign.assign_yield import AssignYieldsMessage
 from arkitekt.messages.postman.assign.assign_done import AssignDoneMessage
+from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 from arkitekt.threadvars import assign_message, transport, janus_queue
 from arkitekt.messages.postman.assign.bounced_forwarded_assign import BouncedForwardedAssignMessage
 from arkitekt.actors.base import Actor
@@ -23,15 +25,26 @@ class FunctionalActor(Actor):
     pass
 
 
+    def __init__(self, *args, assign=None, on_provide=None, on_unprovide=None, **kwargs) -> None:
+        print(assign)
+        super().__init__(*args, **kwargs)
+        self.assign = assign or self.assign
+        print(self.assign)
+        self.on_provide = on_provide or self.on_provide
+        self.on_unprovide = on_unprovide or self.on_unprovide
+
+
+    def assign(self, *args, **kwargs):
+        raise NotImplementedError("Please overwrite this")
+
 
 
 class FunctionalFuncActor(FunctionalActor):
+    assign: Coroutine[Any, Any, Any]
+
     
     async def progress(self, value, percentage):
         await self._progress(value, percentage)
-
-    async def assign(self, *args, **kwargs):
-        raise NotImplementedError("Please provide a func or overwrite the assign method!")
 
 
     async def on_assign(self, message: BouncedForwardedAssignMessage):
@@ -68,7 +81,7 @@ class FunctionalFuncActor(FunctionalActor):
 
 
         except Exception as e:
-            self.console.print_exception()
+            logger.exception(e)
             await self.transport.forward(AssignCriticalMessage(data={
                 "type": e.__class__.__name__,
                 "message": str(e)
@@ -82,8 +95,6 @@ class FunctionalFuncActor(FunctionalActor):
 
 class FunctionalGenActor(FunctionalActor):
 
-    async def assign(self, *args, **kwargs):
-        raise NotImplementedError("Please provide a func or overwrite the assign method!")
 
     async def progress(self, value, percentage):
         await self._progress(value, percentage)
@@ -140,15 +151,10 @@ class FunctionalGenActor(FunctionalActor):
 
 
 class FunctionalThreadedFuncActor(FunctionalActor):
-    nworkers = 5
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, nworkers=4, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.threadpool = ThreadPoolExecutor(self.nworkers)
-
-    def assign(self, *args, **kwargs):
-        raise NotImplementedError("")
-
+        self.threadpool = ThreadPoolExecutor(nworkers)
 
     async def iterate_queue(self, async_q, message: BouncedForwardedAssignMessage):
         while True:
@@ -256,14 +262,11 @@ class FunctionalThreadedFuncActor(FunctionalActor):
 
 
 class FunctionalThreadedGenActor(FunctionalActor):
-    nworkers = 5
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, nworkers=4, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self.threadpool = ThreadPoolExecutor(self.nworkers)
+        self.threadpool = ThreadPoolExecutor(nworkers)
 
-    def assign(self, *args, **kwargs):
-        raise NotImplementedError("")  
 
     
     async def iterate_queue(self, async_q, message: BouncedForwardedAssignMessage):
@@ -377,7 +380,7 @@ class FunctionalThreadedGenActor(FunctionalActor):
 
 
         except Exception as e:
-            self.console.print_exception()
+            logger.exception(e)
             await self.transport.forward(AssignCriticalMessage(data={
                 "type": e.__class__.__name__,
                 "message": str(e)

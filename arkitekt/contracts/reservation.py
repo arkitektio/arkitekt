@@ -157,7 +157,6 @@ class Reservation:
         self.loop = self.koil.loop
         self.postman = postman or get_current_postman(force_creation=True)
         
-        assert "can_assign" in self.herre.grant.scopes, "Cannot assign to nodes if can_assign is not in scopes"
 
         # Reservation Params
         self.reference = reference or str(uuid.uuid4())

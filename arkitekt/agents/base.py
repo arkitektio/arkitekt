@@ -3,7 +3,6 @@ from arkitekt.config import TransportProtocol
 from arkitekt.messages.postman.assign.bounced_forwarded_assign import BouncedForwardedAssignMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import BouncedForwardedUnassignMessage
 from arkitekt.monitor.monitor import Monitor
-from arkitekt.actors.base import Actor
 from arkitekt.messages.postman.unprovide.bounced_unprovide import BouncedUnprovideMessage
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 from arkitekt.messages.postman.log import LogLevel
@@ -14,7 +13,6 @@ import asyncio
 from typing import Callable, Dict, List, Tuple, Type
 from arkitekt.transport.registry import TransportRegistry, get_current_transport_registry
 from arkitekt.transport.websocket import WebsocketTransport
-from arkitekt.actors.actify import actify, define
 from arkitekt.schema.node import Node
 from arkitekt.schema.template import Template
 from arkitekt.ward import ArkitektConfig, ArkitektWard
@@ -26,9 +24,7 @@ from arkitekt.legacy.utils import *
 from arkitekt.registry import set_current_agent
 from koil.koil import Koil, get_current_koil
 from koil.loop import koil
-import konfik
-from konfik.config.base import Config
-from konfik.konfik import Konfik, get_current_konfik
+from fakts import Fakts, get_current_fakts, Config
 
 try:
     from rich.traceback import install
@@ -63,15 +59,15 @@ class AgentConfig(Config):
     
 class Agent:
 
-    def __init__(self, *args, auto_login=True, auto_connect=True, loop=None, register=True,  with_monitor=False, herre: Herre = None, koil: Koil = None, konfik: Konfik = None, transport_registry: TransportRegistry= None, **kwargs) -> None:
+    def __init__(self, *args, auto_login=True, auto_connect=True, loop=None, register=True,  with_monitor=False, herre: Herre = None, koil: Koil = None, fakts: Fakts = None, transport_registry: TransportRegistry= None, strict=False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.auto_login = auto_login
         self.auto_connect = auto_connect
-
+        self.strict = strict
         self.herre = herre or get_current_herre() 
         self.koil = koil or get_current_koil()
-        self.konfik = konfik or get_current_konfik()
+        self.fakts = fakts or get_current_fakts()
         self.loop = self.koil.loop
         
         self.ward: ArkitektWard = get_ward_registry().get_ward_instance("arkitekt")
@@ -82,14 +78,19 @@ class Agent:
         self.transport_registry = transport_registry or get_current_transport_registry()
 
 
-        self.potentialNodes: List[Tuple[Node, Callable]] = []
-        self.potentialTemplates: List[Tuple[Node, Callable]] = []
-        self.approvedTemplates: List[Tuple[Template, Callable]] = []
-        self.approvedActors: Dict[str, Type[Actor]] = {}
 
-        # Running Actors indexed by their ID
-        self.runningActors: Dict[str, Actor] = {}
-        self.runningTasks: Dict[str, asyncio.Task] = {}
+        self.templatedUnqueriedNodes:  List[Tuple[dict, Callable]] = [] # dict are queryparams for the node
+        self.templatedNodes: List[Tuple[Node, Callable]] = [] # node is already saved and has id
+        self.templatedNewNodes: List[Tuple[Node, Callable]] = [] # Node is not saved and has undefined id
+
+
+        self.approvedTemplates: List[Tuple[Template, Callable]] = [] # Template is approved 
+
+
+        # IMportant Maps
+        self.templateActorsMap = {}
+        self.templateTemplatesMap = {}
+
 
 
         if register:
@@ -144,11 +145,55 @@ class Agent:
             logger.exception(e)
 
 
+    async def approve_nodes_and_templates(self):
+
+        if self.templatedUnqueriedNodes:
+            for query_params, defined_actor, params in self.templatedUnqueriedNodes:
+                try:
+                    arkitekt_node = await Node.asyncs.get(**query_params)
+                    self.templatedNodes.append((arkitekt_node, defined_actor, params))
+                except WardException as e:
+                    logger.exception(e)
+                    if self.strict: raise AgentException(f"Couldn't find Node for query {query_params}") from e   
+
+        if self.templatedNewNodes:
+            for defined_node, defined_actor, params in self.templatedNewNodes:
+                # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
+                # id so we are trying to send them to arkitekt)
+                try:
+                    arkitekt_node = await Node.asyncs.create(**defined_node.dict(as_input=True))
+                    self.templatedNodes.append((arkitekt_node, defined_actor, params))   
+                except WardException as e:
+                    logger.exception(e)
+                    if self.strict: raise AgentException(f"Couldn't create Node for defintion {defined_node}") from e
+
+        if self.templatedNodes:
+            # This is an arkitekt Node and we can generate potential Templates
+            for arkitekt_node, defined_actor, params in self.templatedNodes:
+                try:
+                    params = await parse_params(params) # Parse the parameters for template creation
+                    arkitekt_template = await Template.asyncs.create(node=arkitekt_node, params=params)
+                    self.approvedTemplates.append((arkitekt_template, defined_actor, params))  
+                except WardException as e:
+                    logger.exception(e)
+                    if self.strict: raise AgentException(f"Couldn't approve template for node {arkitekt_node}") from e
+
+        if self.approvedTemplates:
+
+            for arkitekt_template, defined_actor, params in self.approvedTemplates:
+
+                # Generating Maps for Easy access
+                self.templateActorsMap[arkitekt_template.id] = defined_actor
+                self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
+
+                if self.panel: self.panel.add_to_actor_map(arkitekt_template, defined_actor) 
+   
+
     async def aprovide(self):
         caused_ward_connect = False
         try:
-            if not self.konfik.load_group:
-                await self.konfik.aload()
+            if not self.fakts.load_group:
+                await self.fakts.aload()
 
             if not self.herre.logged_in:
                 await self.herre.alogin()
@@ -159,47 +204,17 @@ class Agent:
                 caused_ward_connect = True
 
 
-            print("Receached Herre")
-
-            self.config = AgentConfig.from_konfik(self.konfik)
-            print(self.config)
+            self.config = AgentConfig.from_fakts(fakts=self.fakts)
             self.transcript = self.ward.transcript
             self.transport = self.transport_registry.get_transport_for_protocol(self.config.type)(self.config.kwargs, broadcast=self.broadcast)
 
 
-
-
-            if self.potentialNodes:
-                for defined_node, defined_actor, params in self.potentialNodes:
-                    # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
-                    # id so we are trying to send them to arkitekt)
-                    try:
-                        arkitekt_node = await Node.asyncs.create(**defined_node.dict(as_input=True))
-                        self.potentialTemplates.append((arkitekt_node, defined_actor, params))   
-                    except WardException as e:
-                        raise AgentException(f"Couldn't create Node for defintion {defined_node}") from e
-
-            if self.potentialTemplates:
-                # This is an arkitekt Node and we can generate potential Templates
-                for arkitekt_node, defined_actor, params in self.potentialTemplates:
-                    try:
-                        params = await parse_params(params) # Parse the parameters for template creation
-                        arkitekt_template = await Template.asyncs.create(node=arkitekt_node, params=params)
-                        self.approvedTemplates.append((arkitekt_template, defined_actor, params))  
-                    except WardException as e:
-                        raise AgentException(f"Couldn't approve template for node {arkitekt_node}") from e
-
-
-            if self.approvedTemplates:
-                for arkitekt_template, defined_actor, params in self.approvedTemplates:
-                    self.approvedActors[arkitekt_template.id] = defined_actor
-                    if self.panel: self.panel.add_to_actor_map(arkitekt_template, defined_actor) 
-            
-            
+            await self.approve_nodes_and_templates()
+        
             await self.transport.aconnect()
 
 
-            print(f"Hosting {self.approvedTemplates}")
+            print(f"Hosting {self.templateActorsMap.keys()}")
 
             while True:
                 await asyncio.sleep(1)

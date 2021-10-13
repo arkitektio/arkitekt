@@ -2,14 +2,16 @@ from arkitekt.schema import Node
 import asyncio
 
 from koil.loop import koil
+import re
 
+package_test = re.compile(r"@(?P<package>[^\/]*)\/(?P<interface>[^\/]*)")
 
-async def node_to_action(package=None, interface=None, interactive=False) -> Node:
-    node = await Node.asyncs.get(package=package, interface=interface)
+async def node_to_action(**kwargs) -> Node:
+    node = await Node.asyncs.get(**kwargs)
     return node
 
 
-def use(package=None, interface=None, interactive=False) -> Node:
+def use(**kwargs) -> Node:
     """Use a Node on the Platform by Searching for it on its package
 
     Args:
@@ -20,7 +22,7 @@ def use(package=None, interface=None, interactive=False) -> Node:
         Node: The Node
         
     """
-    return koil(node_to_action(package=package, interface=interface))
+    return koil(node_to_action(**kwargs))
 
 
 async def ause(package=None, interface=None, interactive=False) -> Node:

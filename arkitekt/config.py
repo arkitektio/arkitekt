@@ -1,6 +1,6 @@
 from enum import Enum
 from typing import Optional
-from konfik import Config
+from fakts import Config
 
 class TransportProtocol(Enum):
     WEBSOCKET = "WEBSOCKET"

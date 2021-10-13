@@ -152,7 +152,9 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
     """Define
 
     Define a functions in the context of arnheim and
-    return it as a Node.
+    return it as a Node. Attention this node is not yet 
+    hosted on Arkitekt (doesn't have an id). So make sure
+    to save this node before calling it anywhere
 
     Args:
         function (): The function you want to define
@@ -202,7 +204,7 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
 
 
     name = docstring.short_description or function.__name__
-    interface = inflection.underscore(name) # convert this to camelcase
+    interface = inflection.underscore(function.__name__) # convert this to camelcase
     description = docstring.long_description or "No Description"
 
     doc_param_map = {param.arg_name: {
@@ -240,15 +242,16 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
     })
 
 
-async def async_none(self, message):
+async def async_none(message):
     return None
 
 
-def actify(function_or_actor, bypass_shrink=False, bypass_expand=False, transpilers: Dict[str, Transpiler] = None, on_provide=None, on_unprovide=None, **params):
-    if isactor(function_or_actor): return function_or_actor
-    is_method = inspect.ismethod(function_or_actor)
 
-    actor_name = f"GeneratedActor{function_or_actor.__name__.capitalize()}"
+
+def actify(function_or_actor, bypass_shrink=False, bypass_expand=False, transpilers: Dict[str, Transpiler] = None, on_provide=None, on_unprovide=None, actor_name= None, **params):
+    if isactor(function_or_actor): return function_or_actor
+
+    actor_name = actor_name or f"GeneratedActor{function_or_actor.__name__.capitalize()}"
 
 
     is_coroutine = inspect.iscoroutinefunction(function_or_actor)
@@ -256,9 +259,10 @@ def actify(function_or_actor, bypass_shrink=False, bypass_expand=False, transpil
 
     is_generatorfunction = inspect.isgeneratorfunction(function_or_actor)
     is_function = inspect.isfunction(function_or_actor)
-    print(on_provide)
-    class_attributes = {
-        "assign": staticmethod(function_or_actor),
+    
+
+    actor_attributes = {
+        "assign": function_or_actor,
         "expand_inputs": not bypass_expand,
         "shrink_outputs":  not bypass_shrink,
         "transpilers": transpilers,
@@ -267,13 +271,13 @@ def actify(function_or_actor, bypass_shrink=False, bypass_expand=False, transpil
     }
 
     if is_coroutine:
-        return type(actor_name,(FunctionalFuncActor,), class_attributes)
+        return FunctionalFuncActor(**actor_attributes)
     elif is_asyncgen:
-        return  type(actor_name,(FunctionalGenActor,), class_attributes)
+        return  FunctionalGenActor(**actor_attributes)
     elif is_generatorfunction:
-        return type(actor_name, (FunctionalThreadedGenActor,),class_attributes)
+        return FunctionalThreadedGenActor(**actor_attributes)
     elif is_function:
-        return type(actor_name,(FunctionalThreadedFuncActor,), class_attributes)
+        return FunctionalThreadedFuncActor(**actor_attributes)
     else:
         raise NotImplementedError("No way of converting this to a function")
 

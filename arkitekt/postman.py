@@ -10,8 +10,7 @@ from herre.wards.registry import get_ward_registry
 from arkitekt.legacy.utils import *
 from arkitekt.registry import set_current_rpc
 from koil.koil import Koil, get_current_koil
-from konfik.config.base import Config
-from konfik.konfik import Konfik, get_current_konfik
+from fakts import Fakts, get_current_fakts, Config
 
 try:
     from rich.traceback import install
@@ -36,14 +35,14 @@ class PostmanConfig(Config):
 
 class Postman:
 
-    def __init__(self, *args, auto_login=True, auto_connect=True, loop=None, register=True, herre: Herre = None, koil: Koil = None, konfik: Konfik = None, transport_registry: TransportRegistry = None, **kwargs) -> None:
+    def __init__(self, *args, auto_login=True, auto_connect=True, loop=None, register=True, herre: Herre = None, koil: Koil = None, fakts: Fakts = None, transport_registry: TransportRegistry = None, **kwargs) -> None:
 
         self.auto_login = auto_login
         self.auto_connect = auto_connect
         self.transport: Transport = None
         self.herre = herre or get_current_herre() 
         self.koil = koil or get_current_koil()
-        self.konfik = konfik or get_current_konfik()
+        self.fakts = fakts or get_current_fakts()
         self.loop = self.koil.loop
         self.ward: ArkitektWard = get_ward_registry().get_ward_instance("arkitekt")
         self.transport_registry = transport_registry or get_current_transport_registry()
@@ -96,8 +95,8 @@ class Postman:
         
         
     async def aconnect(self):
-        if not self.konfik.loaded:
-            await self.konfik.aload()
+        if not self.fakts.loaded:
+            await self.fakts.aload()
 
         if not self.herre.logged_in:
             await self.herre.alogin()
@@ -107,7 +106,7 @@ class Postman:
             await self.ward.aconnect()
 
 
-        self.config = PostmanConfig.from_konfik(konfik=self.konfik)
+        self.config = PostmanConfig.from_fakts(fakts=self.fakts)
         self.transcript = self.ward.transcript
         self.transport = self.transport_registry.get_transport_for_protocol(self.config.type)(self.config.kwargs, broadcast=self.broadcast)
 
