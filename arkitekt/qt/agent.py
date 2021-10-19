@@ -2,6 +2,7 @@
 
 from typing import Dict
 from arkitekt.actors.actify import define
+from arkitekt.agents.app import AppAgent
 from arkitekt.agents.qt.actor import QtActor
 from qtpy.QtCore import QObject, Signal
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
@@ -35,7 +36,7 @@ class AgentSignals(QObject):
         super().__init__(*args, **kwargs)
 
 
-class QtAgent(Agent, QObject):
+class QtAgent(AppAgent, QObject):
     provide_signal = Signal(bool)
     provision_signal = Signal(BouncedProvideMessage)
     unprovision_signal = Signal(BouncedUnprovideMessage)

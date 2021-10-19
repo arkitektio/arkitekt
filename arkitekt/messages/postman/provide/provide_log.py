@@ -1,4 +1,4 @@
-from ..log import LogDataModel
+from ..log import LogDataModel, LogLevel
 from enum import Enum
 from pydantic.main import BaseModel
 from ....messages.types import  PROVIDE_LOG
@@ -19,3 +19,10 @@ class MetaModel(MessageMetaModel):
 class ProvideLogMessage(MessageModel):
     data: LogDataModel
     meta: MetaModel
+
+    @classmethod
+    def from_log(cls, reference,  message, loglevel = LogLevel.INFO, extensions={}):
+        return cls(data={
+            "level": loglevel,
+            "message": message
+            }, meta={"extensions": extensions, "reference": reference})

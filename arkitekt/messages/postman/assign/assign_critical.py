@@ -17,3 +17,10 @@ class MetaModel(MessageMetaModel):
 class AssignCriticalMessage(MessageModel):
     data: ExceptionDataModel
     meta: MetaModel
+
+    @classmethod
+    def from_critical(cls,reference, exception, extensions={}):
+        return cls(data={
+            "message": str(exception),
+            "type": exception.__class__,
+            }, meta={"extensions": extensions, "reference":reference})

@@ -46,3 +46,10 @@ class ProvideTransistionData(MessageDataModel):
 class ProvideTransitionMessage(MessageModel):
     data: ProvideTransistionData
     meta: MetaModel
+
+    @classmethod
+    def from_critical(cls,reference, exception, extensions={}):
+        return cls(data={
+            "message": str(exception),
+            "state": ProvideState.CRITICAL
+            }, meta={"extensions": extensions, "reference":reference})

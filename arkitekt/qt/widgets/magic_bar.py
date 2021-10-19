@@ -9,8 +9,8 @@ import traceback
 class MagicBar(QtWidgets.QWidget):
     settingsPopupClass = SettingsPopup
 
-    def __init__(self, fakts: QtFakts, herre: QtHerre, agent: QtAgent, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, fakts: QtFakts, herre: QtHerre, agent: QtAgent, *args, parent=None, **kwargs) -> None:
+        super().__init__(*args, parent=parent,**kwargs)
 
         self.fakts = fakts
         self.herre = herre
@@ -26,7 +26,7 @@ class MagicBar(QtWidgets.QWidget):
         self.agent_provide_task = None
 
         #Settings
-        self.gear_button_popup = self.settingsPopupClass(self)
+        self.gear_button_popup = self.settingsPopupClass(self, parent=parent)
 
 
         self.layout = QtWidgets.QHBoxLayout()
@@ -53,19 +53,19 @@ class MagicBar(QtWidgets.QWidget):
 
 
     def on_agent_except(self, exc_obj):
-        self.magicb.set_halted()
+        self.set_halted()
         errorbox = QtWidgets.QMessageBox()
         errorbox.setText(''.join(traceback.format_exception(None, exc_obj, exc_obj.__traceback__)))
         errorbox.exec_()
 
     def on_fakts_except(self, exc_obj):
-        self.magicb.set_unkonfigured()
+        self.set_unkonfigured()
         errorbox = QtWidgets.QMessageBox()
         errorbox.setText(''.join(traceback.format_exception(None, exc_obj, exc_obj.__traceback__)))
         errorbox.exec_()
 
     def on_herre_except(self, exc_obj):
-        self.magicb.set_unconnected()
+        self.set_unconnected()
         errorbox = QtWidgets.QMessageBox()
         errorbox.setText(''.join(traceback.format_exception(None, exc_obj, exc_obj.__traceback__)))
         errorbox.exec_()

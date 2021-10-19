@@ -78,21 +78,6 @@ class Agent:
         self.transport_registry = transport_registry or get_current_transport_registry()
 
 
-
-        self.templatedUnqueriedNodes:  List[Tuple[dict, Callable]] = [] # dict are queryparams for the node
-        self.templatedNodes: List[Tuple[Node, Callable]] = [] # node is already saved and has id
-        self.templatedNewNodes: List[Tuple[Node, Callable]] = [] # Node is not saved and has undefined id
-
-
-        self.approvedTemplates: List[Tuple[Template, Callable]] = [] # Template is approved 
-
-
-        # IMportant Maps
-        self.templateActorsMap = {}
-        self.templateTemplatesMap = {}
-
-
-
         if register:
             set_current_agent(self)
 
@@ -113,6 +98,7 @@ class Agent:
     @abstractmethod
     async def handle_bounced_unassign(self, bounced_unassign: BouncedForwardedUnassignMessage):
         raise NotImplementedError()
+
 
 
     async def broadcast(self, message: MessageModel):
@@ -145,48 +131,13 @@ class Agent:
             logger.exception(e)
 
 
-    async def approve_nodes_and_templates(self):
+    
 
-        if self.templatedUnqueriedNodes:
-            for query_params, defined_actor, params in self.templatedUnqueriedNodes:
-                try:
-                    arkitekt_node = await Node.asyncs.get(**query_params)
-                    self.templatedNodes.append((arkitekt_node, defined_actor, params))
-                except WardException as e:
-                    logger.exception(e)
-                    if self.strict: raise AgentException(f"Couldn't find Node for query {query_params}") from e   
+    async def on_transport_connected(self):
+        return None
 
-        if self.templatedNewNodes:
-            for defined_node, defined_actor, params in self.templatedNewNodes:
-                # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
-                # id so we are trying to send them to arkitekt)
-                try:
-                    arkitekt_node = await Node.asyncs.create(**defined_node.dict(as_input=True))
-                    self.templatedNodes.append((arkitekt_node, defined_actor, params))   
-                except WardException as e:
-                    logger.exception(e)
-                    if self.strict: raise AgentException(f"Couldn't create Node for defintion {defined_node}") from e
-
-        if self.templatedNodes:
-            # This is an arkitekt Node and we can generate potential Templates
-            for arkitekt_node, defined_actor, params in self.templatedNodes:
-                try:
-                    params = await parse_params(params) # Parse the parameters for template creation
-                    arkitekt_template = await Template.asyncs.create(node=arkitekt_node, params=params)
-                    self.approvedTemplates.append((arkitekt_template, defined_actor, params))  
-                except WardException as e:
-                    logger.exception(e)
-                    if self.strict: raise AgentException(f"Couldn't approve template for node {arkitekt_node}") from e
-
-        if self.approvedTemplates:
-
-            for arkitekt_template, defined_actor, params in self.approvedTemplates:
-
-                # Generating Maps for Easy access
-                self.templateActorsMap[arkitekt_template.id] = defined_actor
-                self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
-
-                if self.panel: self.panel.add_to_actor_map(arkitekt_template, defined_actor) 
+    async def on_transport_about_to_connect(self):
+        return None
    
 
     async def aprovide(self):
@@ -209,12 +160,11 @@ class Agent:
             self.transport = self.transport_registry.get_transport_for_protocol(self.config.type)(self.config.kwargs, broadcast=self.broadcast)
 
 
-            await self.approve_nodes_and_templates()
-        
+            await self.on_transport_about_to_connect()
             await self.transport.aconnect()
+            await self.on_transport_connected()
 
 
-            print(f"Hosting {self.templateActorsMap.keys()}")
 
             while True:
                 await asyncio.sleep(1)

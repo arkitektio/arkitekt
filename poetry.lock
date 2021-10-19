@@ -18,6 +18,17 @@ yarl = ">=1.0,<2.0"
 speedups = ["aiodns", "brotlipy", "cchardet"]
 
 [[package]]
+name = "aiohttp-cors"
+version = "0.7.0"
+description = "CORS support for aiohttp"
+category = "main"
+optional = false
+python-versions = "*"
+
+[package.dependencies]
+aiohttp = ">=1.1"
+
+[[package]]
 name = "async-timeout"
 version = "3.0.1"
 description = "Timeout context manager for asyncio programs"
@@ -122,6 +133,21 @@ optional = false
 python-versions = ">=3.5"
 
 [[package]]
+name = "fakts"
+version = "0.1.5"
+description = "easy configuration discovery based on UDP broadcasts and konfig beacons (servers that redirect configs back to the client)"
+category = "main"
+optional = false
+python-versions = ">=3.8,<4.0"
+
+[package.dependencies]
+aiohttp_cors = ">=0.7.0,<0.8.0"
+koil = ">=0.1.29,<0.2.0"
+pydantic = ">=1.8.2,<2.0.0"
+PyYAML = ">=5.4.1,<6.0.0"
+QtPy = ">=1.11.2,<2.0.0"
+
+[[package]]
 name = "filelock"
 version = "3.0.12"
 description = "A platform independent file lock."
@@ -131,7 +157,7 @@ python-versions = "*"
 
 [[package]]
 name = "herre"
-version = "0.1.8"
+version = "0.1.26"
 description = "The governing package for modules of the arnheim framework, it provides core features like wards, the event loop and authentication with an oauth provider"
 category = "main"
 optional = false
@@ -139,6 +165,7 @@ python-versions = ">=3.8,<4.0"
 
 [package.dependencies]
 aiohttp = ">=3.7.4,<4.0.0"
+fakts = ">=0.1.5,<0.2.0"
 pydantic = ">=1.8.2,<2.0.0"
 PyYAML = ">=5.4.1,<6.0.0"
 QtPy = ">=1.11.1,<2.0.0"
@@ -180,6 +207,21 @@ description = "Mixed sync-async queue to interoperate between asyncio tasks and 
 category = "main"
 optional = false
 python-versions = ">=3.6"
+
+[[package]]
+name = "koil"
+version = "0.1.29"
+description = "An abstract event loop to run in an async and sync context (especially jupyter and qt), with utility functions to allow both accesses"
+category = "main"
+optional = false
+python-versions = ">=3.6.1,<4.0.0"
+
+[package.dependencies]
+pydantic = ">=1.8.2,<2.0.0"
+qtpy = ">1"
+
+[package.extras]
+jupyter = ["jupyter (>=1.0.0,<2.0.0)"]
 
 [[package]]
 name = "multidict"
@@ -319,7 +361,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
 [[package]]
 name = "qtpy"
-version = "1.11.1"
+version = "1.11.2"
 description = "Provides an abstraction layer on top of the various Qt bindings (PyQt5, PyQt4 and PySide) and additional custom QWidgets."
 category = "main"
 optional = false
@@ -475,7 +517,7 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "408f75bfe7e60c4b2b170a24b215df285b84558bde2cb0ee778af6343b337a1b"
+content-hash = "49aaea245ff9e20095f980d6d4dabd4f72a13c9ee744bc16f509a28a5b1d549d"
 
 [metadata.files]
 aiohttp = [
@@ -516,6 +558,10 @@ aiohttp = [
     {file = "aiohttp-3.7.4.post0-cp39-cp39-win32.whl", hash = "sha256:932bb1ea39a54e9ea27fc9232163059a0b8855256f4052e776357ad9add6f1c9"},
     {file = "aiohttp-3.7.4.post0-cp39-cp39-win_amd64.whl", hash = "sha256:02f46fc0e3c5ac58b80d4d56eb0a7c7d97fcef69ace9326289fb9f1955e65cfe"},
     {file = "aiohttp-3.7.4.post0.tar.gz", hash = "sha256:493d3299ebe5f5a7c66b9819eacdcfbbaaf1a8e84911ddffcdc48888497afecf"},
+]
+aiohttp-cors = [
+    {file = "aiohttp-cors-0.7.0.tar.gz", hash = "sha256:4d39c6d7100fd9764ed1caf8cebf0eb01bf5e3f24e2e073fda6234bc48b19f5d"},
+    {file = "aiohttp_cors-0.7.0-py3-none-any.whl", hash = "sha256:0451ba59fdf6909d0e2cd21e4c0a43752bc0703d33fc78ae94d9d9321710193e"},
 ]
 async-timeout = [
     {file = "async-timeout-3.0.1.tar.gz", hash = "sha256:0c3c816a028d47f659d6ff5c745cb2acf1f966da1fe5c19c77a70282b25f4c5f"},
@@ -560,13 +606,17 @@ distlib = [
 docstring-parser = [
     {file = "docstring_parser-0.10.tar.gz", hash = "sha256:d75c81533f70e3902c54d0cfe5f896b65905772004c1eb9ee38a2526b077940d"},
 ]
+fakts = [
+    {file = "fakts-0.1.5-py3-none-any.whl", hash = "sha256:03815ebb3fced7444c77be575e95091dc127a9f3708a35a7a455e665ae134f8f"},
+    {file = "fakts-0.1.5.tar.gz", hash = "sha256:59c206851a5db2e3d10f2b83220c3ca623294bdde01efcbf95c60bdaa29956e1"},
+]
 filelock = [
     {file = "filelock-3.0.12-py3-none-any.whl", hash = "sha256:929b7d63ec5b7d6b71b0fa5ac14e030b3f70b75747cef1b10da9b879fef15836"},
     {file = "filelock-3.0.12.tar.gz", hash = "sha256:18d82244ee114f543149c66a6e0c14e9c4f8a1044b5cdaadd0f82159d6a6ff59"},
 ]
 herre = [
-    {file = "herre-0.1.8-py3-none-any.whl", hash = "sha256:ac3876055eedf96d7e727a545a8676c10ff4bfd0d893a7a08d5d642c111024da"},
-    {file = "herre-0.1.8.tar.gz", hash = "sha256:0f52e781a7f7579e0447d382e997e263bc805ab40026ab12dbe4359639eb331e"},
+    {file = "herre-0.1.26-py3-none-any.whl", hash = "sha256:278fe8a89864a9c8c11601653ba61e87b5094ce64e8e235569b6ee17e821e626"},
+    {file = "herre-0.1.26.tar.gz", hash = "sha256:f54251cb3ab4eeb9882d13de252acc04c682fd778ed9800e63fd8cdbdd81274c"},
 ]
 idna = [
     {file = "idna-3.2-py3-none-any.whl", hash = "sha256:14475042e284991034cb48e06f6851428fb14c4dc953acd9be9a5e95c7b6dd7a"},
@@ -583,6 +633,10 @@ iniconfig = [
 janus = [
     {file = "janus-0.6.1-py3-none-any.whl", hash = "sha256:6dae3f1fd68a92dab49c1b93d269f22d2232feddf3a3b8842a881a6e67500c16"},
     {file = "janus-0.6.1.tar.gz", hash = "sha256:4712e0ef75711fe5947c2db855bc96221a9a03641b52e5ae8e25c2b705dd1d0c"},
+]
+koil = [
+    {file = "koil-0.1.29-py3-none-any.whl", hash = "sha256:1dfc8e26521851ba94dd2415a522223a1716580359e855eecd75483f74fc46de"},
+    {file = "koil-0.1.29.tar.gz", hash = "sha256:b9d06c73ccab4ddd5c01790f58145e1b9f8006570165b6d1136eea1308d36efe"},
 ]
 multidict = [
     {file = "multidict-5.1.0-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:b7993704f1a4b204e71debe6095150d43b2ee6150fa4f44d6d966ec356a8d61f"},
@@ -707,8 +761,8 @@ pyyaml = [
     {file = "PyYAML-5.4.1.tar.gz", hash = "sha256:607774cbba28732bfa802b54baa7484215f530991055bb562efbed5b2f20a45e"},
 ]
 qtpy = [
-    {file = "QtPy-1.11.1-py2.py3-none-any.whl", hash = "sha256:78f48d7cee7848f92c49ab998f63ca932fddee4b1f89707d6b73eeb0a7110324"},
-    {file = "QtPy-1.11.1.tar.gz", hash = "sha256:d471fcb9cf96315b564ad3b42ca830d0286d1049d6a44c578d3dc3836381bb91"},
+    {file = "QtPy-1.11.2-py2.py3-none-any.whl", hash = "sha256:83c502973e9fdd7b648d8267a421229ea3d9a0651c22e4c65a4d9228479c39b6"},
+    {file = "QtPy-1.11.2.tar.gz", hash = "sha256:d6e4ae3a41f1fcb19762b58f35ad6dd443b4bdc867a4cb81ef10ccd85403c92b"},
 ]
 requests = [
     {file = "requests-2.26.0-py2.py3-none-any.whl", hash = "sha256:6c1246513ecd5ecd4528a0906f910e8f0f9c6b8ec72030dc9fd154dc1a6efd24"},

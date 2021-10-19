@@ -1,7 +1,4 @@
-from PyQt5 import QtCore
-from PyQt5.QtGui import QFont
-from PyQt5.QtWidgets import QHBoxLayout, QLabel, QListWidgetItem, QPushButton, QToolButton, QWidget
-from qtpy import QtWidgets
+from qtpy import QtCore, QtGui, QtWidgets
 from arkitekt.agents.base import Agent
 from arkitekt.agents.qt import QtAgent
 from arkitekt.config import ArkitektConfig
@@ -24,9 +21,9 @@ class PortsWrapped(QtWidgets.QWidget):
         qlayout = QtWidgets.QFormLayout()
 
         for port in ports:
-            argLabel = QLabel(port.typename + " | " + port.key)
-            argDescription = QLabel(port.description)
-            argDescription.setFont(QFont("Arial", 8))
+            argLabel = QtWidgets.QLabel(f"{port.typename} | {port.key}")
+            argDescription = QtWidgets.QLabel(port.description)
+            argDescription.setFont(QtGui.QFont("Arial", 8))
             qlayout.addWidget(argLabel)
             qlayout.addWidget(argDescription)
 
@@ -48,13 +45,13 @@ class TemplateDetailWidget(QtWidgets.QWidget):
         self.template = template
         self.layout = QtWidgets.QVBoxLayout()
 
-        name = QLabel(template.node.name)
-        name.setFont(QFont("Arial", 16))
+        name = QtWidgets.QLabel(template.node.name)
+        name.setFont(QtGui.QFont("Arial", 16))
 
-        identifier = QLabel(f"@{template.node.package}/{template.node.interface}")
-        identifier.setFont(QFont("Arial", 10))
+        identifier = QtWidgets.QLabel(f"@{template.node.package}/{template.node.interface}")
+        identifier.setFont(QtGui.QFont("Arial", 10))
 
-        description = QLabel(template.node.description)
+        description = QtWidgets.QLabel(template.node.description)
         description.setWordWrap(True)
 
         open_button = QtWidgets.QPushButton("Open in Arkitekt")
@@ -72,7 +69,7 @@ class TemplateDetailWidget(QtWidgets.QWidget):
         self.layout.addWidget(PortsWrapped(template.node.returns, "Returns"))
 
         for kwarg in template.node.kwargs:
-            kwargLabel = QLabel(kwarg.typename + " | " + kwarg.key + " | " + str(kwarg.default))
+            kwargLabel = QtWidgets.QLabel(kwarg.typename + " | " + kwarg.key + " | " + str(kwarg.default))
             self.layout.addWidget(kwargLabel)
 
 
@@ -103,18 +100,18 @@ class TemplatesListItemWidget(QtWidgets.QWidget):
         self.dialog = TemplateDetailWidget(self.template, self.agent)
 
 
-        node_label = QLabel(template.node.name)
-        node_label.setFont(QFont("Arial", 10))
+        node_label = QtWidgets.QLabel(template.node.name)
+        node_label.setFont(QtGui.QFont("Arial", 10))
 
-        context_label = QLabel(f"@{template.node.package}/{template.node.interface}")
-        context_label.setFont(QFont("Arial", 8))
+        context_label = QtWidgets.QLabel(f"@{template.node.package}/{template.node.interface}")
+        context_label.setFont(QtGui.QFont("Arial", 8))
 
         leftlayout.addWidget(node_label)
         leftlayout.addWidget(context_label)
 
         left.setLayout(leftlayout)
 
-        open_button = QToolButton()
+        open_button = QtWidgets.QToolButton()
         open_button.clicked.connect(self.open_provision)
 
         self.row.addWidget(left)
@@ -149,7 +146,7 @@ class TemplatesWidget(QtWidgets.QWidget):
         if provide_state:
             self.listWidget.clear()
             for key, template in self.agent.templateTemplatesMap.items():
-                item = QListWidgetItem()
+                item = QtWidgets.QListWidgetItem()
                 w = TemplatesListItemWidget(template, self.agent)
                 item.setSizeHint(w.minimumSizeHint())
                 self.listWidget.addItem(item)

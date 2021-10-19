@@ -1,5 +1,6 @@
 
 
+from arkitekt.agents.app import AppAgent
 from arkitekt.agents.qt.actor import QtActor
 from herre.herre import get_current_herre
 from arkitekt.threadvars import get_current_assign
@@ -49,7 +50,7 @@ class AgentSignals(QObject):
 
 
 
-class QtAgent(Agent, QObject):
+class QtAgent(AppAgent, QObject):
     provide_signal = Signal(bool)
     provision_signal = Signal(BouncedProvideMessage)
     unprovision_signal = Signal(BouncedUnprovideMessage)
@@ -65,14 +66,12 @@ class QtAgent(Agent, QObject):
         self.unprovideFutures = {}
         self.appWorkers = {}
 
-        # Running Actors indexed by their ID
-        self.runningActors: Dict[str, Actor] = {}
-        self.runningTasks: Dict[str, asyncio.Task] = {}
 
     def on_task_done(self, future):
         print(future)
 
     async def on_bounced_provide(self, message: BouncedProvideMessage):
+        self.provision_signal.emit(message)
         if message.data.template in self.templateActorsMap:
             if message.meta.reference in self.templateActorsMap:
                 if self.strict: raise AgentException("Already Running Provision Received Again. Right now causing Error. Might be omitted")
@@ -99,6 +98,7 @@ class QtAgent(Agent, QObject):
         
         logger.info(f"Cancelling {actor}")
         self.runningTasks[message.data.provision].cancel()
+        self.unprovision_signal.emit(message)
 
     async def on_bounced_assign(self, message: BouncedForwardedAssignMessage):
 
@@ -123,96 +123,6 @@ class QtAgent(Agent, QObject):
                 "reference": message.data.assignation
             }))
                 
-
-    
-    async def handle_bounced_provide(self, message: BouncedProvideMessage):
-        try:
-
-            self.provision_signal.emit(message)
-            await self.on_bounced_provide(message)
-
-            progress = ProvideLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Actor Pending"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-
-            critical_error = ProvideTransitionMessage(data={
-            "message": str(e),
-            "state": ProvideState.CRITICAL
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
-
-
-    async def handle_bounced_unprovide(self, message: BouncedUnprovideMessage):
-        try:
-            await self.on_bounced_unprovide(message)
-            self.unprovision_signal.emit(message)
-
-            progress = ProvideLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Actor Delation Happening"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-            critical_error = ProvideTransitionMessage(data={
-            "message": str(e),
-            "state": ProvideState.CRITICAL
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
-     
-
-    async def handle_bounced_assign(self, message: BouncedForwardedAssignMessage):
-        try:
-            await self.on_bounced_assign(message)
-
-            progress = AssignLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Assign Forwarded from Worker"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-            critical_error = AssignCriticalMessage(data={
-            "message": str(e),
-            "type": e.__class__.__name__
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
-            raise e
-
-    async def handle_bounced_unassign(self, message: BouncedForwardedUnassignMessage):
-        try:
-            await self.on_bounced_unassign(message)
-
-            progress = AssignLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Unassignation was send to the assignation"
-            }, meta={"extensions": message.meta.extensions, "reference": message.data.assignation})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-            critical_error = AssignCriticalMessage(data={
-            "message": str(e),
-            "type": e.__class__.__name__
-            }, meta={"extensions": message.meta.extensions, "reference": message.data.assignation})
-            await self.transport.forward(critical_error)
-            raise e
-
 
     def register(self, function_or_node, widgets={}, transpilers: Dict[str, Transpiler] = None, on_provide = None, on_unprovide = None, on_assign = None, timeout=500, **params) -> QtActor:
 

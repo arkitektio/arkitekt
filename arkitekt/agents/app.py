@@ -1,6 +1,7 @@
 
 
 
+from arkitekt.agents.standard import StandardAgent
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import BouncedForwardedUnassignMessage
 from arkitekt.messages.postman.provide.provide_transition import ProvideState, ProvideTransitionMessage
@@ -29,7 +30,7 @@ from herre.console import get_current_console
 logger = logging.getLogger(__name__)
 
 
-class AppAgent(Agent):
+class AppAgent(StandardAgent):
     ACTOR_PENDING_MESSAGE = "Actor is Pending"
 
     def __init__(self, *args, **kwargs) -> None:
@@ -38,8 +39,31 @@ class AppAgent(Agent):
         self.runningActors: Dict[str, Actor] = {}
         self.runningTasks: Dict[str, asyncio.Task] = {}
 
+        self.templatedUnqueriedNodes:  List[Tuple[dict, Callable]] = [] # dict are queryparams for the node
+        self.templatedNodes: List[Tuple[Node, Callable]] = [] # node is already saved and has id
+        self.templatedNewNodes: List[Tuple[Node, Callable]] = [] # Node is not saved and has undefined id
+
+
+        self.approvedTemplates: List[Tuple[Template, Callable]] = [] # Template is approved 
+
+
+        # IMportant Maps
+        self.templateActorsMap = {}
+        self.templateTemplatesMap = {}
+
+
+
+    async def on_transport_about_to_connect(self):
+        await self.approve_nodes_and_templates()
+        return 
+
+    async def on_transport_connected(self):
+        print(f"Hosting {self.templateActorsMap.keys()}")
+
+
     def on_task_done(self, future):
         print(future)
+
 
     async def on_bounced_provide(self, message: BouncedProvideMessage):
         
@@ -96,90 +120,52 @@ class AppAgent(Agent):
             }))
                 
 
-    
-    async def handle_bounced_provide(self, message: BouncedProvideMessage):
-        try:
-            await self.on_bounced_provide(message)
-
-            progress = ProvideLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Actor Pending"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-
-            await self.transport.forward(progress)
 
 
-        except Exception as e:
-            logger.error(e)
-            critical_error = ProvideTransitionMessage(data={
-            "message": str(e),
-            "state": ProvideState.CRITICAL
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
 
+    async def approve_nodes_and_templates(self):
 
-    async def handle_bounced_unprovide(self, message: BouncedUnprovideMessage):
-        try:
-            await self.on_bounced_unprovide(message)
+        if self.templatedUnqueriedNodes:
+            for query_params, defined_actor, params in self.templatedUnqueriedNodes:
+                try:
+                    arkitekt_node = await Node.asyncs.get(**query_params)
+                    self.templatedNodes.append((arkitekt_node, defined_actor, params))
+                except WardException as e:
+                    logger.exception(e)
+                    if self.strict: raise AgentException(f"Couldn't find Node for query {query_params}") from e   
 
-            progress = ProvideLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Actor Delation Happening"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
+        if self.templatedNewNodes:
+            for defined_node, defined_actor, params in self.templatedNewNodes:
+                # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
+                # id so we are trying to send them to arkitekt)
+                try:
+                    arkitekt_node = await Node.asyncs.create(**defined_node.dict(as_input=True))
+                    self.templatedNodes.append((arkitekt_node, defined_actor, params))   
+                except WardException as e:
+                    logger.exception(e)
+                    if self.strict: raise AgentException(f"Couldn't create Node for defintion {defined_node}") from e
 
-            await self.transport.forward(progress)
+        if self.templatedNodes:
+            # This is an arkitekt Node and we can generate potential Templates
+            for arkitekt_node, defined_actor, params in self.templatedNodes:
+                try:
+                    params = await parse_params(params) # Parse the parameters for template creation
+                    arkitekt_template = await Template.asyncs.create(node=arkitekt_node, params=params)
+                    self.approvedTemplates.append((arkitekt_template, defined_actor, params))  
+                except WardException as e:
+                    logger.exception(e)
+                    if self.strict: raise AgentException(f"Couldn't approve template for node {arkitekt_node}") from e
 
+        if self.approvedTemplates:
 
-        except Exception as e:
-            logger.error(e)
-            critical_error = ProvideTransitionMessage(data={
-            "message": str(e),
-            "state": ProvideState.CRITICAL
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
-     
+            for arkitekt_template, defined_actor, params in self.approvedTemplates:
 
-    async def handle_bounced_assign(self, message: BouncedForwardedAssignMessage):
-        try:
-            await self.on_bounced_assign(message)
+                # Generating Maps for Easy access
+                self.templateActorsMap[arkitekt_template.id] = defined_actor
+                self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
-            progress = AssignLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Assign Forwarded from Worker"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
+                if self.panel: self.panel.add_to_actor_map(arkitekt_template, defined_actor) 
 
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-            critical_error = AssignCriticalMessage(data={
-            "message": str(e),
-            "type": e.__class__.__name__
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
-            raise e
-
-    async def handle_bounced_unassign(self, message: BouncedForwardedUnassignMessage):
-        try:
-            await self.on_bounced_unassign(message)
-
-            progress = AssignLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Unassignation was send to the assignation"
-            }, meta={"extensions": message.meta.extensions, "reference": message.data.assignation})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-            critical_error = AssignCriticalMessage(data={
-            "message": str(e),
-            "type": e.__class__.__name__
-            }, meta={"extensions": message.meta.extensions, "reference": message.data.assignation})
-            await self.transport.forward(critical_error)
-            raise e
 
 
     def register(self, *args, widgets={}, transpilers: Dict[str, Transpiler] = None, on_provide = None, on_unprovide = None, **params):

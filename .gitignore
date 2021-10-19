@@ -145,3 +145,4 @@ media
 export
 static_collected
 data
+*.temp

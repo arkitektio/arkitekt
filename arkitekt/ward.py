@@ -13,7 +13,6 @@ class ArkitektWard(GraphQLWard):
 
 
     async def negotiate(self):
-
         from arkitekt.schema.negotiation import Transcript
         transcript_query = await self.arun(ParsedQuery("""mutation Negotiate {
             negotiate {
