@@ -1,7 +1,7 @@
 from qtpy import QtWidgets
 
 
-class SettingsPopup(QtWidgets.QWidget):
+class SettingsPopup(QtWidgets.QDialog):
     def __init__(self, magic_bar, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.magic_bar = magic_bar

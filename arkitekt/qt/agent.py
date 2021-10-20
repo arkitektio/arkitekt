@@ -45,17 +45,12 @@ class QtAgent(AppAgent, QObject):
 
     def __init__(self,*args, strict=False, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-
         self.strict = strict
         self.assignFutures = {}
         self.provideFutures = {}
         self.unprovideFutures = {}
         self.appWorkers = {}
 
-
-        # Running Actors indexed by their ID
-        self.runningActors: Dict[str, Actor] = {}
-        self.runningTasks: Dict[str, asyncio.Task] = {}
 
     def on_task_done(self, future):
         print(future)
@@ -111,95 +106,6 @@ class QtAgent(AppAgent, QObject):
                 "reference": message.data.assignation
             }))
                 
-
-    
-    async def handle_bounced_provide(self, message: BouncedProvideMessage):
-        try:
-
-            self.provision_signal.emit(message)
-            await self.on_bounced_provide(message)
-
-            progress = ProvideLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Actor Pending"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-
-            critical_error = ProvideTransitionMessage(data={
-            "message": str(e),
-            "state": ProvideState.CRITICAL
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
-
-
-    async def handle_bounced_unprovide(self, message: BouncedUnprovideMessage):
-        try:
-            await self.on_bounced_unprovide(message)
-            self.unprovision_signal.emit(message)
-
-            progress = ProvideLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Actor Delation Happening"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-            critical_error = ProvideTransitionMessage(data={
-            "message": str(e),
-            "state": ProvideState.CRITICAL
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
-     
-
-    async def handle_bounced_assign(self, message: BouncedForwardedAssignMessage):
-        try:
-            await self.on_bounced_assign(message)
-
-            progress = AssignLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Assign Forwarded from Worker"
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-            critical_error = AssignCriticalMessage(data={
-            "message": str(e),
-            "type": e.__class__.__name__
-            }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-            await self.transport.forward(critical_error)
-            raise e
-
-    async def handle_bounced_unassign(self, message: BouncedForwardedUnassignMessage):
-        try:
-            await self.on_bounced_unassign(message)
-
-            progress = AssignLogMessage(data={
-            "level": LogLevel.INFO,
-            "message": f"Unassignation was send to the assignation"
-            }, meta={"extensions": message.meta.extensions, "reference": message.data.assignation})
-
-            await self.transport.forward(progress)
-
-
-        except Exception as e:
-            logger.error(e)
-            critical_error = AssignCriticalMessage(data={
-            "message": str(e),
-            "type": e.__class__.__name__
-            }, meta={"extensions": message.meta.extensions, "reference": message.data.assignation})
-            await self.transport.forward(critical_error)
-            raise e
 
 
     def register(self, function_or_node, widgets={}, transpilers: Dict[str, Transpiler] = None, on_provide = None, on_unprovide = None, on_assign = None, timeout=500, **params) -> QtActor:
