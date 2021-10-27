@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.1.45"
+version = "0.1.60"
 description = "rpc and node backbone"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
@@ -8,7 +8,7 @@ packages = [{include = "arkitekt"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-herre = "0.1.27"
+herre = "^0.1.33"
 docstring-parser = "^0.10"
 inflection = "^0.5.1"
 websockets = "^10.0"
@@ -18,6 +18,9 @@ janus = "^0.6.1"
 pytest = "^6.2.5"
 pytest-aiohttp = "^0.3.0"
 tox = "^3.24.3"
+
+[tool.poetry.scripts]
+arkitekt = "arkitekt.cli.main:entrypoint"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -90,7 +90,6 @@ class ProvisionsWidget(QtWidgets.QWidget):
         self.provisions[provide.meta.reference] = provide
 
         self.listWidget.clear()
-        print(self.provisions)
         for key, provide in self.provisions.items():
             item = QtWidgets.QListWidgetItem()
             w = ProvisionListWidget(provide, self.agent)

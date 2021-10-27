@@ -142,7 +142,6 @@ class TemplatesWidget(QtWidgets.QWidget):
 
 
     def on_provide(self, provide_state):
-        print("Hidden Here")
         if provide_state:
             self.listWidget.clear()
             for key, template in self.agent.templateTemplatesMap.items():

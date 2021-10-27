@@ -17,8 +17,8 @@ query Template($id: ID,){
 
 
 UPDATE_OR_CREATE_TEMPLATE = ParsedQuery("""
-mutation CreateTemplate($node: ID!, $params: GenericScalar){
-  createTemplate(node: $node, params: $params){
+mutation CreateTemplate($node: ID!, $params: GenericScalar, $extensions: [String], $version: String){
+  createTemplate(node: $node, params: $params, extensions: $extensions, version: $version){
     id
     node {
         """

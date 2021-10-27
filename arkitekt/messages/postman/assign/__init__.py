@@ -7,3 +7,4 @@ from .bounced_assign import BouncedAssignMessage
 from .assign_yield import AssignYieldsMessage
 from .assign_done import AssignDoneMessage
 from .bounced_forwarded_assign import BouncedForwardedAssignMessage
+from .assign_received import AssignReceivedMessage

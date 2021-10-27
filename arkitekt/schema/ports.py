@@ -46,10 +46,10 @@ class ArgPort(Port):
 class IntExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return int(value) if value else None
+        return int(value) if value is not None else None
 
     async def shrink(self, instance,**kwargs):
-       return int(instance) if instance else None
+       return int(instance) if instance is not None else None
 
 
     def to_type(self):
@@ -58,10 +58,10 @@ class IntExpandShrink:
 class BoolExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return bool(value) if value else None
+        return bool(value) if value is not None else None
 
     async def shrink(self, instance,**kwargs):
-       return bool(instance) if instance else None
+       return bool(instance) if instance is not None else None
 
     def to_type(self):
         return bool
@@ -70,7 +70,7 @@ class BoolExpandShrink:
 class EnumExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return next((key for key, optionvalue in self.options.items() if optionvalue == value), None) if value else None
+        return next((key for key, optionvalue in self.options.items() if optionvalue == value), None) if value is not None else None
 
     async def shrink(self, instance,**kwargs):
        return self.options[instance] if instance else None
@@ -82,10 +82,10 @@ class EnumExpandShrink:
 class StringExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return str(value) if value else None
+        return str(value) if value is not None else None
 
     async def shrink(self, instance,**kwargs):
-        return str(instance) if instance else None
+        return str(instance) if instance is not None else None
 
     def to_type(self):
         return str
@@ -100,7 +100,7 @@ class StructureExpandShrink:
         return await structure.expand(value)
 
     async def shrink(self, instance,**kwargs):
-        if not instance: return None
+        if instance is None: return None
         if isinstance(instance, Structure) or hasattr(instance, "shrink"): return await instance.shrink()
         # Instance we are trying to shrink needs to be transpile to the required model
         from arkitekt.packers.transpilers.registry import get_transpiler_registry
@@ -115,11 +115,11 @@ class StructureExpandShrink:
 class ListExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return await asyncio.gather(*[self.child.expand(item,**kwargs) for item in value]) if value else None
+        return await asyncio.gather(*[self.child.expand(item,**kwargs) for item in value]) if value is not None else None
 
     async def shrink(self, instance,**kwargs):
         assert isinstance(instance, list), f"ListPorts only accept lists! Got {instance}"
-        return await asyncio.gather(*[self.child.shrink(item,**kwargs) for item in instance]) if instance else None
+        return await asyncio.gather(*[self.child.shrink(item,**kwargs) for item in instance]) if instance is not None else None
 
     def to_type(self):
         return List[self.child.to_type()]
@@ -127,10 +127,10 @@ class ListExpandShrink:
 class DictExpandShrink:
 
     async def expand(self, value,**kwargs):
-        return {key: await self.child.expand(item,**kwargs) for key, item in value.items()} if value else None
+        return {key: await self.child.expand(item,**kwargs) for key, item in value.items()} if value is not None else None
 
     async def shrink(self, instance,**kwargs):
-        return {key: await self.child.shrink(item,**kwargs) for key, item in instance.items()} if instance else None
+        return {key: await self.child.shrink(item,**kwargs) for key, item in instance.items()} if instance is not None else None
 
     def to_type(self):
         return Dict[self.child.to_type()]

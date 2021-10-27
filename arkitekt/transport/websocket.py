@@ -52,13 +52,12 @@ class WebsocketTransport(Transport):
 
 
     async def adisconnect(self):
-        print("Calling here?")
         self.connection_task.cancel()
 
         try:
             await self.connection_task
         except asyncio.CancelledError:
-            print("Websocket Transport succesfully cancelled")
+            logger.info(f"Websocket Transport {self} succesfully disconnected")
     
 
 
@@ -106,9 +105,6 @@ class WebsocketTransport(Transport):
                  receive_task.cancel()
 
             cancellation = await asyncio.gather(send_task, receive_task, return_exceptions=True)
-            print("Cancelled Both Tasks")
-
-
             raise e
 
 
@@ -116,21 +112,21 @@ class WebsocketTransport(Transport):
         try:
             while True:
                 message = await self.send_queue.get()
-                print(">>>>>> " + message)
+                logger.debug("Websocket: >>>>>> " + message)
                 await client.send(message)
                 self.send_queue.task_done()
         except asyncio.CancelledError as e:
-            print("Sending Task sucessfully Cancelled")
+            logger.debug("Sending Task sucessfully Cancelled")
 
 
     async def receiving(self, client):
         try:
             async for message in client:
-                print("<<<<<<< " + message)
+                logger.debug("Websocket: <<<<<<< " + message)
                 message = expandToMessage(json.loads(message))
                 await self.broadcast(message)
         except asyncio.CancelledError as e:
-            print("Receiving Task sucessfully Cancelled")
+            logger.debug("Receiving Task sucessfully Cancelled")
 
 
     async def forward(self, message: MessageModel):

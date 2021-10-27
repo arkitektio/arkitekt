@@ -107,10 +107,8 @@ class QtOldActor(QObject):
     
     def set_assign_future_qtloop(self, reference, returns):
         if len(returns) == 1:
-            print("Setting None")
             self.loop.call_soon_threadsafe(self.futureMap[reference].set_result, returns[0])
         if len(returns) >= 2:
-            print("Setting Result")
             self.loop.call_soon_threadsafe(self.futureMap[reference].set_result, returns)
 
 
@@ -131,7 +129,6 @@ class QtOldActor(QObject):
 
     async def on_provide(self, message):
         if not self.qt_on_provide: return None
-        print(self, message)
         reference = str(uuid.uuid4())
         future = self.loop.create_future()
         self.futureMap[reference] = future
@@ -215,15 +212,12 @@ class QtActor(FunctionalFuncActor, QObject):
 
 
     async def assign(self, *args, **kwargs):
-        print("Calledsssssss")
         await self.signals.assign.acall(*args, **kwargs)
 
     async def on_provide(self, *args, **kwargs):
-        print("Calledssssss2e23e2e1s")
         await self.signals.on_provide.acall(*args, **kwargs)
 
     async def on_unprovide(self, *args, **kwargs):
-        print("Calledssssdsdsdssss")
         await self.signals.on_unprovide.acall(*args, **kwargs)
 
 

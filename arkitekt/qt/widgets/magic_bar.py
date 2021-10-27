@@ -95,7 +95,6 @@ class MagicBar(QtWidgets.QWidget):
 
 
     def gear_button_clicked(self):
-        print("Gear Button Clicked")
         self.gear_button_popup.show()
 
     def magic_button_clicked(self):
@@ -105,7 +104,7 @@ class MagicBar(QtWidgets.QWidget):
                 self.load_fakts_task.cancel()
                 self.load_fakts_task = None
 
-            self.load_fakts_task = self.fakts.load()
+            self.load_fakts_task = self.fakts.load(as_task=True)
             self.load_fakts_task.except_signal.connect(self.on_fakts_except)
             return 
 
@@ -114,12 +113,12 @@ class MagicBar(QtWidgets.QWidget):
                 self.herre_login_task.cancel()
                 self.herre_login_task = None
 
-            self.herre_login_task = self.herre.login() 
+            self.herre_login_task = self.herre.login(as_task=True) 
             self.herre_login_task.except_signal.connect(self.on_herre_except) 
             return 
 
         if not self.agent_provide_task:
-            self.agent_provide_task = self.agent.provide()
+            self.agent_provide_task = self.agent.provide(as_task=True)
             self.agent_provide_task.except_signal.connect(self.on_agent_except)
             return
         

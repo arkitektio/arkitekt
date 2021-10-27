@@ -17,6 +17,7 @@ from arkitekt.schema.node import Node
 from arkitekt.schema.template import Template
 from arkitekt.ward import ArkitektConfig, ArkitektWard
 from arkitekt.messages import ProvideLogMessage, ProvideCriticalMessage
+from herre.console.context import get_current_console
 from herre.herre import Herre, get_current_herre
 from herre.wards.registry import get_ward_registry
 from herre.wards.base import WardException
@@ -168,10 +169,8 @@ class Agent:
 
             while True:
                 await asyncio.sleep(1)
-                print("Providing....")
 
         except asyncio.CancelledError as e:
-            print("Cancelled Here")
 
             if self.transport: await self.transport.adisconnect()
             if caused_ward_connect: await self.ward.adisconnect()
@@ -183,7 +182,10 @@ class Agent:
 
 
     def provide(self, **kwargs):
-        return koil(self.aprovide(), **kwargs)
+
+
+        with get_current_console().status("Providing"):
+            return koil(self.aprovide(), **kwargs)
 
 
 

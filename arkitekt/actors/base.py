@@ -37,7 +37,6 @@ class Actor:
     template: Template
 
     def __init__(self, *args, koil: Koil = None, strict=False, expand_inputs=True, shrink_outputs=True, transpilers= {}, **kwargs) -> None:
-        print(args, kwargs)
         super().__init__(*args, **kwargs)
         self.koil = koil or get_current_koil()
         self.loop = self.koil.loop
@@ -139,6 +138,12 @@ class Actor:
                     else:
                         logger.error("Task was never assigned to this actor")
                         if self.strict: raise Exception("Received cancellation for Task that was never assinged to this actor!")
+                        await self.transport.forward(AssignCancelledMessage(data={
+                            "canceller": str("Cancelled because actor receiving this cancellation never had this task but was also not strict")
+                        }, meta = {
+                            "reference": message.data.assignation,
+                            "extensions": message.meta.extensions
+                        }))
 
 
 
@@ -147,7 +152,7 @@ class Actor:
             await self.log(f"Provision Exception {str(e)}")
             await self.transport.forward(ProvideTransitionMessage(
                 data= {
-                    "state": ProvideState.ERROR,
+                    "state": ProvideState.CRITICAL,
                     "message": f"{e}"
                 },
                 meta={

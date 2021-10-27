@@ -49,6 +49,7 @@ registry = {
     BOUNCED_ASSIGN: BouncedAssignMessage,
     BOUNCED_FORWARDED_ASSIGN: BouncedForwardedAssignMessage,
     ASSIGN_CRITICAL: AssignCriticalMessage,
+    ASSIGN_RECEIVED: AssignReceivedMessage,
     ASSIGN_CANCELLED: AssignCancelledMessage,
     ASSIGN_LOG: AssignLogMessage,
     ASSIGN_RETURN: AssignReturnMessage,

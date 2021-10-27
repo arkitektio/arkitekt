@@ -202,10 +202,7 @@ class Reservation:
     async def transition_state(self, message: ReserveTransitionMessage):
         # Once we acquire a reserved resource our contract (the inner part of the context can start)
         if self.transition_hook: await self.transition_hook(self, message.data.state)
-        print("iosnisnosinseo", self.exit_states)
-        print(message.data.state)
         if message.data.state in self.exit_states:
-            print("oisndoisdnosdinodsin")
             if self.enter_future.done():
                 self.log(f"We have transitioned to a critical State {message.data.message}. Terminating on Next Call")
             else:
@@ -264,6 +261,10 @@ class Reservation:
                     self.log(message.data.message, message.data.level)
                     continue
 
+                if isinstance(message, AssignReceivedMessage):
+                    self.log(f"Received the Message on Provision {message.data.provision}", LogLevel.INFO)
+                    continue
+
                 if isinstance(message, AssignCriticalMessage):
                     if raise_node_exceptions:
                         raise AssignmentException(message.data.message)
@@ -295,7 +296,7 @@ class Reservation:
                     raise e
 
                 else:
-                    print("Raced Condition",message)
+                    logger.info(f"Raced Condition on Cancellation Message, we received {message} before even though we wanted a cancellation. Ommiting this")
 
 
 
@@ -327,6 +328,10 @@ class Reservation:
 
                 elif isinstance(message, AssignLogMessage):
                     self.log(message.data.message, message.data.level)
+
+                elif isinstance(message, AssignReceivedMessage):
+                    self.log(f"Received the Message on Provision {message.data.provision}", LogLevel.INFO)
+                    continue
 
                 elif isinstance(message, AssignCriticalMessage):
                     raise AssignmentException(message.data.message)
@@ -410,7 +415,7 @@ class Reservation:
 
         
         except Exception as e: 
-            self.console.print_exception()
+            logger.exception(e)
             if not self.enter_future.done():
                 self.enter_future.set_exception(e)
             raise e
@@ -451,13 +456,11 @@ class Reservation:
 
         except Exception as e:
             logger.exception(e)
-            print("Waitign for postman disconnect")
-            if close_postman: await self.postman.adisconnect()
+            if close_postman: 
+                logger.debug("Waiting to disconnect the postman that we previously connected!")  
+                await self.postman.adisconnect()
             await self.cancel()
 
-
-
-            print("Postman disconnected")
             raise CouldNotReserveError(f"Could not Reserve Reservation {self.reference} for Node {self.node}") from e
 
 
@@ -468,11 +471,9 @@ class Reservation:
         
         if type is not None:
             if issubclass(type, asyncio.CancelledError): 
-                print("Raising cancellation")
                 raise type(value).with_traceback(traceback)
 
             if issubclass(type, Exception):
-                print(f"Raising exceütopm {type} {value} {traceback}")
                 raise type(value).with_traceback(traceback)
 
 

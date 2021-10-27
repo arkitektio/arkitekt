@@ -19,6 +19,7 @@ class Template(GraphQLModel):
     node: Optional[Node]
     provider: Optional[Provider]
     channel: Optional[str]
+    version: Optional[str]
 
 
     class Meta:

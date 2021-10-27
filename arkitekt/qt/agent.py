@@ -1,7 +1,7 @@
 
 
 from typing import Dict
-from arkitekt.actors.actify import define
+from arkitekt.actors.actify import actify, define
 from arkitekt.agents.app import AppAgent
 from arkitekt.agents.qt.actor import QtActor
 from qtpy.QtCore import QObject, Signal
@@ -52,78 +52,60 @@ class QtAgent(AppAgent, QObject):
         self.appWorkers = {}
 
 
-    def on_task_done(self, future):
-        print(future)
-
     async def on_bounced_provide(self, message: BouncedProvideMessage):
-        if message.data.template in self.templateActorsMap:
-            if message.meta.reference in self.templateActorsMap:
-                if self.strict: raise AgentException("Already Running Provision Received Again. Right now causing Error. Might be omitted")
-                again_provided = ProvideTransitionMessage(data={
-                    "message": "Provision was running on this Instance. Probably a freaking race condition",
-                    "state": ProvideState.ACTIVE
-                    }, meta={"extensions": message.meta.extensions, "reference": message.meta.reference})
-                await self.transport.forward(again_provided)
-            else:
-                actor = self.templateActorsMap[message.data.template]
-                self.runningActors[message.meta.reference] = actor
-                print("RUnning Actor Here")
-                task = self.loop.create_task(actor.arun(message, self))
-                task.add_done_callback(self.on_task_done)
-                self.runningTasks[message.meta.reference] = task
-
-        else:
-            raise AgentException("No approved actors for this template")
+        self.provision_signal.emit(message)
+        return await super().on_bounced_provide(message)
 
 
     async def on_bounced_unprovide(self, message: BouncedUnprovideMessage):
-        if message.data.provision not in self.runningActors: raise AgentException("Already Running Provision Received Again. Right now causing Error. Might be omitted")
-        actor = self.runningActors[message.data.provision]
-        
-        logger.info(f"Cancelling {actor}")
-        self.runningTasks[message.data.provision].cancel()
-
-    async def on_bounced_assign(self, message: BouncedForwardedAssignMessage):
-
-        if message.data.provision in self.runningActors:
-            actor = self.runningActors[message.data.provision]
-            await actor.acall(message=message)    
-        else:
-            if self.strict: raise AgentException("Received Assignment for not running Provision")
-
-    async def on_bounced_unassign(self, message: BouncedForwardedUnassignMessage):
-
-        if message.data.provision in self.runningActors:
-            actor = self.runningActors[message.data.provision]
-            await actor.acall(message=message)
-            
-        else:
-            if self.strict: raise AgentException("Received Assignment for not running Provision")
-            logger.info("We didnt have this assignment, setting Cancellation anyways")
-            await self.transport.forward(AssignCancelledMessage(data={
-                "canceller": "Fake Cancellation trough Provider"
-            }, meta = {
-                "reference": message.data.assignation
-            }))
-                
+        self.unprovision_signal.emit(message)
+        return await super().on_bounced_provide(message)
 
 
-    def register(self, function_or_node, widgets={}, transpilers: Dict[str, Transpiler] = None, on_provide = None, on_unprovide = None, on_assign = None, timeout=500, **params) -> QtActor:
+    def register_ui(self, function_query_or_node, widgets={}, transpilers: Dict[str, Transpiler] = None, on_provide = None, on_unprovide = None, on_assign = None, timeout=500, **params) -> QtActor:
 
         # Simple bypass for now
         defined_actor = QtActor(qt_assign=on_assign, qt_on_provide=on_provide, qt_on_unprovide=on_unprovide, loop=self.loop, timeout=timeout, **params)
         
-        if isinstance(function_or_node, str):
-            self.templatedUnqueriedNodes.append(({"q": function_or_node}, defined_actor, params))
+        if isinstance(function_query_or_node, str):
+            self.templatedUnqueriedNodes.append(({"q": function_query_or_node}, defined_actor, params))
            
-        if isinstance(function_or_node, Node):
-            self.templatedNodes.append((function_or_node, defined_actor, params))
+        if isinstance(function_query_or_node, Node):
+            self.templatedNodes.append((function_query_or_node, defined_actor, params))
 
         else:
-            defined_node = define(function=function_or_node, widgets=widgets)
+            defined_node = define(function=function_query_or_node, widgets=widgets)
             self.templatedNewNodes.append((defined_node, defined_actor, params))
 
         return defined_actor
+
+
+    def register_side(self, *args, widgets={}, transpilers: Dict[str, Transpiler] = None, on_provide = None, on_unprovide = None, on_assign = None, timeout=500, **params):
+
+        # Simple bypass for now
+
+        if len(args) == 0: raise NotImplementedError("Please provide either a function to create a node or a function and a node or query as arguments")
+
+
+        defined_actor = actify(args[0], on_provide=on_provide, on_unprovide=on_unprovide, **params)
+
+
+        if len(args) == 1: 
+            new_node = define(function=args[0], widgets=widgets)
+            self.templatedNewNodes.append((new_node, defined_actor, params))
+           
+        
+        if len(args) == 2:
+            query_or_node = args[1]    
+
+            if isinstance(query_or_node, str):
+                self.templatedUnqueriedNodes.append(({"q": query_or_node}, defined_actor, params))
+           
+            if isinstance(query_or_node, Node):
+                self.templatedNodes.append((query_or_node, defined_actor, params))
+        
+        return defined_actor
+
 
     async def approve_nodes_and_templates(self):
         await super().approve_nodes_and_templates()

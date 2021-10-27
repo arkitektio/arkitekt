@@ -23,6 +23,7 @@ BOUNCED_ASSIGN = "bounced_assign"
 BOUNCED_FORWARDED_ASSIGN = "bounced_forwarded_assign"
 
 ASSIGN_DONE = "assign_done"
+ASSIGN_RECEIVED = "assign_received"
 ASSIGN_CANCELLED = "assign_cancelled"
 ASSIGN_LOG ="assign_log"
 ASSIGN_CRITICAL = "assign_fail"

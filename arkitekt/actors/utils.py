@@ -1,7 +1,10 @@
+from arkitekt.actors.exceptions import ThreadedActorCancelled
 from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
 from arkitekt.legacy.utils import get_running_loop
-from arkitekt.threadvars import get_current_assign, get_current_transport, get_current_janus
+from arkitekt.threadvars import get_current_assign, get_current_cancel_event, get_current_transport, get_current_janus
 from arkitekt.messages.postman.log import LogLevel
+
+
 
 
 async def log_async(message, level: LogLevel = LogLevel.INFO):
@@ -18,6 +21,14 @@ async def log_async(message, level: LogLevel = LogLevel.INFO):
 
     await transport.forward(message)
 
+
+def useUser():
+    assign = get_current_assign()
+    return assign.meta.context.user
+
+def cancelCheck():
+    event = get_current_cancel_event()
+    if event.is_set(): raise ThreadedActorCancelled("Actor Was Cancelled")
 
 
 def log(message: str, level: LogLevel = LogLevel.INFO):

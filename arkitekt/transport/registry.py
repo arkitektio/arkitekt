@@ -1,7 +1,9 @@
 from typing import Dict
 from .base import Transport
 from arkitekt.config import TransportProtocol
+import logging
 
+logger = logging.getLogger(__name__)
 
 class TransportRegistry:
 
@@ -16,14 +18,15 @@ class TransportRegistry:
 
     
 def register_transport(protocol: TransportProtocol):
-    print("Registering Transport")
 
-    def rea_decorator(grant):
-        assert issubclass(grant, Transport), "Transport must subclass Transport"
-        get_current_transport_registry().register_transport(protocol, grant)
-        return grant
+    def real_decorator(transport):
 
-    return rea_decorator
+        assert issubclass(transport, Transport), "Transport must subclass Transport"
+        logger.info(f"Registerying Transport {transport} for {protocol}")
+        get_current_transport_registry().register_transport(protocol, transport)
+        return transport
+
+    return real_decorator
 
 
 

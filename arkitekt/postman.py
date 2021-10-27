@@ -46,7 +46,6 @@ class Postman:
         self.loop = self.koil.loop
         self.ward: ArkitektWard = get_ward_registry().get_ward_instance("arkitekt")
         self.transport_registry = transport_registry or get_current_transport_registry()
-        self.scopes = self.herre.grant.scopes
 
         self.connected = False
         self.queues = {}
@@ -61,8 +60,8 @@ class Postman:
 
     async def adisconnect(self):
         await self.ward.adisconnect()
-        print("nosinsoins")
         await self.transport.adisconnect()
+        logger.info(f"Successfully disconnected Postman {self}")
 
 
     async def broadcast(self, message: MessageModel):

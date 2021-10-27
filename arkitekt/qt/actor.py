@@ -95,15 +95,12 @@ class QtActor(FunctionalFuncActor, QObject):
 
 
     async def assign(self, *args, **kwargs):
-        print("Calledsssssss")
         await self.signals.assign.acall(*args, **kwargs)
 
     async def on_provide(self, *args, **kwargs):
-        print("Calledssssss2e23e2e1s")
         await self.signals.on_provide.acall(*args, **kwargs)
 
     async def on_unprovide(self, *args, **kwargs):
-        print("Calledssssdsdsdssss")
         await self.signals.on_unprovide.acall(*args, **kwargs)
 
 
