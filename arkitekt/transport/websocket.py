@@ -68,7 +68,7 @@ class WebsocketTransport(Transport):
         assert retry < self.retries, "Exceeded number of retries! Postman is disconnected"
         try:
             try:
-                async with websockets.connect(f"{self.config.protocol}://{self.config.host}:{self.config.port}{self.config.route}/?token={self.herre.grant.access_token}") as client:
+                async with websockets.connect(f"{self.config.protocol}://{self.config.host}:{self.config.port}{self.config.route}/?token={self.herre.state.access_token}") as client:
 
                     send_task = create_task(self.sending(client))
                     receive_task = create_task(self.receiving(client))

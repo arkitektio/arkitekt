@@ -1,37 +1,52 @@
 import argparse
 from enum import Enum
+from genericpath import isfile
+from arkitekt.cli.watcher.watch_restart import watch_directory_and_restart
 from fakts import Fakts
 from fakts.beacon.beacon import FaktsEndpoint
 from fakts.grants.beacon import BeaconGrant
-from fakts.grants.endpoint_grant import EndpointGrant
-from fakts.grants.prompting_beacon_grant import PromptingBeaconGrant
+from fakts.grants.endpoint import EndpointGrant
+from fakts.grants.cli.clibeacon import CLIBeaconGrant
 from fakts.grants.yaml import YamlGrant
+from herre import Herre
 from rich.console import Console
 from rich.prompt import Prompt, Confirm
-#importing the os module
 import os
-import namegenerator
-#to get the current working directory
+import asyncio
+
 directory = os.getcwd()
 
 
 class ArkitektOptions(str, Enum):
     INIT = "init"
     DEV = "dev"
+    LOGOUT = "logout"
+    LOGIN = "login"
 
 
-agent_script = f"""
+agent_script = f'''
 from arkitekt.agents.script import ScriptAgent
 
 agent = ScriptAgent()
 
 @agent.register()
 def test_show(name: str)-> str:
-    raise NotImplementedError("DD")
+    """Demo Node
+
+    This demo node will just pass through
+    a name 
+
+    Args:
+        name (str): The name
+
+    Returns:
+        str: The pass throughed Name
+    """
+    return name
 
 agent.provide()
 
-"""
+'''
 
 mikro_script = """
 from mikro import gql
@@ -60,9 +75,10 @@ def main(script = ArkitektOptions.INIT, name=None, path=".", refresh=False, scan
 
     if path == ".":
         app_directory = os.getcwd()
+        name = name or os.path.basename
     else:
         app_directory = os.path.join(os.getcwd(),path)
-        name = path
+        name = name or path
 
 
     fakts_path = os.path.join(app_directory, "fakts.yaml")
@@ -79,8 +95,36 @@ def main(script = ArkitektOptions.INIT, name=None, path=".", refresh=False, scan
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
             
-        runpy.run_path(path_name=run_script_path)
+        asyncio.run(watch_directory_and_restart(app_directory, run_script_path))
  
+
+    if script == ArkitektOptions.LOGIN:
+
+        if not os.path.isfile(fakts_path):
+            console.print(f"Directory does not containt a valid fakts.yaml. Please initialize through 'arkitekt init {path}' first")
+            return
+
+        fakts = Fakts(grants=[], fakts_path=fakts_path)
+        if not fakts.loaded:
+            console.print(f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'")
+        
+        herre = Herre(fakts=fakts)
+        console.print("Loggin in")
+        herre.login()
+
+    if script == ArkitektOptions.LOGOUT:
+
+        if not os.path.isfile(fakts_path):
+            console.print(f"Directory does not contain a valid fakts.yaml. If you want to login again please reinitiliaze.")
+            return
+
+        fakts = Fakts(grants=[], fakts_path=fakts_path)
+        if not fakts.loaded:
+            console.print(f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'")
+        
+        herre = Herre(fakts=fakts)
+        console.print("Logging out!")
+        herre.logout()
 
 
 
@@ -104,21 +148,27 @@ def main(script = ArkitektOptions.INIT, name=None, path=".", refresh=False, scan
 
         if initialize_fakts:
 
+            hard_fakts = {
+                "herre": {
+                    "name": name
+                }
+            }
+
             fakt_grants = []
 
             console.print("---------------------------------------------")
-            console.print("Initializing a new Configuration for this App")
+            console.print(f"Initializing a new Configuration for {name}")
 
             if scan_network is None:
                 scan_network = Confirm.ask("Do you want to automatically scan the network for local instances?")
-                if scan_network: fakt_grants.append(PromptingBeaconGrant())
+                if scan_network: fakt_grants.append(CLIBeaconGrant())
 
             if scan_network is False and beacon is None:
                 beacon = Prompt.ask("Give us your local beacon", default="http://localhost:3000/setupapp")
                 if scan_network: fakt_grants.append(EndpointGrant(url=beacon, name="local_beacon"))
 
     
-            fakts = Fakts(grants=fakt_grants, fakts_path=fakts_path, force_reload=refresh)
+            fakts = Fakts(grants=fakt_grants, fakts_path=fakts_path, force_reload=initialize_fakts, hard_fakts=hard_fakts,)
 
             if not fakts.loaded:
                 fakts.load()
