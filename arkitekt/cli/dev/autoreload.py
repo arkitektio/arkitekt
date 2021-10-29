@@ -2,8 +2,13 @@ import asyncio
 import sys
 import time
 import logging
+from rich.console import Console
 from watchdog.observers import Observer
-from watchdog.events import FileModifiedEvent, FileSystemEventHandler, LoggingEventHandler
+from watchdog.events import (
+    FileModifiedEvent,
+    FileSystemEventHandler,
+    LoggingEventHandler,
+)
 import os
 import subprocess
 import janus
@@ -13,7 +18,6 @@ import signal
 
 
 class QueueHandler(FileSystemEventHandler):
-
     def __init__(self, *args, sync_q=None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.queue = sync_q
@@ -21,7 +25,6 @@ class QueueHandler(FileSystemEventHandler):
     def on_any_event(self, event):
         self.queue.put(event)
         self.queue.join()
-
 
 
 def watcher(path, queue, event):
@@ -34,7 +37,7 @@ def watcher(path, queue, event):
         time.sleep(1)
 
 
-async def buffered_queue(queue, timeout= 4):
+async def buffered_queue(queue, timeout=4):
     buffer = [None]
 
     async def iterator():
@@ -45,7 +48,7 @@ async def buffered_queue(queue, timeout= 4):
                 if nana.src_path.lower().endswith((".py")):
                     buffer.append(nana)
 
-    loop = asyncio.get_event_loop()      
+    loop = asyncio.get_event_loop()
     loop.create_task(iterator())
     while True:
         await asyncio.sleep(1)
@@ -53,31 +56,28 @@ async def buffered_queue(queue, timeout= 4):
         buffer = [None]
 
 
-async def _read_stream(stream, cb):  
+async def _read_stream(stream, cb):
     while True:
         line = await stream.readline()
         if line:
-            cb(line)
+            cb(line.decode())
         else:
             break
 
 
-
-async def run_subproc(cmd, outcb = print, errorcb = print):
-    my_env = os.environ.copy()
-    my_env["PYTHONUNBUFFERED"] = "1"
+async def run_subproc(cmd, outcb=print, errorcb=print, env=None):
 
     try:
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env = my_env)
+            env=env
+        )
 
-        await asyncio.wait([
-        _read_stream(proc.stdout, outcb),
-        _read_stream(proc.stderr, errorcb)
-        ])
+        await asyncio.wait(
+            [_read_stream(proc.stdout, outcb), _read_stream(proc.stderr, errorcb)]
+        )
         await proc.wait()
         print("Program Failed. Please Correct Error!")
         return
@@ -89,16 +89,23 @@ async def run_subproc(cmd, outcb = print, errorcb = print):
         raise e
 
 
-
-class Host():
-
-    def __init__(self, path = None, run_py = "run.py", outcb=print, errorcb=print) -> None:
+class Host:
+    def __init__(
+        self,
+        path=None,
+        run_py="run.py",
+        outcb=sys.stdout.write,
+        errorcb=sys.stderr.write,
+    ) -> None:
         self.script_path = os.path.join(path, run_py)
         self.interpreter_path = sys.executable
         self.process_task = None
-        self.outcb = outcb
-        self.errorcb = errorcb
-
+        self.console = Console()
+        self.outcb = self.console.print
+        self.errorcb = self.console.print
+        self.env = os.environ.copy()
+        self.env["PYTHONUNBUFFERED"] = "1"
+        self.env["ARKITEKT_AGENT_DEBUG"] = "True"
 
     async def restart(self):
         loop = asyncio.get_event_loop()
@@ -111,20 +118,24 @@ class Host():
                 print("Process Completely Cancelled")
 
         print("Starting new Task")
-        self.process_task = loop.create_task(run_subproc([self.interpreter_path, self.script_path], outcb=self.outcb, errorcb=self.errorcb))
-
+        self.process_task = loop.create_task(
+            run_subproc(
+                [self.interpreter_path, self.script_path],
+                outcb=self.outcb,
+                errorcb=self.errorcb,
+                env=self.env,
+            )
+        )
 
     async def run(self, queue):
         await self.restart()
 
         async for event in buffered_queue(queue, timeout=1):
-            print(event)
             if event:
                 await self.restart()
-        
 
 
-async def watch_directory_and_restart(path = "watch", run_py = "run.py"):
+async def watch_directory_and_restart(path="watch", run_py="run.py"):
 
     cancel_event = threading.Event()
     jqueue = janus.Queue()
@@ -137,4 +148,3 @@ async def watch_directory_and_restart(path = "watch", run_py = "run.py"):
 
     jqueue.close()
     await jqueue.wait_closed()
-

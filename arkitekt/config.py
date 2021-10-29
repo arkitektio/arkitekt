@@ -2,6 +2,7 @@ from enum import Enum
 from typing import Optional
 from fakts import Config
 
+
 class TransportProtocol(Enum):
     WEBSOCKET = "WEBSOCKET"
     KAFKA = "KAFKA"
@@ -12,8 +13,10 @@ class PostmanSettings(Config):
     type: TransportProtocol = TransportProtocol.WEBSOCKET
     kwargs: dict = {}
 
+
 class AgentSettings(Config):
     type: TransportProtocol = TransportProtocol.WEBSOCKET
+    debug: bool = False
     kwargs: dict = {}
 
 

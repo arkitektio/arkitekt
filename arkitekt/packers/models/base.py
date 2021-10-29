@@ -1,4 +1,7 @@
-from arkitekt.packers.structure import Structure
+from arkitekt.packers.structure import Structure, StructureDefaults
+from pydantic import BaseModel
+
+from arkitekt.schema.widgets import Widget
 
 
 class StructureModel(Structure):
@@ -25,6 +28,9 @@ class StructureModel(Structure):
 
     @classmethod
     def get_identifier(cls):
-        return cls.Meta.identifier
+        return cls.get_meta().identifier
 
-
+    @classmethod
+    def get_defaults(cls) -> StructureDefaults:
+        meta = cls.get_meta()
+        return StructureDefaults(widget=getattr(meta, "default_widget", None))

@@ -1,7 +1,8 @@
 import argparse
 from enum import Enum
 from genericpath import isfile
-from arkitekt.cli.watcher.watch_restart import watch_directory_and_restart
+from runpy import run_path
+from arkitekt.cli.dev.autoreload import watch_directory_and_restart
 from fakts import Fakts
 from fakts.beacon.beacon import FaktsEndpoint
 from fakts.grants.beacon import BeaconGrant
@@ -22,6 +23,7 @@ class ArkitektOptions(str, Enum):
     DEV = "dev"
     LOGOUT = "logout"
     LOGIN = "login"
+    RUN = "run"
 
 
 agent_script = f'''
@@ -60,54 +62,67 @@ myrepresentations {
 """
 
 
-template_map = {
-    "agent": agent_script,
-    "client": mikro_script
-}
+template_map = {"agent": agent_script, "client": mikro_script}
 
 
+def main(
+    script=ArkitektOptions.INIT,
+    name=None,
+    path=".",
+    refresh=False,
+    scan_network=None,
+    beacon=None,
+    template=None,
+):
 
-
-
-def main(script = ArkitektOptions.INIT, name=None, path=".", refresh=False, scan_network=None, beacon=None, template=None):
-    
     console = Console()
 
     if path == ".":
         app_directory = os.getcwd()
-        name = name or os.path.basename
+        name = name or os.path.basename(app_directory)
     else:
-        app_directory = os.path.join(os.getcwd(),path)
+        app_directory = os.path.join(os.getcwd(), path)
         name = name or path
-
 
     fakts_path = os.path.join(app_directory, "fakts.yaml")
     run_script_path = os.path.join(app_directory, "run.py")
 
-
     if script == ArkitektOptions.DEV:
 
-        import runpy
         if not os.path.isfile(run_script_path):
             console.print(f"Could't find a run.py in {app_directory} {run_script_path}")
             return
         if not os.path.isfile(fakts_path):
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
-            
+
         asyncio.run(watch_directory_and_restart(app_directory, run_script_path))
- 
+
+    if script == ArkitektOptions.RUN:
+
+        if not os.path.isfile(run_script_path):
+            console.print(f"Could't find a run.py in {app_directory} {run_script_path}")
+            return
+        if not os.path.isfile(fakts_path):
+            console.print(f"{app_directory} does not have a valid fakts.yaml")
+            return
+
+        run_path(run_script_path)
 
     if script == ArkitektOptions.LOGIN:
 
         if not os.path.isfile(fakts_path):
-            console.print(f"Directory does not containt a valid fakts.yaml. Please initialize through 'arkitekt init {path}' first")
+            console.print(
+                f"Directory does not containt a valid fakts.yaml. Please initialize through 'arkitekt init {path}' first"
+            )
             return
 
         fakts = Fakts(grants=[], fakts_path=fakts_path)
         if not fakts.loaded:
-            console.print(f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'")
-        
+            console.print(
+                f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'"
+            )
+
         herre = Herre(fakts=fakts)
         console.print("Loggin in")
         herre.login()
@@ -115,18 +130,20 @@ def main(script = ArkitektOptions.INIT, name=None, path=".", refresh=False, scan
     if script == ArkitektOptions.LOGOUT:
 
         if not os.path.isfile(fakts_path):
-            console.print(f"Directory does not contain a valid fakts.yaml. If you want to login again please reinitiliaze.")
+            console.print(
+                f"Directory does not contain a valid fakts.yaml. If you want to login again please reinitiliaze."
+            )
             return
 
         fakts = Fakts(grants=[], fakts_path=fakts_path)
         if not fakts.loaded:
-            console.print(f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'")
-        
+            console.print(
+                f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'"
+            )
+
         herre = Herre(fakts=fakts)
         console.print("Logging out!")
         herre.logout()
-
-
 
     if script == ArkitektOptions.INIT:
 
@@ -140,19 +157,19 @@ def main(script = ArkitektOptions.INIT, name=None, path=".", refresh=False, scan
 
         initialize_fakts = True
         if os.path.isfile(fakts_path):
-            console.print(f"There seems to have been a previous App initialized at {app_directory}")
+            console.print(
+                f"There seems to have been a previous App initialized at {app_directory}"
+            )
             if refresh is None:
-                initialize_fakts = Confirm.ask("Do you want to refresh the Apps configuration? :smiley: ")
+                initialize_fakts = Confirm.ask(
+                    "Do you want to refresh the Apps configuration? :smiley: "
+                )
             else:
                 initialize_fakts = refresh
 
         if initialize_fakts:
 
-            hard_fakts = {
-                "herre": {
-                    "name": name
-                }
-            }
+            hard_fakts = {"herre": {"name": name}}
 
             fakt_grants = []
 
@@ -160,53 +177,72 @@ def main(script = ArkitektOptions.INIT, name=None, path=".", refresh=False, scan
             console.print(f"Initializing a new Configuration for {name}")
 
             if scan_network is None:
-                scan_network = Confirm.ask("Do you want to automatically scan the network for local instances?")
-                if scan_network: fakt_grants.append(CLIBeaconGrant())
+                scan_network = Confirm.ask(
+                    "Do you want to automatically scan the network for local instances?"
+                )
+                if scan_network:
+                    fakt_grants.append(CLIBeaconGrant())
 
             if scan_network is False and beacon is None:
-                beacon = Prompt.ask("Give us your local beacon", default="http://localhost:3000/setupapp")
-                if scan_network: fakt_grants.append(EndpointGrant(url=beacon, name="local_beacon"))
+                beacon = Prompt.ask(
+                    "Give us your local beacon",
+                    default="http://localhost:3000/setupapp",
+                )
+                fakt_grants.append(
+                    EndpointGrant(FaktsEndpoint(url=beacon, name="local_beacon"))
+                )
 
-    
-            fakts = Fakts(grants=fakt_grants, fakts_path=fakts_path, force_reload=initialize_fakts, hard_fakts=hard_fakts,)
+            fakts = Fakts(
+                grants=fakt_grants,
+                fakts_path=fakts_path,
+                force_reload=initialize_fakts,
+                hard_fakts=hard_fakts,
+            )
 
             if not fakts.loaded:
                 fakts.load()
 
             console.print("--------------------------------------------")
 
-
         save_run = True
         if os.path.isfile(run_script_path):
             console.print("Initializing Templates for the App")
-            save_run = Confirm.ask("run.py already exists? Do you want to overwrite the run.py file? :smiley: ")
+            save_run = Confirm.ask(
+                "run.py already exists? Do you want to overwrite the run.py file? :smiley: "
+            )
 
         if save_run:
             if not template:
-                template = Prompt.ask("Which Template do you want to use?", choices=list(template_map.keys()), default="agent")
+                template = Prompt.ask(
+                    "Which Template do you want to use?",
+                    choices=list(template_map.keys()),
+                    default="agent",
+                )
 
-            with open(run_script_path,"w") as f:
+            with open(run_script_path, "w") as f:
                 f.write(template_map[template])
                 console.print("Create new Entrypoint for this App")
 
 
-
-
-
-
-
 def entrypoint():
-    parser = argparse.ArgumentParser(description = 'Say hello')
-    parser.add_argument('script', type=ArkitektOptions, help='The Script Type')
-    parser.add_argument('path', type=str, help='The Path', nargs="?", default=".")
-    parser.add_argument('--name', type=str, help='The Name of this script')
-    parser.add_argument('--refresh', type=bool, help='Do you want to refresh')
-    parser.add_argument('--scan-network', type=bool, help='Do you want to refresh')
-    parser.add_argument('--beacon', type=str, help='The adress of the beacon')
-    parser.add_argument('--template', type=str, help='The run script template')
+    parser = argparse.ArgumentParser(description="Say hello")
+    parser.add_argument("script", type=ArkitektOptions, help="The Script Type")
+    parser.add_argument("path", type=str, help="The Path", nargs="?", default=".")
+    parser.add_argument("--name", type=str, help="The Name of this script")
+    parser.add_argument("--refresh", type=bool, help="Do you want to refresh")
+    parser.add_argument("--scan-network", type=bool, help="Do you want to refresh")
+    parser.add_argument("--beacon", type=str, help="The adress of the beacon")
+    parser.add_argument("--template", type=str, help="The run script template")
     args = parser.parse_args()
 
-    main(script=args.script, path=args.path, name=args.name, refresh=args.refresh, scan_network=args.scan_network, template=args.template)
+    main(
+        script=args.script,
+        path=args.path,
+        name=args.name,
+        refresh=args.refresh,
+        scan_network=args.scan_network,
+        template=args.template,
+    )
 
 
 if __name__ == "__main__":

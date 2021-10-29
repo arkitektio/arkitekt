@@ -1,5 +1,3 @@
-
-
 from enum import Enum
 from ..base import MessageDataModel
 
@@ -11,6 +9,7 @@ class LogLevel(str, Enum):
     CRITICAL = "CRITICAL"
     WARNING = "WARNING"
     WARN = "WARN"
+    EVENT = "EVENT"
 
 
 class LogDataModel(MessageDataModel):

@@ -5,6 +5,7 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 class GraphQLStructure(GraphQLModel, StructureModel):
     __typename: str
 
@@ -13,25 +14,22 @@ class GraphQLStructure(GraphQLModel, StructureModel):
         return await cls.asyncs.get(id=identifier)
 
     async def shrink(self):
-        assert self.id is not None, "In order to send a Model through a Port you need to query 'id' in your GQL Query"
+        assert (
+            self.id is not None
+        ), "In order to send a Model through a Port you need to query 'id' in your GQL Query"
         return self.id
 
     @classmethod
     def register_model(cls, meta=None):
         super().register_model(meta=meta)
         identifier = cls.get_identifier()
-        assert identifier is not None, f"Please provide identifier in your Meta class to register the Model {cls.__name__}, overwrite the classmethod get_identifier(), or specifiy register=False if you dont want to register this Model as a Strucutre"
+        assert (
+            identifier is not None
+        ), f"Please provide identifier in your Meta class to register the Model {cls.__name__}, overwrite the classmethod get_identifier(), or specifiy register=False if you dont want to register this Model as a Strucutre"
         logger.debug(f"Registering {cls} as Structure under identifier {identifier}")
-        get_packer_registry().register_structure(cls, overwrite=getattr(meta, "overwrite", False))
-        
+        get_packer_registry().register_structure(
+            cls, overwrite=getattr(meta, "overwrite", False)
+        )
 
     class Meta:
         abstract = True
-        
-        
-        
-        
-        
-        
-        
-       
