@@ -26,3 +26,11 @@ arkitekt = "arkitekt.cli.main:entrypoint"
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
+
+
+[[tool.pydoc-markdown.loaders]]
+type = "python"
+search_path = [ "arkitekt" ]
+
+[tool.pydoc-markdown.renderer]
+type = "docusaurus"
