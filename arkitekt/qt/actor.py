@@ -34,40 +34,40 @@ class QtActor(FunctionalFuncActor, QObject):
         self.signals = ActorSignals()
 
         if self.qt_assign is not None:
-            self.signals.assign.call.connect(
+            self.signals.assign.wire(
                 self.assign_function_in_qtloop
             )  # insignal will be set dymaically by qt agent
 
         if self.qt_on_provide is not None:
-            self.signals.on_provide.connect(self.provide_function_in_qtloop)
+            self.signals.on_provide.wire(self.provide_function_in_qtloop)
 
         if self.qt_on_unprovide is not None:
-            self.signals.on_unprovide.connect(self.unprovide_function_in_qtloop)
+            self.signals.on_unprovide.wire(self.unprovide_function_in_qtloop)
 
     def provide_function_in_qtloop(self, reference, args, kwargs):
         try:
             returns = (
                 self.qt_on_provide(*args, **kwargs) if self.qt_on_provide else None
             )
-            self.signals.on_provide.resolve.emit(reference, returns)
+            self.signals.on_provide.resolve(reference, returns)
         except Exception as e:
-            self.signals.on_provide.reject.emit(reference, e)
+            self.signals.on_provide.reject(reference, e)
 
     def unprovide_function_in_qtloop(self, reference, args, kwargs):
         try:
             returns = (
                 self.qt_on_unprovide(*args, **kwargs) if self.qt_on_unprovide else None
             )
-            self.signals.on_unprovide.resolve.emit(reference, returns)
+            self.signals.on_unprovide.resolve(reference, returns)
         except Exception as e:
-            self.signals.on_unprovide.reject.emit(reference, e)
+            self.signals.on_unprovide.reject(reference, e)
 
     def assign_function_in_qtloop(self, reference, args, kwargs):
         try:
             returns = self.qt_assign(*args, **kwargs)
-            self.signals.assign.resolve.emit(reference, returns)
+            self.signals.assign.resolve(reference, returns)
         except Exception as e:
-            self.signals.assign.reject.emit(reference, e)
+            self.signals.assign.reject(reference, e)
 
     async def assign(self, *args, **kwargs):
         return await self.signals.assign.acall(*args, **kwargs)
