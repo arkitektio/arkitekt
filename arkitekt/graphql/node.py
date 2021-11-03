@@ -113,26 +113,43 @@ PORTS_FR = """
 """
 
 
-DETAIL_NODE_FR = """
+DETAIL_NODE_FR = (
+    """
   name
   package
   interface
   id
   type
   description
-""" + PORTS_FR
+  repository {
+    __typename
+    name
+    ... on AppRepository {
+      app {
+        name
+      }
+    }
+  }
+"""
+    + PORTS_FR
+)
 
 
-NODE_GET_QUERY = ParsedQuery("""
+NODE_GET_QUERY = ParsedQuery(
+    """
 query Node($id: ID, $package: String, $interface: String, $template: ID, $q: String){
   node(id: $id, package: $package, interface: $interface, template: $template, q: $q){
-    """+ DETAIL_NODE_FR +"""
+    """
+    + DETAIL_NODE_FR
+    + """
   }
 }
-""")
+"""
+)
 
 
-NODE_CREATE_QUERY = ParsedQuery("""
+NODE_CREATE_QUERY = ParsedQuery(
+    """
 mutation CreateNodeMutation(
     $description: String!,
     $args: [ArgPortInput]!,
@@ -142,7 +159,10 @@ mutation CreateNodeMutation(
     $name: String!
     $type: NodeTypeInput){
   createNode(description: $description, args: $args, kwargs: $kwargs, returns: $returns, package:$package, interface: $interface, name: $name, type: $type){
-    """+ DETAIL_NODE_FR +"""
+    """
+    + DETAIL_NODE_FR
+    + """
   }
 }
-""")
+"""
+)

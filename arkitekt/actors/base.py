@@ -25,7 +25,7 @@ from arkitekt.transport.base import Transport
 from arkitekt.packers.transpilers.base import Transpiler
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 import asyncio
-from asyncio.tasks import Task
+from asyncio.tasks import Task, create_task
 from arkitekt.messages.postman.provide import ProvideTransitionMessage
 import logging
 from arkitekt.schema.template import Template
@@ -50,8 +50,6 @@ class Actor:
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
-        self.koil = koil or get_current_koil()
-        self.loop = self.koil.loop
         self.strict = strict
         self.expand_inputs = expand_inputs
         self.shrink_outputs = shrink_outputs
@@ -87,6 +85,7 @@ class Actor:
         raise NotImplementedError("Needs to be owerwritten in Actor Subclass")
 
     async def arun(self, provision: BouncedProvideMessage, agent: Agent):
+        self.loop = asyncio.get_running_loop()
         self.provision = provision
         self.agent = agent
         self.transport = agent.transport
@@ -133,7 +132,7 @@ class Actor:
 
                 if isinstance(message, BouncedForwardedAssignMessage):
                     await self.log("Assigningment received")
-                    task = self.loop.create_task(self.on_assign(message))
+                    task = create_task(self.on_assign(message))
                     self.runningAssignments[message.meta.reference] = task
 
                 if isinstance(message, BouncedForwardedUnassignMessage):

@@ -1,5 +1,6 @@
+from ..exception import ExceptionDataModel
 from pydantic.main import BaseModel
-from ....messages.types import ASSIGN, PROVIDE, UNASSIGN
+from ....messages.types import PROVIDE, PROVIDE_BOUND, PROVIDE_CRITICAL, PROVIDE_DONE
 from ....messages.base import (
     MessageDataModel,
     MessageMetaExtensionsModel,
@@ -10,21 +11,20 @@ from typing import List, Optional
 
 
 class MetaExtensionsModel(MessageMetaExtensionsModel):
-    with_progress: bool = False
+    # Set by postman consumer
+    progress: Optional[str]
+    callback: Optional[str]
 
 
 class MetaModel(MessageMetaModel):
-    """The reference of the metamodel representats the assignation on the platform"""
-
-    type: str = UNASSIGN
+    type: str = PROVIDE_BOUND
     extensions: Optional[MetaExtensionsModel]
 
 
 class DataModel(MessageDataModel):
-    assignation: str
-    provision: str
+    agent: str
 
 
-class UnassignMessage(MessageModel):
+class ProvideBoundMessage(MessageModel):
     data: DataModel
     meta: MetaModel

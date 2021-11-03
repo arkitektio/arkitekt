@@ -1,15 +1,15 @@
 from qtpy import QtCore, QtGui
 from qtpy import QtWidgets
 from arkitekt.agents.base import Agent
-from arkitekt.agents.qt import QtAgent
+from arkitekt.qt.agent import QtAgent
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 from arkitekt.schema.template import Template
 
 
-
 class ProvisionDetailWidget(QtWidgets.QWidget):
-
-    def __init__(self, provide: BouncedProvideMessage, agent: Agent, *args, **kwargs) -> None:
+    def __init__(
+        self, provide: BouncedProvideMessage, agent: Agent, *args, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
         template: Template = agent.templateTemplatesMap[provide.data.template]
         self.layout = QtWidgets.QVBoxLayout()
@@ -17,7 +17,9 @@ class ProvisionDetailWidget(QtWidgets.QWidget):
         name = QtWidgets.QLabel(template.node.name)
         name.setFont(QtGui.QFont("Arial", 16))
 
-        identifier = QtWidgets.QLabel(f"@{template.node.package}/{template.node.interface}")
+        identifier = QtWidgets.QLabel(
+            f"@{template.node.package}/{template.node.interface}"
+        )
         identifier.setFont(QtGui.QFont("Arial", 10))
 
         description = QtWidgets.QLabel(template.node.description)
@@ -29,11 +31,10 @@ class ProvisionDetailWidget(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
 
-
-
 class ProvisionListWidget(QtWidgets.QWidget):
-
-    def __init__(self, provide: BouncedProvideMessage, agent: Agent, *args, **kwargs) -> None:
+    def __init__(
+        self, provide: BouncedProvideMessage, agent: Agent, *args, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
         template: Template = agent.templateTemplatesMap[provide.data.template]
         self.provide = provide
@@ -45,7 +46,6 @@ class ProvisionListWidget(QtWidgets.QWidget):
         leftlayout = QtWidgets.QVBoxLayout()
 
         self.dialog = ProvisionDetailWidget(self.provide, self.agent)
-
 
         node_label = QtWidgets.QLabel(template.node.name)
         node_label.setFont(QtGui.QFont("Arial", 10))
@@ -62,7 +62,7 @@ class ProvisionListWidget(QtWidgets.QWidget):
         open_button.clicked.connect(self.open_provision)
 
         self.row.addWidget(left)
-        self.row.addWidget(open_button,  alignment=QtCore.Qt.AlignRight)
+        self.row.addWidget(open_button, alignment=QtCore.Qt.AlignRight)
 
         self.setLayout(self.row)
 
@@ -70,10 +70,7 @@ class ProvisionListWidget(QtWidgets.QWidget):
         self.dialog.show()
 
 
-
-
 class ProvisionsWidget(QtWidgets.QWidget):
-
     def __init__(self, qt_agent: QtAgent = None, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.agent = qt_agent

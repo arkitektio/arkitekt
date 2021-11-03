@@ -8,68 +8,69 @@ from arkitekt.graphql.node import NODE_CREATE_QUERY, NODE_GET_QUERY
 from enum import Enum
 from typing import Any, List, Optional, Union
 from arkitekt.contracts.reservation import Reservation
+from arkitekt.schema.basic import AllRepository, Repository
 from herre.access.model import GraphQLModel
 from rich.table import Table
 
 from koil.loop import koil, koil_gen
 
 
-
-
 class Node(GraphQLModel):
     name: Optional[str]
     description: Optional[str]
     package: Optional[str]
+    repository: Optional[AllRepository]
     interface: Optional[str]
     args: Optional[List[AllArgPort]]
     kwargs: Optional[List[AllKwargPort]]
     returns: Optional[List[AllReturnPort]]
     type: Optional[NodeType]
 
-
-    def reserve(self, reference: str = None,
-        provision: str = None, 
+    def reserve(
+        self,
+        reference: str = None,
+        provision: str = None,
         monitor: Monitor = None,
         ignore_node_exceptions=False,
         transition_hook=None,
         with_log=False,
-        enter_on=[ReserveState.ACTIVE], 
+        enter_on=[ReserveState.ACTIVE],
         exit_on=[ReserveState.ERROR, ReserveState.CANCELLED, ReserveState.CRITICAL],
-        context: Context =None,
+        context: Context = None,
         loop=None,
-         **params) -> Reservation:
-        return Reservation(self, 
-        reference=reference,
-        provision=provision,
-        monitor=monitor,
-        transition_hook=transition_hook,
-        with_log=with_log,
-        enter_on=enter_on,
-        ignore_node_exceptions=ignore_node_exceptions,
-        exit_on=exit_on,
-        context=context,
-        loop = loop ,             
-         **params)
+        **params,
+    ) -> Reservation:
+        return Reservation(
+            self,
+            reference=reference,
+            provision=provision,
+            monitor=monitor,
+            transition_hook=transition_hook,
+            with_log=with_log,
+            enter_on=enter_on,
+            ignore_node_exceptions=ignore_node_exceptions,
+            exit_on=exit_on,
+            context=context,
+            loop=loop,
+            **params,
+        )
 
-
-    async def call_async_func(self,*args,  reserve_params={}, **kwargs):
+    async def call_async_func(self, *args, reserve_params={}, **kwargs):
         async with self.reserve(**reserve_params) as res:
             return await res.assign_async(*args, **kwargs)
 
-
-    async def call_async_gen(self,*args,  reserve_params={}, **kwargs):
+    async def call_async_gen(self, *args, reserve_params={}, **kwargs):
         async with self.reserve(**reserve_params) as res:
             async for result in res.stream_async(*args, **kwargs):
                 yield result
 
-
-    def __call__(self, *args: Any, fill_graphical= True, **kwargs) -> Any:
+    def __call__(self, *args: Any, fill_graphical=True, **kwargs) -> Any:
         """Call
 
         Call is a convenience on max function, its reserves the Node and wraps it either as
         an geneator (both async and non async depending on context) or call it as a function
-        this should only be done if you know what you are doing. 
-        
+        this should only be done if you know what you are doing.
+
         Args:
             reserve_params (dict, optional): [description]. Defaults to {}.
 
@@ -81,7 +82,6 @@ class Node(GraphQLModel):
 
         if self.type == NodeType.GENERATOR:
             return koil_gen(self.call_async_gen(*args, **kwargs))
-
 
     class Meta:
         register = False
@@ -105,7 +105,6 @@ class Node(GraphQLModel):
 
         return my_table
 
-
     def _repr_html_(self):
         return f"""
         <div class="container" style="border:1px solid #00000f;padding: 4px;">
@@ -115,8 +114,3 @@ class Node(GraphQLModel):
             <div class="item item-3">Kwargs: {" ".join([port.key for port in self.kwargs])}</div>
             <div class="item item-3">Returns: {" ".join([port.key for port in self.returns])}</div>
         </div>"""
-
-
-
-
-

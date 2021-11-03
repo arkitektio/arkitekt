@@ -1,3 +1,4 @@
+from asyncio.tasks import create_task
 from arkitekt.agents.standard import StandardAgent
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import (
@@ -18,6 +19,7 @@ from arkitekt.messages.postman.provide.provide_critical import ProvideCriticalMe
 from arkitekt.messages.postman.log import LogLevel
 from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
 import asyncio
+from arkitekt.schema.params import TemplateParams
 from fakts import config
 from herre.wards.base import WardException
 from arkitekt.actors.actify import actify, define
@@ -31,7 +33,7 @@ from arkitekt.schema.template import Template
 from arkitekt.schema.node import Node
 from arkitekt.packers.transpilers import Transpiler
 from typing import Callable, Dict, List, Tuple, Type
-from arkitekt.agents.base import Agent, AgentException, parse_params
+from arkitekt.agents.base import Agent, AgentException
 import logging
 from herre.console import get_current_console
 
@@ -62,7 +64,7 @@ class AppAgent(StandardAgent):
         ] = []  # Template is approved
 
         # IMportant Maps
-        self.templateActorsMap = {}
+        self.templateActorBuilderMap = {}
         self.templateTemplatesMap = {}
 
     async def on_transport_about_to_connect(self):
@@ -70,21 +72,21 @@ class AppAgent(StandardAgent):
         return
 
     async def on_transport_connected(self):
-        logger.info(f"Hosting {self.templateActorsMap.keys()}")
+        logger.info(f"Hosting {self.templateActorBuilderMap.keys()}")
 
     def on_task_done(self, future):
         logger.debug(f"Actor ended with state {future}")
 
     async def on_bounced_provide(self, message: BouncedProvideMessage):
 
-        if message.data.template in self.templateActorsMap:
+        if message.data.template in self.templateActorBuilderMap:
             if message.meta.reference not in self.runningActors:
                 # Didn not exist before
-                actor = self.templateActorsMap[
+                actor = self.templateActorBuilderMap[
                     message.data.template
-                ]  # creating out little Actor
+                ]()  # creating out little Actor
                 self.runningActors[message.meta.reference] = actor
-                task = self.loop.create_task(actor.arun(message, self))
+                task = create_task(actor.arun(message, self))
                 task.add_done_callback(self.on_task_done)
                 self.runningTasks[message.meta.reference] = task
 
@@ -180,12 +182,13 @@ class AppAgent(StandardAgent):
         if self.templatedNodes:
             # This is an arkitekt Node and we can generate potential Templates
             for arkitekt_node, defined_actor, params in self.templatedNodes:
-                try:
-                    params = await parse_params(
-                        params
-                    )  # Parse the parameters for template creation
+                try:  # Parse the parameters for template creation
+                    version = params.get("version", "main")
+
                     arkitekt_template = await Template.asyncs.create(
-                        node=arkitekt_node, params=params
+                        node=arkitekt_node,
+                        params=TemplateParams(**params),
+                        version=version,
                     )
                     self.approvedTemplates.append(
                         (arkitekt_template, defined_actor, params)
@@ -202,7 +205,7 @@ class AppAgent(StandardAgent):
             for arkitekt_template, defined_actor, params in self.approvedTemplates:
 
                 # Generating Maps for Easy access
-                self.templateActorsMap[arkitekt_template.id] = defined_actor
+                self.templateActorBuilderMap[arkitekt_template.id] = defined_actor
                 self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
                 if self.panel:

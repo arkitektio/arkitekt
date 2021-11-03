@@ -13,6 +13,7 @@ from arkitekt.messages.postman.unprovide.bounced_unprovide import (
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 from arkitekt.messages.postman.log import LogLevel
 from arkitekt.messages.postman.reserve.bounced_reserve import BouncedReserveMessage
+from arkitekt.transport.agent.base import AgentTransport
 from arkitekt.transport.base import Transport
 from arkitekt.messages.base import MessageDataModel, MessageModel
 import asyncio
@@ -21,7 +22,6 @@ from arkitekt.transport.registry import (
     TransportRegistry,
     get_current_transport_registry,
 )
-from arkitekt.transport.websocket import WebsocketTransport
 from arkitekt.schema.node import Node
 from arkitekt.schema.template import Template
 from arkitekt.ward import ArkitektConfig, ArkitektWard
@@ -46,14 +46,6 @@ import logging
 
 
 logger = logging.getLogger(__name__)
-
-
-class TemplateParams(dict):
-    pass
-
-
-async def parse_params(params: dict) -> TemplateParams:
-    return TemplateParams(**params)
 
 
 class AgentException(Exception):
@@ -93,15 +85,13 @@ class Agent:
         self.strict = strict
         self.config = config
         self.herre = herre or get_current_herre()
-        self.koil = koil or get_current_koil()
         self.fakts = fakts or get_current_fakts()
-        self.loop = self.koil.loop
 
         self.ward: ArkitektWard = get_ward_registry().get_ward_instance("arkitekt")
         self.monitor = Monitor("Agent") if with_monitor else None
         self.panel = self.monitor.create_agent_panel(self) if self.monitor else None
         self.message_queue = asyncio.Queue()
-        self.transport: Transport = None
+        self.transport: AgentTransport = None
         self.transport_registry = transport_registry or get_current_transport_registry()
 
         if register:
@@ -192,16 +182,12 @@ class Agent:
                 self.config = await AgentConfig.from_fakts(fakts=self.fakts)
 
             self.transcript = self.ward.transcript
-            self.transport = self.transport_registry.get_transport_for_protocol(
+            self.transport = self.transport_registry.get_agent_transport_for_protocol(
                 self.config.type
             )(self.config.kwargs, broadcast=self.broadcast)
 
             await self.on_transport_about_to_connect()
             await self.transport.aconnect()
-            await self.on_transport_connected()
-
-            while True:
-                await asyncio.sleep(1)
 
         except asyncio.CancelledError as e:
 

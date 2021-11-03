@@ -7,3 +7,4 @@ from .bounced_forwarded_reserve import BouncedForwardedReserveMessage
 from .reserve_active import ReserveActiveMessage
 from .reserve_waiting import ReserveWaitingMessage
 from .reserve_transition import ReserveTransitionMessage
+from .bounced_reserve import ReserveParams

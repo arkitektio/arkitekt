@@ -45,7 +45,7 @@ import logging
 import inflection
 
 logger = logging.getLogger(__name__)
-from typing import Dict, List
+from typing import Callable, Dict, List
 import inspect
 
 
@@ -342,7 +342,7 @@ def actify(
     on_unprovide=None,
     actor_name=None,
     **params,
-):
+) -> Callable[[], Actor]:
     if isactor(function_or_actor):
         return function_or_actor
 
@@ -366,12 +366,12 @@ def actify(
     }
 
     if is_coroutine:
-        return FunctionalFuncActor(**actor_attributes)
+        return lambda: FunctionalFuncActor(**actor_attributes)
     elif is_asyncgen:
-        return FunctionalGenActor(**actor_attributes)
+        return lambda: FunctionalGenActor(**actor_attributes)
     elif is_generatorfunction:
-        return FunctionalThreadedGenActor(**actor_attributes)
+        return lambda: FunctionalThreadedGenActor(**actor_attributes)
     elif is_function:
-        return FunctionalThreadedFuncActor(**actor_attributes)
+        return lambda: FunctionalThreadedFuncActor(**actor_attributes)
     else:
         raise NotImplementedError("No way of converting this to a function")
