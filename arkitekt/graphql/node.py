@@ -69,12 +69,20 @@ PORTS_FR = """
       }
       label
       ... on StructureKwargPort {
+        defaultID
         identifier
       }
       ... on IntKwargPort {
-        default
+        defaultInt
+      }
+      ... on BoolKwargPort {
+        defaultBool
+      }
+      ... on StringKwargPort {
+        defaultString
       }
       ... on EnumKwargPort {
+        defaultEnum
         options
       }
       ... on ListKwargPort {
@@ -88,10 +96,26 @@ PORTS_FR = """
             identifier
           }
           ... on IntKwargPort {
-            default
+            defaultInt
           }
         }
-        
+        defaultList
+      }
+      ... on DictKwargPort {
+        child {
+          __typename
+          key
+          required
+          description
+          label
+          ... on StructureKwargPort {
+            identifier
+          }
+          ... on IntKwargPort {
+            defaultInt
+          }
+        }
+        defaultDict
       }
   }
   returns {

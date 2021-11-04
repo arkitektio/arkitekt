@@ -111,7 +111,6 @@ def convert_arg_to_argport(cls, **kwargs) -> ArgPort:
         # Structures are a way to implement packing and unpacking of non generic types
         # These can be imported with packages and are registered automatically registered by subclassing Structure
         if hasattr(cls, "get_identifier") and inspect.ismethod(cls.get_identifier):
-            print("Run here")
             return StructureArgPort.from_structure(cls, **kwargs)
         else:
             transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
@@ -352,6 +351,7 @@ def actify(
 
     is_coroutine = inspect.iscoroutinefunction(function_or_actor)
     is_asyncgen = inspect.isasyncgenfunction(function_or_actor)
+    is_method = inspect.ismethod(function_or_actor)
 
     is_generatorfunction = inspect.isgeneratorfunction(function_or_actor)
     is_function = inspect.isfunction(function_or_actor)
@@ -371,7 +371,7 @@ def actify(
         return lambda: FunctionalGenActor(**actor_attributes)
     elif is_generatorfunction:
         return lambda: FunctionalThreadedGenActor(**actor_attributes)
-    elif is_function:
+    elif is_function or is_method:
         return lambda: FunctionalThreadedFuncActor(**actor_attributes)
     else:
         raise NotImplementedError("No way of converting this to a function")

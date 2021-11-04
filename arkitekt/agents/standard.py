@@ -53,7 +53,6 @@ class StandardAgent(Agent):
 
     async def handle_bounced_provide(self, message: BouncedProvideMessage):
         try:
-            print("Received ", message)
             await self.on_bounced_provide(message)
             await self.transport.forward(
                 ProvideLogMessage.from_log(

@@ -41,6 +41,14 @@ class IncorrectStateForAssignation(ReservationError):
     pass
 
 
+class AssignationError(Exception):
+    pass
+
+
+class Omitted(AssignationError):
+    pass
+
+
 def build_reserve_message(
     reference,
     node_id: str = None,
@@ -143,6 +151,7 @@ class Reservation:
         ignore_node_exceptions=False,
         transition_hook=None,
         with_log=False,
+        omit_on=[],
         enter_on=[ReserveState.ACTIVE],
         exit_on=[ReserveState.ERROR, ReserveState.CANCELLED, ReserveState.CRITICAL],
         context: Context = None,
@@ -185,6 +194,7 @@ class Reservation:
         ), "Transition Hook must be either a coroutine or set to None"
         self.exit_states = exit_on
         self.enter_states = enter_on
+        self.omit_states = omit_on
         self.current_state = ReserveState.STARTING
 
     def log(self, message: str, level: LogLevel = LogLevel.DEBUG):
@@ -213,7 +223,6 @@ class Reservation:
                 )
             else:
                 self.log("Cancelling Reservation")
-                print(message)
                 raise Exception(message.data.message)
 
             if not self.is_closing:
@@ -254,6 +263,14 @@ class Reservation:
         if self.current_state in self.exit_states:
             raise IncorrectStateForAssignation(
                 f"Current State {self.current_state} is an Element of Exit States {self.exit_states}"
+            )
+
+        if self.current_state in self.omit_states:
+            logger.warn(
+                f"Reservation is in {self.current_state} which is an omit State. We didnt not send the Result. If caught nothing will happend"
+            )
+            raise Omitted(
+                f"Reservation is in {self.current_state} which is an omit State. We didnt not send the Request"
             )
 
         shrinked_args, shrinked_kwargs = (
@@ -391,6 +408,14 @@ class Reservation:
         if self.current_state in self.exit_states:
             raise IncorrectStateForAssignation(
                 f"Current State {self.current_state} is an Element of Exit States {self.exit_states}"
+            )
+
+        if self.current_state in self.omit_states:
+            logger.warn(
+                f"Reservation is in {self.current_state} which is an omit State. We didnt not send the Result. If caught nothing will happend"
+            )
+            raise Omitted(
+                f"Reservation is in {self.current_state} which is an omit State. We didnt not send the Request"
             )
 
         shrinked_args, shrinked_kwargs = (

@@ -43,7 +43,7 @@ class ArgPort(Port):
 
 class IntExpandShrink:
     async def expand(self, value, **kwargs):
-        return int(value) if value is not None else None
+        return int(value) if value is not None else getattr(self, "defaultInt", None)
 
     async def shrink(self, instance, **kwargs):
         return int(instance) if instance is not None else None
@@ -54,7 +54,7 @@ class IntExpandShrink:
 
 class BoolExpandShrink:
     async def expand(self, value, **kwargs):
-        return bool(value) if value is not None else None
+        return bool(value) if value is not None else getattr(self, "defaultBool", None)
 
     async def shrink(self, instance, **kwargs):
         return bool(instance) if instance is not None else None
@@ -75,7 +75,7 @@ class EnumExpandShrink:
                 None,
             )
             if value is not None
-            else None
+            else getattr(self, "defaultEnum", None)
         )
 
     async def shrink(self, instance, **kwargs):
@@ -87,7 +87,7 @@ class EnumExpandShrink:
 
 class StringExpandShrink:
     async def expand(self, value, **kwargs):
-        return str(value) if value is not None else None
+        return str(value) if value is not None else getattr(self, "defaultString", None)
 
     async def shrink(self, instance, **kwargs):
         return str(instance) if instance is not None else None
@@ -102,7 +102,6 @@ class StructureExpandShrink:
         if hasattr(structure, "get_defaults") and inspect.ismethod(
             structure.get_defaults
         ):
-            print()
             widget = widget or structure.get_defaults().widget
 
         return cls.from_params(
@@ -111,13 +110,18 @@ class StructureExpandShrink:
 
     async def expand(self, value, transpile=True):
         if value is None:
+            value = getattr(self, "defaultID", None)
+
+        if value is None:
             return None
+
         structure = get_packer_registry().get_structure(self.identifier)
         return await structure.expand(value)
 
     async def shrink(self, instance, **kwargs):
         if instance is None:
             return None
+
         if isinstance(instance, Structure) or hasattr(instance, "shrink"):
             return await instance.shrink()
         # Instance we are trying to shrink needs to be transpile to the required model
@@ -135,6 +139,8 @@ class StructureExpandShrink:
 
 class ListExpandShrink:
     async def expand(self, value, **kwargs):
+        value = getattr(self, "defaultList", None)
+
         return (
             await asyncio.gather(*[self.child.expand(item, **kwargs) for item in value])
             if value is not None
@@ -145,6 +151,7 @@ class ListExpandShrink:
         assert isinstance(
             instance, list
         ), f"ListPorts only accept lists! Got {instance}"
+
         return (
             await asyncio.gather(
                 *[self.child.shrink(item, **kwargs) for item in instance]
@@ -159,6 +166,8 @@ class ListExpandShrink:
 
 class DictExpandShrink:
     async def expand(self, value, **kwargs):
+        value = getattr(self, "defaultList", None)
+
         return (
             {
                 key: await self.child.expand(item, **kwargs)
@@ -229,15 +238,37 @@ class KwargPort(Port):
 
 
 class IntKwargPort(KwargPort, IntExpandShrink):
-    default: Optional[int]
+    defaultInt: Optional[int]
+
+    @classmethod
+    def from_params(cls, widget=None, default=None, **kwargs):
+        # TODO: This weird widget conversion thing needs to stop, type GraphQLOBject correctly
+        port = cls(
+            __typename=cls.__name__,
+            widget=widget.dict() if widget else None,
+            defaultInt=default,
+            **kwargs,
+        )  # We ensure creation of a proper object)
+        return port
 
 
 class BoolKwargPort(KwargPort, BoolExpandShrink):
-    default: Optional[bool]
+    defaultBool: Optional[bool]
+
+    @classmethod
+    def from_params(cls, widget=None, default=None, **kwargs):
+        # TODO: This weird widget conversion thing needs to stop, type GraphQLOBject correctly
+        port = cls(
+            __typename=cls.__name__,
+            widget=widget.dict() if widget else None,
+            defaultBool=default,
+            **kwargs,
+        )  # We ensure creation of a proper object)
+        return port
 
 
 class EnumKwargPort(KwargPort, EnumExpandShrink):
-    default: Any
+    defaultValue: Any
     options: Optional[dict]
     pass
 
@@ -246,27 +277,60 @@ class EnumKwargPort(KwargPort, EnumExpandShrink):
         port = cls(
             __typename=cls.__name__,
             widget=widget.dict() if widget else None,
-            default=default._value_,
+            defaultValue=default._value_,
             **kwargs,
         )  # We ensure creation of a proper object)
         return port
 
 
 class StringKwargPort(KwargPort, StringExpandShrink):
-    default: Optional[str]
+    defaultString: Optional[str]
+
+    @classmethod
+    def from_params(cls, widget=None, default=None, **kwargs):
+        # TODO: This weird widget conversion thing needs to stop, type GraphQLOBject correctly
+        port = cls(
+            __typename=cls.__name__,
+            widget=widget.dict() if widget else None,
+            defaultString=default,
+            **kwargs,
+        )  # We ensure creation of a proper object)
+        return port
 
 
 class StructureKwargPort(KwargPort, StructureExpandShrink):
-    default: Optional[str]
+    defaultID: Optional[str]
     identifier: str
+
+    @classmethod
+    def from_params(cls, widget=None, default=None, **kwargs):
+        # TODO: This weird widget conversion thing needs to stop, type GraphQLOBject correctly
+        port = cls(
+            __typename=cls.__name__,
+            widget=widget.dict() if widget else None,
+            defaultID=default,
+            **kwargs,
+        )  # We ensure creation of a proper object)
+        return port
 
 
 ListKwargPort = ForwardRef("ListKwargPort")
 
 
 class ListKwargPort(KwargPort, ListExpandShrink):
-    default: Optional[List]
+    defaultList: Optional[List]
     child: Union[IntKwargPort, StructureKwargPort, StringKwargPort, ListKwargPort]
+
+    @classmethod
+    def from_params(cls, widget=None, default=None, **kwargs):
+        # TODO: This weird widget conversion thing needs to stop, type GraphQLOBject correctly
+        port = cls(
+            __typename=cls.__name__,
+            widget=widget.dict() if widget else None,
+            defaultList=default,
+            **kwargs,
+        )  # We ensure creation of a proper object)
+        return port
 
 
 ListKwargPort.update_forward_refs()
@@ -275,10 +339,21 @@ DictKwargPort = ForwardRef("DictKwargPort")
 
 
 class DictKwargPort(KwargPort, DictExpandShrink):
-    default: Optional[Dict]
+    defaultDict: Optional[Dict]
     child: Union[
         IntKwargPort, StructureKwargPort, StringKwargPort, ListKwargPort, DictKwargPort
     ]
+
+    @classmethod
+    def from_params(cls, widget=None, default=None, **kwargs):
+        # TODO: This weird widget conversion thing needs to stop, type GraphQLOBject correctly
+        port = cls(
+            __typename=cls.__name__,
+            widget=widget.dict() if widget else None,
+            defaultDict=default,
+            **kwargs,
+        )  # We ensure creation of a proper object)
+        return port
 
 
 DictKwargPort.update_forward_refs()

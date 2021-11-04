@@ -60,9 +60,7 @@ class TemplateDetailWidget(QtWidgets.QWidget):
         self.layout.addWidget(PortsWrapped(template.node.returns, "Returns"))
 
         for kwarg in template.node.kwargs:
-            kwargLabel = QtWidgets.QLabel(
-                kwarg.typename + " | " + kwarg.key + " | " + str(kwarg.default)
-            )
+            kwargLabel = QtWidgets.QLabel(kwarg.typename + " | " + kwarg.key + " | ")
             self.layout.addWidget(kwargLabel)
 
         self.layout.addWidget(open_button)
