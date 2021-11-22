@@ -1,7 +1,14 @@
 from typing import Callable, Coroutine, Type, TypeVar
 import inspect
 
+import pydantic
+
+from arkitekt.packers.structure import StructureMeta
+
 class PackerError(Exception):
+    pass
+
+class MetaNotValidError(Exception):
     pass
 
 class UnpackableError(PackerError):
@@ -19,10 +26,10 @@ class PackerRegistry:
     def __init__(self) -> None:
         self.identifierStructureMap = {}
 
-    def register_structure(self, structure, overwrite=False):
+    def register_structure(self, structure):
 
         try:
-            assert inspect.ismethod(structure.get_identifier) and structure.get_identifier.__self__ is structure, "Get Identifier must be either provided for be a classmethod"
+            assert inspect.ismethod(structure.get_structure_meta) and structure.get_structure_meta.__self__ is structure, f"{structure}.get_structure_meta  must be either provided for be a classmethod"
             assert inspect.ismethod(structure.expand) and structure.expand.__self__ is structure,"Expand Function must be an async classmethod"
             assert inspect.iscoroutinefunction(structure.expand), "Expand Function must be an (classmethod) async function"
             assert inspect.iscoroutinefunction(structure.shrink), "Shrink Function must be an async function"
@@ -30,10 +37,14 @@ class PackerRegistry:
         except Exception as e:
             raise UnpackableError(str(e)) from e
 
-        identifier = structure.get_identifier()
-        if identifier in self.identifierStructureMap and not overwrite:
-            raise StructureOverwriteError(f"Another Structure was registerd for identifier '{identifier}'. You can choose to overwrite this Structure by setting overwrite=True")
-        self.identifierStructureMap[identifier] = structure
+        try:
+            meta: StructureMeta = structure.get_structure_meta()
+        except pydantic.error_wrappers.ValidationError as e:
+            raise MetaNotValidError(f"{structure} does not return a Valid Meta object") from e
+
+        if meta.identifier in self.identifierStructureMap and not meta.overwrite:
+            raise StructureOverwriteError(f"Another Structure was registerd for identifier '{meta.identifier}'. You can choose to overwrite setting the Meta attribute to overwrite=True")
+        self.identifierStructureMap[meta.identifier] = structure
 
 
     def get_structure(self, identifier):
@@ -53,7 +64,7 @@ def get_packer_registry():
 
 
 def register_structure(
-    identifier: str = None,
+    meta: StructureMeta = None,
     overwrite: bool = False,
     registry: PackerRegistry=  None,
 ):
@@ -68,8 +79,8 @@ def register_structure(
     """
 
     def real_decorator(cls):
-        if identifier: cls.get_identifier = classmethod(lambda cls: identifier)
-        (registry or get_packer_registry()).register_structure(cls, overwrite=overwrite)
+        if meta: cls.get_structure_meta = classmethod(lambda cls: meta)
+        (registry or get_packer_registry()).register_structure(cls)
         return cls
 
 

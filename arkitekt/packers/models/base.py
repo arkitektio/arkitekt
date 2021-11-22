@@ -1,7 +1,16 @@
-from arkitekt.packers.structure import Structure, StructureDefaults
+from arkitekt.packers.structure import Structure, StructureMeta
 from pydantic import BaseModel
-
+import inspect
 from arkitekt.schema.widgets import Widget
+
+
+def props(obj):
+    pr = {}
+    for name in dir(obj):
+        value = getattr(obj, name)
+        if not name.startswith("__") and not inspect.ismethod(value):
+            pr[name] = value
+    return pr
 
 
 class StructureModel(Structure):
@@ -27,10 +36,6 @@ class StructureModel(Structure):
     """
 
     @classmethod
-    def get_identifier(cls):
-        return cls.get_meta().identifier
-
-    @classmethod
-    def get_defaults(cls) -> StructureDefaults:
-        meta = cls.get_meta()
-        return StructureDefaults(widget=getattr(meta, "default_widget", None))
+    def get_structure_meta(cls) -> StructureMeta:
+        meta = props(cls.get_meta())
+        return StructureMeta(**meta)

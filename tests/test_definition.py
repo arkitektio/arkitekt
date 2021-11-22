@@ -1,7 +1,19 @@
 from pydantic.main import BaseModel
 from arkitekt.packers.structure import Structure
-from arkitekt.packers.registry import PackerRegistry, StructureOverwriteError, UnpackableError, register_structure
-from arkitekt.schema.ports import DictArgPort, IntArgPort, ListArgPort, ListReturnPort, StringArgPort, StringKwargPort
+from arkitekt.packers.registry import (
+    PackerRegistry,
+    StructureOverwriteError,
+    UnpackableError,
+    register_structure,
+)
+from arkitekt.schema.ports import (
+    DictArgPort,
+    IntArgPort,
+    ListArgPort,
+    ListReturnPort,
+    StringArgPort,
+    StringKwargPort,
+)
 from typing import Dict, List, Tuple
 from arkitekt.packers.utils import ShrinkingError, expand_outputs
 from arkitekt.schema.node import Node
@@ -10,8 +22,7 @@ from arkitekt.actors import define
 import pytest
 
 
-
-@register_structure(identifier= "test")
+@register_structure(identifier="test")
 class SerializableObject(BaseModel):
     number: int
 
@@ -23,9 +34,8 @@ class SerializableObject(BaseModel):
         return cls(number=shrinked_value)
 
 
-@register_structure(identifier= "karl")
-class SecondSerializableObject():
-
+@register_structure(identifier="karl")
+class SecondSerializableObject:
     async def shrink(self):
         return 5
 
@@ -35,20 +45,23 @@ class SecondSerializableObject():
 
 
 def karl(rep: str, name: str = None) -> str:
-        """Karl
+    """Karl
 
-        Karl takes a a representation and does magic stuff
+    Karl takes a a representation and does magic stuff
 
-        Args:
-            rep (str): Nougat
-            name (str, optional): Bugat
+    Args:
+        rep (str): Nougat
+        name (str, optional): Bugat
 
-        Returns:
-            Representation: The Returned Representation
-        """
-        return "tested"
+    Returns:
+        Representation: The Returned Representation
+    """
+    return "tested"
 
-def karl_structure(rep: SerializableObject, name: SerializableObject = None) -> SecondSerializableObject:
+
+def karl_structure(
+    rep: SerializableObject, name: SerializableObject = None
+) -> SecondSerializableObject:
     """Karl
 
     Karl takes a a representation and does magic stuff
@@ -63,9 +76,9 @@ def karl_structure(rep: SerializableObject, name: SerializableObject = None) -> 
     return "tested"
 
 
-
-
-def complex_karl(rep: List[str], nana: Dict[str, int], name: str = None) -> Tuple[List[str], int]:
+def complex_karl(
+    rep: List[str], nana: Dict[str, int], name: str = None
+) -> Tuple[List[str], int]:
     """Complex Karl
 
     Nananan
@@ -81,7 +94,11 @@ def complex_karl(rep: List[str], nana: Dict[str, int], name: str = None) -> Tupl
     return ["tested"], 6
 
 
-def complex_structure_call(rep: List[SerializableObject], franz: Dict[str, SecondSerializableObject], name: SerializableObject = None) -> Tuple[List[SecondSerializableObject], int]:
+def complex_structure_call(
+    rep: List[SerializableObject],
+    franz: Dict[str, SecondSerializableObject],
+    name: SerializableObject = None,
+) -> Tuple[List[SecondSerializableObject], int]:
     """Complex Structure Call
 
     This is a lovely Documentatoin
@@ -96,15 +113,11 @@ def complex_structure_call(rep: List[SerializableObject], franz: Dict[str, Secon
     """
 
 
-
-
-
 async def test_structure_registration():
     registry = PackerRegistry()
 
-    @register_structure(identifier= "test", registry= registry)
-    class SerializableObject():
-
+    @register_structure(identifier="test", registry=registry)
+    class SerializableObject:
         def __init__(self, number) -> None:
             super().__init__()
             self.number = number
@@ -116,14 +129,12 @@ async def test_structure_registration():
         async def expand(cls, shrinked_value):
             return cls(shrinked_value)
 
-
     assert "test" in registry.identifierStructureMap, "Registration fails"
 
-
     with pytest.raises(StructureOverwriteError):
-        @register_structure(identifier= "test", registry= registry)
-        class SerializableObject():
 
+        @register_structure(identifier="test", registry=registry)
+        class SerializableObject:
             def __init__(self, number) -> None:
                 super().__init__()
                 self.number = number
@@ -135,25 +146,17 @@ async def test_structure_registration():
             async def expand(cls, shrinked_value):
                 return cls(shrinked_value)
 
-
     with pytest.raises(UnpackableError):
 
-        @register_structure(identifier= "karl", registry= registry)
-        class SerializableObject():
-
+        @register_structure(identifier="karl", registry=registry)
+        class SerializableObject:
             def __init__(self, number) -> None:
                 super().__init__()
                 self.number = number
 
-
             @classmethod
             async def expand(cls, shrinked_value):
                 return cls(shrinked_value)
-
-
-
-
-
 
 
 async def test_define():
@@ -162,19 +165,30 @@ async def test_define():
     assert isinstance(functional_node, Node), "Node is not Node"
     assert functional_node.name == "Karl", "Doesnt conform to standard Naming Scheme"
 
+
 async def test_define_complex():
 
     functional_node = define(complex_karl)
     assert isinstance(functional_node, Node), "Node is not Node"
-    assert functional_node.name == "Complex Karl", "Doesnt conform to standard Naming Scheme"
+    assert (
+        functional_node.name == "Complex Karl"
+    ), "Doesnt conform to standard Naming Scheme"
     assert len(functional_node.args) == 2, "Wrong amount of Arguments"
     assert isinstance(functional_node.args[0], ListArgPort), "Wasn't defined as a List"
     assert isinstance(functional_node.args[1], DictArgPort), "Wasn't defined as a List"
-    assert isinstance(functional_node.args[1].child, IntArgPort), "Wasn't defined as a List"
-    assert isinstance(functional_node.args[0].child, StringArgPort), "List Child wasn't a String"
-    assert isinstance(functional_node.kwargs[0], StringKwargPort), "First Kwargs is not a String"
+    assert isinstance(
+        functional_node.args[1].child, IntArgPort
+    ), "Wasn't defined as a List"
+    assert isinstance(
+        functional_node.args[0].child, StringArgPort
+    ), "List Child wasn't a String"
+    assert isinstance(
+        functional_node.kwargs[0], StringKwargPort
+    ), "First Kwargs is not a String"
     assert len(functional_node.returns) == 2, "Wrong amount of Returns"
-    assert isinstance(functional_node.returns[0], ListReturnPort), "Needs to Return List"
+    assert isinstance(
+        functional_node.returns[0], ListReturnPort
+    ), "Needs to Return List"
 
 
 async def test_define_structure():
@@ -191,12 +205,14 @@ async def test_shrinking():
     assert "name" in kwargs, "Didn't contain proper key for name"
 
 
-@pytest.mark.parametrize(["args", "kwargs"], [
-    ((["hallo"], {"k": 5}), {"name":"name"}),
-    ((["nn","nn"], {"k": 5}), {"name":"name"}),
-    ((["nn","nn"], {"k": 5}), {}),
-
-])
+@pytest.mark.parametrize(
+    ["args", "kwargs"],
+    [
+        ((["hallo"], {"k": 5}), {"name": "name"}),
+        ((["nn", "nn"], {"k": 5}), {"name": "name"}),
+        ((["nn", "nn"], {"k": 5}), {}),
+    ],
+)
 async def test_shrinking_complex(args, kwargs):
 
     functional_node = define(complex_karl)
@@ -205,10 +221,15 @@ async def test_shrinking_complex(args, kwargs):
     assert len(parsed_args) == 2, "Args are two short"
 
 
-@pytest.mark.parametrize(["args", "kwargs"], [
-    (([SerializableObject(number=4)], {"k": SecondSerializableObject()}), {"name":SerializableObject(number=6)}),
-
-])
+@pytest.mark.parametrize(
+    ["args", "kwargs"],
+    [
+        (
+            ([SerializableObject(number=4)], {"k": SecondSerializableObject()}),
+            {"name": SerializableObject(number=6)},
+        ),
+    ],
+)
 async def test_shrinking_complex_structure(args, kwargs):
 
     functional_node = define(complex_structure_call)
@@ -219,10 +240,12 @@ async def test_shrinking_complex_structure(args, kwargs):
     assert parsed_args[1] == {"k": 5}, "List Arg Converstion failed"
 
 
-@pytest.mark.parametrize(["args", "kwargs"], [
-    (([4], {"k": 5}), {"name": 6}),
-
-])
+@pytest.mark.parametrize(
+    ["args", "kwargs"],
+    [
+        (([4], {"k": 5}), {"name": 6}),
+    ],
+)
 async def test_expanding_complex_structure(args, kwargs):
 
     functional_node = define(complex_structure_call)
@@ -231,25 +254,33 @@ async def test_expanding_complex_structure(args, kwargs):
     assert len(parsed_args) == 2, "Args are two short"
 
 
-@pytest.mark.parametrize(["args", "kwargs"], [
-    (([SerializableObject(number=4)], {"k": SerializableObject(number=7)}), {"name":SerializableObject(number=6)}),
-
-])
+@pytest.mark.parametrize(
+    ["args", "kwargs"],
+    [
+        (
+            ([SerializableObject(number=4)], {"k": SerializableObject(number=7)}),
+            {"name": SerializableObject(number=6)},
+        ),
+    ],
+)
 async def unpack_pack(args, kwargs):
     node = define(complex_structure_call)
     parsed_args, parsed_kwargs = await shrink_inputs(node, *args, **kwargs)
-    expanded_args, expanded_kwargs = await expand_inputs(node, parsed_args, parsed_kwargs)
+    expanded_args, expanded_kwargs = await expand_inputs(
+        node, parsed_args, parsed_kwargs
+    )
     assert args == expanded_args, "Unpack Pack did not work"
     assert kwargs == expanded_kwargs, "Unpack Pack did not work"
-
 
 
 async def test_shrinking_complex_error():
 
     functional_node = define(complex_karl)
-    with pytest.raises(ShrinkingError) as execinfo:   
-        args, kwargs = await shrink_inputs(functional_node, ["hallo"], {"k": Dict}, name="name")
-    with pytest.raises(ShrinkingError) as execinfo:   
+    with pytest.raises(ShrinkingError) as execinfo:
+        args, kwargs = await shrink_inputs(
+            functional_node, ["hallo"], {"k": Dict}, name="name"
+        )
+    with pytest.raises(ShrinkingError) as execinfo:
         args, kwargs = await shrink_inputs(functional_node, ["hallo"], 3, name="name")
 
 

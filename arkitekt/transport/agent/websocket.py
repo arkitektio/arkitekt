@@ -50,6 +50,7 @@ class WebsocketAgentTransport(Transport):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.send_queue = None
         self.retries = 5
         self.time_between_retries = 5
         self.connection_alive = False

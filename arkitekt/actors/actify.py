@@ -68,14 +68,15 @@ def isactor(type):
 
 
 def guard_is_structure(cls):
-    if not inspect.ismethod(cls.get_identifier):
+    if not inspect.ismethod(cls.get_structure_meta):
         raise NonConvertableType(
-            f"Could not convert {cls.__name__} to Port: Please implement a classmethod get_identifier or decorate {cls.__name__} with register_structure(identifier='UNIQUEIDENTIFIER)"
+            f"Could not convert {cls.__name__} to Port: Please implement a classmethod get_structure_meta or decorate {cls.__name__} with register_structure(meta= StructureMeta)"
         )
 
 
 def convert_arg_to_argport(cls, **kwargs) -> ArgPort:
     # Typing Support
+
     if hasattr(cls, "_name"):
         # We are dealing with a Typing Var?
         if cls._name == "List":
@@ -110,15 +111,10 @@ def convert_arg_to_argport(cls, **kwargs) -> ArgPort:
         # Custom Cases
         # Structures are a way to implement packing and unpacking of non generic types
         # These can be imported with packages and are registered automatically registered by subclassing Structure
-        if hasattr(cls, "get_identifier") and inspect.ismethod(cls.get_identifier):
-            return StructureArgPort.from_structure(cls, **kwargs)
-        else:
-            transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
-            return StructureArgPort.from_params(
-                identifier=transpiler.structure.get_identifier(),
-                transpile=transpiler.type_name,
-                **kwargs,
-            )
+        guard_is_structure(cls)
+        return StructureArgPort.from_structure(cls, **kwargs)
+
+        # transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
 
     raise ConversionError(f"No Factory for Arg Type {cls.__name__} Conversion found")
 
@@ -142,34 +138,27 @@ def convert_kwarg_to_kwargport(cls, **kwargs):
 
     if inspect.isclass(cls):
         # Generic Cases
+        default = kwargs["default"]
 
-        if issubclass(cls, bool):
+        if issubclass(cls, bool) or type(default) == bool:
             return BoolKwargPort.from_params(
                 **kwargs
             )  # bool subclass of int therefore before
-        if issubclass(cls, Enum):
+        if issubclass(cls, Enum) or type(default) == Enum:
             return EnumKwargPort.from_params(
                 options={key: value._value_ for key, value in cls.__members__.items()},
                 **kwargs,
             )
-        if issubclass(cls, int):
+        if issubclass(cls, int) or type(default) == int:
             return IntKwargPort.from_params(**kwargs)
-        if issubclass(cls, str):
+        if issubclass(cls, str) or type(default) == str:
             return StringKwargPort.from_params(**kwargs)
 
         # Custom Cases
         # Structures are a way to implement packing and unpacking of non generic types
         # These can be imported with packages and are registered automatically registered by subclassing Structure
-        if hasattr(cls, "get_identifier") and inspect.ismethod(cls.get_identifier):
-            return StructureKwargPort.from_structure(cls, **kwargs)
-
-        else:
-            transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
-            return StructureKwargPort.from_params(
-                identifier=transpiler.structure.get_identifier(),
-                transpile=transpiler.type_name,
-                **kwargs,
-            )
+        guard_is_structure(cls)
+        return StructureKwargPort.from_structure(cls, **kwargs)
 
     raise ConversionError(f"No Factory for Arg Type {cls.__name__} Conversion found")
 
@@ -202,17 +191,8 @@ def convert_return_to_returnport(cls, **kwargs):
         # Custom Cases
         # Structures are a way to implement packing and unpacking of non generic types
         # These can be imported with packages and are registered automatically registered by subclassing Structure
-        if hasattr(cls, "get_identifier") and inspect.ismethod(cls.get_identifier):
-            return StructureReturnPort.from_params(
-                identifier=cls.get_identifier(), **kwargs
-            )
-        else:
-            transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
-            return StructureReturnPort.from_params(
-                identifier=transpiler.structure.get_identifier(),
-                transpile=transpiler.type_name,
-                **kwargs,
-            )
+        guard_is_structure(cls)
+        return StructureReturnPort.from_structure(cls, **kwargs)
 
     raise ConversionError(f"No Factory for Arg Type {cls.__name__} Conversion found")
 
@@ -234,6 +214,7 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
     )
 
     sig = signature(function)
+
     # Generate Args and Kwargs from the Annotation
     args = []
     kwargs = []
@@ -241,18 +222,30 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
 
     function_inputs = sig.parameters
     for key, value in function_inputs.items():
-        widget = widgets.get(key, None)
+
         cls = value.annotation
 
         if value.default == Parameter.empty:
             # This Parameter is an Argument
-            args.append(convert_arg_to_argport(cls, widget=widget, key=key))
+            try:
+                widget = widgets.get(key, None)
+                args.append(convert_arg_to_argport(cls, key=key))
+            except KeyError as e:
+                print("No Widget overwrites defined, ommiting")
+                args.append(convert_arg_to_argport(cls, widget=widget, key=key))
         else:
-            kwargs.append(
-                convert_kwarg_to_kwargport(
-                    cls, widget=widget, key=key, default=value.default
+            try:
+                widget = widgets.get(key, None)
+                kwargs.append(
+                    convert_kwarg_to_kwargport(
+                        cls, widget=widget, key=key, default=value.default
+                    )
                 )
-            )
+            except KeyError as e:
+                print("No Widget overwrites defined, ommiting")
+                kwargs.append(
+                    convert_kwarg_to_kwargport(cls, key=key, default=value.default)
+                )
 
     function_output = sig.return_annotation
     try:

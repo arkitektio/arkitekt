@@ -71,6 +71,7 @@ PORTS_FR = """
       ... on StructureKwargPort {
         defaultID
         identifier
+        
       }
       ... on IntKwargPort {
         defaultInt

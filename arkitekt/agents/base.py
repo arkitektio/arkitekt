@@ -162,6 +162,9 @@ class Agent:
     async def on_transport_about_to_connect(self):
         return None
 
+    async def on_transport_about_to_disconnect(self):
+        return None
+
     async def aprovide(self):
         caused_ward_connect = False
         try:
@@ -192,6 +195,7 @@ class Agent:
         except asyncio.CancelledError as e:
 
             if self.transport:
+                await self.on_transport_about_to_disconnect()
                 await self.transport.adisconnect()
             if caused_ward_connect:
                 await self.ward.adisconnect()

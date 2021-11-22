@@ -7,6 +7,7 @@ from .app import AppAgent
 
 
 class ScriptAgent(AppAgent):
+    
     def register(
         self,
         *args,

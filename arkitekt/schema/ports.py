@@ -3,7 +3,7 @@ from enum import Enum
 import inspect
 from arkitekt.packers.models.base import StructureModel
 from arkitekt.schema.widgets import AllWidgets, QueryWidget, SearchWidget, SliderWidget
-from arkitekt.packers.structure import Structure
+from arkitekt.packers.structure import BoundType, Structure
 from typing import Any, Dict, List, Optional, Union
 from pydantic import BaseModel, Field, validator
 from herre.access.object import GraphQLObject
@@ -16,13 +16,12 @@ class Port(GraphQLObject):
     key: Optional[str]
     description: Optional[str]
     label: Optional[str]
-    transpile: Optional[str]
 
     @classmethod
-    def from_params(cls, widget=None, **kwargs):
+    def from_params(cls, **kwargs):
         # TODO: This weird widget conversion thing needs to stop, type GraphQLOBject correctly
         port = cls(
-            __typename=cls.__name__, widget=widget.dict() if widget else None, **kwargs
+            __typename=cls.__name__, **kwargs
         )  # We ensure creation of a proper object)
         return port
 
@@ -98,15 +97,9 @@ class StringExpandShrink:
 
 class StructureExpandShrink:
     @classmethod
-    def from_structure(cls, structure: StructureModel, widget=None, **kwargs):
-        if hasattr(structure, "get_defaults") and inspect.ismethod(
-            structure.get_defaults
-        ):
-            widget = widget or structure.get_defaults().widget
-
-        return cls.from_params(
-            identifier=structure.get_identifier(), widget=widget, **kwargs
-        )
+    def from_structure(cls, structure: Structure, **overwrites):
+        meta = structure.get_structure_meta()
+        return cls.from_params(**{**meta.dict(), **overwrites})
 
     async def expand(self, value, transpile=True):
         if value is None:
@@ -122,7 +115,7 @@ class StructureExpandShrink:
         if instance is None:
             return None
 
-        if isinstance(instance, Structure) or hasattr(instance, "shrink"):
+        if hasattr(instance, "shrink"):
             return await instance.shrink()
         # Instance we are trying to shrink needs to be transpile to the required model
         from arkitekt.packers.transpilers.registry import get_transpiler_registry
@@ -211,6 +204,7 @@ class StringArgPort(ArgPort, StringExpandShrink):
 
 class StructureArgPort(ArgPort, StructureExpandShrink):
     identifier: str
+    bound: BoundType = BoundType.GLOBAL
 
 
 ListArgPort = ForwardRef("ListArgPort")
