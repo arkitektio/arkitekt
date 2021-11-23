@@ -1,4 +1,5 @@
 from asyncio.tasks import create_task
+from arkitekt.actors.registry import ActorRegistry, get_current_actor_registry
 from arkitekt.agents.standard import StandardAgent
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import (
@@ -43,21 +44,11 @@ logger = logging.getLogger(__name__)
 class AppAgent(StandardAgent):
     ACTOR_PENDING_MESSAGE = "Actor is Pending"
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, registry: ActorRegistry = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Running Actors indexed by their ID
-        self.runningActors: Dict[str, Actor] = {}
-        self.runningTasks: Dict[str, asyncio.Task] = {}
 
-        self.templatedUnqueriedNodes: List[
-            Tuple[dict, Callable]
-        ] = []  # dict are queryparams for the node
-        self.templatedNodes: List[
-            Tuple[Node, Callable]
-        ] = []  # node is already saved and has id
-        self.templatedNewNodes: List[
-            Tuple[Node, Callable]
-        ] = []  # Node is not saved and has undefined id
+        self.registry = registry or get_current_actor_registry()
 
         self.approvedTemplates: List[
             Tuple[Template, Callable]
@@ -151,11 +142,17 @@ class AppAgent(StandardAgent):
 
     async def approve_nodes_and_templates(self):
 
-        if self.templatedUnqueriedNodes:
-            for query_params, defined_actor, params in self.templatedUnqueriedNodes:
+        if self.registry.templatedUnqueriedNodes:
+            for (
+                query_params,
+                defined_actor,
+                params,
+            ) in self.registry.templatedUnqueriedNodes:
                 try:
                     arkitekt_node = await Node.asyncs.get(**query_params)
-                    self.templatedNodes.append((arkitekt_node, defined_actor, params))
+                    self.registry.templatedNodes.append(
+                        (arkitekt_node, defined_actor, params)
+                    )
                 except WardException as e:
                     logger.exception(e)
                     if self.strict:
@@ -163,15 +160,17 @@ class AppAgent(StandardAgent):
                             f"Couldn't find Node for query {query_params}"
                         ) from e
 
-        if self.templatedNewNodes:
-            for defined_node, defined_actor, params in self.templatedNewNodes:
+        if self.registry.templatedNewNodes:
+            for defined_node, defined_actor, params in self.registry.templatedNewNodes:
                 # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
                 # id so we are trying to send them to arkitekt)
                 try:
                     arkitekt_node = await Node.asyncs.create(
                         **defined_node.dict(as_input=True)
                     )
-                    self.templatedNodes.append((arkitekt_node, defined_actor, params))
+                    self.registry.templatedNodes.append(
+                        (arkitekt_node, defined_actor, params)
+                    )
                 except WardException as e:
                     logger.exception(e)
                     if self.strict:
@@ -179,9 +178,9 @@ class AppAgent(StandardAgent):
                             f"Couldn't create Node for defintion {defined_node}"
                         ) from e
 
-        if self.templatedNodes:
+        if self.registry.templatedNodes:
             # This is an arkitekt Node and we can generate potential Templates
-            for arkitekt_node, defined_actor, params in self.templatedNodes:
+            for arkitekt_node, defined_actor, params in self.registry.templatedNodes:
                 try:  # Parse the parameters for template creation
                     version = params.get("version", "main")
 

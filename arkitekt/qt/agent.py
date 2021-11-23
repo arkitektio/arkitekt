@@ -89,16 +89,20 @@ class QtAgent(AppAgent, QObject):
         actor_builder = lambda: defined_actor
 
         if isinstance(function_query_or_node, str):
-            self.templatedUnqueriedNodes.append(
+            self.registry.templatedUnqueriedNodes.append(
                 ({"q": function_query_or_node}, actor_builder, params)
             )
 
         if isinstance(function_query_or_node, Node):
-            self.templatedNodes.append((function_query_or_node, actor_builder, params))
+            self.registry.templatedNodes.append(
+                (function_query_or_node, actor_builder, params)
+            )
 
         else:
             defined_node = define(function=function_query_or_node, widgets=widgets)
-            self.templatedNewNodes.append((defined_node, actor_builder, params))
+            self.registry.templatedNewNodes.append(
+                (defined_node, actor_builder, params)
+            )
 
         return defined_actor
 
@@ -127,18 +131,20 @@ class QtAgent(AppAgent, QObject):
 
         if len(args) == 1:
             new_node = define(function=args[0], widgets=widgets)
-            self.templatedNewNodes.append((new_node, defined_actor, params))
+            self.registry.templatedNewNodes.append((new_node, defined_actor, params))
 
         if len(args) == 2:
             query_or_node = args[1]
 
             if isinstance(query_or_node, str):
-                self.templatedUnqueriedNodes.append(
+                self.registry.templatedUnqueriedNodes.append(
                     ({"q": query_or_node}, defined_actor, params)
                 )
 
             if isinstance(query_or_node, Node):
-                self.templatedNodes.append((query_or_node, defined_actor, params))
+                self.registry.templatedNodes.append(
+                    (query_or_node, defined_actor, params)
+                )
 
         return defined_actor
 

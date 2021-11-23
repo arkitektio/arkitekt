@@ -1,4 +1,3 @@
-from arkitekt.agents.base import Agent
 from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
 from arkitekt.messages.postman.log import LogLevel
 from arkitekt.monitor.monitor import AgentPanel, get_current_monitor
@@ -84,7 +83,7 @@ class Actor:
     async def on_assign(self, message: BouncedForwardedAssignMessage):
         raise NotImplementedError("Needs to be owerwritten in Actor Subclass")
 
-    async def arun(self, provision: BouncedProvideMessage, agent: Agent):
+    async def arun(self, provision: BouncedProvideMessage, agent):
         self.loop = asyncio.get_running_loop()
         self.provision = provision
         self.agent = agent
@@ -177,6 +176,7 @@ class Actor:
             )
 
         except asyncio.CancelledError as e:
+
             await self.transport.forward(
                 ProvideTransitionMessage(
                     data={"state": ProvideState.CANCELING, "message": f"{e}"},

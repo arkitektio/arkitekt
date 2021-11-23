@@ -101,7 +101,7 @@ def main(
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
 
-        asyncio.run(watch_directory_and_restart(app_directory, run_script_path))
+        asyncio.run(watch_directory_and_restart(path, entrypoint="run"))
 
     if script == ArkitektOptions.RUN:
 
@@ -272,7 +272,7 @@ def entrypoint():
         refresh=args.refresh,
         scan_network=args.scan_network,
         template=args.template,
-        services=args.services.split(","),
+        services=args.services.split(",") if args.services else [],
     )
 
 

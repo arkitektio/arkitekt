@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from arkitekt.actors.base import Actor
 from arkitekt.config import TransportProtocol
 from arkitekt.messages.postman.assign.bounced_forwarded_assign import (
     BouncedForwardedAssignMessage,
@@ -93,6 +94,9 @@ class Agent:
         self.message_queue = asyncio.Queue()
         self.transport: AgentTransport = None
         self.transport_registry = transport_registry or get_current_transport_registry()
+
+        self.runningActors: Dict[str, Actor] = {}
+        self.runningTasks: Dict[str, asyncio.Task] = {}
 
         if register:
             set_current_agent(self)
@@ -194,14 +198,24 @@ class Agent:
 
         except asyncio.CancelledError as e:
 
+            tasks = [task for key, task in self.runningTasks.items()]
+            for task in tasks:
+                logger.info(f"Cancelling Actor Task: {task}")
+                task.cancel()
+
+            exceptions = await asyncio.gather(*tasks, return_exceptions=True)
+            logger.info("All Actors Done. Bye Bye!")
+
             if self.transport:
                 await self.on_transport_about_to_disconnect()
                 await self.transport.adisconnect()
             if caused_ward_connect:
                 await self.ward.adisconnect()
+
             raise e
 
         except Exception as e:
+            print(e)
             logger.exception(e)
             raise e
 
