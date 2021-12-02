@@ -145,6 +145,7 @@ DETAIL_NODE_FR = (
   interface
   id
   type
+  interfaces
   description
   repository {
     __typename
@@ -180,10 +181,11 @@ mutation CreateNodeMutation(
     $args: [ArgPortInput]!,
     $kwargs: [KwargPortInput]!,
     $returns: [ReturnPortInput]!,
+    $interfaces: [String],
     $package: String!, $interface: String!,
     $name: String!
     $type: NodeTypeInput){
-  createNode(description: $description, args: $args, kwargs: $kwargs, returns: $returns, package:$package, interface: $interface, name: $name, type: $type){
+  createNode(description: $description, args: $args, kwargs: $kwargs, returns: $returns, package:$package, interface: $interface, name: $name, type: $type, interfaces: $interfaces){
     """
     + DETAIL_NODE_FR
     + """

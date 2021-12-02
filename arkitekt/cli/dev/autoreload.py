@@ -71,12 +71,15 @@ class Host:
         path=None,
         entrypoint="run",
     ) -> None:
-        self.module_path = f"{path}.{entrypoint}" if path != "." else entrypoint
-        self.module = import_module(self.module_path)
+
         if path == ".":
             self.watch_path = os.getcwd()
+            sys.path.insert(0, self.watch_path)
         else:
             self.watch_path = os.path.join(os.getcwd(), path)
+
+        self.module_path = f"{path}.{entrypoint}" if path != "." else f"{entrypoint}"
+        self.module = import_module(self.module_path)
         self.provide_task = None
         self.console = Console()
         os.environ["ARKITEKT_AGENT_DEBUG"] = "True"

@@ -1,7 +1,8 @@
 from arkitekt.actors.actify import actify, define
+from arkitekt.schema.widgets import Widget
 from .base import Actor
 from arkitekt.schema import Node
-from typing import List, Callable, Tuple
+from typing import Dict, List, Callable, Tuple
 
 
 class ActorRegistry:
@@ -59,7 +60,8 @@ def get_current_actor_registry():
 
 
 def register(
-    widgets={},
+    widgets: Dict[str, Widget] = {},
+    interfaces: List[str] = [],
     on_provide=None,
     on_unprovide=None,
     registry: ActorRegistry = None,
@@ -76,7 +78,7 @@ def register(
             function, on_provide=on_provide, on_unprovide=on_unprovide, **params
         )
 
-        definition = define(function=function, widgets=widgets)
+        definition = define(function=function, widgets=widgets, interfaces=interfaces)
         registry.register(actorBuilder, definition=definition, **params)
 
         return wrapped_function

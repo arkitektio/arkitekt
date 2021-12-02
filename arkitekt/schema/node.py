@@ -21,6 +21,7 @@ class Node(GraphQLModel):
     package: Optional[str]
     repository: Optional[AllRepository]
     interface: Optional[str]
+    interfaces: Optional[List[str]]
     args: Optional[List[AllArgPort]]
     kwargs: Optional[List[AllKwargPort]]
     returns: Optional[List[AllReturnPort]]

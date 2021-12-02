@@ -68,7 +68,10 @@ def isactor(type):
 
 
 def guard_is_structure(cls):
-    if not inspect.ismethod(cls.get_structure_meta):
+
+    if not hasattr(cls, "get_structure_meta") or not inspect.ismethod(
+        cls.get_structure_meta
+    ):
         raise NonConvertableType(
             f"Could not convert {cls.__name__} to Port: Please implement a classmethod get_structure_meta or decorate {cls.__name__} with register_structure(meta= StructureMeta)"
         )
@@ -82,16 +85,12 @@ def convert_arg_to_argport(cls, **kwargs) -> ArgPort:
         if cls._name == "List":
             child = convert_arg_to_argport(cls.__args__[0])
             return ListArgPort.from_params(
-                **kwargs,
-                child=child.dict(),
+                **kwargs, child=child.dict()
             )  # We have to call the dict format here as we want the public alias __typename in the intializer
 
         if cls._name == "Dict":
             child = convert_arg_to_argport(cls.__args__[1])
-            return DictArgPort.from_params(
-                **kwargs,
-                child=child.dict(),
-            )  # We have to
+            return DictArgPort.from_params(**kwargs, child=child.dict())  # We have to
 
     if inspect.isclass(cls):
         # Generic Cases
@@ -197,7 +196,7 @@ def convert_return_to_returnport(cls, **kwargs):
     raise ConversionError(f"No Factory for Arg Type {cls.__name__} Conversion found")
 
 
-def define(function, widgets={}, allow_empty_doc=False) -> Node:
+def define(function, widgets={}, allow_empty_doc=False, interfaces=[]) -> Node:
     """Define
 
     Define a functions in the context of arnheim and
@@ -255,7 +254,7 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
                 returns.append(convert_return_to_returnport(cls))
 
         returns.append(
-            convert_return_to_returnport(cls)
+            convert_return_to_returnport(function_output)
         )  # Other types will be converted to normal lists and shit
 
     except AttributeError:
@@ -317,6 +316,7 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
             "kwargs": [kwarg.dict() for kwarg in kwargs],
             "returns": [re.dict() for re in returns],
             "type": NodeType.GENERATOR if is_generator else NodeType.FUNCTION,
+            "interfaces": interfaces,
         }
     )
 

@@ -215,7 +215,6 @@ class Agent:
             raise e
 
         except Exception as e:
-            print(e)
             logger.exception(e)
             raise e
 
