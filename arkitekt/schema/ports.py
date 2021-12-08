@@ -74,7 +74,7 @@ class EnumExpandShrink:
                 None,
             )
             if value is not None
-            else getattr(self, "defaultEnum", None)
+            else getattr(self, "defaultOption", None)
         )
 
     async def shrink(self, instance, **kwargs):
@@ -262,7 +262,7 @@ class BoolKwargPort(KwargPort, BoolExpandShrink):
 
 
 class EnumKwargPort(KwargPort, EnumExpandShrink):
-    defaultValue: Any
+    defaultOption: Any
     options: Optional[dict]
     pass
 
@@ -271,7 +271,7 @@ class EnumKwargPort(KwargPort, EnumExpandShrink):
         port = cls(
             __typename=cls.__name__,
             widget=widget.dict() if widget else None,
-            defaultValue=default._value_,
+            defaultOption=default._value_,
             **kwargs,
         )  # We ensure creation of a proper object)
         return port

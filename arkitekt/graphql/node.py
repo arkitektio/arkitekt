@@ -83,7 +83,7 @@ PORTS_FR = """
         defaultString
       }
       ... on EnumKwargPort {
-        defaultEnum
+        defaultOption
         options
       }
       ... on ListKwargPort {

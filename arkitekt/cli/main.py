@@ -4,6 +4,7 @@ from genericpath import isfile
 from runpy import run_path
 from typing import List
 from arkitekt.cli.dev.autoreload import watch_directory_and_restart
+from arkitekt.cli.prod.run import import_directory_and_start
 from arkitekt.cli.prod.waitfor import wait_for_connection
 from fakts import Fakts
 from fakts.beacon.beacon import FaktsEndpoint
@@ -30,11 +31,9 @@ class ArkitektOptions(str, Enum):
 
 
 agent_script = f'''
-from arkitekt.agents.script import ScriptAgent
+from arkitekt import register
 
-agent = ScriptAgent()
-
-@agent.register()
+@register()
 def test_show(name: str)-> str:
     """Demo Node
 
@@ -49,7 +48,6 @@ def test_show(name: str)-> str:
     """
     return name
 
-agent.provide()
 
 '''
 
@@ -57,9 +55,10 @@ mikro_script = """
 from mikro import gql
 
 x = gql('''
-query { myrepresentations {
-    id
-}
+query {
+    myrepresentations {
+        id
+    }
 }
 ''')
 
@@ -101,6 +100,7 @@ def main(
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
 
+        fakts = Fakts(grants=[], fakts_path=fakts_path)
         asyncio.run(watch_directory_and_restart(path, entrypoint="run"))
 
     if script == ArkitektOptions.RUN:
@@ -112,7 +112,8 @@ def main(
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
 
-        run_path(run_script_path)
+        fakts = Fakts(grants=[], fakts_path=fakts_path)
+        asyncio.run(import_directory_and_start(path, entrypoint="run"))
 
     if script == ArkitektOptions.LOGIN:
 
