@@ -1,7 +1,5 @@
-
-
 class PackedList:
-    members =  []
+    members = []
 
     def __class_getitem__(cls, params):
         cls.members.append(params)

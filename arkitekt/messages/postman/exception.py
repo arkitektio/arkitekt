@@ -1,6 +1,4 @@
-
 from ..base import MessageDataModel
-
 
 
 class ExceptionDataModel(MessageDataModel):

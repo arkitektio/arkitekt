@@ -15,4 +15,3 @@ except:
     from asyncio import get_event_loop
 
     get_running_loop = get_event_loop
-

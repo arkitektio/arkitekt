@@ -7,10 +7,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-
-
-
-
 class GraphQLStructure(GraphQLModel, StructureModel):
     __typename: str
 
@@ -29,7 +25,6 @@ class GraphQLStructure(GraphQLModel, StructureModel):
         super().register_model(meta=meta)
         logger.debug(f"Registering {cls} as Structure under identifier {meta}")
         get_packer_registry().register_structure(cls)
-        
 
     class Meta:
         abstract = True

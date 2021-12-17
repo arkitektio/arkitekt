@@ -82,6 +82,7 @@ class ProvisionsWidget(QtWidgets.QWidget):
         self.provisions = {}
 
         self.agent.provision_signal.connect(self.provision_in)
+        self.agent.unprovide_signal.connect(self.on_unprovide)
 
     def provision_in(self, provide: BouncedProvideMessage):
         self.provisions[provide.meta.reference] = provide
@@ -93,3 +94,6 @@ class ProvisionsWidget(QtWidgets.QWidget):
             item.setSizeHint(w.minimumSizeHint())
             self.listWidget.addItem(item)
             self.listWidget.setItemWidget(item, w)
+
+    def on_unprovide(self):
+        self.listWidget.clear()

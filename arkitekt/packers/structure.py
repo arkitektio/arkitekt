@@ -6,12 +6,12 @@ from pydantic.main import BaseModel
 from arkitekt.schema.widgets import Widget
 from enum import Enum
 
+
 class BoundType(str, Enum):
     GLOBAL = "GLOBAL"
     AGENT = "AGENT"
     REGISTRY = "REGISTRY"
     APP = "APP"
-
 
 
 class StructureMeta(BaseModel):
@@ -34,7 +34,6 @@ class Structure(ABC):
     Returns:
         [type]: [description]
     """
-
 
     @abstractclassmethod
     def get_structure_meta(cls) -> StructureMeta:

@@ -43,7 +43,8 @@ class AgentSignals(QObject):
 
 
 class QtAgent(AppAgent, QObject):
-    provide_signal = Signal(bool)
+    provide_signal = Signal()
+    unprovide_signal = Signal()
     provision_signal = Signal(BouncedProvideMessage)
     unprovision_signal = Signal(BouncedUnprovideMessage)
 
@@ -130,7 +131,7 @@ class QtAgent(AppAgent, QObject):
         )
 
         if len(args) == 1:
-            new_node = define(function=args[0], widgets=widgets)
+            new_node = define(function=args[0], widgets=widgets, **params)
             self.registry.templatedNewNodes.append((new_node, defined_actor, params))
 
         if len(args) == 2:
@@ -150,12 +151,12 @@ class QtAgent(AppAgent, QObject):
 
     async def approve_nodes_and_templates(self):
         await super().approve_nodes_and_templates()
-        self.provide_signal.emit(True)
+        self.provide_signal.emit()
         return
 
     async def aprovide(self):
         try:
             await super().aprovide()
         except asyncio.CancelledError as e:
-            self.provide_signal.emit(False)
+            self.unprovide_signal.emit()
             raise e

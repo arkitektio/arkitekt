@@ -117,19 +117,19 @@ class TemplatesWidget(QtWidgets.QWidget):
         self.layout.addWidget(self.listWidget)
 
         self.agent.provide_signal.connect(self.on_provide)
+        self.agent.unprovide_signal.connect(self.on_unprovide)
 
         self.setLayout(self.layout)
         self.provisions = {}
 
-    def on_provide(self, provide_state):
-        if provide_state:
-            self.listWidget.clear()
-            for key, template in self.agent.templateTemplatesMap.items():
-                item = QtWidgets.QListWidgetItem()
-                w = TemplatesListItemWidget(template, self.agent)
-                item.setSizeHint(w.minimumSizeHint())
-                self.listWidget.addItem(item)
-                self.listWidget.setItemWidget(item, w)
+    def on_provide(self):
+        self.listWidget.clear()
+        for key, template in self.agent.templateTemplatesMap.items():
+            item = QtWidgets.QListWidgetItem()
+            w = TemplatesListItemWidget(template, self.agent)
+            item.setSizeHint(w.minimumSizeHint())
+            self.listWidget.addItem(item)
+            self.listWidget.setItemWidget(item, w)
 
-        else:
-            self.listWidget.clear()
+    def on_unprovide(self):
+        self.listWidget.clear()

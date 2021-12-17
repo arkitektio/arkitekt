@@ -90,7 +90,7 @@ async def expand_inputs(
         Tuple[List[Any], Dict[str, Any]]: Expanded Args, Expanded Kwargs
     """
     assert len(node.args) == len(args), "Missmatch in Arg Length"
-
+    print(args)
     expanded_args_futures = [port.expand(arg) for port, arg in zip(node.args, args)]
     try:
         expanded_args = await asyncio.gather(*expanded_args_futures)

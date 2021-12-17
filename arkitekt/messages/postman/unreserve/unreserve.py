@@ -1,8 +1,12 @@
 from pydantic.main import BaseModel
-from ....messages.types import  RESERVE, UNRESERVE
-from ....messages.base import MessageDataModel, MessageMetaExtensionsModel, MessageMetaModel, MessageModel
+from ....messages.types import RESERVE, UNRESERVE
+from ....messages.base import (
+    MessageDataModel,
+    MessageMetaExtensionsModel,
+    MessageMetaModel,
+    MessageModel,
+)
 from typing import List, Optional
-
 
 
 class ProvideMetaExtensionsModel(MessageMetaExtensionsModel):
@@ -10,13 +14,14 @@ class ProvideMetaExtensionsModel(MessageMetaExtensionsModel):
     progress: Optional[str]
     callback: Optional[str]
 
+
 class ProvideMetaModel(MessageMetaModel):
     type: str = UNRESERVE
     extensions: Optional[ProvideMetaExtensionsModel]
 
+
 class DataModel(MessageDataModel):
     reservation: str
-
 
 
 class UnreserveMessage(MessageModel):

@@ -29,6 +29,11 @@
         "**/venv": true,
         "**/__pycache__": true,
         "**/.pytest_cache": true
-    }
+    },
+    "python.testing.pytestArgs": [
+        "tests"
+    ],
+    "python.testing.unittestEnabled": false,
+    "python.testing.pytestEnabled": true
 
 }

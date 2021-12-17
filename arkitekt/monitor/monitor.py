@@ -6,7 +6,7 @@ from rich.table import Table
 from rich.live import Live
 from herre.console.context import get_current_console
 
-current_monitor: ContextVar["Monitor"] = ContextVar('current_monitor', default=None)
+current_monitor: ContextVar["Monitor"] = ContextVar("current_monitor", default=None)
 
 
 def get_current_monitor():
@@ -15,7 +15,6 @@ def get_current_monitor():
 
 
 class ReservationPanel:
-
     def __init__(self, monitor: "Monitor", reservation) -> None:
         self.monitor = monitor
         self.reservation = reservation
@@ -25,7 +24,9 @@ class ReservationPanel:
         heading_information.add_column()
         heading_information.add_column(style="green")
 
-        reserving_table = Table(title=f"[bold green]Reserving on ...", show_header=False)
+        reserving_table = Table(
+            title=f"[bold green]Reserving on ...", show_header=False
+        )
 
         for key, value in self.reservation.params.dict().items():
             reserving_table.add_row(key, str(value))
@@ -48,10 +49,10 @@ class ReservationPanel:
         pass
 
     def log(self, message: str, level: LogLevel = LogLevel.INFO):
-         self.table.add_row(level, f"{message}")
+        self.table.add_row(level, f"{message}")
+
 
 class ActorPanel:
-
     def __init__(self, monitor: "Monitor", actor) -> None:
         self.monitor = monitor
         self.actor = actor
@@ -61,7 +62,9 @@ class ActorPanel:
         heading_information.add_column()
         heading_information.add_column(style="green")
 
-        reserving_table = Table(title=f"[bold green]Provision on ...", show_header=False)
+        reserving_table = Table(
+            title=f"[bold green]Provision on ...", show_header=False
+        )
 
         heading_information.add_row(self.actor.template.node.__rich__())
 
@@ -85,7 +88,6 @@ class ActorPanel:
 
 
 class AgentPanel:
-
     def __init__(self, monitor: "Monitor", provision) -> None:
         self.monitor = monitor
         self.provision = provision
@@ -94,7 +96,6 @@ class AgentPanel:
         heading_information = Table.grid(expand=True)
         heading_information.add_column()
         heading_information.add_column(style="green")
-
 
         self.table = Table()
         self.table.add_column("Template")
@@ -115,9 +116,7 @@ class AgentPanel:
         self.table.add_row(f"{template.id} - {template.node.name}", f"{actor.__name__}")
 
 
-
 class Monitor:
-
     def __init__(self, title="Monitor", log=False) -> None:
         """Monitor allows you to monitor the progress of what is happenening inside your application
 
@@ -130,8 +129,9 @@ class Monitor:
         self.columns.add_column()
         self.log = log
         self.panel = Panel(self.columns, title=title)
-        self.live = Live(self.panel, refresh_per_second=4, console=get_current_console())
-
+        self.live = Live(
+            self.panel, refresh_per_second=4, console=get_current_console()
+        )
 
     def create_reservation_panel(self, reservation):
         return ReservationPanel(self, reservation)
@@ -146,17 +146,16 @@ class Monitor:
         self.columns.add_row(renderable)
 
     def __aenter__(self):
-        '''Convenience Method'''
+        """Convenience Method"""
         return self.__aenter__()
 
-    def __aexit__(self,*args,**kwargs):
-        self.__exit__(*args,**kwargs)
+    def __aexit__(self, *args, **kwargs):
+        self.__exit__(*args, **kwargs)
 
     def __enter__(self):
         current_monitor.set(self)
         self.live.__enter__()
         return self
-
 
     def __exit__(self, *args, **kwargs):
         self.live.__exit__(*args, **kwargs)

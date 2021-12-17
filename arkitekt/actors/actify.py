@@ -85,12 +85,12 @@ def convert_arg_to_argport(cls, **kwargs) -> ArgPort:
         if cls._name == "List":
             child = convert_arg_to_argport(cls.__args__[0])
             return ListArgPort.from_params(
-                **kwargs, child=child.dict()
+                **kwargs, child=child
             )  # We have to call the dict format here as we want the public alias __typename in the intializer
 
         if cls._name == "Dict":
             child = convert_arg_to_argport(cls.__args__[1])
-            return DictArgPort.from_params(**kwargs, child=child.dict())  # We have to
+            return DictArgPort.from_params(**kwargs, child=child)  # We have to
 
     if inspect.isclass(cls):
         # Generic Cases
@@ -126,7 +126,7 @@ def convert_kwarg_to_kwargport(cls, **kwargs):
         if cls._name == "List":
             child = convert_kwarg_to_kwargport(cls.__args__[0])
             return ListKwargPort.from_params(
-                **kwargs, child=child.dict()
+                **kwargs, child=child
             )  # We have to call the dict format here as we want the public alias __typename in the intializer
 
         if cls._name == "Dict":
@@ -137,7 +137,7 @@ def convert_kwarg_to_kwargport(cls, **kwargs):
 
     if inspect.isclass(cls):
         # Generic Cases
-        default = kwargs["default"]
+        default = kwargs.get("default", None)
 
         if issubclass(cls, bool) or type(default) == bool:
             return BoolKwargPort.from_params(
@@ -169,12 +169,12 @@ def convert_return_to_returnport(cls, **kwargs):
         if cls._name == "List":
             child = convert_return_to_returnport(cls.__args__[0])
             return ListReturnPort.from_params(
-                **kwargs, child=child.dict()
+                **kwargs, child=child
             )  # We have to call the dict format here as we want the public alias __typename in the intializer
 
         if cls._name == "Dict":
             child = convert_return_to_returnport(cls.__args__[1])
-            return DictReturnPort.from_params(**kwargs, child=child.dict())  # We ha
+            return DictReturnPort.from_params(**kwargs, child=child)  # We ha
 
     # Generic Cases
     if inspect.isclass(cls):
@@ -253,9 +253,10 @@ def define(function, widgets={}, allow_empty_doc=False, interfaces=[]) -> Node:
             for cls in function_output.__args__:
                 returns.append(convert_return_to_returnport(cls))
 
-        returns.append(
-            convert_return_to_returnport(function_output)
-        )  # Other types will be converted to normal lists and shit
+        else:
+            returns.append(
+                convert_return_to_returnport(function_output)
+            )  # Other types will be converted to normal lists and shit
 
     except AttributeError:
         if function_output.__name__ != "_empty":  # Is it not empty

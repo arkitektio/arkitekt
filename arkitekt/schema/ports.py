@@ -117,14 +117,8 @@ class StructureExpandShrink:
 
         if hasattr(instance, "shrink"):
             return await instance.shrink()
-        # Instance we are trying to shrink needs to be transpile to the required model
-        from arkitekt.packers.transpilers.registry import get_transpiler_registry
 
-        transpiler = get_transpiler_registry().get_transpiler(
-            instance.__class__.__name__, self.identifier
-        )
-        transpiled_instance = await transpiler.transpile(instance)
-        return await transpiled_instance.shrink()
+        raise NotImplementedError(f"{instance} is unshrinkable. Provide 'shrink'")
 
     def to_type(self):
         return get_packer_registry().get_structure(self.identifier)
@@ -132,7 +126,11 @@ class StructureExpandShrink:
 
 class ListExpandShrink:
     async def expand(self, value, **kwargs):
-        value = getattr(self, "defaultList", None)
+        if value is None:
+            value = getattr(self, "defaultList", None)
+
+        if value is None:
+            return None
 
         return (
             await asyncio.gather(*[self.child.expand(item, **kwargs) for item in value])
@@ -144,6 +142,9 @@ class ListExpandShrink:
         assert isinstance(
             instance, list
         ), f"ListPorts only accept lists! Got {instance}"
+
+        if instance is None:
+            return None
 
         return (
             await asyncio.gather(
@@ -159,7 +160,11 @@ class ListExpandShrink:
 
 class DictExpandShrink:
     async def expand(self, value, **kwargs):
-        value = getattr(self, "defaultList", None)
+        if value is None:
+            value = getattr(self, "defaultDict", None)
+
+        if value is None:
+            return None
 
         return (
             {
@@ -212,6 +217,18 @@ ListArgPort = ForwardRef("ListArgPort")
 
 class ListArgPort(ListExpandShrink, ArgPort):
     child: Union[IntArgPort, StructureArgPort, StringArgPort, ListArgPort]
+
+    @classmethod
+    def from_params(cls, widget=None, child=None, **kwargs):
+        assert child is not None, "Lists need children"
+        # TODO: This weird widget conversion thing needs to stop, type GraphQLOBject correctly
+        port = cls(
+            __typename=cls.__name__,
+            widget=widget,
+            child=child.dict(),
+            **kwargs,
+        )  # We ensure creation of a proper object)
+        return port
 
 
 ListArgPort.update_forward_refs()

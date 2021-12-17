@@ -8,9 +8,7 @@ from herre.wards.graphql import ParsedQuery
 registry = get_widget_registry()
 
 
-@registry.register(
-    [(IntArgPort, SliderWidget ), (IntKwargPort, SliderWidget)]
-)
+@registry.register([(IntArgPort, SliderWidget), (IntKwargPort, SliderWidget)])
 class QTSliderWidget(QtWidgets.QWidget, UIPortMixin):
     port: IntKwargPort
 
@@ -27,18 +25,15 @@ class QTSliderWidget(QtWidgets.QWidget, UIPortMixin):
         self.sl = QtWidgets.QSlider(QtCore.Qt.Horizontal)
         self.sl.setMinimum(self.widget.min or 0)
         self.sl.setMaximum(self.widget.max or 100)
-        self.sl.setValue(self.port.default if isinstance(self.port, IntKwargPort) else 0)
+        self.sl.setValue(
+            self.port.default if isinstance(self.port, IntKwargPort) else 0
+        )
         self.sl.setTickPosition(QtWidgets.QSlider.TicksBelow)
         self.sl.setTickInterval(5)
-
 
         self.layout.addWidget(self.sl)
         self.layout.addWidget(QtWidgets.QLabel(self.port.description))
         self.setLayout(self.layout)
 
-
     def get_current_value(self):
         return self.sl.value()
-
-
-

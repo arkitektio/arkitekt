@@ -13,12 +13,14 @@ cancel_event = contextvars.ContextVar("cancel_event")
 def get_current_assign() -> BouncedAssignMessage:
     return assign_message.get()
 
+
 def get_current_transport() -> Transport:
     return transport.get()
+
 
 def get_current_janus() -> janus.Queue:
     return janus_queue.get()
 
+
 def get_current_cancel_event() -> threading.Event:
     return cancel_event.get()
-

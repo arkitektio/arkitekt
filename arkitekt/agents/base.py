@@ -194,10 +194,11 @@ class Agent:
             )(self.config.kwargs, broadcast=self.broadcast)
 
             await self.on_transport_about_to_connect()
+
+            self.providing = True
             await self.transport.aconnect()
 
         except asyncio.CancelledError as e:
-
             tasks = [task for key, task in self.runningTasks.items()]
             for task in tasks:
                 logger.info(f"Cancelling Actor Task: {task}")
@@ -212,6 +213,7 @@ class Agent:
             if caused_ward_connect:
                 await self.ward.adisconnect()
 
+            self.providing = False
             raise e
 
         except Exception as e:

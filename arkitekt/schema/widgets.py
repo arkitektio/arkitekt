@@ -1,5 +1,3 @@
-
-
 from herre.access.object import GraphQLObject
 from typing import List, Optional, Union
 
@@ -14,6 +12,7 @@ class Widget(GraphQLObject):
         </div>
         """
 
+
 class ValueWidget(Widget):
     pass
 
@@ -26,18 +25,22 @@ class QueryWidget(Widget):
 class SearchWidget(Widget):
     query: Optional[str]
 
+
 class IntWidget(Widget):
     pass
 
+
 class BoolWidget(Widget):
     pass
+
 
 class StringWidget(Widget):
     placeholder: Optional[str]
     pass
 
+
 class SliderWidget(Widget):
-    """ A Slider widget enables
+    """A Slider widget enables
     a slider from min to max with
     equally spaced ticks.
     Please assert default is within
@@ -47,8 +50,17 @@ class SliderWidget(Widget):
         max(int): The Maximum Value for this Slider
         min(int): The Minimum Value for this Slider
     """
+
     min: Optional[int]
     max: Optional[int]
 
 
-AllWidgets = Union[SearchWidget, IntWidget, SliderWidget, QueryWidget, ValueWidget, StringWidget, BoolWidget]
+AllWidgets = Union[
+    SearchWidget,
+    IntWidget,
+    SliderWidget,
+    QueryWidget,
+    ValueWidget,
+    StringWidget,
+    BoolWidget,
+]
