@@ -20,7 +20,7 @@ jobs:
           poetry-version: "1.1.4"
       - name: Run Poetry Install
         run: poetry install
-       - name: Publish
+      - name: Publish
         env:
           PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
         run: |
