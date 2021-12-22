@@ -11,12 +11,5 @@
             "program": "run.py",
             "console": "integratedTerminal"
         },
-        {
-            "name": "Python: Test.py",
-            "type": "python",
-            "request": "launch",
-            "program": "test.py",
-            "console": "integratedTerminal"
-        }
     ]
 }

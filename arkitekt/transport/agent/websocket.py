@@ -1,9 +1,11 @@
 from pydantic.main import BaseModel
+from websockets.exceptions import ConnectionClosedError
 from arkitekt.config import TransportProtocol
+from arkitekt.transport.agent.base import AgentTransportConfig
 from arkitekt.transport.base import Transport, TransportConfig
 from arkitekt.messages.utils import expandToMessage
 from arkitekt.messages.base import MessageMetaExtensionsModel, MessageModel
-from arkitekt.transport.registry import register_transport
+from arkitekt.transport.registry import register_agent_transport
 from herre.herre import get_current_herre
 from enum import Enum
 import websockets
@@ -15,11 +17,14 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-class WebsocketTransportConfig(BaseModel):
+class AgentWebsocketCodes(int, Enum):
+    ALREADY_CONNECTED_IDENTIFER = 4001
+
+
+class WebsocketAgentTransportConfig(AgentTransportConfig):
     host: str
     port: int
     secure: bool = False
-    route: str
 
     @property
     def protocol(self):
@@ -29,46 +34,46 @@ class WebsocketTransportConfig(BaseModel):
 class ConnectionFailedError(Exception):
     pass
 
-@register_transport(TransportProtocol.WEBSOCKET)
-class WebsocketTransport(Transport):
-    configClass = WebsocketTransportConfig
-    config: WebsocketTransportConfig
 
+class CorrectableConnectionFail(ConnectionFailedError):
+    pass
+
+
+class DefiniteConnectionFail(ConnectionFailedError):
+    pass
+
+
+@register_agent_transport(TransportProtocol.WEBSOCKET)
+class WebsocketAgentTransport(Transport):
+    configClass = WebsocketAgentTransportConfig
+    config: WebsocketAgentTransportConfig
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+        self.send_queue = None
         self.retries = 5
         self.time_between_retries = 5
         self.connection_alive = False
         self.connection_dead = False
-
 
     async def aconnect(self):
         if not self.herre.logged_in:
             await self.herre.alogin()
 
         self.send_queue = asyncio.Queue()
-        self.connection_task =  create_task(self.websocket_loop())
-
+        await self.websocket_loop()
 
     async def adisconnect(self):
-        self.connection_task.cancel()
-
-        try:
-            await self.connection_task
-        except asyncio.CancelledError:
-            logger.info(f"Websocket Transport {self} succesfully disconnected")
-    
-
+        logger.info(f"Websocket Transport {self} succesfully disconnected")
 
     async def websocket_loop(self, retry=0):
         send_task = None
         receive_task = None
-
-        assert retry < self.retries, "Exceeded number of retries! Postman is disconnected"
         try:
             try:
-                async with websockets.connect(f"{self.config.protocol}://{self.config.host}:{self.config.port}{self.config.route}/?token={self.herre.state.access_token}") as client:
+                async with websockets.connect(
+                    f"{self.config.protocol}://{self.config.host}:{self.config.port}/agent/?token={self.herre.state.access_token}&identifier={self.config.identifier}"
+                ) as client:
 
                     send_task = create_task(self.sending(client))
                     receive_task = create_task(self.receiving(client))
@@ -84,55 +89,68 @@ class WebsocketTransport(Transport):
                     for task in pending:
                         task.cancel()
 
-                    raise ConnectionFailedError("Connection failed")
+                    for task in done:
+                        raise task.exception()
+
+            except ConnectionClosedError as e:
+                logger.exception(e)
+                if e.code == AgentWebsocketCodes.ALREADY_CONNECTED_IDENTIFER:
+                    raise DefiniteConnectionFail(
+                        f"Another agent was already connected on {self.config.identifier}! Please set a different identifier if you want to connect!"
+                    ) from e
+
+                raise CorrectableConnectionFail from e
 
             except Exception as e:
-                raise ConnectionFailedError from e
+                logger.warning(
+                    "THIS EXCEPTION HAS NO RETRY STRATEGY... TRYING TO RETRY??"
+                )
+                raise CorrectableConnectionFail from e
 
-        except ConnectionFailedError as e:
-            logger.error("Connection to failed Retrying")
+        except CorrectableConnectionFail as e:
+            logger.info(f"Trying to Recover from Exception {e}")
+            if retry > self.retries:
+                raise DefiniteConnectionFail("Exceeded Number of Retries")
             await asyncio.sleep(self.time_between_retries)
-            await self.connection_task(retry=retry + 1)
+            logger.info(f"Retrying to connect")
+            await self.websocket_loop(retry=retry + 1)
 
-        except AssertionError as e:
-            logger.error("Connection failed Definetly. Postman will fail on next call!")
+        except DefiniteConnectionFail as e:
             self.connection_dead = False
+            raise e
 
         except asyncio.CancelledError as e:
             logger.info("Got Canceleld")
             if send_task and receive_task:
-                 send_task.cancel()
-                 receive_task.cancel()
+                send_task.cancel()
+                receive_task.cancel()
 
-            cancellation = await asyncio.gather(send_task, receive_task, return_exceptions=True)
+            cancellation = await asyncio.gather(
+                send_task, receive_task, return_exceptions=True
+            )
             raise e
-
 
     async def sending(self, client):
         try:
             while True:
                 message = await self.send_queue.get()
-                logger.debug("Websocket: >>>>>> " + message)
+                logger.debug("Agent Websocket: >>>>>> " + message)
                 await client.send(message)
                 self.send_queue.task_done()
         except asyncio.CancelledError as e:
             logger.debug("Sending Task sucessfully Cancelled")
 
-
     async def receiving(self, client):
         try:
             async for message in client:
-                logger.debug("Websocket: <<<<<<< " + message)
+                logger.debug("Agent Websocket: <<<<<<< " + message)
                 message = expandToMessage(json.loads(message))
                 await self.broadcast(message)
         except asyncio.CancelledError as e:
             logger.debug("Receiving Task sucessfully Cancelled")
 
-
     async def forward(self, message: MessageModel):
-        assert not self.connection_dead, "Connection is definetly dead. Retries have been exceeded. Error"
+        assert (
+            not self.connection_dead
+        ), "Connection is definetly dead. Retries have been exceeded. Error"
         await self.send_queue.put(json.dumps(message.dict()))
-        
-
-
-    

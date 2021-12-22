@@ -1,3 +1,5 @@
+from asyncio.tasks import create_task
+from arkitekt.actors.registry import ActorRegistry, get_current_actor_registry
 from arkitekt.agents.standard import StandardAgent
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import (
@@ -18,6 +20,7 @@ from arkitekt.messages.postman.provide.provide_critical import ProvideCriticalMe
 from arkitekt.messages.postman.log import LogLevel
 from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
 import asyncio
+from arkitekt.schema.params import TemplateParams
 from fakts import config
 from herre.wards.base import WardException
 from arkitekt.actors.actify import actify, define
@@ -31,7 +34,7 @@ from arkitekt.schema.template import Template
 from arkitekt.schema.node import Node
 from arkitekt.packers.transpilers import Transpiler
 from typing import Callable, Dict, List, Tuple, Type
-from arkitekt.agents.base import Agent, AgentException, parse_params
+from arkitekt.agents.base import Agent, AgentException
 import logging
 from herre.console import get_current_console
 
@@ -41,28 +44,18 @@ logger = logging.getLogger(__name__)
 class AppAgent(StandardAgent):
     ACTOR_PENDING_MESSAGE = "Actor is Pending"
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, registry: ActorRegistry = None, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         # Running Actors indexed by their ID
-        self.runningActors: Dict[str, Actor] = {}
-        self.runningTasks: Dict[str, asyncio.Task] = {}
 
-        self.templatedUnqueriedNodes: List[
-            Tuple[dict, Callable]
-        ] = []  # dict are queryparams for the node
-        self.templatedNodes: List[
-            Tuple[Node, Callable]
-        ] = []  # node is already saved and has id
-        self.templatedNewNodes: List[
-            Tuple[Node, Callable]
-        ] = []  # Node is not saved and has undefined id
+        self.registry = registry or get_current_actor_registry()
 
         self.approvedTemplates: List[
             Tuple[Template, Callable]
         ] = []  # Template is approved
 
         # IMportant Maps
-        self.templateActorsMap = {}
+        self.templateActorBuilderMap = {}
         self.templateTemplatesMap = {}
 
     async def on_transport_about_to_connect(self):
@@ -70,21 +63,21 @@ class AppAgent(StandardAgent):
         return
 
     async def on_transport_connected(self):
-        logger.info(f"Hosting {self.templateActorsMap.keys()}")
+        logger.info(f"Hosting {self.templateActorBuilderMap.keys()}")
 
     def on_task_done(self, future):
         logger.debug(f"Actor ended with state {future}")
 
     async def on_bounced_provide(self, message: BouncedProvideMessage):
 
-        if message.data.template in self.templateActorsMap:
+        if message.data.template in self.templateActorBuilderMap:
             if message.meta.reference not in self.runningActors:
                 # Didn not exist before
-                actor = self.templateActorsMap[
+                actor = self.templateActorBuilderMap[
                     message.data.template
-                ]  # creating out little Actor
+                ]()  # creating out little Actor
                 self.runningActors[message.meta.reference] = actor
-                task = self.loop.create_task(actor.arun(message, self))
+                task = create_task(actor.arun(message, self))
                 task.add_done_callback(self.on_task_done)
                 self.runningTasks[message.meta.reference] = task
 
@@ -149,11 +142,17 @@ class AppAgent(StandardAgent):
 
     async def approve_nodes_and_templates(self):
 
-        if self.templatedUnqueriedNodes:
-            for query_params, defined_actor, params in self.templatedUnqueriedNodes:
+        if self.registry.templatedUnqueriedNodes:
+            for (
+                query_params,
+                defined_actor,
+                params,
+            ) in self.registry.templatedUnqueriedNodes:
                 try:
                     arkitekt_node = await Node.asyncs.get(**query_params)
-                    self.templatedNodes.append((arkitekt_node, defined_actor, params))
+                    self.registry.templatedNodes.append(
+                        (arkitekt_node, defined_actor, params)
+                    )
                 except WardException as e:
                     logger.exception(e)
                     if self.strict:
@@ -161,15 +160,17 @@ class AppAgent(StandardAgent):
                             f"Couldn't find Node for query {query_params}"
                         ) from e
 
-        if self.templatedNewNodes:
-            for defined_node, defined_actor, params in self.templatedNewNodes:
+        if self.registry.templatedNewNodes:
+            for defined_node, defined_actor, params in self.registry.templatedNewNodes:
                 # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
                 # id so we are trying to send them to arkitekt)
                 try:
                     arkitekt_node = await Node.asyncs.create(
                         **defined_node.dict(as_input=True)
                     )
-                    self.templatedNodes.append((arkitekt_node, defined_actor, params))
+                    self.registry.templatedNodes.append(
+                        (arkitekt_node, defined_actor, params)
+                    )
                 except WardException as e:
                     logger.exception(e)
                     if self.strict:
@@ -177,15 +178,16 @@ class AppAgent(StandardAgent):
                             f"Couldn't create Node for defintion {defined_node}"
                         ) from e
 
-        if self.templatedNodes:
+        if self.registry.templatedNodes:
             # This is an arkitekt Node and we can generate potential Templates
-            for arkitekt_node, defined_actor, params in self.templatedNodes:
-                try:
-                    params = await parse_params(
-                        params
-                    )  # Parse the parameters for template creation
+            for arkitekt_node, defined_actor, params in self.registry.templatedNodes:
+                try:  # Parse the parameters for template creation
+                    version = params.get("version", "main")
+
                     arkitekt_template = await Template.asyncs.create(
-                        node=arkitekt_node, params=params
+                        node=arkitekt_node,
+                        params=TemplateParams(**params),
+                        version=version,
                     )
                     self.approvedTemplates.append(
                         (arkitekt_template, defined_actor, params)
@@ -202,7 +204,7 @@ class AppAgent(StandardAgent):
             for arkitekt_template, defined_actor, params in self.approvedTemplates:
 
                 # Generating Maps for Easy access
-                self.templateActorsMap[arkitekt_template.id] = defined_actor
+                self.templateActorBuilderMap[arkitekt_template.id] = defined_actor
                 self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
                 if self.panel:

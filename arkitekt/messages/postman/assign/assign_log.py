@@ -9,6 +9,7 @@ class MetaExtensionsModel(MessageMetaExtensionsModel):
     progress: Optional[str]
     callback: Optional[str]
 
+
 class MetaModel(MessageMetaModel):
     type: str = ASSIGN_LOG
     extensions: Optional[MetaExtensionsModel]
@@ -19,8 +20,8 @@ class AssignLogMessage(MessageModel):
     meta: MetaModel
 
     @classmethod
-    def from_log(cls, reference,  message, loglevel = LogLevel.INFO, extensions={}):
-        return cls(data={
-            "level": loglevel,
-            "message": message
-            }, meta={"extensions": extensions, "reference": reference})
+    def from_log(cls, reference, message, loglevel=LogLevel.INFO, extensions={}):
+        return cls(
+            data={"level": loglevel, "message": message},
+            meta={"extensions": extensions, "reference": reference},
+        )

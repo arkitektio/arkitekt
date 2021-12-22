@@ -1,12 +1,11 @@
-#Base Types
+# Base Types
 EXCEPTION = "exception"
 ALLOWANCE = "allowance"
 
 
-#Base Type
+# Base Type
 AGENT_CONNECT = "agent_connect"
 AGENT_DISCONNECT = "agent_disconnect"
-
 
 
 ASSIGNATION = "assignation"
@@ -15,7 +14,7 @@ ASSIGNATION_REQUEST = "assignation_request"
 PROVISION_REQUEST = "provision_request"
 
 ACTIVATE_POD = "activate_pod"
-DEACTIVATE_POD ="deactivate_pod"
+DEACTIVATE_POD = "deactivate_pod"
 
 # ASIGN PATH
 ASSIGN = "assign"
@@ -25,9 +24,9 @@ BOUNCED_FORWARDED_ASSIGN = "bounced_forwarded_assign"
 ASSIGN_DONE = "assign_done"
 ASSIGN_RECEIVED = "assign_received"
 ASSIGN_CANCELLED = "assign_cancelled"
-ASSIGN_LOG ="assign_log"
+ASSIGN_LOG = "assign_log"
 ASSIGN_CRITICAL = "assign_fail"
-ASSIGN_YIELD =  "assign_yield"
+ASSIGN_YIELD = "assign_yield"
 ASSIGN_RETURN = "assign_return"
 ASSIGN_RETRY = "assign_retry"
 
@@ -37,7 +36,7 @@ BOUNCED_UNASSIGN = "bounced_unassign"
 BOUNCED_FORWARDED_UNASSIGN = "bounced_forwarded_unassign"
 
 UNASSIGN_DONE = "unassign_done"
-UNASSIGN_LOG ="unassign_log"
+UNASSIGN_LOG = "unassign_log"
 UNASSIGN_CRITICAL = "unassign_fail"
 
 # Reserve
@@ -53,7 +52,7 @@ RESERVE_CRITICAL = "reserve_critical"
 RESERVE_ACTIVE = "reserve_active"
 RESERVE_WAITING = "reserve_waiting"
 
-#Unreserve
+# Unreserve
 UNRESERVE = "unreserve"
 BOUNCED_UNRESERVE = "bounced_unreserve"
 
@@ -68,6 +67,7 @@ PROVIDE = "provide"
 BOUNCED_PROVIDE = "bounced_provide"
 
 PROVIDE_DONE = "provide_done"
+PROVIDE_BOUND = "provide_bound"
 PROVIDE_LOG = "provide_log"
 PROVIDE_TRANSITION = "provide_transition"
 PROVIDE_FAIL = "provide_fail"
@@ -81,4 +81,3 @@ UNPROVIDE_LOG = "unprovide_log"
 UNPROVIDE_FAIL = "unprovide_fail"
 UNPROVIDE_CRITICAL = "unprovide_critical"
 UNPROVIDE_ERROR = "unprovide_error"
-

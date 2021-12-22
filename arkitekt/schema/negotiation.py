@@ -4,14 +4,15 @@ from arkitekt.config import TransportProtocol
 from herre.access.object import GraphQLObject
 
 
-
 class AgentSettings(GraphQLObject):
     type: TransportProtocol
     kwargs: dict
 
+
 class PostmanSettings(GraphQLObject):
     type: TransportProtocol
     kwargs: dict
+
 
 class Transcript(GraphQLObject):
     postman: Optional[PostmanSettings]

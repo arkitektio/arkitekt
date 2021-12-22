@@ -1,9 +1,13 @@
 from ....messages.generics import Context
 from pydantic.main import BaseModel
-from ....messages.types import  BOUNCED_UNPROVIDE
-from ....messages.base import MessageDataModel, MessageMetaExtensionsModel, MessageMetaModel, MessageModel
+from ....messages.types import BOUNCED_UNPROVIDE
+from ....messages.base import (
+    MessageDataModel,
+    MessageMetaExtensionsModel,
+    MessageMetaModel,
+    MessageModel,
+)
 from typing import List, Optional
-
 
 
 class MetaExtensionsModel(MessageMetaExtensionsModel):
@@ -11,10 +15,12 @@ class MetaExtensionsModel(MessageMetaExtensionsModel):
     progress: Optional[str]
     callback: Optional[str]
 
+
 class MetaModel(MessageMetaModel):
     type: str = BOUNCED_UNPROVIDE
     extensions: Optional[MetaExtensionsModel]
     context: Context
+
 
 class DataModel(MessageDataModel):
     provision: str

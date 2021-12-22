@@ -7,7 +7,8 @@ import re
 
 package_test = re.compile(r"@(?P<package>[^\/]*)\/(?P<interface>[^\/]*)")
 
-async def ause(package=None, interface=None, q=False) -> Node:
+
+async def ause(q=None, package=None, interface=None) -> Node:
     """Use a Node on the Platform by Searching for it on its package
 
     Args:
@@ -16,9 +17,9 @@ async def ause(package=None, interface=None, q=False) -> Node:
 
     Returns:
         Node: The Node
-        
+
     """
-    return await Node.asyncs.get(package=package, interface=interface ,q = q)
+    return await Node.asyncs.get(package=package, interface=interface, q=q)
 
 
 async def areset_repository(**kwargs) -> Node:
@@ -35,7 +36,7 @@ def use(**kwargs) -> Node:
 
     Returns:
         Node: The Node
-        
+
     """
     return koil(ause(**kwargs))
 
@@ -49,9 +50,6 @@ def reset_repository(**kwargs) -> Node:
 
     Returns:
         Node: The Node
-        
+
     """
     return koil(areset_repository(**kwargs))
-
-
-

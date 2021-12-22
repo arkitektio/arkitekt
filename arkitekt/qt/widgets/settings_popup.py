@@ -6,6 +6,12 @@ class SettingsPopup(QtWidgets.QDialog):
         super().__init__(*args, **kwargs)
         self.magic_bar = magic_bar
 
+        self.magic_bar.agent.provide_signal.connect(self.set_delete_disabled)
+        self.magic_bar.agent.provide_signal.connect(self.set_logout_disabled)
+        self.magic_bar.agent.unprovide_signal.connect(self.set_logout_enabled)
+        self.magic_bar.herre.login_signal.connect(self.set_delete_disabled)
+        self.magic_bar.herre.logout_signal.connect(self.set_delete_enabled)
+
         self.layout = QtWidgets.QVBoxLayout()
 
         self.delete_fakts = QtWidgets.QPushButton("Delete Configuration")
@@ -18,9 +24,22 @@ class SettingsPopup(QtWidgets.QDialog):
         self.layout.addWidget(self.logout_button)
         self.setLayout(self.layout)
 
-    def fakts_delete(self):
-        self.magic_bar.fakts.delete()
+    def set_delete_disabled(self):
+        self.delete_fakts.setDisabled(True)
 
+    def set_delete_enabled(self):
+        self.delete_fakts.setDisabled(False)
+
+    def set_logout_disabled(self):
+        self.logout_button.setDisabled(True)
+
+    def set_logout_enabled(self):
+        self.logout_button.setDisabled(False)
+
+    def fakts_delete(self):
+        if self.magic_bar.fakts.loaded:
+            self.magic_bar.fakts.delete()
 
     def logout_pressed(self):
-        self.magic_bar.herre.logout()
+        if self.magic_bar.herre.logged_in:
+            self.magic_bar.herre.logout()

@@ -9,9 +9,11 @@ class MetaExtensionsModel(MessageMetaExtensionsModel):
     progress: Optional[str]
     callback: Optional[str]
 
+
 class MetaModel(MessageMetaModel):
     type: str = UNPROVIDE_LOG
     extensions: Optional[MetaExtensionsModel]
+
 
 class UnprovideLogData(LogDataModel):
     provision: str

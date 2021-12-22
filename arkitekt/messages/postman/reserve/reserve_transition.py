@@ -1,9 +1,13 @@
-
 from ..log import LogDataModel
 from enum import Enum
 from pydantic.main import BaseModel
-from ....messages.types import  RESERVE_TRANSITION
-from ....messages.base import MessageDataModel, MessageMetaExtensionsModel, MessageMetaModel, MessageModel
+from ....messages.types import RESERVE_TRANSITION
+from ....messages.base import (
+    MessageDataModel,
+    MessageMetaExtensionsModel,
+    MessageMetaModel,
+    MessageModel,
+)
 from typing import List, Optional
 
 
@@ -12,6 +16,7 @@ class MetaExtensionsModel(MessageMetaExtensionsModel):
     progress: Optional[str]
     callback: Optional[str]
 
+
 class MetaModel(MessageMetaModel):
     type: str = RESERVE_TRANSITION
     extensions: Optional[MetaExtensionsModel]
@@ -19,14 +24,13 @@ class MetaModel(MessageMetaModel):
 
 class ReserveState(str, Enum):
     # Start State
-    #Start State
+    # Start State
     STARTING = "STARTING"
     ROUTING = "ROUTING"
     # Life States
     PROVIDING = "PROVIDING"
     WAITING = "WAITING"
     DISCONNECT = "DISCONNECT"
-
 
     REROUTING = "REROUTING"
     CANCELING = "CANCELING"

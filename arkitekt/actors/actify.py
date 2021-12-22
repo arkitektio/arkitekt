@@ -45,7 +45,7 @@ import logging
 import inflection
 
 logger = logging.getLogger(__name__)
-from typing import Dict, List
+from typing import Callable, Dict, List
 import inspect
 
 
@@ -68,29 +68,29 @@ def isactor(type):
 
 
 def guard_is_structure(cls):
-    if not inspect.ismethod(cls.get_identifier):
+
+    if not hasattr(cls, "get_structure_meta") or not inspect.ismethod(
+        cls.get_structure_meta
+    ):
         raise NonConvertableType(
-            f"Could not convert {cls.__name__} to Port: Please implement a classmethod get_identifier or decorate {cls.__name__} with register_structure(identifier='UNIQUEIDENTIFIER)"
+            f"Could not convert {cls.__name__} to Port: Please implement a classmethod get_structure_meta or decorate {cls.__name__} with register_structure(meta= StructureMeta)"
         )
 
 
 def convert_arg_to_argport(cls, **kwargs) -> ArgPort:
     # Typing Support
+
     if hasattr(cls, "_name"):
         # We are dealing with a Typing Var?
         if cls._name == "List":
             child = convert_arg_to_argport(cls.__args__[0])
             return ListArgPort.from_params(
-                **kwargs,
-                child=child.dict(),
+                **kwargs, child=child
             )  # We have to call the dict format here as we want the public alias __typename in the intializer
 
         if cls._name == "Dict":
             child = convert_arg_to_argport(cls.__args__[1])
-            return DictArgPort.from_params(
-                **kwargs,
-                child=child.dict(),
-            )  # We have to
+            return DictArgPort.from_params(**kwargs, child=child)  # We have to
 
     if inspect.isclass(cls):
         # Generic Cases
@@ -110,16 +110,10 @@ def convert_arg_to_argport(cls, **kwargs) -> ArgPort:
         # Custom Cases
         # Structures are a way to implement packing and unpacking of non generic types
         # These can be imported with packages and are registered automatically registered by subclassing Structure
-        if hasattr(cls, "get_identifier") and inspect.ismethod(cls.get_identifier):
-            print("Run here")
-            return StructureArgPort.from_structure(cls, **kwargs)
-        else:
-            transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
-            return StructureArgPort.from_params(
-                identifier=transpiler.structure.get_identifier(),
-                transpile=transpiler.type_name,
-                **kwargs,
-            )
+        guard_is_structure(cls)
+        return StructureArgPort.from_structure(cls, **kwargs)
+
+        # transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
 
     raise ConversionError(f"No Factory for Arg Type {cls.__name__} Conversion found")
 
@@ -132,7 +126,7 @@ def convert_kwarg_to_kwargport(cls, **kwargs):
         if cls._name == "List":
             child = convert_kwarg_to_kwargport(cls.__args__[0])
             return ListKwargPort.from_params(
-                **kwargs, child=child.dict()
+                **kwargs, child=child
             )  # We have to call the dict format here as we want the public alias __typename in the intializer
 
         if cls._name == "Dict":
@@ -143,34 +137,27 @@ def convert_kwarg_to_kwargport(cls, **kwargs):
 
     if inspect.isclass(cls):
         # Generic Cases
+        default = kwargs.get("default", None)
 
-        if issubclass(cls, bool):
+        if issubclass(cls, bool) or type(default) == bool:
             return BoolKwargPort.from_params(
                 **kwargs
             )  # bool subclass of int therefore before
-        if issubclass(cls, Enum):
+        if issubclass(cls, Enum) or type(default) == Enum:
             return EnumKwargPort.from_params(
                 options={key: value._value_ for key, value in cls.__members__.items()},
                 **kwargs,
             )
-        if issubclass(cls, int):
+        if issubclass(cls, int) or type(default) == int:
             return IntKwargPort.from_params(**kwargs)
-        if issubclass(cls, str):
+        if issubclass(cls, str) or type(default) == str:
             return StringKwargPort.from_params(**kwargs)
 
         # Custom Cases
         # Structures are a way to implement packing and unpacking of non generic types
         # These can be imported with packages and are registered automatically registered by subclassing Structure
-        if hasattr(cls, "get_identifier") and inspect.ismethod(cls.get_identifier):
-            return StructureKwargPort.from_structure(cls, **kwargs)
-
-        else:
-            transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
-            return StructureKwargPort.from_params(
-                identifier=transpiler.structure.get_identifier(),
-                transpile=transpiler.type_name,
-                **kwargs,
-            )
+        guard_is_structure(cls)
+        return StructureKwargPort.from_structure(cls, **kwargs)
 
     raise ConversionError(f"No Factory for Arg Type {cls.__name__} Conversion found")
 
@@ -182,12 +169,12 @@ def convert_return_to_returnport(cls, **kwargs):
         if cls._name == "List":
             child = convert_return_to_returnport(cls.__args__[0])
             return ListReturnPort.from_params(
-                **kwargs, child=child.dict()
+                **kwargs, child=child
             )  # We have to call the dict format here as we want the public alias __typename in the intializer
 
         if cls._name == "Dict":
             child = convert_return_to_returnport(cls.__args__[1])
-            return DictReturnPort.from_params(**kwargs, child=child.dict())  # We ha
+            return DictReturnPort.from_params(**kwargs, child=child)  # We ha
 
     # Generic Cases
     if inspect.isclass(cls):
@@ -203,22 +190,13 @@ def convert_return_to_returnport(cls, **kwargs):
         # Custom Cases
         # Structures are a way to implement packing and unpacking of non generic types
         # These can be imported with packages and are registered automatically registered by subclassing Structure
-        if hasattr(cls, "get_identifier") and inspect.ismethod(cls.get_identifier):
-            return StructureReturnPort.from_params(
-                identifier=cls.get_identifier(), **kwargs
-            )
-        else:
-            transpiler = get_transpiler_registry().get_transpiler_for_type(cls)
-            return StructureReturnPort.from_params(
-                identifier=transpiler.structure.get_identifier(),
-                transpile=transpiler.type_name,
-                **kwargs,
-            )
+        guard_is_structure(cls)
+        return StructureReturnPort.from_structure(cls, **kwargs)
 
     raise ConversionError(f"No Factory for Arg Type {cls.__name__} Conversion found")
 
 
-def define(function, widgets={}, allow_empty_doc=False) -> Node:
+def define(function, widgets={}, allow_empty_doc=False, interfaces=[]) -> Node:
     """Define
 
     Define a functions in the context of arnheim and
@@ -235,6 +213,7 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
     )
 
     sig = signature(function)
+
     # Generate Args and Kwargs from the Annotation
     args = []
     kwargs = []
@@ -242,18 +221,30 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
 
     function_inputs = sig.parameters
     for key, value in function_inputs.items():
-        widget = widgets.get(key, None)
+
         cls = value.annotation
 
         if value.default == Parameter.empty:
             # This Parameter is an Argument
-            args.append(convert_arg_to_argport(cls, widget=widget, key=key))
+            try:
+                widget = widgets.get(key, None)
+                args.append(convert_arg_to_argport(cls, key=key))
+            except KeyError as e:
+                print("No Widget overwrites defined, ommiting")
+                args.append(convert_arg_to_argport(cls, widget=widget, key=key))
         else:
-            kwargs.append(
-                convert_kwarg_to_kwargport(
-                    cls, widget=widget, key=key, default=value.default
+            try:
+                widget = widgets.get(key, None)
+                kwargs.append(
+                    convert_kwarg_to_kwargport(
+                        cls, widget=widget, key=key, default=value.default
+                    )
                 )
-            )
+            except KeyError as e:
+                print("No Widget overwrites defined, ommiting")
+                kwargs.append(
+                    convert_kwarg_to_kwargport(cls, key=key, default=value.default)
+                )
 
     function_output = sig.return_annotation
     try:
@@ -262,9 +253,10 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
             for cls in function_output.__args__:
                 returns.append(convert_return_to_returnport(cls))
 
-        returns.append(
-            convert_return_to_returnport(cls)
-        )  # Other types will be converted to normal lists and shit
+        else:
+            returns.append(
+                convert_return_to_returnport(function_output)
+            )  # Other types will be converted to normal lists and shit
 
     except AttributeError:
         if function_output.__name__ != "_empty":  # Is it not empty
@@ -325,6 +317,7 @@ def define(function, widgets={}, allow_empty_doc=False) -> Node:
             "kwargs": [kwarg.dict() for kwarg in kwargs],
             "returns": [re.dict() for re in returns],
             "type": NodeType.GENERATOR if is_generator else NodeType.FUNCTION,
+            "interfaces": interfaces,
         }
     )
 
@@ -342,7 +335,7 @@ def actify(
     on_unprovide=None,
     actor_name=None,
     **params,
-):
+) -> Callable[[], Actor]:
     if isactor(function_or_actor):
         return function_or_actor
 
@@ -352,6 +345,7 @@ def actify(
 
     is_coroutine = inspect.iscoroutinefunction(function_or_actor)
     is_asyncgen = inspect.isasyncgenfunction(function_or_actor)
+    is_method = inspect.ismethod(function_or_actor)
 
     is_generatorfunction = inspect.isgeneratorfunction(function_or_actor)
     is_function = inspect.isfunction(function_or_actor)
@@ -366,12 +360,12 @@ def actify(
     }
 
     if is_coroutine:
-        return FunctionalFuncActor(**actor_attributes)
+        return lambda: FunctionalFuncActor(**actor_attributes)
     elif is_asyncgen:
-        return FunctionalGenActor(**actor_attributes)
+        return lambda: FunctionalGenActor(**actor_attributes)
     elif is_generatorfunction:
-        return FunctionalThreadedGenActor(**actor_attributes)
-    elif is_function:
-        return FunctionalThreadedFuncActor(**actor_attributes)
+        return lambda: FunctionalThreadedGenActor(**actor_attributes)
+    elif is_function or is_method:
+        return lambda: FunctionalThreadedFuncActor(**actor_attributes)
     else:
         raise NotImplementedError("No way of converting this to a function")

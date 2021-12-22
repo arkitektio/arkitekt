@@ -2,7 +2,10 @@ import argparse
 from enum import Enum
 from genericpath import isfile
 from runpy import run_path
+from typing import List
 from arkitekt.cli.dev.autoreload import watch_directory_and_restart
+from arkitekt.cli.prod.run import import_directory_and_start
+from arkitekt.cli.prod.waitfor import wait_for_connection
 from fakts import Fakts
 from fakts.beacon.beacon import FaktsEndpoint
 from fakts.grants.beacon import BeaconGrant
@@ -24,14 +27,13 @@ class ArkitektOptions(str, Enum):
     LOGOUT = "logout"
     LOGIN = "login"
     RUN = "run"
+    WAIT = "wait"
 
 
 agent_script = f'''
-from arkitekt.agents.script import ScriptAgent
+from arkitekt import register
 
-agent = ScriptAgent()
-
-@agent.register()
+@register()
 def test_show(name: str)-> str:
     """Demo Node
 
@@ -46,7 +48,6 @@ def test_show(name: str)-> str:
     """
     return name
 
-agent.provide()
 
 '''
 
@@ -54,8 +55,10 @@ mikro_script = """
 from mikro import gql
 
 x = gql('''
-myrepresentations {
-    id
+query {
+    myrepresentations {
+        id
+    }
 }
 ''')
 
@@ -73,6 +76,7 @@ def main(
     scan_network=None,
     beacon=None,
     template=None,
+    services=[],
 ):
 
     console = Console()
@@ -96,7 +100,8 @@ def main(
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
 
-        asyncio.run(watch_directory_and_restart(app_directory, run_script_path))
+        fakts = Fakts(grants=[], fakts_path=fakts_path)
+        asyncio.run(watch_directory_and_restart(path, entrypoint="run"))
 
     if script == ArkitektOptions.RUN:
 
@@ -107,7 +112,8 @@ def main(
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
 
-        run_path(run_script_path)
+        fakts = Fakts(grants=[], fakts_path=fakts_path)
+        asyncio.run(import_directory_and_start(path, entrypoint="run"))
 
     if script == ArkitektOptions.LOGIN:
 
@@ -126,6 +132,22 @@ def main(
         herre = Herre(fakts=fakts)
         console.print("Loggin in")
         herre.login()
+
+    if script == ArkitektOptions.WAIT:
+
+        if not os.path.isfile(fakts_path):
+            console.print(
+                f"Directory does not contain a valid fakts.yaml. If you want to login again please reinitiliaze."
+            )
+            return
+
+        fakts = Fakts(grants=[], fakts_path=fakts_path)
+        if not fakts.loaded:
+            console.print(
+                f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'"
+            )
+
+        asyncio.run(wait_for_connection(services))
 
     if script == ArkitektOptions.LOGOUT:
 
@@ -186,10 +208,14 @@ def main(
             if scan_network is False and beacon is None:
                 beacon = Prompt.ask(
                     "Give us your local beacon",
-                    default="http://localhost:3000/setupapp",
+                    default="localhost",
                 )
                 fakt_grants.append(
-                    EndpointGrant(FaktsEndpoint(url=beacon, name="local_beacon"))
+                    EndpointGrant(
+                        FaktsEndpoint(
+                            url=f"http://{beacon}:3000/setupapp", name="local_beacon"
+                        )
+                    )
                 )
 
             fakts = Fakts(
@@ -233,6 +259,11 @@ def entrypoint():
     parser.add_argument("--scan-network", type=bool, help="Do you want to refresh")
     parser.add_argument("--beacon", type=str, help="The adress of the beacon")
     parser.add_argument("--template", type=str, help="The run script template")
+    parser.add_argument(
+        "--services",
+        type=str,
+        help="The services you want to connect to (seperated by ,)",
+    )
     args = parser.parse_args()
 
     main(
@@ -242,6 +273,7 @@ def entrypoint():
         refresh=args.refresh,
         scan_network=args.scan_network,
         template=args.template,
+        services=args.services.split(",") if args.services else [],
     )
 
 

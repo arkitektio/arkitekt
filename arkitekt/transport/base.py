@@ -14,30 +14,38 @@ import pydantic
 class TransportConfig(Config):
     pass
 
+
 class TansportConfigError(Exception):
     pass
+
 
 class Transport(object):
     configClass = TransportConfig
 
-    def __init__(self, config_dict, broadcast = None, herre: Herre = None, koil: Koil = None, fakts: Fakts = None, **kwargs) -> None:
+    def __init__(
+        self,
+        config_dict,
+        broadcast=None,
+        herre: Herre = None,
+        koil: Koil = None,
+        fakts: Fakts = None,
+        **kwargs,
+    ) -> None:
         self._broadcast = broadcast
-        assert self._broadcast is not None, "Please provide a broadcaster that receives messages"
+        assert (
+            self._broadcast is not None
+        ), "Please provide a broadcaster that receives messages"
         self.herre = herre or get_current_herre()
-        self.koil = koil or get_current_koil()
         self.fakts = fakts or get_current_fakts()
-        self.loop = self.koil.loop
 
         try:
             self.config = self.configClass(**config_dict)
         except pydantic.error_wrappers.ValidationError as e:
             raise TansportConfigError(f"Non valid Configuration {config_dict}") from e
 
-
     @abstractmethod
     def aconnect(self):
         raise NotImplementedError()
-
 
     @abstractmethod
     def adisconnect(self):
@@ -46,10 +54,6 @@ class Transport(object):
     async def broadcast(self, message: MessageModel):
         return await self._broadcast(message)
 
-
     @abstractmethod
     async def forward(self, message: MessageModel):
         raise NotImplementedError()
-
-
-

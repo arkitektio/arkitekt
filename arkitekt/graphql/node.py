@@ -69,12 +69,21 @@ PORTS_FR = """
       }
       label
       ... on StructureKwargPort {
+        defaultID
         identifier
+        
       }
       ... on IntKwargPort {
-        default
+        defaultInt
+      }
+      ... on BoolKwargPort {
+        defaultBool
+      }
+      ... on StringKwargPort {
+        defaultString
       }
       ... on EnumKwargPort {
+        defaultOption
         options
       }
       ... on ListKwargPort {
@@ -88,10 +97,26 @@ PORTS_FR = """
             identifier
           }
           ... on IntKwargPort {
-            default
+            defaultInt
           }
         }
-        
+        defaultList
+      }
+      ... on DictKwargPort {
+        child {
+          __typename
+          key
+          required
+          description
+          label
+          ... on StructureKwargPort {
+            identifier
+          }
+          ... on IntKwargPort {
+            defaultInt
+          }
+        }
+        defaultDict
       }
   }
   returns {
@@ -113,36 +138,58 @@ PORTS_FR = """
 """
 
 
-DETAIL_NODE_FR = """
+DETAIL_NODE_FR = (
+    """
   name
   package
   interface
   id
   type
+  interfaces
   description
-""" + PORTS_FR
+  repository {
+    __typename
+    name
+    ... on AppRepository {
+      app {
+        name
+      }
+    }
+  }
+"""
+    + PORTS_FR
+)
 
 
-NODE_GET_QUERY = ParsedQuery("""
+NODE_GET_QUERY = ParsedQuery(
+    """
 query Node($id: ID, $package: String, $interface: String, $template: ID, $q: String){
   node(id: $id, package: $package, interface: $interface, template: $template, q: $q){
-    """+ DETAIL_NODE_FR +"""
+    """
+    + DETAIL_NODE_FR
+    + """
   }
 }
-""")
+"""
+)
 
 
-NODE_CREATE_QUERY = ParsedQuery("""
+NODE_CREATE_QUERY = ParsedQuery(
+    """
 mutation CreateNodeMutation(
     $description: String!,
     $args: [ArgPortInput]!,
     $kwargs: [KwargPortInput]!,
     $returns: [ReturnPortInput]!,
+    $interfaces: [String],
     $package: String!, $interface: String!,
     $name: String!
     $type: NodeTypeInput){
-  createNode(description: $description, args: $args, kwargs: $kwargs, returns: $returns, package:$package, interface: $interface, name: $name, type: $type){
-    """+ DETAIL_NODE_FR +"""
+  createNode(description: $description, args: $args, kwargs: $kwargs, returns: $returns, package:$package, interface: $interface, name: $name, type: $type, interfaces: $interfaces){
+    """
+    + DETAIL_NODE_FR
+    + """
   }
 }
-""")
+"""
+)

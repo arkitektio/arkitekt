@@ -4,10 +4,21 @@ from typing import AbstractSet, Union
 from pydantic.main import BaseModel
 
 from arkitekt.schema.widgets import Widget
+from enum import Enum
 
 
-class StructureDefaults(BaseModel):
-    widget: Widget
+class BoundType(str, Enum):
+    GLOBAL = "GLOBAL"
+    AGENT = "AGENT"
+    REGISTRY = "REGISTRY"
+    APP = "APP"
+
+
+class StructureMeta(BaseModel):
+    widget: Widget = None
+    identifier: str
+    bound: BoundType = BoundType.GLOBAL
+    overwrite = False
 
 
 class Structure(ABC):
@@ -25,14 +36,8 @@ class Structure(ABC):
     """
 
     @abstractclassmethod
-    def get_identifier(cls):
-        raise NotImplementedError(
-            "Every Structure needs to specify how to get its identifier"
-        )
-
-    @abstractclassmethod
-    def get_defaults(cls) -> StructureDefaults:
-        return StructureDefaults()
+    def get_structure_meta(cls) -> StructureMeta:
+        return StructureMeta()
 
     @abstractclassmethod
     async def expand(cls, shrinked_value):
