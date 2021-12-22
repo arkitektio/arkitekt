@@ -73,7 +73,38 @@ class Node(GraphQLModel):
         loop=None,
         **params,
     ) -> Reservation:
-    
+        """
+        Reserve
+
+        reserve takes a Node and returns a reservation instance, this
+        a Reservation is a Context Manager that establishes a long
+        lasting link for the duration of the assignments with provisions
+        
+        If called without the persist attributes, reservations are ephemeral
+        and will be put as inactive once you exit the context manager or the
+        transport to arkitekt disconnects.
+
+        If you want to reuse a reservation you can ask for arkitekt to persist
+        the reservation so it will not be deactivated on leaving the context
+        manager. Make sure to save the reservation reference for this task.
+        This should be used sparely as their is no guarentee that arkitekt (
+        or an admin) will not clean between to runs.
+
+        Args:
+            reference (str, optional): [description]. Defaults to None.
+            provision (str, optional): [description]. Defaults to None.
+            monitor (Monitor, optional): [description]. Defaults to None.
+            ignore_node_exceptions (bool, optional): [description]. Defaults to False.
+            transition_hook ([type], optional): [description]. Defaults to None.
+            with_log (bool, optional): [description]. Defaults to False.
+            enter_on (list, optional): [States when of the reservation where we will enter the context manager. Defaults to [ReserveState.ACTIVE].
+            exit_on (list, optional): [description]. Defaults to [ReserveState.ERROR, ReserveState.CANCELLED, ReserveState.CRITICAL].
+            context (Context, optional): [description]. Defaults to None.
+            loop ([type], optional): [description]. Defaults to None.
+
+        Returns:
+            Reservation: [description]
+        """
         return Reservation(
             self,
             reference=reference,
