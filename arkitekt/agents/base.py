@@ -23,8 +23,6 @@ from arkitekt.transport.registry import (
     TransportRegistry,
     get_current_transport_registry,
 )
-from arkitekt.schema.node import Node
-from arkitekt.schema.template import Template
 from arkitekt.ward import ArkitektConfig, ArkitektWard
 from arkitekt.messages import ProvideLogMessage, ProvideCriticalMessage
 from herre.console.context import get_current_console

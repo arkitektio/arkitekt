@@ -1,0 +1,56 @@
+projects:
+  arkitekt:
+    schema: http://localhost:8090/graphql
+    documents: graphql/*/**.graphql
+    extensions:
+      turms:
+        out_dir: arkitekt/api
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operation.OperationsPlugin
+          - type: turms.plugins.funcs.OperationsFuncPlugin
+        processors:
+          - type: turms.processor.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+        additional_bases:
+          Node:
+            - arkitekt.mixins.node.NodeMixin
+          IntArgPort:
+            - arkitekt.serialization.ports.IntExpander
+          IntKwargPort:
+            - arkitekt.serialization.ports.IntExpander
+          IntReturnPort:
+            - arkitekt.serialization.ports.IntExpander
+          StructureArgPort:
+            - arkitekt.serialization.ports.StructureExpander
+          StructureKwargPort:
+            - arkitekt.serialization.ports.StructureExpander
+          StructureReturnPort:
+            - arkitekt.serialization.ports.StructureExpander
+          ListArgPort:
+            - arkitekt.serialization.ports.ListExpander
+          ListKwargPort:
+            - arkitekt.serialization.ports.ListExpander
+          ListReturnPort:
+            - arkitekt.serialization.ports.ListExpander
+          BoolArgPort:
+            - arkitekt.serialization.ports.BoolExpander
+          BoolKwargPort:
+            - arkitekt.serialization.ports.BoolExpander
+          BoolReturnPort:
+            - arkitekt.serialization.ports.BoolExpander
+          StringArgPort:
+            - arkitekt.serialization.ports.StringExpander
+          StringKwargPort:
+            - arkitekt.serialization.ports.StringExpander
+          StringReturnPort:
+            - arkitekt.serialization.ports.StringExpander
+          EnumArgPort:
+            - arkitekt.serialization.ports.EnumExpander
+          EnumKwargPort:
+            - arkitekt.serialization.ports.EnumExpander
+          EnumReturnPort:
+            - arkitekt.serialization.ports.EnumExpander

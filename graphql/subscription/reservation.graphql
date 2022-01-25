@@ -1,0 +1,11 @@
+subscription subscribe_events {
+  myReservationsEvent {
+    create {
+      id
+    }
+    ended
+    update {
+      id
+    }
+  }
+}

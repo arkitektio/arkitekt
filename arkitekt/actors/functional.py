@@ -16,12 +16,8 @@ from arkitekt.messages.postman.assign.bounced_forwarded_assign import (
 from arkitekt.actors.base import Actor
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import asyncio
-from arkitekt.packers.utils import (
-    shrink_inputs,
-    shrink_outputs,
-    expand_inputs,
-    expand_outputs,
-)
+from arkitekt.serialization.actor import expand_inputs, shrink_outputs
+
 import logging
 import janus
 
@@ -55,7 +51,10 @@ class FunctionalFuncActor(FunctionalActor):
             logger.info("Assigning Number two")
             args, kwargs = (
                 await expand_inputs(
-                    self.template.node, message.data.args, message.data.kwargs
+                    self.template.node,
+                    message.data.args,
+                    message.data.kwargs,
+                    structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
                 else (message.data.args, message.data.kwargs)
@@ -71,7 +70,11 @@ class FunctionalFuncActor(FunctionalActor):
             await self.transport.forward(
                 AssignReturnMessage(
                     data={
-                        "returns": await shrink_outputs(self.template.node, returns)
+                        "returns": await shrink_outputs(
+                            self.template.node,
+                            returns,
+                            structure_registry=self.structure_registry,
+                        )
                         if self.shrink_outputs
                         else returns
                     },
@@ -115,7 +118,10 @@ class FunctionalGenActor(FunctionalActor):
         try:
             args, kwargs = (
                 await expand_inputs(
-                    self.template.node, message.data.args, message.data.kwargs
+                    self.template.node,
+                    message.data.args,
+                    message.data.kwargs,
+                    structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
                 else (message.data.args, message.data.kwargs)
@@ -129,7 +135,11 @@ class FunctionalGenActor(FunctionalActor):
                 await self.transport.forward(
                     AssignYieldsMessage(
                         data={
-                            "returns": await shrink_outputs(self.template.node, returns)
+                            "returns": await shrink_outputs(
+                                self.template.node,
+                                returns,
+                                structure_registry=self.structure_registry,
+                            )
                             if self.shrink_outputs
                             else returns
                         },
@@ -146,7 +156,11 @@ class FunctionalGenActor(FunctionalActor):
             await self.transport.forward(
                 AssignDoneMessage(
                     data={
-                        "returns": await shrink_outputs(self.template.node, returns)
+                        "returns": await shrink_outputs(
+                            self.template.node,
+                            returns,
+                            structure_registry=self.structure_registry,
+                        )
                         if self.shrink_outputs
                         else returns
                     },
@@ -207,7 +221,9 @@ class FunctionalThreadedFuncActor(FunctionalActor):
                         AssignReturnMessage(
                             data={
                                 "returns": await shrink_outputs(
-                                    self.template.node, value
+                                    self.template.node,
+                                    value,
+                                    structure_registry=self.structure_registry,
                                 )
                                 if self.shrink_outputs
                                 else value
@@ -261,7 +277,10 @@ class FunctionalThreadedFuncActor(FunctionalActor):
             print(message)
             args, kwargs = (
                 await expand_inputs(
-                    self.template.node, message.data.args, message.data.kwargs
+                    self.template.node,
+                    message.data.args,
+                    message.data.kwargs,
+                    structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
                 else (message.data.args, message.data.kwargs)
@@ -348,7 +367,9 @@ class FunctionalThreadedGenActor(FunctionalActor):
                         AssignYieldsMessage(
                             data={
                                 "returns": await shrink_outputs(
-                                    self.template.node, value
+                                    self.template.node,
+                                    value,
+                                    structure_registry=self.structure_registry,
                                 )
                                 if self.shrink_outputs
                                 else value
@@ -412,7 +433,10 @@ class FunctionalThreadedGenActor(FunctionalActor):
             logger.info("Assigning Number two")
             args, kwargs = (
                 await expand_inputs(
-                    self.template.node, message.data.args, message.data.kwargs
+                    self.template.node,
+                    message.data.args,
+                    message.data.kwargs,
+                    structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
                 else (message.data.args, message.data.kwargs)

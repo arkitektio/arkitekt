@@ -1,21 +1,13 @@
 from typing import Dict
-from arkitekt.actors.actify import actify, define
+from arkitekt.actors.actify import actify
+from arkitekt.definition.define import prepare_definition
+from arkitekt.mixins.node import NodeMixin
 
-from arkitekt.packers.transpilers.base import Transpiler
-from arkitekt.schema.node import Node
 from .app import AppAgent
 
 
 class ScriptAgent(AppAgent):
-    def register(
-        self,
-        *args,
-        widgets={},
-        transpilers: Dict[str, Transpiler] = None,
-        on_provide=None,
-        on_unprovide=None,
-        **params
-    ):
+    def register(self, *args, widgets={}, on_provide=None, on_unprovide=None, **params):
         def real_decorator(function):
             # Simple bypass for now
             def wrapped_function(*args, **kwargs):
@@ -26,7 +18,7 @@ class ScriptAgent(AppAgent):
             )
 
             if len(args) == 0:
-                defined_node = define(function=function, widgets=widgets)
+                defined_node = prepare_definition(function=function, widgets=widgets)
                 self.templatedNewNodes.append((defined_node, actorBuilder, params))
 
             if len(args) == 1:
@@ -35,7 +27,7 @@ class ScriptAgent(AppAgent):
                         ({"q": args[0]}, actorBuilder, params)
                     )
 
-                if isinstance(args[0], Node):
+                if isinstance(args[0], NodeMixin):
                     self.templatedNodes.append((args[0], actorBuilder, params))
 
                 # We are registering this as a template

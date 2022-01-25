@@ -1,0 +1,13 @@
+mutation reserve(
+  $node: ID
+  $template: ID
+  $params: ReserveParamsInput
+  $title: String
+) {
+  reserve(node: $node, template: $template, params: $params, title: $title) {
+    reference
+    id
+    status
+    statusmessage
+  }
+}

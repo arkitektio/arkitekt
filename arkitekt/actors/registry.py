@@ -1,7 +1,13 @@
-from arkitekt.actors.actify import actify, define
-from arkitekt.schema.widgets import Widget
+from matplotlib.widgets import Widget
+from arkitekt.api.schema import NodeFragment
+from arkitekt.actors.actify import actify
+from arkitekt.definition.define import prepare_definition
+from arkitekt.serialization.registry import (
+    StructureRegistry,
+    get_current_structure_registry,
+)
+from arkitekt.api.schema import WidgetInput
 from .base import Actor
-from arkitekt.schema import Node
 from typing import Dict, List, Callable, Tuple
 
 
@@ -11,9 +17,9 @@ class ActorRegistry:
             Tuple[dict, Callable]
         ] = []  # dict are queryparams for the node
         self.templatedNodes: List[
-            Tuple[Node, Callable]
+            Tuple[NodeFragment, Callable]
         ] = []  # node is already saved and has id
-        self.templatedNewNodes: List[Tuple[Node, Callable]] = []
+        self.templatedNewNodes: List[Tuple[NodeFragment, Callable]] = []
         # Node is not saved and has undefined id
 
     def has_actors(self):
@@ -28,14 +34,14 @@ class ActorRegistry:
             Tuple[dict, Callable]
         ] = []  # dict are queryparams for the node
         self.templatedNodes: List[
-            Tuple[Node, Callable]
+            Tuple[NodeFragment, Callable]
         ] = []  # node is already saved and has id
-        self.templatedNewNodes: List[Tuple[Node, Callable]] = []
+        self.templatedNewNodes: List[Tuple[NodeFragment, Callable]] = []
 
     def register(
         self,
         actorBuilder: Callable[..., Actor],
-        definition: Node = None,  # New Node
+        definition: NodeFragment = None,  # New Node
         q_string: str = None,  # Query an already existing Node
         **params
     ):
@@ -60,14 +66,16 @@ def get_current_actor_registry():
 
 
 def register(
-    widgets: Dict[str, Widget] = {},
+    widgets: Dict[str, WidgetInput] = {},
     interfaces: List[str] = [],
     on_provide=None,
     on_unprovide=None,
-    registry: ActorRegistry = None,
+    actor_registry: ActorRegistry = None,
+    structure_registry: StructureRegistry = None,
     **params
 ):
-    registry = get_current_actor_registry()
+    registry = actor_registry or get_current_actor_registry()
+    structure_registry = structure_registry or get_current_structure_registry()
 
     def real_decorator(function):
         # Simple bypass for now
@@ -75,10 +83,19 @@ def register(
             return function(*args, **kwargs)
 
         actorBuilder = actify(
-            function, on_provide=on_provide, on_unprovide=on_unprovide, **params
+            function,
+            on_provide=on_provide,
+            on_unprovide=on_unprovide,
+            structure_registry=structure_registry,
+            **params,
         )
 
-        definition = define(function=function, widgets=widgets, interfaces=interfaces)
+        definition = prepare_definition(
+            function=function,
+            widgets=widgets,
+            interfaces=interfaces,
+            structure_registry=structure_registry,
+        )
         registry.register(actorBuilder, definition=definition, **params)
 
         return wrapped_function

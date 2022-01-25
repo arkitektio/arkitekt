@@ -1,16 +1,13 @@
 from arkitekt.monitor.monitor import get_current_monitor
 from herre.console.context import get_current_console
 from uuid import uuid4
-from arkitekt.packers.utils import expand_outputs, shrink_inputs
 from asyncio.futures import Future
 from arkitekt.messages.postman.log import LogLevel
 from contextvars import Context
 from arkitekt.messages.postman.reserve.reserve_transition import ReserveState
 from arkitekt.contracts.exceptions import AssignmentException
 from arkitekt.messages import *
-from arkitekt.schema.enums import NodeType
 from arkitekt.messages.postman.reserve.params import ReserveParams
-from arkitekt.postman import Postman
 from rich.table import Table
 from rich.panel import Panel
 from arkitekt.monitor import Monitor, current_monitor
@@ -157,7 +154,7 @@ class Reservation:
         context: Context = None,
         koil: Koil = None,
         herre: Herre = None,
-        postman: Postman = None,
+        postman=None,
         **params,
     ) -> None:
 

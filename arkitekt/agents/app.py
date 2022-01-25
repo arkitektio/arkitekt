@@ -10,31 +10,20 @@ from arkitekt.messages.postman.provide.provide_transition import (
     ProvideState,
     ProvideTransitionMessage,
 )
-from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
-from arkitekt.messages.postman.assign.assign_critical import AssignCriticalMessage
 from arkitekt.messages.postman.assign.bounced_forwarded_assign import (
     BouncedForwardedAssignMessage,
 )
-from arkitekt.messages.postman.assign.bounced_assign import BouncedAssignMessage
-from arkitekt.messages.postman.provide.provide_critical import ProvideCriticalMessage
-from arkitekt.messages.postman.log import LogLevel
-from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
-import asyncio
-from arkitekt.schema.params import TemplateParams
-from fakts import config
 from herre.wards.base import WardException
-from arkitekt.actors.actify import actify, define
 from arkitekt.actors.base import Actor
 from arkitekt.messages.postman.unprovide.bounced_unprovide import (
     BouncedUnprovideMessage,
 )
-from arkitekt.messages.base import MessageDataModel, MessageModel
+from arkitekt.api.schema import adefine, aget_node, acreate_template, TemplateFragment
+
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
-from arkitekt.schema.template import Template
-from arkitekt.schema.node import Node
-from arkitekt.packers.transpilers import Transpiler
-from typing import Callable, Dict, List, Tuple, Type
-from arkitekt.agents.base import Agent, AgentException
+
+from typing import Callable, List, Tuple
+from arkitekt.agents.base import AgentException
 import logging
 from herre.console import get_current_console
 
@@ -51,7 +40,7 @@ class AppAgent(StandardAgent):
         self.registry = registry or get_current_actor_registry()
 
         self.approvedTemplates: List[
-            Tuple[Template, Callable]
+            Tuple[TemplateFragment, Callable]
         ] = []  # Template is approved
 
         # IMportant Maps
@@ -149,7 +138,7 @@ class AppAgent(StandardAgent):
                 params,
             ) in self.registry.templatedUnqueriedNodes:
                 try:
-                    arkitekt_node = await Node.asyncs.get(**query_params)
+                    arkitekt_node = await aget_node(**query_params)
                     self.registry.templatedNodes.append(
                         (arkitekt_node, defined_actor, params)
                     )
@@ -161,13 +150,13 @@ class AppAgent(StandardAgent):
                         ) from e
 
         if self.registry.templatedNewNodes:
-            for defined_node, defined_actor, params in self.registry.templatedNewNodes:
+            for definition, defined_actor, params in self.registry.templatedNewNodes:
                 # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
                 # id so we are trying to send them to arkitekt)
+
+                print(definition)
                 try:
-                    arkitekt_node = await Node.asyncs.create(
-                        **defined_node.dict(as_input=True)
-                    )
+                    arkitekt_node = await adefine(definition=definition)
                     self.registry.templatedNodes.append(
                         (arkitekt_node, defined_actor, params)
                     )
@@ -175,7 +164,7 @@ class AppAgent(StandardAgent):
                     logger.exception(e)
                     if self.strict:
                         raise AgentException(
-                            f"Couldn't create Node for defintion {defined_node}"
+                            f"Couldn't create Node for defintion {definition}"
                         ) from e
 
         if self.registry.templatedNodes:
@@ -184,11 +173,12 @@ class AppAgent(StandardAgent):
                 try:  # Parse the parameters for template creation
                     version = params.get("version", "main")
 
-                    arkitekt_template = await Template.asyncs.create(
+                    arkitekt_template = await acreate_template(
                         node=arkitekt_node,
-                        params=TemplateParams(**params),
+                        params=params,
                         version=version,
                     )
+
                     self.approvedTemplates.append(
                         (arkitekt_template, defined_actor, params)
                     )

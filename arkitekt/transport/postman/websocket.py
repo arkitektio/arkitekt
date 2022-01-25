@@ -100,6 +100,7 @@ class WebsocketPostmanTransport(Transport):
                 logger.warning(
                     "THIS EXCEPTION HAS NO RETRY STRATEGY... TRYING TO RETRY??"
                 )
+                print(e)
                 raise CorrectableConnectionFail from e
 
         except CorrectableConnectionFail as e:

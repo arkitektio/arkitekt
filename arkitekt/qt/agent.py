@@ -1,6 +1,8 @@
 from typing import Dict
-from arkitekt.actors.actify import actify, define
+from arkitekt.actors.actify import actify
 from arkitekt.agents.app import AppAgent
+from arkitekt.api.schema import NodeFragment
+from arkitekt.mixins.node import NodeMixin
 from arkitekt.qt.actor import QtActor
 from qtpy.QtCore import QObject, Signal
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
@@ -24,11 +26,14 @@ from arkitekt.messages.postman.unprovide.bounced_unprovide import (
     BouncedUnprovideMessage,
 )
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
-from arkitekt.schema.node import Node
-from arkitekt.packers.transpilers import Transpiler
 from arkitekt.agents.base import Agent, AgentException
 import logging
 import uuid
+from arkitekt.definition.define import prepare_definition
+from arkitekt.serialization.registry import (
+    StructureRegistry,
+    get_current_structure_registry,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,13 +75,15 @@ class QtAgent(AppAgent, QObject):
         self,
         function_query_or_node,
         widgets={},
-        transpilers: Dict[str, Transpiler] = None,
         on_provide=None,
         on_unprovide=None,
         on_assign=None,
         timeout=500,
+        structure_registry: StructureRegistry = None,
         **params
     ) -> QtActor:
+
+        structure_registry = structure_registry or get_current_structure_registry()
 
         # Simple bypass for now
         defined_actor = QtActor(
@@ -84,6 +91,7 @@ class QtAgent(AppAgent, QObject):
             qt_on_provide=on_provide,
             qt_on_unprovide=on_unprovide,
             timeout=timeout,
+            structure_registry=structure_registry,
             **params
         )
 
@@ -94,13 +102,17 @@ class QtAgent(AppAgent, QObject):
                 ({"q": function_query_or_node}, actor_builder, params)
             )
 
-        if isinstance(function_query_or_node, Node):
+        if isinstance(function_query_or_node, NodeFragment):
             self.registry.templatedNodes.append(
                 (function_query_or_node, actor_builder, params)
             )
 
         else:
-            defined_node = define(function=function_query_or_node, widgets=widgets)
+            defined_node = prepare_definition(
+                function=function_query_or_node,
+                widgets=widgets,
+                structure_registry=structure_registry,
+            )
             self.registry.templatedNewNodes.append(
                 (defined_node, actor_builder, params)
             )
@@ -111,15 +123,17 @@ class QtAgent(AppAgent, QObject):
         self,
         *args,
         widgets={},
-        transpilers: Dict[str, Transpiler] = None,
         on_provide=None,
         on_unprovide=None,
         on_assign=None,
         timeout=500,
+        structure_registry: StructureRegistry = None,
         **params
     ):
 
         # Simple bypass for now
+
+        structure_registry = structure_registry or get_current_structure_registry()
 
         if len(args) == 0:
             raise NotImplementedError(
@@ -127,11 +141,20 @@ class QtAgent(AppAgent, QObject):
             )
 
         defined_actor = actify(
-            args[0], on_provide=on_provide, on_unprovide=on_unprovide, **params
+            args[0],
+            on_provide=on_provide,
+            on_unprovide=on_unprovide,
+            structure_registry=structure_registry,
+            **params
         )
 
         if len(args) == 1:
-            new_node = define(function=args[0], widgets=widgets, **params)
+            new_node = prepare_definition(
+                function=args[0],
+                widgets=widgets,
+                structure_registry=structure_registry,
+                **params
+            )
             self.registry.templatedNewNodes.append((new_node, defined_actor, params))
 
         if len(args) == 2:
@@ -142,7 +165,7 @@ class QtAgent(AppAgent, QObject):
                     ({"q": query_or_node}, defined_actor, params)
                 )
 
-            if isinstance(query_or_node, Node):
+            if isinstance(query_or_node, NodeMixin):
                 self.registry.templatedNodes.append(
                     (query_or_node, defined_actor, params)
                 )

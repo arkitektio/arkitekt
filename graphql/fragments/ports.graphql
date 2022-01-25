@@ -1,0 +1,115 @@
+fragment StringArgPort on StringArgPort {
+  key
+  type
+}
+
+fragment IntArgPort on IntArgPort {
+  key
+  type
+}
+
+fragment StructureArgPort on StructureArgPort {
+  key
+  type
+  identifier
+}
+
+fragment ListArgPort on ListArgPort {
+  key
+  type
+  child {
+    __typename
+    ... on StructureArgPort {
+      __typename
+      identifier
+    }
+  }
+}
+
+fragment DictKwargPort on DictKwargPort {
+  key
+  type
+  defaultDict
+}
+
+fragment BoolKwargPort on BoolKwargPort {
+  key
+  type
+  defaultBool
+}
+
+fragment IntKwargPort on IntKwargPort {
+  key
+  type
+  defaultInt
+}
+
+fragment ListKwargPort on ListKwargPort {
+  key
+  type
+  child {
+    __typename
+    ... on StructureKwargPort {
+      identifier
+    }
+  }
+  defaultList
+}
+
+fragment ListReturnPort on ListReturnPort {
+  type
+  key
+  child {
+    __typename
+    ... on StructureReturnPort {
+      __typename
+      identifier
+    }
+  }
+}
+
+fragment StructureReturnPort on StructureReturnPort {
+  __typename
+  key
+  identifier
+}
+
+fragment StringReturnPort on StringReturnPort {
+  __typename
+  key
+}
+
+fragment IntReturnPort on IntReturnPort {
+  __typename
+  key
+}
+
+fragment ReturnPort on ReturnPort {
+  __typename
+  key
+  description
+  ...ListReturnPort
+  ...StructureReturnPort
+  ...StringReturnPort
+  ...IntReturnPort
+}
+
+fragment KwargPort on KwargPort {
+  __typename
+  key
+  description
+  ...DictKwargPort
+  ...BoolKwargPort
+  ...IntKwargPort
+  ...ListKwargPort
+}
+
+fragment ArgPort on ArgPort {
+  __typename
+  key
+  description
+  ...StringArgPort
+  ...StructureArgPort
+  ...ListArgPort
+  ...IntArgPort
+}

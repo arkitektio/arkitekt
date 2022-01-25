@@ -1,9 +1,9 @@
 from qtpy import QtCore, QtGui
 from qtpy import QtWidgets
 from arkitekt.agents.base import Agent
+from arkitekt.api.schema import TemplateFragment
 from arkitekt.qt.agent import QtAgent
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
-from arkitekt.schema.template import Template
 
 
 class ProvisionDetailWidget(QtWidgets.QWidget):
@@ -11,7 +11,7 @@ class ProvisionDetailWidget(QtWidgets.QWidget):
         self, provide: BouncedProvideMessage, agent: Agent, *args, **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
-        template: Template = agent.templateTemplatesMap[provide.data.template]
+        template: TemplateFragment = agent.templateTemplatesMap[provide.data.template]
         self.layout = QtWidgets.QVBoxLayout()
 
         name = QtWidgets.QLabel(template.node.name)
@@ -36,7 +36,7 @@ class ProvisionListWidget(QtWidgets.QWidget):
         self, provide: BouncedProvideMessage, agent: Agent, *args, **kwargs
     ) -> None:
         super().__init__(*args, **kwargs)
-        template: Template = agent.templateTemplatesMap[provide.data.template]
+        template: TemplateFragment = agent.templateTemplatesMap[provide.data.template]
         self.provide = provide
         self.agent = agent
 

@@ -1,9 +1,9 @@
 from qtpy import QtCore, QtGui, QtWidgets
 from arkitekt.agents.base import Agent
+from arkitekt.api.schema import TemplateFragment
 from arkitekt.qt.agent import QtAgent
 from arkitekt.config import ArkitektConfig
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
-from arkitekt.schema.template import Template
 import webbrowser
 
 
@@ -32,7 +32,9 @@ class PortsWrapped(QtWidgets.QWidget):
 
 
 class TemplateDetailWidget(QtWidgets.QWidget):
-    def __init__(self, template: Template, agent: Agent, *args, **kwargs) -> None:
+    def __init__(
+        self, template: TemplateFragment, agent: Agent, *args, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.template = template
         self.layout = QtWidgets.QVBoxLayout()
@@ -71,7 +73,9 @@ class TemplateDetailWidget(QtWidgets.QWidget):
 
 
 class TemplatesListItemWidget(QtWidgets.QWidget):
-    def __init__(self, template: Template, agent: Agent, *args, **kwargs) -> None:
+    def __init__(
+        self, template: TemplateFragment, agent: Agent, *args, **kwargs
+    ) -> None:
         super().__init__(*args, **kwargs)
         self.template = template
         self.agent = agent

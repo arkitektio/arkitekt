@@ -1,6 +1,8 @@
 from arkitekt.config import ArkitektConfig
 from herre.wards.graphql import GraphQLWardConfig, ParsedQuery, GraphQLWard
 from herre.herre import get_current_herre
+from herre.wards.query import TypedQuery
+from arkitekt.api.schema import TranscriptFragment, anegotiate
 
 
 class ArkitektWard(GraphQLWard):
@@ -9,19 +11,9 @@ class ArkitektWard(GraphQLWard):
     class Meta:
         key = "arkitekt"
 
-    async def negotiate(self):
-        from arkitekt.schema.negotiation import Transcript
+    async def negotiate(self) -> TranscriptFragment:
+        return await anegotiate()
 
-        transcript_query = await self.arun(
-            ParsedQuery(
-                """mutation Negotiate {
-            negotiate {
-                postman {
-                    type
-                    kwargs
-                }
-            } 
-        }"""
-            )
-        )
-        return Transcript(**transcript_query["negotiate"])
+
+class gql(TypedQuery):
+    ward_key = "arkitekt"

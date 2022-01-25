@@ -1,9 +1,6 @@
 from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
 from arkitekt.messages.postman.log import LogLevel
-from arkitekt.monitor.monitor import AgentPanel, get_current_monitor
-from herre.console.context import get_current_console
-from arkitekt.packers.utils import shrink_outputs
-from re import template
+from arkitekt.serialization.registry import StructureRegistry
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import (
     BouncedForwardedUnassignMessage,
@@ -20,23 +17,21 @@ from arkitekt.messages.postman.provide.provide_transition import (
     ProvideMode,
     ProvideState,
 )
-from arkitekt.transport.base import Transport
-from arkitekt.packers.transpilers.base import Transpiler
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 import asyncio
 from asyncio.tasks import Task, create_task
 from arkitekt.messages.postman.provide import ProvideTransitionMessage
 import logging
-from arkitekt.schema.template import Template
 from koil.koil import Koil, get_current_koil
 from koil.loop import koil
+from arkitekt.api.schema import aget_template, TemplateFragment
 
 
 logger = logging.getLogger(__name__)
 
 
 class Actor:
-    template: Template
+    template: TemplateFragment
 
     def __init__(
         self,
@@ -46,12 +41,14 @@ class Actor:
         expand_inputs=True,
         shrink_outputs=True,
         transpilers={},
+        structure_registry: StructureRegistry = None,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.strict = strict
         self.expand_inputs = expand_inputs
         self.shrink_outputs = shrink_outputs
+        self.structure_registry = structure_registry
         self.runningAssignments: Dict[
             str, asyncio.Task
         ] = {}  # Running assignments indexed by assignment reference
@@ -91,7 +88,7 @@ class Actor:
         self.in_queue = asyncio.Queue()
 
         try:
-            self.template = await Template.asyncs.get(id=self.provision.data.template)
+            self.template = await aget_template(id=self.provision.data.template)
 
             await self.transport.forward(
                 ProvideTransitionMessage(

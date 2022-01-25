@@ -1,0 +1,14 @@
+fragment Template on Template {
+  id
+  registry {
+    app {
+      name
+    }
+    user {
+      username
+    }
+  }
+  node {
+    ...Node
+  }
+}
