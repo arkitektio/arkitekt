@@ -1,6 +1,6 @@
 from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
 from arkitekt.messages.postman.log import LogLevel
-from arkitekt.serialization.registry import StructureRegistry
+from arkitekt.structures.registry import StructureRegistry
 from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
 from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import (
     BouncedForwardedUnassignMessage,

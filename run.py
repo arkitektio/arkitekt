@@ -4,7 +4,7 @@ from arkitekt.actors.utils import log
 from arkitekt.agents.script import ScriptAgent
 from arkitekt.messages.postman.log import LogLevel
 from arkitekt.schema.widgets import SliderWidget
-from arkitekt.serialization.registry import StructureRegistry
+from arkitekt.structures.registry import StructureRegistry
 from fakts.grants.endpoint import EndpointGrant, FaktsEndpoint
 import asyncio
 from enum import Enum

@@ -16,7 +16,7 @@ from arkitekt.schema.ports import (
 )
 from arkitekt.schema.widgets import SearchWidget
 from qtpy import QtWidgets
-from arkitekt.schema.node import Node
+from snips.node import Node
 from itertools import zip_longest
 from typing import Generic
 from arkitekt.ui.registry import get_widget_registry

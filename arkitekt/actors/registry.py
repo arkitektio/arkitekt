@@ -1,8 +1,7 @@
-from matplotlib.widgets import Widget
-from arkitekt.api.schema import NodeFragment
+from arkitekt.api.schema import DefinitionInput, NodeFragment
 from arkitekt.actors.actify import actify
 from arkitekt.definition.define import prepare_definition
-from arkitekt.serialization.registry import (
+from arkitekt.structures.registry import (
     StructureRegistry,
     get_current_structure_registry,
 )
@@ -41,7 +40,7 @@ class ActorRegistry:
     def register(
         self,
         actorBuilder: Callable[..., Actor],
-        definition: NodeFragment = None,  # New Node
+        definition: DefinitionInput = None,  # New Node
         q_string: str = None,  # Query an already existing Node
         **params
     ):

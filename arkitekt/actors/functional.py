@@ -16,7 +16,7 @@ from arkitekt.messages.postman.assign.bounced_forwarded_assign import (
 from arkitekt.actors.base import Actor
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import asyncio
-from arkitekt.serialization.actor import expand_inputs, shrink_outputs
+from arkitekt.structures.actor import expand_inputs, shrink_outputs
 
 import logging
 import janus

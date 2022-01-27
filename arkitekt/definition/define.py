@@ -8,14 +8,14 @@ from arkitekt.api.schema import (
     KwargPortInput,
     NodeTypeInput,
     ReturnPortInput,
-    acreate_node,
-    adefine,
 )
 import inspect
 from docstring_parser import parse
 from arkitekt.definition.errors import DefinitionError
 
-from arkitekt.serialization.registry import StructureRegistry
+from arkitekt.structures.registry import (
+    StructureRegistry,
+)
 
 
 def convert_arg_to_argport(
@@ -91,7 +91,7 @@ def convert_kwarg_to_kwargport(
             )
 
         if cls._name == "Dict":
-            child = convert_arg_to_argport(cls.__args__[1]), registry
+            child = convert_kwarg_to_kwargport(cls.__args__[1], registry)
             return KwargPortInput(
                 typename="DictKwargPort",
                 widget=widget,
@@ -148,9 +148,9 @@ def convert_return_to_returnport(
     if hasattr(cls, "_name"):
         # We are dealing with a Typing Var?
         if cls._name == "List":
-            child = convert_kwarg_to_kwargport(cls.__args__[0], registry)
+            child = convert_return_to_returnport(cls.__args__[0], registry)
             return ReturnPortInput(
-                typename="ListKwargPort",
+                typename="ListReturnPort",
                 key=key,
                 child=child,
                 defaultList=default,
@@ -216,6 +216,8 @@ def prepare_definition(
         function (): The function you want to define
     """
 
+    assert structure_registry is not None, "You need to pass a StructureRegistry"
+
     is_generator = inspect.isasyncgenfunction(function) or inspect.isgeneratorfunction(
         function
     )
@@ -252,22 +254,35 @@ def prepare_definition(
                     )
                 )
         except Exception as e:
-            raise DefinitionError(f"Could not convert {key} to ArgPort: {value}") from e
+            raise DefinitionError(
+                f"Could not convert Argument of function {function.__name__} to ArgPort: {value}"
+            ) from e
 
     function_outs_annotation = sig.return_annotation
+
     if hasattr(function_outs_annotation, "_name"):
 
         if function_outs_annotation._name == "Tuple":
-            for cls in function_outs_annotation.__args__:
-                returns.append(convert_return_to_returnport(cls, structure_registry))
-
+            try:
+                for cls in function_outs_annotation.__args__:
+                    returns.append(
+                        convert_return_to_returnport(cls, structure_registry)
+                    )
+            except Exception as e:
+                raise DefinitionError(
+                    f"Could not convert Return of function {function.__name__} to ArgPort: {cls}"
+                ) from e
         else:
-            returns.append(
-                convert_return_to_returnport(
-                    function_outs_annotation, structure_registry
-                )
-            )  # Other types will be converted to normal lists and shit
-
+            try:
+                returns.append(
+                    convert_return_to_returnport(
+                        function_outs_annotation, structure_registry
+                    )
+                )  # Other types will be converted to normal lists and shit
+            except Exception as e:
+                raise DefinitionError(
+                    f"Could not convert Return of function {function.__name__} to ArgPort: {function_outs_annotation}"
+                ) from e
     else:
         # We are dealing with a non tuple return
         if function_outs_annotation.__name__ != "_empty":  # Is it not empty

@@ -1,9 +1,8 @@
 from typing import Any, Dict, List
-from numpy import argsort
-from api.arkitekt.schema import NodeFragment
+from arkitekt.api.schema import NodeFragment
 import asyncio
-from arkitekt.serialization.errors import ExpandingError, ShrinkingError
-from arkitekt.serialization.registry import StructureRegistry
+from arkitekt.structures.errors import ExpandingError, ShrinkingError
+from arkitekt.structures.registry import StructureRegistry
 
 
 async def shrink_inputs(

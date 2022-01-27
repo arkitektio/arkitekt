@@ -19,38 +19,38 @@ projects:
           Node:
             - arkitekt.mixins.node.NodeMixin
           IntArgPort:
-            - arkitekt.serialization.ports.IntExpander
+            - arkitekt.mixins.ports.IntExpander
           IntKwargPort:
-            - arkitekt.serialization.ports.IntExpander
+            - arkitekt.mixins.ports.IntExpander
           IntReturnPort:
-            - arkitekt.serialization.ports.IntExpander
+            - arkitekt.mixins.ports.IntExpander
           StructureArgPort:
-            - arkitekt.serialization.ports.StructureExpander
+            - arkitekt.mixins.ports.StructureExpander
           StructureKwargPort:
-            - arkitekt.serialization.ports.StructureExpander
+            - arkitekt.mixins.ports.StructureExpander
           StructureReturnPort:
-            - arkitekt.serialization.ports.StructureExpander
+            - arkitekt.mixins.ports.StructureExpander
           ListArgPort:
-            - arkitekt.serialization.ports.ListExpander
+            - arkitekt.mixins.ports.ListExpander
           ListKwargPort:
-            - arkitekt.serialization.ports.ListExpander
+            - arkitekt.mixins.ports.ListExpander
           ListReturnPort:
-            - arkitekt.serialization.ports.ListExpander
+            - arkitekt.mixins.ports.ListExpander
           BoolArgPort:
-            - arkitekt.serialization.ports.BoolExpander
+            - arkitekt.mixins.ports.BoolExpander
           BoolKwargPort:
-            - arkitekt.serialization.ports.BoolExpander
+            - arkitekt.mixins.ports.BoolExpander
           BoolReturnPort:
-            - arkitekt.serialization.ports.BoolExpander
+            - arkitekt.mixins.ports.BoolExpander
           StringArgPort:
-            - arkitekt.serialization.ports.StringExpander
+            - arkitekt.mixins.ports.StringExpander
           StringKwargPort:
-            - arkitekt.serialization.ports.StringExpander
+            - arkitekt.mixins.ports.StringExpander
           StringReturnPort:
-            - arkitekt.serialization.ports.StringExpander
+            - arkitekt.mixins.ports.StringExpander
           EnumArgPort:
-            - arkitekt.serialization.ports.EnumExpander
+            - arkitekt.mixins.ports.EnumExpander
           EnumKwargPort:
-            - arkitekt.serialization.ports.EnumExpander
+            - arkitekt.mixins.ports.EnumExpander
           EnumReturnPort:
-            - arkitekt.serialization.ports.EnumExpander
+            - arkitekt.mixins.ports.EnumExpander

@@ -1,5 +1,6 @@
 from abc import abstractmethod
 from arkitekt.actors.base import Actor
+from arkitekt.actors.registry import ActorRegistry, get_current_actor_registry
 from arkitekt.config import TransportProtocol
 from arkitekt.messages.postman.assign.bounced_forwarded_assign import (
     BouncedForwardedAssignMessage,
@@ -14,6 +15,10 @@ from arkitekt.messages.postman.unprovide.bounced_unprovide import (
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 from arkitekt.messages.postman.log import LogLevel
 from arkitekt.messages.postman.reserve.bounced_reserve import BouncedReserveMessage
+from arkitekt.structures.registry import (
+    StructureRegistry,
+    get_current_structure_registry,
+)
 from arkitekt.transport.agent.base import AgentTransport
 from arkitekt.transport.base import Transport
 from arkitekt.messages.base import MessageDataModel, MessageModel
@@ -74,10 +79,15 @@ class Agent:
         fakts: Fakts = None,
         config: AgentConfig = None,
         transport_registry: TransportRegistry = None,
+        structure_registry: StructureRegistry = None,
+        actor_registry: ActorRegistry = None,
         strict=False,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
+
+        self.actor_registry = actor_registry or get_current_actor_registry()
+        self.structure_registry = structure_registry or get_current_structure_registry()
 
         self.auto_login = auto_login
         self.auto_connect = auto_connect

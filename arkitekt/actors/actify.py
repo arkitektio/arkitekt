@@ -14,7 +14,7 @@ from docstring_parser import parse
 import logging
 import inflection
 
-from arkitekt.serialization.registry import StructureRegistry
+from arkitekt.structures.registry import StructureRegistry
 
 logger = logging.getLogger(__name__)
 from typing import Callable, Dict, List

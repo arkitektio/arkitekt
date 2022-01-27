@@ -1,9 +1,8 @@
 from typing import Any, Dict, List
-
 from async_timeout import asyncio
 from arkitekt.api.schema import NodeFragment
-from arkitekt.serialization.errors import ShrinkingError
-from arkitekt.serialization.registry import StructureRegistry
+from arkitekt.structures.errors import ShrinkingError
+from arkitekt.structures.registry import StructureRegistry
 
 
 async def expand_inputs(

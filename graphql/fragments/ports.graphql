@@ -26,6 +26,18 @@ fragment ListArgPort on ListArgPort {
   }
 }
 
+fragment DictArgPort on DictArgPort {
+  key
+  type
+  child {
+    __typename
+    ... on StructureArgPort {
+      __typename
+      identifier
+    }
+  }
+}
+
 fragment DictKwargPort on DictKwargPort {
   key
   type
@@ -42,6 +54,12 @@ fragment IntKwargPort on IntKwargPort {
   key
   type
   defaultInt
+}
+
+fragment StringKwargPort on StringKwargPort {
+  key
+  type
+  defaultString
 }
 
 fragment ListKwargPort on ListKwargPort {
@@ -102,6 +120,7 @@ fragment KwargPort on KwargPort {
   ...BoolKwargPort
   ...IntKwargPort
   ...ListKwargPort
+  ...StringKwargPort
 }
 
 fragment ArgPort on ArgPort {
@@ -112,4 +131,5 @@ fragment ArgPort on ArgPort {
   ...StructureArgPort
   ...ListArgPort
   ...IntArgPort
+  ...DictArgPort
 }

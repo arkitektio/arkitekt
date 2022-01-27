@@ -1,11 +1,6 @@
 from pydantic.main import BaseModel
-from arkitekt.packers.registry import (
-    StructureMeta,
-    register_structure,
-)
 
 
-@register_structure(meta=StructureMeta(identifier="test"))
 class SerializableObject(BaseModel):
     number: int
 
@@ -17,7 +12,6 @@ class SerializableObject(BaseModel):
         return cls(number=shrinked_value)
 
 
-@register_structure(meta=StructureMeta(identifier="karl"))
 class SecondSerializableObject:
     async def shrink(self):
         return 5

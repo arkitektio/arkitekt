@@ -1,32 +1,16 @@
-from pydantic.main import BaseModel
-from arkitekt.packers.structure import Structure
-from arkitekt.packers.registry import (
-    PackerRegistry,
+from arkitekt.structures.registry import (
+    StructureDefinitionError,
+    StructureRegistry,
+    register,
     StructureOverwriteError,
-    UnpackableError,
-    StructureMeta,
-    register_structure,
 )
-from arkitekt.schema.ports import (
-    DictArgPort,
-    IntArgPort,
-    ListArgPort,
-    ListReturnPort,
-    StringArgPort,
-    StringKwargPort,
-)
-from typing import Dict, List, Tuple
-from arkitekt.packers.utils import ShrinkingError, expand_outputs
-from arkitekt.schema.node import Node
-from arkitekt.packers import shrink_inputs, expand_inputs
-from arkitekt.actors import define
 import pytest
 
 
 async def test_structure_registration():
-    registry = PackerRegistry()
+    registry = StructureRegistry(allow_overwrites=False)
 
-    @register_structure(meta=StructureMeta(identifier="test"), registry=registry)
+    @register(identifier="test", registry=registry)
     class SerializableObject:
         def __init__(self, number) -> None:
             super().__init__()
@@ -39,11 +23,15 @@ async def test_structure_registration():
         async def expand(cls, shrinked_value):
             return cls(shrinked_value)
 
-    assert "test" in registry.identifierStructureMap, "Registration fails"
+    assert "test" in registry.identifier_structure_map, "Registration fails"
+    assert "test" in registry.identifier_expander_map, "Registration of expand failed"
+    assert (
+        SerializableObject.expand == registry.identifier_expander_map["test"]
+    ), "Is not the same instance"
 
     with pytest.raises(StructureOverwriteError):
 
-        @register_structure(meta=StructureMeta(identifier="test"), registry=registry)
+        @register(identifier="test", registry=registry)
         class SerializableObject:
             def __init__(self, number) -> None:
                 super().__init__()
@@ -56,9 +44,9 @@ async def test_structure_registration():
             async def expand(cls, shrinked_value):
                 return cls(shrinked_value)
 
-    with pytest.raises(UnpackableError):
+    with pytest.raises(StructureDefinitionError):
 
-        @register_structure(meta=StructureMeta(identifier="karl"), registry=registry)
+        @register(identifier="karl", registry=registry)
         class SerializableObject:
             def __init__(self, number) -> None:
                 super().__init__()

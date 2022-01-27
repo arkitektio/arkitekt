@@ -30,7 +30,7 @@ from arkitekt.agents.base import Agent, AgentException
 import logging
 import uuid
 from arkitekt.definition.define import prepare_definition
-from arkitekt.serialization.registry import (
+from arkitekt.structures.registry import (
     StructureRegistry,
     get_current_structure_registry,
 )
