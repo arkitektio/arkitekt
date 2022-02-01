@@ -7,7 +7,7 @@ license = "CC BY-NC 3.0"
 packages = [{include = "arkitekt"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.7"
 docstring-parser = "^0.10"
 inflection = "^0.5.1"
 websockets = "^10.0"
@@ -21,7 +21,6 @@ pytest-aiohttp = "^0.3.0"
 tox = "^3.24.3"
 pytest-cov = "^3.0.0"
 black = "^21.12b0"
-turms="^0.1.23"
 
 [tool.poetry.scripts]
 arkitekt = "arkitekt.cli.main:entrypoint"
