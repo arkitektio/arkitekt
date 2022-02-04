@@ -18,6 +18,13 @@ from rich.prompt import Prompt, Confirm
 import os
 import asyncio
 
+try:
+    from rich.traceback import install
+
+    install()
+except:
+    pass
+
 directory = os.getcwd()
 
 

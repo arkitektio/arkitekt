@@ -3,8 +3,15 @@ mutation reserve(
   $template: ID
   $params: ReserveParamsInput
   $title: String
+  $callbacks: [Callback]
 ) {
-  reserve(node: $node, template: $template, params: $params, title: $title) {
+  reserve(
+    node: $node
+    template: $template
+    params: $params
+    title: $title
+    callbacks: $callbacks
+  ) {
     reference
     id
     status

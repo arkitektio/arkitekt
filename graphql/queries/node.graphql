@@ -1,4 +1,4 @@
-query get_node(
+query find(
   $id: ID
   $package: String
   $interface: String

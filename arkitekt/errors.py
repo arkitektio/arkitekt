@@ -1,0 +1,2 @@
+class NoArkitektFound(Exception):
+    pass

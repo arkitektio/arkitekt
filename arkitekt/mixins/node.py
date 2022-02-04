@@ -1,7 +1,6 @@
 from contextvars import Context
 from typing import Any
 from arkitekt.messages.postman.reserve.reserve_transition import ReserveState
-from arkitekt.monitor.monitor import Monitor
 from arkitekt.contracts.reservation import Reservation
 from rich.table import Table
 
@@ -13,7 +12,6 @@ class NodeMixin:
         self,
         reference: str = None,
         provision: str = None,
-        monitor: Monitor = None,
         ignore_node_exceptions=False,
         transition_hook=None,
         with_log=False,
@@ -27,7 +25,6 @@ class NodeMixin:
             self,
             reference=reference,
             provision=provision,
-            monitor=monitor,
             transition_hook=transition_hook,
             with_log=with_log,
             enter_on=enter_on,

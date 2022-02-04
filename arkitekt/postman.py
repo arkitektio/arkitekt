@@ -8,18 +8,10 @@ from arkitekt.transport.registry import (
 from arkitekt.transport.base import Transport
 from arkitekt.ward import ArkitektWard
 from herre.herre import Herre, get_current_herre
-from herre.wards.registry import get_ward_registry
 from arkitekt.legacy.utils import *
 from arkitekt.registry import set_current_rpc
 from koil.koil import Koil, get_current_koil
 from fakts import Fakts, get_current_fakts, Config
-
-try:
-    from rich.traceback import install
-
-    install()
-except:
-    pass
 
 import logging
 

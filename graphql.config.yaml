@@ -11,16 +11,17 @@ projects:
           - type: turms.plugins.fragments.FragmentsPlugin
           - type: turms.plugins.operation.OperationsPlugin
             query_bases:
-              - rath.turms.operation.GraphQLQuery
+              - arkitekt.operation.GraphQLQuery
             mutation_bases:
-              - rath.turms.operation.GraphQLMutation
+              - arkitekt.operation.GraphQLMutation
             subscription_bases:
-              - rath.turms.operation.GraphQLSubscription
+              - arkitekt.operation.GraphQLSubscription
           - type: turms.plugins.funcs.OperationsFuncPlugin
         processors:
           - type: turms.processor.black.BlackProcessor
         scalar_definitions:
           uuid: str
+          Callback: str
         additional_bases:
           Node:
             - arkitekt.mixins.node.NodeMixin
