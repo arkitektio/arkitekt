@@ -285,7 +285,10 @@ def prepare_definition(
                 ) from e
     else:
         # We are dealing with a non tuple return
-        if function_outs_annotation.__name__ != "_empty":  # Is it not empty
+        if function_outs_annotation is None:
+            pass
+
+        elif function_outs_annotation.__name__ != "_empty":  # Is it not empty
             returns.append(
                 convert_return_to_returnport(
                     function_outs_annotation, structure_registry

@@ -3,7 +3,7 @@ query find(
   $package: String
   $interface: String
   $template: ID
-  $q: String
+  $q: QString
 ) {
   node(
     id: $id

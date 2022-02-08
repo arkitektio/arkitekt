@@ -1,3 +1,4 @@
+from graphql import OperationType
 from rath import compose
 from rath.links.context import SwitchAsyncLink
 from rath.links.shrink import ShrinkingLink
@@ -6,6 +7,8 @@ from rath.herre.links import HerreAuthTokenLink
 from arkitekt.arkitekt import Arkitekt
 from herre import Herre, get_current_herre
 from fakts import Fakts, get_current_fakts
+from rath.links.split import SplitLink
+from rath.links.websockets import WebSocketLink
 
 
 class FaktsArkitekt(Arkitekt):
@@ -24,7 +27,13 @@ class FaktsArkitekt(Arkitekt):
             ShrinkingLink(),
             SwitchAsyncLink(),
             HerreAuthTokenLink(herre=herre),
-            FaktsAioHttpLink(fakts=fakts, fakts_key=fakts_key),
+            SplitLink(
+                FaktsAioHttpLink(fakts=fakts, fakts_key="arkitekt"),
+                WebSocketLink(
+                    url="ws://localhost:8090/graphql", token_loader=herre.aget_token
+                ),
+                lambda o: o.node.operation != OperationType.SUBSCRIPTION,
+            ),
         )
 
         super().__init__(link, autoconnect)
