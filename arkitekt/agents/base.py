@@ -30,33 +30,13 @@ UserID = str
 
 
 class Provision:
-
     def __init__(self):
         pass
 
-class Actor:
 
+class Actor:
     def __init__(self, template: TemplateFragment):
         self.template = template
-
-
-class BaseAgent:
-    def __init__(self, transport: AgentTransport) -> None:
-        self.transport = transport(self)
-
-
-    async def provide(self, provision: Provision) -> Actor:
-
-
-
-
-
-    async def aconnect(self):
-        await self.aregister_definitions()
-        await self.transport.aconnect()
-
-    def connect(self):
-        koil(self.aconnect())
 
 
 class Agent:

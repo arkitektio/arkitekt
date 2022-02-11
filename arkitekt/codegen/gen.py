@@ -1,18 +1,18 @@
 from typing import List
 from arkitekt.api.schema import (
-    ArgportFragment,
+    ArgPortFragmentBase,
     BoolKwargPortFragment,
-    KwargportFragment,
+    KwargPortFragmentBase,
     ListArgPortFragment,
     ListKwargPortFragment,
     ListReturnPortFragment,
     ListReturnPortFragmentChildStructureReturnPortFragment,
     NodeFragment,
-    ReturnportFragment,
+    ReturnPortFragmentBase,
     StringReturnPortFragment,
     StructureArgPortFragment,
     StructureReturnPortFragment,
-    get_node,
+    find,
 )
 from fakts import Fakts
 from arkitekt import ArkitektWard
@@ -86,7 +86,9 @@ def generate_imports():
     return imports
 
 
-def generate_node_args(args: List[ArgportFragment], kwargs: List[KwargportFragment]):
+def generate_node_args(
+    args: List[ArgPortFragmentBase], kwargs: List[KwargPortFragmentBase]
+):
 
     pos_args = []
 
@@ -156,7 +158,7 @@ def generate_node_args(args: List[ArgportFragment], kwargs: List[KwargportFragme
     )
 
 
-def generate_node_returns(returns: List[ReturnportFragment]):
+def generate_node_returns(returns: List[ReturnPortFragmentBase]):
 
     if len(returns) == 0:
         return ast.Name(id="None")
@@ -232,7 +234,7 @@ def generate_node_func(
 
     global_tree = generate_imports()
 
-    node = get_node(package=package, interface=interface)
+    node = find(package=package, interface=interface)
 
     global_tree += node_to_ast(node)
 

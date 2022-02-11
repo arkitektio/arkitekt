@@ -1,17 +1,18 @@
-from enum import Enum
-from typing import Literal, List, Union, Any, Optional, Iterator, AsyncIterator, Dict
-from arkitekt.operation import GraphQLQuery, GraphQLMutation, GraphQLSubscription
-from turms.types.object import GraphQLObject, GraphQLInputObject
-from arkitekt.mixins.ports import (
-    StringExpander,
+from arkitekt.traits.ports import (
     BoolExpander,
+    StringExpander,
+    IntExpander,
     ListExpander,
     StructureExpander,
-    IntExpander,
 )
-from pydantic import Field
-from arkitekt.mixins.node import NodeMixin
+from arkitekt.funcs import aexecute, subscribe, asubscribe, execute
+from typing import Literal, List, Iterator, Any, Union, AsyncIterator, Optional, Dict
+from pydantic import BaseModel, Field
+from arkitekt.arkitekt import Arkitekt
 from arkitekt.scalars import QString
+from turms.types.object import GraphQLInputObject, GraphQLObject
+from enum import Enum
+from arkitekt.traits.node import Reserve
 
 
 class NodeType(str, Enum):
@@ -561,14 +562,17 @@ class ReserveParamsInput(GraphQLInputObject):
     "The minimal amount of Instances"
 
 
+ArgPortInput.update_forward_refs()
 KwargPortInput.update_forward_refs()
 ReturnPortInput.update_forward_refs()
-ArgPortInput.update_forward_refs()
 
 
 class AssignationFragmentParent(GraphQLObject):
     typename: Optional[Literal["Assignation"]] = Field(alias="__typename")
     id: str
+
+    class Config:
+        frozen = True
 
 
 class AssignationFragment(GraphQLObject):
@@ -584,6 +588,9 @@ class AssignationFragment(GraphQLObject):
     statusmessage: str
     "Clear Text status of the Assignation as for now"
 
+    class Config:
+        frozen = True
+
 
 class TranscriptFragmentPostman(GraphQLObject):
     typename: Optional[Literal["PostmanSettings"]] = Field(alias="__typename")
@@ -592,20 +599,32 @@ class TranscriptFragmentPostman(GraphQLObject):
     kwargs: Optional[Dict]
     "kwargs for your postman"
 
+    class Config:
+        frozen = True
+
 
 class TranscriptFragment(GraphQLObject):
     typename: Optional[Literal["Transcript"]] = Field(alias="__typename")
     postman: Optional[TranscriptFragmentPostman]
+
+    class Config:
+        frozen = True
 
 
 class StringArgPortFragment(StringExpander, GraphQLObject):
     typename: Optional[Literal["StringArgPort"]] = Field(alias="__typename")
     key: Optional[str]
 
+    class Config:
+        frozen = True
+
 
 class IntArgPortFragment(IntExpander, GraphQLObject):
     typename: Optional[Literal["IntArgPort"]] = Field(alias="__typename")
     key: Optional[str]
+
+    class Config:
+        frozen = True
 
 
 class StructureArgPortFragment(StructureExpander, GraphQLObject):
@@ -614,9 +633,15 @@ class StructureArgPortFragment(StructureExpander, GraphQLObject):
     identifier: Optional[str]
     "The identifier of this Model"
 
+    class Config:
+        frozen = True
+
 
 class ListArgPortFragmentChildBase(GraphQLObject):
     typename: Optional[str] = Field(alias="__typename")
+
+    class Config:
+        frozen = True
 
 
 class ListArgPortFragmentChildStructureArgPortFragment(
@@ -625,6 +650,9 @@ class ListArgPortFragmentChildStructureArgPortFragment(
     typename: Optional[Literal["StructureArgPort"]] = Field(alias="__typename")
     identifier: Optional[str]
     "The identifier of this Model"
+
+    class Config:
+        frozen = True
 
 
 class ListArgPortFragment(ListExpander, GraphQLObject):
@@ -638,9 +666,15 @@ class ListArgPortFragment(ListExpander, GraphQLObject):
     ]
     "The child"
 
+    class Config:
+        frozen = True
+
 
 class DictArgPortFragmentChildBase(GraphQLObject):
     typename: Optional[str] = Field(alias="__typename")
+
+    class Config:
+        frozen = True
 
 
 class DictArgPortFragmentChildStructureArgPortFragment(
@@ -649,6 +683,9 @@ class DictArgPortFragmentChildStructureArgPortFragment(
     typename: Optional[Literal["StructureArgPort"]] = Field(alias="__typename")
     identifier: Optional[str]
     "The identifier of this Model"
+
+    class Config:
+        frozen = True
 
 
 class DictArgPortFragment(GraphQLObject):
@@ -662,12 +699,18 @@ class DictArgPortFragment(GraphQLObject):
     ]
     "The child"
 
+    class Config:
+        frozen = True
+
 
 class DictKwargPortFragment(GraphQLObject):
     typename: Optional[Literal["DictKwargPort"]] = Field(alias="__typename")
     key: Optional[str]
     defaultDict: Optional[Dict]
     "TheList"
+
+    class Config:
+        frozen = True
 
 
 class BoolKwargPortFragment(BoolExpander, GraphQLObject):
@@ -676,12 +719,18 @@ class BoolKwargPortFragment(BoolExpander, GraphQLObject):
     defaultBool: Optional[bool]
     "Default value"
 
+    class Config:
+        frozen = True
+
 
 class IntKwargPortFragment(IntExpander, GraphQLObject):
     typename: Optional[Literal["IntKwargPort"]] = Field(alias="__typename")
     key: Optional[str]
     defaultInt: Optional[int]
     "Default value"
+
+    class Config:
+        frozen = True
 
 
 class StringKwargPortFragment(StringExpander, GraphQLObject):
@@ -690,9 +739,15 @@ class StringKwargPortFragment(StringExpander, GraphQLObject):
     defaultString: Optional[str]
     "Default value"
 
+    class Config:
+        frozen = True
+
 
 class ListKwargPortFragmentChildBase(GraphQLObject):
     typename: Optional[str] = Field(alias="__typename")
+
+    class Config:
+        frozen = True
 
 
 class ListKwargPortFragmentChildStructureKwargPortFragment(
@@ -701,6 +756,9 @@ class ListKwargPortFragmentChildStructureKwargPortFragment(
     typename: Optional[Literal["StructureKwargPort"]] = Field(alias="__typename")
     identifier: Optional[str]
     "The identifier of this Model"
+
+    class Config:
+        frozen = True
 
 
 class ListKwargPortFragment(ListExpander, GraphQLObject):
@@ -716,9 +774,15 @@ class ListKwargPortFragment(ListExpander, GraphQLObject):
     defaultList: Optional[List[Optional[Dict]]]
     "TheList"
 
+    class Config:
+        frozen = True
+
 
 class ListReturnPortFragmentChildBase(GraphQLObject):
     typename: Optional[str] = Field(alias="__typename")
+
+    class Config:
+        frozen = True
 
 
 class ListReturnPortFragmentChildStructureReturnPortFragment(
@@ -727,6 +791,9 @@ class ListReturnPortFragmentChildStructureReturnPortFragment(
     typename: Optional[Literal["StructureReturnPort"]] = Field(alias="__typename")
     identifier: Optional[str]
     "The identifier of this Model"
+
+    class Config:
+        frozen = True
 
 
 class ListReturnPortFragment(ListExpander, GraphQLObject):
@@ -740,6 +807,9 @@ class ListReturnPortFragment(ListExpander, GraphQLObject):
     ]
     "The child"
 
+    class Config:
+        frozen = True
+
 
 class StructureReturnPortFragment(StructureExpander, GraphQLObject):
     typename: Optional[Literal["StructureReturnPort"]] = Field(alias="__typename")
@@ -749,6 +819,9 @@ class StructureReturnPortFragment(StructureExpander, GraphQLObject):
     identifier: Optional[str]
     "The identifier of this Model"
 
+    class Config:
+        frozen = True
+
 
 class StringReturnPortFragment(StringExpander, GraphQLObject):
     typename: Optional[Literal["StringReturnPort"]] = Field(alias="__typename")
@@ -756,12 +829,18 @@ class StringReturnPortFragment(StringExpander, GraphQLObject):
     "The name of the current Object type at runtime."
     key: Optional[str]
 
+    class Config:
+        frozen = True
+
 
 class IntReturnPortFragment(IntExpander, GraphQLObject):
     typename: Optional[Literal["IntReturnPort"]] = Field(alias="__typename")
     __typename: str
     "The name of the current Object type at runtime."
     key: Optional[str]
+
+    class Config:
+        frozen = True
 
 
 class ReturnPortFragmentBase(GraphQLObject):
@@ -876,11 +955,14 @@ ArgPortFragment = Union[
 ]
 
 
-class ReservationFragmentNode(NodeMixin, GraphQLObject):
+class ReservationFragmentNode(Reserve, GraphQLObject):
     typename: Optional[Literal["Node"]] = Field(alias="__typename")
     id: str
     pure: bool
     "Is this function pure. e.g can we cache the result?"
+
+    class Config:
+        frozen = True
 
 
 class ReservationFragment(GraphQLObject):
@@ -893,8 +975,11 @@ class ReservationFragment(GraphQLObject):
     node: Optional[ReservationFragmentNode]
     "The node this reservation connects"
 
+    class Config:
+        frozen = True
 
-class NodeFragment(NodeMixin, GraphQLObject):
+
+class NodeFragment(Reserve, GraphQLObject):
     typename: Optional[Literal["Node"]] = Field(alias="__typename")
     name: str
     "The cleartext name of this Node"
@@ -911,16 +996,25 @@ class NodeFragment(NodeMixin, GraphQLObject):
     kwargs: Optional[List[Optional[KwargPortFragment]]]
     returns: Optional[List[Optional[ReturnPortFragment]]]
 
+    class Config:
+        frozen = True
+
 
 class TemplateFragmentRegistryApp(GraphQLObject):
     typename: Optional[Literal["LokApp"]] = Field(alias="__typename")
     name: str
+
+    class Config:
+        frozen = True
 
 
 class TemplateFragmentRegistryUser(GraphQLObject):
     typename: Optional[Literal["LokUser"]] = Field(alias="__typename")
     username: str
     "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
+
+    class Config:
+        frozen = True
 
 
 class TemplateFragmentRegistry(GraphQLObject):
@@ -929,6 +1023,9 @@ class TemplateFragmentRegistry(GraphQLObject):
     "The Associated App"
     user: Optional[TemplateFragmentRegistryUser]
     "The Associated App"
+
+    class Config:
+        frozen = True
 
 
 class TemplateFragment(GraphQLObject):
@@ -939,6 +1036,9 @@ class TemplateFragment(GraphQLObject):
     node: NodeFragment
     "The node this template is implementatig"
 
+    class Config:
+        frozen = True
+
 
 class TodosSubscriptionTodos(GraphQLObject):
     typename: Optional[Literal["TodoEvent"]] = Field(alias="__typename")
@@ -946,13 +1046,19 @@ class TodosSubscriptionTodos(GraphQLObject):
     update: Optional[AssignationFragment]
     delete: Optional[str]
 
+    class Config:
+        frozen = True
 
-class TodosSubscription(GraphQLSubscription):
+
+class TodosSubscription(BaseModel):
     todos: Optional[TodosSubscriptionTodos]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Assignation on Assignation {\n  args\n  kwargs\n  id\n  parent {\n    id\n  }\n  id\n  status\n  statusmessage\n}\n\nsubscription todos($identifier: ID!) {\n  todos(identifier: $identifier) {\n    create {\n      ...Assignation\n    }\n    update {\n      ...Assignation\n    }\n    delete\n  }\n}"
+
+    class Config:
+        frozen = True
 
 
 class WaiterSubscriptionWaiter(GraphQLObject):
@@ -961,38 +1067,56 @@ class WaiterSubscriptionWaiter(GraphQLObject):
     update: Optional[ReservationFragment]
     delete: Optional[str]
 
+    class Config:
+        frozen = True
 
-class WaiterSubscription(GraphQLSubscription):
+
+class WaiterSubscription(BaseModel):
     waiter: Optional[WaiterSubscriptionWaiter]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Reservation on Reservation {\n  id\n  statusmessage\n  status\n  node {\n    id\n    pure\n  }\n}\n\nsubscription waiter($identifier: ID!) {\n  waiter(identifier: $identifier) {\n    create {\n      ...Reservation\n    }\n    update {\n      ...Reservation\n    }\n    delete\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class TodolistQuery(GraphQLQuery):
+
+class TodolistQuery(BaseModel):
     todolist: Optional[List[Optional[AssignationFragment]]]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Assignation on Assignation {\n  args\n  kwargs\n  id\n  parent {\n    id\n  }\n  id\n  status\n  statusmessage\n}\n\nquery todolist($appGroup: ID) {\n  todolist(appGroup: $appGroup) {\n    ...Assignation\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class Get_provisionQueryProvisionTemplateNode(NodeMixin, GraphQLObject):
+
+class Get_provisionQueryProvisionTemplateNode(Reserve, GraphQLObject):
     typename: Optional[Literal["Node"]] = Field(alias="__typename")
     name: str
     "The cleartext name of this Node"
+
+    class Config:
+        frozen = True
 
 
 class Get_provisionQueryProvisionTemplateRegistryApp(GraphQLObject):
     typename: Optional[Literal["LokApp"]] = Field(alias="__typename")
     name: str
 
+    class Config:
+        frozen = True
+
 
 class Get_provisionQueryProvisionTemplateRegistry(GraphQLObject):
     typename: Optional[Literal["Registry"]] = Field(alias="__typename")
     app: Optional[Get_provisionQueryProvisionTemplateRegistryApp]
     "The Associated App"
+
+    class Config:
+        frozen = True
 
 
 class Get_provisionQueryProvisionTemplate(GraphQLObject):
@@ -1005,12 +1129,18 @@ class Get_provisionQueryProvisionTemplate(GraphQLObject):
     extensions: Optional[List[Optional[str]]]
     "The extentions of this template"
 
+    class Config:
+        frozen = True
+
 
 class Get_provisionQueryProvisionBoundRegistry(GraphQLObject):
     typename: Optional[Literal["Registry"]] = Field(alias="__typename")
     id: str
     name: str
     "A name for this registzry"
+
+    class Config:
+        frozen = True
 
 
 class Get_provisionQueryProvisionBound(GraphQLObject):
@@ -1021,16 +1151,25 @@ class Get_provisionQueryProvisionBound(GraphQLObject):
     "This providers Name"
     identifier: str
 
+    class Config:
+        frozen = True
+
 
 class Get_provisionQueryProvisionReservationsCreator(GraphQLObject):
     typename: Optional[Literal["LokUser"]] = Field(alias="__typename")
     username: str
     "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
 
+    class Config:
+        frozen = True
+
 
 class Get_provisionQueryProvisionReservationsApp(GraphQLObject):
     typename: Optional[Literal["LokApp"]] = Field(alias="__typename")
     name: str
+
+    class Config:
+        frozen = True
 
 
 class Get_provisionQueryProvisionReservations(GraphQLObject):
@@ -1043,6 +1182,9 @@ class Get_provisionQueryProvisionReservations(GraphQLObject):
     app: Optional[Get_provisionQueryProvisionReservationsApp]
     "This Reservations app"
 
+    class Config:
+        frozen = True
+
 
 class Get_provisionQueryProvision(GraphQLObject):
     typename: Optional[Literal["Provision"]] = Field(alias="__typename")
@@ -1053,13 +1195,19 @@ class Get_provisionQueryProvision(GraphQLObject):
     reservations: List[Get_provisionQueryProvisionReservations]
     "The Provisions this reservation connects"
 
+    class Config:
+        frozen = True
 
-class Get_provisionQuery(GraphQLQuery):
+
+class Get_provisionQuery(BaseModel):
     provision: Optional[Get_provisionQueryProvision]
 
     class Meta:
         domain = "arkitekt"
         document = "query get_provision($reference: ID!) {\n  provision(reference: $reference) {\n    template {\n      id\n      node {\n        name\n      }\n      registry {\n        app {\n          name\n        }\n      }\n      extensions\n    }\n    bound {\n      registry {\n        id\n        name\n      }\n      name\n      identifier\n    }\n    reservations {\n      id\n      reference\n      creator {\n        username\n      }\n      app {\n        name\n      }\n    }\n  }\n}"
+
+    class Config:
+        frozen = True
 
 
 class Get_reservationQueryReservationTemplateRegistryApp(GraphQLObject):
@@ -1067,11 +1215,17 @@ class Get_reservationQueryReservationTemplateRegistryApp(GraphQLObject):
     id: str
     name: str
 
+    class Config:
+        frozen = True
+
 
 class Get_reservationQueryReservationTemplateRegistryUser(GraphQLObject):
     typename: Optional[Literal["LokUser"]] = Field(alias="__typename")
     id: str
     email: str
+
+    class Config:
+        frozen = True
 
 
 class Get_reservationQueryReservationTemplateRegistry(GraphQLObject):
@@ -1081,12 +1235,18 @@ class Get_reservationQueryReservationTemplateRegistry(GraphQLObject):
     user: Optional[Get_reservationQueryReservationTemplateRegistryUser]
     "The Associated App"
 
+    class Config:
+        frozen = True
+
 
 class Get_reservationQueryReservationTemplate(GraphQLObject):
     typename: Optional[Literal["Template"]] = Field(alias="__typename")
     id: str
     registry: Get_reservationQueryReservationTemplateRegistry
     "The associated registry for this Template"
+
+    class Config:
+        frozen = True
 
 
 class Get_reservationQueryReservationProvisions(GraphQLObject):
@@ -1095,14 +1255,20 @@ class Get_reservationQueryReservationProvisions(GraphQLObject):
     status: ProvisionStatus
     "Current lifecycle of Provision"
 
+    class Config:
+        frozen = True
 
-class Get_reservationQueryReservationNode(NodeMixin, GraphQLObject):
+
+class Get_reservationQueryReservationNode(Reserve, GraphQLObject):
     typename: Optional[Literal["Node"]] = Field(alias="__typename")
     id: str
     type: NodeType
     "Function, generator? Check async Programming Textbook"
     name: str
     "The cleartext name of this Node"
+
+    class Config:
+        frozen = True
 
 
 class Get_reservationQueryReservation(GraphQLObject):
@@ -1122,37 +1288,52 @@ class Get_reservationQueryReservation(GraphQLObject):
     node: Optional[Get_reservationQueryReservationNode]
     "The node this reservation connects"
 
+    class Config:
+        frozen = True
 
-class Get_reservationQuery(GraphQLQuery):
+
+class Get_reservationQuery(BaseModel):
     reservation: Optional[Get_reservationQueryReservation]
 
     class Meta:
         domain = "arkitekt"
         document = "query get_reservation($reference: ID!) {\n  reservation(reference: $reference) {\n    id\n    template {\n      id\n      registry {\n        app {\n          id\n          name\n        }\n        user {\n          id\n          email\n        }\n      }\n    }\n    provisions {\n      id\n      status\n    }\n    title\n    status\n    id\n    reference\n    node {\n      id\n      type\n      name\n    }\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class WaitlistQuery(GraphQLQuery):
+
+class WaitlistQuery(BaseModel):
     waitlist: Optional[List[Optional[ReservationFragment]]]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Reservation on Reservation {\n  id\n  statusmessage\n  status\n  node {\n    id\n    pure\n  }\n}\n\nquery waitlist($appGroup: ID) {\n  waitlist(appGroup: $appGroup) {\n    ...Reservation\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class FindQuery(GraphQLQuery):
+
+class FindQuery(BaseModel):
     node: Optional[NodeFragment]
 
     class Meta:
         domain = "arkitekt"
-        document = "fragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nquery find($id: ID, $package: String, $interface: String, $template: ID, $q: QString) {\n  node(\n    id: $id\n    package: $package\n    interface: $interface\n    template: $template\n    q: $q\n  ) {\n    ...Node\n  }\n}"
+        document = "fragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nquery find($id: ID, $package: String, $interface: String, $template: ID, $q: QString) {\n  node(\n    id: $id\n    package: $package\n    interface: $interface\n    template: $template\n    q: $q\n  ) {\n    ...Node\n  }\n}"
+
+    class Config:
+        frozen = True
 
 
-class Get_templateQuery(GraphQLQuery):
+class Get_templateQuery(BaseModel):
     template: Optional[TemplateFragment]
 
     class Meta:
         domain = "arkitekt"
-        document = "fragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n}\n\nquery get_template($id: ID!) {\n  template(id: $id) {\n    ...Template\n  }\n}"
+        document = "fragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n}\n\nquery get_template($id: ID!) {\n  template(id: $id) {\n    ...Template\n  }\n}"
+
+    class Config:
+        frozen = True
 
 
 class Get_agentQueryAgentRegistry(GraphQLObject):
@@ -1160,6 +1341,9 @@ class Get_agentQueryAgentRegistry(GraphQLObject):
     id: str
     name: str
     "A name for this registzry"
+
+    class Config:
+        frozen = True
 
 
 class Get_agentQueryAgent(GraphQLObject):
@@ -1170,250 +1354,344 @@ class Get_agentQueryAgent(GraphQLObject):
     "This providers Name"
     identifier: str
 
+    class Config:
+        frozen = True
 
-class Get_agentQuery(GraphQLQuery):
+
+class Get_agentQuery(BaseModel):
     agent: Optional[Get_agentQueryAgent]
 
     class Meta:
         domain = "arkitekt"
         document = "query get_agent($id: ID!) {\n  agent(id: $id) {\n    registry {\n      id\n      name\n    }\n    name\n    identifier\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class AssignMutation(GraphQLMutation):
+
+class AssignMutation(BaseModel):
     assign: Optional[AssignationFragment]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Assignation on Assignation {\n  args\n  kwargs\n  id\n  parent {\n    id\n  }\n  id\n  status\n  statusmessage\n}\n\nmutation assign($reservation: ID!, $args: [GenericScalar]!, $kwargs: GenericScalar) {\n  assign(reservation: $reservation, args: $args, kwargs: $kwargs) {\n    ...Assignation\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class UnassignMutation(GraphQLMutation):
+
+class UnassignMutation(BaseModel):
     unassign: Optional[AssignationFragment]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Assignation on Assignation {\n  args\n  kwargs\n  id\n  parent {\n    id\n  }\n  id\n  status\n  statusmessage\n}\n\nmutation unassign($assignation: ID!) {\n  unassign(assignation: $assignation) {\n    ...Assignation\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class NegotiateMutation(GraphQLMutation):
+
+class NegotiateMutation(BaseModel):
     negotiate: Optional[TranscriptFragment]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Transcript on Transcript {\n  postman {\n    type\n    kwargs\n  }\n}\n\nmutation negotiate {\n  negotiate {\n    ...Transcript\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class ReserveMutation(GraphQLMutation):
+
+class ReserveMutation(BaseModel):
     reserve: Optional[ReservationFragment]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Reservation on Reservation {\n  id\n  statusmessage\n  status\n  node {\n    id\n    pure\n  }\n}\n\nmutation reserve($node: ID, $template: ID, $params: ReserveParamsInput, $title: String, $callbacks: [Callback], $creator: ID, $appGroup: ID) {\n  reserve(\n    node: $node\n    template: $template\n    params: $params\n    title: $title\n    callbacks: $callbacks\n    creator: $creator\n    appGroup: $appGroup\n  ) {\n    ...Reservation\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class UnreserveMutation(GraphQLMutation):
+
+class UnreserveMutation(BaseModel):
     unreserve: Optional[ReservationFragment]
 
     class Meta:
         domain = "arkitekt"
         document = "fragment Reservation on Reservation {\n  id\n  statusmessage\n  status\n  node {\n    id\n    pure\n  }\n}\n\nmutation unreserve($id: ID!) {\n  unreserve(id: $id) {\n    ...Reservation\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class Create_nodeMutation(GraphQLMutation):
+
+class Create_nodeMutation(BaseModel):
     createNode: Optional[NodeFragment]
 
     class Meta:
         domain = "arkitekt"
-        document = "fragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation create_node($name: String!, $interface: String!, $args: [ArgPortInput]) {\n  createNode(name: $name, interface: $interface, args: $args) {\n    ...Node\n  }\n}"
+        document = "fragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation create_node($name: String!, $interface: String!, $args: [ArgPortInput]) {\n  createNode(name: $name, interface: $interface, args: $args) {\n    ...Node\n  }\n}"
+
+    class Config:
+        frozen = True
 
 
-class DefineMutation(GraphQLMutation):
+class DefineMutation(BaseModel):
     define: Optional[NodeFragment]
 
     class Meta:
         domain = "arkitekt"
-        document = "fragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation define($definition: DefinitionInput!) {\n  define(definition: $definition) {\n    ...Node\n  }\n}"
+        document = "fragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation define($definition: DefinitionInput!) {\n  define(definition: $definition) {\n    ...Node\n  }\n}"
+
+    class Config:
+        frozen = True
 
 
 class Reset_repositoryMutationResetrepository(GraphQLObject):
     typename: Optional[Literal["ResetRepositoryReturn"]] = Field(alias="__typename")
     ok: Optional[bool]
 
+    class Config:
+        frozen = True
 
-class Reset_repositoryMutation(GraphQLMutation):
+
+class Reset_repositoryMutation(BaseModel):
     resetRepository: Optional[Reset_repositoryMutationResetrepository]
 
     class Meta:
         domain = "arkitekt"
         document = "mutation reset_repository {\n  resetRepository {\n    ok\n  }\n}"
 
+    class Config:
+        frozen = True
 
-class Create_templateMutation(GraphQLMutation):
+
+class Create_templateMutation(BaseModel):
     createTemplate: Optional[TemplateFragment]
 
     class Meta:
         domain = "arkitekt"
-        document = "fragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n}\n\nmutation create_template($node: ID!, $params: GenericScalar, $extensions: [String], $version: String) {\n  createTemplate(\n    node: $node\n    params: $params\n    extensions: $extensions\n    version: $version\n  ) {\n    ...Template\n  }\n}"
+        document = "fragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      identifier\n    }\n  }\n  defaultList\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n  }\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n}\n\nmutation create_template($node: ID!, $params: GenericScalar, $extensions: [String], $version: String) {\n  createTemplate(\n    node: $node\n    params: $params\n    extensions: $extensions\n    version: $version\n  ) {\n    ...Template\n  }\n}"
+
+    class Config:
+        frozen = True
 
 
-async def atodos(identifier: str) -> AsyncIterator[TodosSubscriptionTodos]:
+async def atodos(
+    identifier: str, arkitekt: Arkitekt = None
+) -> AsyncIterator[TodosSubscriptionTodos]:
     """todos
 
 
 
     Arguments:
         identifier (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         TodosSubscriptionTodos: The returned Mutation"""
-    async for event in TodosSubscription.asubscribe({"identifier": identifier}):
+    async for event in asubscribe(
+        TodosSubscription, {"identifier": identifier}, arkitekt=arkitekt
+    ):
         yield event.todos
 
 
-def todos(identifier: str) -> Iterator[TodosSubscriptionTodos]:
+def todos(
+    identifier: str, arkitekt: Arkitekt = None
+) -> Iterator[TodosSubscriptionTodos]:
     """todos
 
 
 
     Arguments:
         identifier (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         TodosSubscriptionTodos: The returned Mutation"""
-    for event in TodosSubscription.subscribe({"identifier": identifier}):
+    for event in subscribe(
+        TodosSubscription, {"identifier": identifier}, arkitekt=arkitekt
+    ):
         yield event.todos
 
 
-async def awaiter(identifier: str) -> AsyncIterator[WaiterSubscriptionWaiter]:
+async def awaiter(
+    identifier: str, arkitekt: Arkitekt = None
+) -> AsyncIterator[WaiterSubscriptionWaiter]:
     """waiter
 
 
 
     Arguments:
         identifier (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         WaiterSubscriptionWaiter: The returned Mutation"""
-    async for event in WaiterSubscription.asubscribe({"identifier": identifier}):
+    async for event in asubscribe(
+        WaiterSubscription, {"identifier": identifier}, arkitekt=arkitekt
+    ):
         yield event.waiter
 
 
-def waiter(identifier: str) -> Iterator[WaiterSubscriptionWaiter]:
+def waiter(
+    identifier: str, arkitekt: Arkitekt = None
+) -> Iterator[WaiterSubscriptionWaiter]:
     """waiter
 
 
 
     Arguments:
         identifier (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         WaiterSubscriptionWaiter: The returned Mutation"""
-    for event in WaiterSubscription.subscribe({"identifier": identifier}):
+    for event in subscribe(
+        WaiterSubscription, {"identifier": identifier}, arkitekt=arkitekt
+    ):
         yield event.waiter
 
 
-async def atodolist(appGroup: str = None) -> List[AssignationFragment]:
+async def atodolist(
+    appGroup: str = None, arkitekt: Arkitekt = None
+) -> List[AssignationFragment]:
     """todolist
 
 
 
     Arguments:
         appGroup (ID, Optional): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         AssignationFragment: The returned Mutation"""
-    return (await TodolistQuery.aexecute({"appGroup": appGroup})).todolist
+    return (
+        await aexecute(TodolistQuery, {"appGroup": appGroup}, arkitekt=arkitekt)
+    ).todolist
 
 
-def todolist(appGroup: str = None) -> List[AssignationFragment]:
+def todolist(
+    appGroup: str = None, arkitekt: Arkitekt = None
+) -> List[AssignationFragment]:
     """todolist
 
 
 
     Arguments:
         appGroup (ID, Optional): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         AssignationFragment: The returned Mutation"""
-    return TodolistQuery.execute({"appGroup": appGroup}).todolist
+    return execute(TodolistQuery, {"appGroup": appGroup}, arkitekt=arkitekt).todolist
 
 
-async def aget_provision(reference: str) -> Get_provisionQueryProvision:
+async def aget_provision(
+    reference: str, arkitekt: Arkitekt = None
+) -> Get_provisionQueryProvision:
     """get_provision
 
 
 
     Arguments:
         reference (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         Get_provisionQueryProvision: The returned Mutation"""
-    return (await Get_provisionQuery.aexecute({"reference": reference})).provision
+    return (
+        await aexecute(Get_provisionQuery, {"reference": reference}, arkitekt=arkitekt)
+    ).provision
 
 
-def get_provision(reference: str) -> Get_provisionQueryProvision:
+def get_provision(
+    reference: str, arkitekt: Arkitekt = None
+) -> Get_provisionQueryProvision:
     """get_provision
 
 
 
     Arguments:
         reference (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         Get_provisionQueryProvision: The returned Mutation"""
-    return Get_provisionQuery.execute({"reference": reference}).provision
+    return execute(
+        Get_provisionQuery, {"reference": reference}, arkitekt=arkitekt
+    ).provision
 
 
-async def aget_reservation(reference: str) -> Get_reservationQueryReservation:
+async def aget_reservation(
+    reference: str, arkitekt: Arkitekt = None
+) -> Get_reservationQueryReservation:
     """get_reservation
 
 
 
     Arguments:
         reference (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         Get_reservationQueryReservation: The returned Mutation"""
-    return (await Get_reservationQuery.aexecute({"reference": reference})).reservation
+    return (
+        await aexecute(
+            Get_reservationQuery, {"reference": reference}, arkitekt=arkitekt
+        )
+    ).reservation
 
 
-def get_reservation(reference: str) -> Get_reservationQueryReservation:
+def get_reservation(
+    reference: str, arkitekt: Arkitekt = None
+) -> Get_reservationQueryReservation:
     """get_reservation
 
 
 
     Arguments:
         reference (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         Get_reservationQueryReservation: The returned Mutation"""
-    return Get_reservationQuery.execute({"reference": reference}).reservation
+    return execute(
+        Get_reservationQuery, {"reference": reference}, arkitekt=arkitekt
+    ).reservation
 
 
-async def awaitlist(appGroup: str = None) -> List[ReservationFragment]:
+async def awaitlist(
+    appGroup: str = None, arkitekt: Arkitekt = None
+) -> List[ReservationFragment]:
     """waitlist
 
 
 
     Arguments:
         appGroup (ID, Optional): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         ReservationFragment: The returned Mutation"""
-    return (await WaitlistQuery.aexecute({"appGroup": appGroup})).waitlist
+    return (
+        await aexecute(WaitlistQuery, {"appGroup": appGroup}, arkitekt=arkitekt)
+    ).waitlist
 
 
-def waitlist(appGroup: str = None) -> List[ReservationFragment]:
+def waitlist(
+    appGroup: str = None, arkitekt: Arkitekt = None
+) -> List[ReservationFragment]:
     """waitlist
 
 
 
     Arguments:
         appGroup (ID, Optional): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         ReservationFragment: The returned Mutation"""
-    return WaitlistQuery.execute({"appGroup": appGroup}).waitlist
+    return execute(WaitlistQuery, {"appGroup": appGroup}, arkitekt=arkitekt).waitlist
 
 
 async def afind(
@@ -1422,6 +1700,7 @@ async def afind(
     interface: str = None,
     template: str = None,
     q: QString = None,
+    arkitekt: Arkitekt = None,
 ) -> NodeFragment:
     """find
 
@@ -1436,18 +1715,21 @@ async def afind(
         interface (String, Optional): String
         template (ID, Optional): ID
         q (QString, Optional): QString
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         NodeFragment: The returned Mutation"""
     return (
-        await FindQuery.aexecute(
+        await aexecute(
+            FindQuery,
             {
                 "id": id,
                 "package": package,
                 "interface": interface,
                 "template": template,
                 "q": q,
-            }
+            },
+            arkitekt=arkitekt,
         )
     ).node
 
@@ -1458,6 +1740,7 @@ def find(
     interface: str = None,
     template: str = None,
     q: QString = None,
+    arkitekt: Arkitekt = None,
 ) -> NodeFragment:
     """find
 
@@ -1472,74 +1755,81 @@ def find(
         interface (String, Optional): String
         template (ID, Optional): ID
         q (QString, Optional): QString
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         NodeFragment: The returned Mutation"""
-    return FindQuery.execute(
+    return execute(
+        FindQuery,
         {
             "id": id,
             "package": package,
             "interface": interface,
             "template": template,
             "q": q,
-        }
+        },
+        arkitekt=arkitekt,
     ).node
 
 
-async def aget_template(id: str) -> TemplateFragment:
+async def aget_template(id: str, arkitekt: Arkitekt = None) -> TemplateFragment:
     """get_template
 
 
 
     Arguments:
         id (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         TemplateFragment: The returned Mutation"""
-    return (await Get_templateQuery.aexecute({"id": id})).template
+    return (await aexecute(Get_templateQuery, {"id": id}, arkitekt=arkitekt)).template
 
 
-def get_template(id: str) -> TemplateFragment:
+def get_template(id: str, arkitekt: Arkitekt = None) -> TemplateFragment:
     """get_template
 
 
 
     Arguments:
         id (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         TemplateFragment: The returned Mutation"""
-    return Get_templateQuery.execute({"id": id}).template
+    return execute(Get_templateQuery, {"id": id}, arkitekt=arkitekt).template
 
 
-async def aget_agent(id: str) -> Get_agentQueryAgent:
+async def aget_agent(id: str, arkitekt: Arkitekt = None) -> Get_agentQueryAgent:
     """get_agent
 
 
 
     Arguments:
         id (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         Get_agentQueryAgent: The returned Mutation"""
-    return (await Get_agentQuery.aexecute({"id": id})).agent
+    return (await aexecute(Get_agentQuery, {"id": id}, arkitekt=arkitekt)).agent
 
 
-def get_agent(id: str) -> Get_agentQueryAgent:
+def get_agent(id: str, arkitekt: Arkitekt = None) -> Get_agentQueryAgent:
     """get_agent
 
 
 
     Arguments:
         id (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         Get_agentQueryAgent: The returned Mutation"""
-    return Get_agentQuery.execute({"id": id}).agent
+    return execute(Get_agentQuery, {"id": id}, arkitekt=arkitekt).agent
 
 
 async def aassign(
-    reservation: str, args: List[Dict], kwargs: Dict = None
+    reservation: str, args: List[Dict], kwargs: Dict = None, arkitekt: Arkitekt = None
 ) -> AssignationFragment:
     """assign
 
@@ -1549,18 +1839,21 @@ async def aassign(
         reservation (ID): ID
         args (List[GenericScalar]): GenericScalar
         kwargs (GenericScalar, Optional): GenericScalar
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         AssignationFragment: The returned Mutation"""
     return (
-        await AssignMutation.aexecute(
-            {"reservation": reservation, "args": args, "kwargs": kwargs}
+        await aexecute(
+            AssignMutation,
+            {"reservation": reservation, "args": args, "kwargs": kwargs},
+            arkitekt=arkitekt,
         )
     ).assign
 
 
 def assign(
-    reservation: str, args: List[Dict], kwargs: Dict = None
+    reservation: str, args: List[Dict], kwargs: Dict = None, arkitekt: Arkitekt = None
 ) -> AssignationFragment:
     """assign
 
@@ -1570,62 +1863,75 @@ def assign(
         reservation (ID): ID
         args (List[GenericScalar]): GenericScalar
         kwargs (GenericScalar, Optional): GenericScalar
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         AssignationFragment: The returned Mutation"""
-    return AssignMutation.execute(
-        {"reservation": reservation, "args": args, "kwargs": kwargs}
+    return execute(
+        AssignMutation,
+        {"reservation": reservation, "args": args, "kwargs": kwargs},
+        arkitekt=arkitekt,
     ).assign
 
 
-async def aunassign(assignation: str) -> AssignationFragment:
+async def aunassign(assignation: str, arkitekt: Arkitekt = None) -> AssignationFragment:
     """unassign
 
 
 
     Arguments:
         assignation (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         AssignationFragment: The returned Mutation"""
-    return (await UnassignMutation.aexecute({"assignation": assignation})).unassign
+    return (
+        await aexecute(
+            UnassignMutation, {"assignation": assignation}, arkitekt=arkitekt
+        )
+    ).unassign
 
 
-def unassign(assignation: str) -> AssignationFragment:
+def unassign(assignation: str, arkitekt: Arkitekt = None) -> AssignationFragment:
     """unassign
 
 
 
     Arguments:
         assignation (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         AssignationFragment: The returned Mutation"""
-    return UnassignMutation.execute({"assignation": assignation}).unassign
+    return execute(
+        UnassignMutation, {"assignation": assignation}, arkitekt=arkitekt
+    ).unassign
 
 
-async def anegotiate() -> TranscriptFragment:
+async def anegotiate(arkitekt: Arkitekt = None) -> TranscriptFragment:
     """negotiate
 
     Create Node according to the specifications
 
     Arguments:
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         TranscriptFragment: The returned Mutation"""
-    return (await NegotiateMutation.aexecute({})).negotiate
+    return (await aexecute(NegotiateMutation, {}, arkitekt=arkitekt)).negotiate
 
 
-def negotiate() -> TranscriptFragment:
+def negotiate(arkitekt: Arkitekt = None) -> TranscriptFragment:
     """negotiate
 
     Create Node according to the specifications
 
     Arguments:
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         TranscriptFragment: The returned Mutation"""
-    return NegotiateMutation.execute({}).negotiate
+    return execute(NegotiateMutation, {}, arkitekt=arkitekt).negotiate
 
 
 async def areserve(
@@ -1636,6 +1942,7 @@ async def areserve(
     callbacks: List[str] = None,
     creator: str = None,
     appGroup: str = None,
+    arkitekt: Arkitekt = None,
 ) -> ReservationFragment:
     """reserve
 
@@ -1649,11 +1956,13 @@ async def areserve(
         callbacks (List[Callback], Optional): Callback
         creator (ID, Optional): ID
         appGroup (ID, Optional): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         ReservationFragment: The returned Mutation"""
     return (
-        await ReserveMutation.aexecute(
+        await aexecute(
+            ReserveMutation,
             {
                 "node": node,
                 "template": template,
@@ -1662,7 +1971,8 @@ async def areserve(
                 "callbacks": callbacks,
                 "creator": creator,
                 "appGroup": appGroup,
-            }
+            },
+            arkitekt=arkitekt,
         )
     ).reserve
 
@@ -1675,6 +1985,7 @@ def reserve(
     callbacks: List[str] = None,
     creator: str = None,
     appGroup: str = None,
+    arkitekt: Arkitekt = None,
 ) -> ReservationFragment:
     """reserve
 
@@ -1688,10 +1999,12 @@ def reserve(
         callbacks (List[Callback], Optional): Callback
         creator (ID, Optional): ID
         appGroup (ID, Optional): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         ReservationFragment: The returned Mutation"""
-    return ReserveMutation.execute(
+    return execute(
+        ReserveMutation,
         {
             "node": node,
             "template": template,
@@ -1700,38 +2013,44 @@ def reserve(
             "callbacks": callbacks,
             "creator": creator,
             "appGroup": appGroup,
-        }
+        },
+        arkitekt=arkitekt,
     ).reserve
 
 
-async def aunreserve(id: str) -> ReservationFragment:
+async def aunreserve(id: str, arkitekt: Arkitekt = None) -> ReservationFragment:
     """unreserve
 
 
 
     Arguments:
         id (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         ReservationFragment: The returned Mutation"""
-    return (await UnreserveMutation.aexecute({"id": id})).unreserve
+    return (await aexecute(UnreserveMutation, {"id": id}, arkitekt=arkitekt)).unreserve
 
 
-def unreserve(id: str) -> ReservationFragment:
+def unreserve(id: str, arkitekt: Arkitekt = None) -> ReservationFragment:
     """unreserve
 
 
 
     Arguments:
         id (ID): ID
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         ReservationFragment: The returned Mutation"""
-    return UnreserveMutation.execute({"id": id}).unreserve
+    return execute(UnreserveMutation, {"id": id}, arkitekt=arkitekt).unreserve
 
 
 async def acreate_node(
-    name: str, interface: str, args: List[ArgPortInput] = None
+    name: str,
+    interface: str,
+    args: List[ArgPortInput] = None,
+    arkitekt: Arkitekt = None,
 ) -> NodeFragment:
     """create_node
 
@@ -1741,18 +2060,24 @@ async def acreate_node(
         name (String): String
         interface (String): String
         args (List[ArgPortInput], Optional): ArgPortInput
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         NodeFragment: The returned Mutation"""
     return (
-        await Create_nodeMutation.aexecute(
-            {"name": name, "interface": interface, "args": args}
+        await aexecute(
+            Create_nodeMutation,
+            {"name": name, "interface": interface, "args": args},
+            arkitekt=arkitekt,
         )
     ).createNode
 
 
 def create_node(
-    name: str, interface: str, args: List[ArgPortInput] = None
+    name: str,
+    interface: str,
+    args: List[ArgPortInput] = None,
+    arkitekt: Arkitekt = None,
 ) -> NodeFragment:
     """create_node
 
@@ -1762,66 +2087,87 @@ def create_node(
         name (String): String
         interface (String): String
         args (List[ArgPortInput], Optional): ArgPortInput
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         NodeFragment: The returned Mutation"""
-    return Create_nodeMutation.execute(
-        {"name": name, "interface": interface, "args": args}
+    return execute(
+        Create_nodeMutation,
+        {"name": name, "interface": interface, "args": args},
+        arkitekt=arkitekt,
     ).createNode
 
 
-async def adefine(definition: DefinitionInput) -> NodeFragment:
+async def adefine(
+    definition: DefinitionInput, arkitekt: Arkitekt = None
+) -> NodeFragment:
     """define
 
     Defines a node according to is definition
 
     Arguments:
         definition (DefinitionInput): DefinitionInput
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         NodeFragment: The returned Mutation"""
-    return (await DefineMutation.aexecute({"definition": definition})).define
+    return (
+        await aexecute(DefineMutation, {"definition": definition}, arkitekt=arkitekt)
+    ).define
 
 
-def define(definition: DefinitionInput) -> NodeFragment:
+def define(definition: DefinitionInput, arkitekt: Arkitekt = None) -> NodeFragment:
     """define
 
     Defines a node according to is definition
 
     Arguments:
         definition (DefinitionInput): DefinitionInput
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         NodeFragment: The returned Mutation"""
-    return DefineMutation.execute({"definition": definition}).define
+    return execute(DefineMutation, {"definition": definition}, arkitekt=arkitekt).define
 
 
-async def areset_repository() -> Reset_repositoryMutationResetrepository:
+async def areset_repository(
+    arkitekt: Arkitekt = None,
+) -> Reset_repositoryMutationResetrepository:
     """reset_repository
 
     Create Repostiory
 
     Arguments:
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         Reset_repositoryMutationResetrepository: The returned Mutation"""
-    return (await Reset_repositoryMutation.aexecute({})).resetRepository
+    return (
+        await aexecute(Reset_repositoryMutation, {}, arkitekt=arkitekt)
+    ).resetRepository
 
 
-def reset_repository() -> Reset_repositoryMutationResetrepository:
+def reset_repository(
+    arkitekt: Arkitekt = None,
+) -> Reset_repositoryMutationResetrepository:
     """reset_repository
 
     Create Repostiory
 
     Arguments:
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         Reset_repositoryMutationResetrepository: The returned Mutation"""
-    return Reset_repositoryMutation.execute({}).resetRepository
+    return execute(Reset_repositoryMutation, {}, arkitekt=arkitekt).resetRepository
 
 
 async def acreate_template(
-    node: str, params: Dict = None, extensions: List[str] = None, version: str = None
+    node: str,
+    params: Dict = None,
+    extensions: List[str] = None,
+    version: str = None,
+    arkitekt: Arkitekt = None,
 ) -> TemplateFragment:
     """create_template
 
@@ -1832,23 +2178,30 @@ async def acreate_template(
         params (GenericScalar, Optional): GenericScalar
         extensions (List[String], Optional): String
         version (String, Optional): String
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         TemplateFragment: The returned Mutation"""
     return (
-        await Create_templateMutation.aexecute(
+        await aexecute(
+            Create_templateMutation,
             {
                 "node": node,
                 "params": params,
                 "extensions": extensions,
                 "version": version,
-            }
+            },
+            arkitekt=arkitekt,
         )
     ).createTemplate
 
 
 def create_template(
-    node: str, params: Dict = None, extensions: List[str] = None, version: str = None
+    node: str,
+    params: Dict = None,
+    extensions: List[str] = None,
+    version: str = None,
+    arkitekt: Arkitekt = None,
 ) -> TemplateFragment:
     """create_template
 
@@ -1859,9 +2212,12 @@ def create_template(
         params (GenericScalar, Optional): GenericScalar
         extensions (List[String], Optional): String
         version (String, Optional): String
+        arkitekt (arkitekt.arkitekt.Arkitekt): The client we want to use (defaults to the currently active client)
 
     Returns:
         TemplateFragment: The returned Mutation"""
-    return Create_templateMutation.execute(
-        {"node": node, "params": params, "extensions": extensions, "version": version}
+    return execute(
+        Create_templateMutation,
+        {"node": node, "params": params, "extensions": extensions, "version": version},
+        arkitekt=arkitekt,
     ).createTemplate

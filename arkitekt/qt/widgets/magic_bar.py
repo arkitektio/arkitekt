@@ -14,8 +14,8 @@ class MagicBar(QtWidgets.QWidget):
         self,
         fakts: QtFakts,
         herre: QtHerre,
-        agent: QtAgent,
         *args,
+        agent: QtAgent = None,
         parent=None,
         darkMode=False,
         **kwargs
@@ -31,8 +31,9 @@ class MagicBar(QtWidgets.QWidget):
         self.fakts.deleted_signal.connect(self.on_fakts_deleted)
         self.herre.login_signal.connect(self.on_herre_login)
         self.herre.logout_signal.connect(self.on_herre_logout)
-        self.agent.provide_signal.connect(self.on_agent_provide)
-        self.agent.unprovide_signal.connect(self.on_agent_unprovide)
+        if self.agent:
+            self.agent.provide_signal.connect(self.on_agent_provide)
+            self.agent.unprovide_signal.connect(self.on_agent_unprovide)
 
         # Tasks
         self.load_fakts_task = None

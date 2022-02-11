@@ -1,39 +1,8 @@
 from typing import Dict
 from arkitekt.actors.actify import actify
-from arkitekt.agents.app import AppAgent
 from arkitekt.api.schema import NodeFragment
-from arkitekt.mixins.node import NodeMixin
 from arkitekt.qt.actor import QtActor
 from qtpy.QtCore import QObject, Signal
-from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
-from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import (
-    BouncedForwardedUnassignMessage,
-)
-from arkitekt.messages.postman.provide.provide_transition import (
-    ProvideState,
-    ProvideTransitionMessage,
-)
-from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
-from arkitekt.messages.postman.assign.assign_critical import AssignCriticalMessage
-from arkitekt.messages.postman.assign.bounced_forwarded_assign import (
-    BouncedForwardedAssignMessage,
-)
-from arkitekt.messages.postman.log import LogLevel
-from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
-import asyncio
-from arkitekt.actors.base import Actor
-from arkitekt.messages.postman.unprovide.bounced_unprovide import (
-    BouncedUnprovideMessage,
-)
-from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
-from arkitekt.agents.base import Agent, AgentException
-import logging
-import uuid
-from arkitekt.definition.define import prepare_definition
-from arkitekt.structures.registry import (
-    StructureRegistry,
-    get_current_structure_registry,
-)
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +16,7 @@ class AgentSignals(QObject):
         super().__init__(*args, **kwargs)
 
 
-class QtAgent(AppAgent, QObject):
+class QtAgent(BaseAgent, QObject):
     provide_signal = Signal()
     unprovide_signal = Signal()
     provision_signal = Signal(BouncedProvideMessage)

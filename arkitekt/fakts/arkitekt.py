@@ -22,6 +22,7 @@ class FaktsArkitekt(Arkitekt):
 
         herre = herre or get_current_herre()
         fakts = fakts or get_current_fakts()
+        fakts.assert_groups.add("arkitekt")
 
         link = compose(
             ShrinkingLink(),

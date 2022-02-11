@@ -7,7 +7,7 @@ from rich.table import Table
 from koil.loop import koil, koil_gen
 
 
-class NodeMixin:
+class Reserve:
     def reserve(
         self,
         reference: str = None,
