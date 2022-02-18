@@ -1,45 +1,15 @@
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
-
-from pydantic import BaseModel
 from arkitekt.api.schema import TemplateFragment, acreate_template, adefine, afind
 from arkitekt.definition.registry import (
     DefinitionRegistry,
     get_current_definition_registry,
 )
 from arkitekt.arkitekt import Arkitekt, get_current_arkitekt
-from koil import koil
+import asyncio
+from arkitekt.agents.transport.base import AgentTransport
 
 
-class AgentTransport:
-    def __init__(self) -> None:
-        pass
-
-    def __call__(self, agent) -> Any:
-        self.agent = agent
-        pass
-
-    async def broadcast(self, message: str) -> None:
-        await self.agent.broadcast(message)
-
-    def aconnect(self):
-        pass
-
-
-ClientID = str
-UserID = str
-
-
-class Provision:
-    def __init__(self):
-        pass
-
-
-class Actor:
-    def __init__(self, template: TemplateFragment):
-        self.template = template
-
-
-class Agent:
+class BaseAgent:
     """Agent
 
     Agents are the governing entities in the arkitekt system. They are responsible for
@@ -49,10 +19,16 @@ class Agent:
     """
 
     def __init__(
-        self, defintion_registry: DefinitionRegistry = None, arkitekt: Arkitekt = None
+        self,
+        transport: AgentTransport,
+        definition_registry: DefinitionRegistry = None,
+        arkitekt: Arkitekt = None,
     ) -> None:
-        self.defintion_registry = (
-            defintion_registry or get_current_definition_registry()
+        self.transport = transport
+        self.transport.broadcast = self.broadcast
+
+        self.definition_registry = (
+            definition_registry or get_current_definition_registry()
         )
         self.arkitekt = arkitekt or get_current_arkitekt()
 
@@ -63,47 +39,60 @@ class Agent:
         # IMportant Maps
         self.templateActorBuilderMap = {}
         self.templateTemplatesMap = {}
+        self.provisionActorMap = {}
+
+    async def broadcast(self):
+        pass
+
+    async def aconnect(self):
+        pass
+
+    async def astart(self):
+        pass
 
     async def aregister_definitions(self):
-        if self.defintion_registry.templatedNodes:
+        if self.definition_registry.templatedNodes:
             for (
                 q_string,
-                defined_actor,
+                actor_builder,
                 params,
-            ) in self.defintion_registry.templatedNodes:
+            ) in self.definition_registry.templatedNodes:
                 version = params.get("version", "main")
 
                 arkitekt_node = await afind(q=q_string)
 
                 arkitekt_template = await acreate_template(
-                    node=arkitekt_node,
+                    node=arkitekt_node.id,
                     params=params,
                     version=version,
+                    arkitekt=self.arkitekt,
                 )
 
                 self.approvedTemplates.append(
-                    (arkitekt_template, defined_actor, params)
+                    (arkitekt_template, actor_builder, params)
                 )
 
-        if self.defintion_registry.definedNodes:
+        if self.definition_registry.definedNodes:
             for (
                 definition,
-                defined_actor,
+                actor_builder,
                 params,
-            ) in self.defintion_registry.definedNodes:
+            ) in self.definition_registry.definedNodes:
                 # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
                 # id so we are trying to send them to arkitekt)
-                arkitekt_node = await adefine(definition=definition)
+                arkitekt_node = await adefine(
+                    definition=definition, arkitekt=self.arkitekt
+                )
                 version = params.get("version", "main")
-
                 arkitekt_template = await acreate_template(
-                    node=arkitekt_node,
-                    params=params,
+                    node=arkitekt_node.id,
+                    params={},  # Todo really make this happen
                     version=version,
+                    arkitekt=self.arkitekt,
                 )
 
                 self.approvedTemplates.append(
-                    (arkitekt_template, defined_actor, params)
+                    (arkitekt_template, actor_builder, params)
                 )
 
         if self.approvedTemplates:
@@ -112,3 +101,13 @@ class Agent:
                 # Generating Maps for Easy access
                 self.templateActorBuilderMap[arkitekt_template.id] = defined_actor
                 self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
+
+    async def aprovide(self):
+        await self.aconnect()
+
+        await self.aregister_definitions()
+        await self.astart()
+
+        while True:
+            await asyncio.sleep(1)
+            print(self.provisionActorMap)

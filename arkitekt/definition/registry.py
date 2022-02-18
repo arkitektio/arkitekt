@@ -67,7 +67,7 @@ class DefinitionRegistry:
         self.templatedNodes: List[Tuple[QString, Callable]] = []
         # Node is not saved and has undefined id
 
-    def has_actors(self):
+    def has_definitions(self):
         return len(self.definedNodes) > 0 or len(self.templatedNodes) > 0
 
     def reset(self):
@@ -96,6 +96,30 @@ def register(
     structure_registry: StructureRegistry = None,
     **params
 ):
+    """Take a function and register it as a node.
+
+    This function is used to register a node. Use it as a decorator. You can specify
+    specific widgets for every paramer in a dictionary {argument_key: widget}. By default
+    this function will use the default defintion registry to store the nodes inputdata.
+    This definition registry will then be used by an agent to create, and provide the node.
+
+    If your function has specific inputs that need custom rules for expansion and shrinking
+     , you can pass a structure registry to the function. This registry will then be used.
+
+    This decorator is non intrusive. You can still call this function as a normal function from
+    your code
+
+    Args:
+        widgets (Dict[str, WidgetInput], optional): _description_. Defaults to {}.
+        interfaces (List[str], optional): _description_. Defaults to [].
+        on_provide (_type_, optional): _description_. Defaults to None.
+        on_unprovide (_type_, optional): _description_. Defaults to None.
+        definition_registry (DefinitionRegistry, optional): _description_. Defaults to None.
+        structure_registry (StructureRegistry, optional): _description_. Defaults to None.
+
+    Returns:
+        Callable: A wrapped function that just returns the original function.
+    """
     registry = definition_registry or get_current_definition_registry()
     structure_registry = structure_registry or get_current_structure_registry()
 

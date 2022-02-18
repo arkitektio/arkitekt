@@ -99,7 +99,7 @@ def set_current_structure_registry(registry):
     STRUCTURE_REGISTRY = registry
 
 
-def register(
+def register_structure(
     identifier=None,
     expand=None,
     shrink=None,

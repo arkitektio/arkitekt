@@ -1,6 +1,7 @@
 from graphql import OperationType
 from rath import compose
 from rath.links.context import SwitchAsyncLink
+from rath.links.dictinglink import DictingLink
 from rath.links.shrink import ShrinkingLink
 from rath.fakts.links import FaktsAioHttpLink
 from rath.herre.links import HerreAuthTokenLink
@@ -26,6 +27,7 @@ class FaktsArkitekt(Arkitekt):
 
         link = compose(
             ShrinkingLink(),
+            DictingLink(),  # after the shrinking so we can override the dicting
             SwitchAsyncLink(),
             HerreAuthTokenLink(herre=herre),
             SplitLink(

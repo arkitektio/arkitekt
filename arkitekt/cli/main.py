@@ -3,7 +3,8 @@ from enum import Enum
 from genericpath import isfile
 from runpy import run_path
 from typing import List
-from arkitekt.cli.dev.autoreload import watch_directory_and_restart
+from arkitekt.cli.dev.automirror import watch_directory_and_mirror
+from arkitekt.cli.dev.autostage import watch_directory_and_stage
 from arkitekt.cli.prod.run import import_directory_and_start
 from arkitekt.cli.prod.waitfor import wait_for_connection
 from fakts import Fakts
@@ -31,6 +32,7 @@ directory = os.getcwd()
 class ArkitektOptions(str, Enum):
     INIT = "init"
     DEV = "dev"
+    MIRROR = "mirror"
     LOGOUT = "logout"
     LOGIN = "login"
     RUN = "run"
@@ -108,7 +110,19 @@ def main(
             return
 
         fakts = Fakts(grants=[], fakts_path=fakts_path)
-        asyncio.run(watch_directory_and_restart(path, entrypoint="run"))
+        asyncio.run(watch_directory_and_stage(path, entrypoint="run"))
+
+    if script == ArkitektOptions.MIRROR:
+
+        if not os.path.isfile(run_script_path):
+            console.print(f"Could't find a run.py in {app_directory} {run_script_path}")
+            return
+        if not os.path.isfile(fakts_path):
+            console.print(f"{app_directory} does not have a valid fakts.yaml")
+            return
+
+        fakts = Fakts(grants=[], fakts_path=fakts_path)
+        asyncio.run(watch_directory_and_mirror(path, entrypoint="run"))
 
     if script == ArkitektOptions.RUN:
 

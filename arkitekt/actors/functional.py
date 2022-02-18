@@ -1,6 +1,8 @@
 import threading
 from typing import Any, Coroutine
 from arkitekt.actors.exceptions import ThreadedActorCancelled
+from arkitekt.agents.messages import Assignation
+from arkitekt.api.schema import AssignationStatus
 from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
 import contextvars
 from arkitekt.messages.postman.assign.assign_critical import AssignCriticalMessage
@@ -201,7 +203,7 @@ class FunctionalThreadedFuncActor(FunctionalActor):
         super().__init__(*args, **kwargs)
         self.threadpool = ThreadPoolExecutor(nworkers)
 
-    async def iterate_queue(self, async_q, message: BouncedForwardedAssignMessage):
+    async def iterate_queue(self, async_q, message: Assignation):
         try:
             while True:
                 val = await async_q.get()
@@ -217,19 +219,21 @@ class FunctionalThreadedFuncActor(FunctionalActor):
                     await self.transport.forward(message)
                     async_q.task_done()
                 if action == "return":
-                    await self.transport.forward(
-                        AssignReturnMessage(
-                            data={
-                                "returns": await shrink_outputs(
-                                    self.template.node,
-                                    value,
-                                    structure_registry=self.structure_registry,
-                                )
-                                if self.shrink_outputs
-                                else value
-                            },
-                            meta={**message.meta.dict(exclude={"type"})},
+
+                    returns = (
+                        await shrink_outputs(
+                            self.template.node,
+                            value,
+                            structure_registry=self.structure_registry,
                         )
+                        if self.shrink_outputs
+                        else value
+                    )
+
+                    await self.layer.change_assignation(
+                        message.assignation,
+                        status=AssignationStatus.RETURNED,
+                        resulsts=returns,
                     )
                     async_q.task_done()
                     break
@@ -268,7 +272,7 @@ class FunctionalThreadedFuncActor(FunctionalActor):
         assign_message.set(None)
         cancel_event.set(None)
 
-    async def on_assign(self, message: BouncedForwardedAssignMessage):
+    async def on_assign(self, message: Assignation):
         queue = janus.Queue()
         event = threading.Event()
 
@@ -278,12 +282,12 @@ class FunctionalThreadedFuncActor(FunctionalActor):
             args, kwargs = (
                 await expand_inputs(
                     self.template.node,
-                    message.data.args,
-                    message.data.kwargs,
+                    message.args,
+                    message.kwargs,
                     structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
-                else (message.data.args, message.data.kwargs)
+                else (message.args, message.kwargs)
             )
 
             threadedfut = self.loop.run_in_executor(
@@ -319,26 +323,13 @@ class FunctionalThreadedFuncActor(FunctionalActor):
 
         except asyncio.CancelledError as e:
 
-            await self.transport.forward(
-                AssignCancelledMessage(
-                    data={"canceller": str(e)},
-                    meta={
-                        "reference": message.meta.reference,
-                        "extensions": message.meta.extensions,
-                    },
-                )
+            await self.layer.change_assignation(
+                message.assignation, status=AssignationStatus.CANCELLED, message=str(e)
             )
 
         except Exception as e:
-            logger.exception(e)
-            await self.transport.forward(
-                AssignCriticalMessage(
-                    data={"type": e.__class__.__name__, "message": str(e)},
-                    meta={
-                        "reference": message.meta.reference,
-                        "extensions": message.meta.extensions,
-                    },
-                )
+            await self.layer.change_assignation(
+                message.assignation, status=AssignationStatus.CRITICAL, message=str(e)
             )
 
 

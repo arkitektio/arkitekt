@@ -1,31 +1,14 @@
-from arkitekt.messages.postman.provide.provide_log import ProvideLogMessage
-from arkitekt.messages.postman.log import LogLevel
+from typing import Dict, Union
+from arkitekt.messages.postman.provide.provide_transition import ProvideState
 from arkitekt.structures.registry import StructureRegistry
-from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
-from arkitekt.messages.postman.unassign.bounced_forwarded_unassign import (
-    BouncedForwardedUnassignMessage,
-)
-from arkitekt.messages.postman.assign.assign_critical import AssignCriticalMessage
-from typing import Dict
-from arkitekt.messages.postman.assign.assign_return import AssignReturnMessage
-from arkitekt.messages.postman.assign.bounced_forwarded_assign import (
-    BouncedForwardedAssignMessage,
-)
-from arkitekt.messages.postman.assign.bounced_assign import BouncedAssignMessage
-from arkitekt.messages.base import MessageModel
-from arkitekt.messages.postman.provide.provide_transition import (
-    ProvideMode,
-    ProvideState,
-)
-from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 import asyncio
-from asyncio.tasks import Task, create_task
-from arkitekt.messages.postman.provide import ProvideTransitionMessage
 import logging
-from koil.koil import Koil, get_current_koil
-from koil.loop import koil
-from arkitekt.api.schema import aget_template, TemplateFragment
-
+from arkitekt.api.schema import (
+    ProvisionMode,
+    aget_template,
+    TemplateFragment,
+)
+from arkitekt.agents.messages import Assignation, Provision, Unassignation, Unprovision
 
 logger = logging.getLogger(__name__)
 
@@ -36,51 +19,35 @@ class Actor:
     def __init__(
         self,
         *args,
-        koil: Koil = None,
         strict=False,
         expand_inputs=True,
         shrink_outputs=True,
         transpilers={},
         structure_registry: StructureRegistry = None,
+        debug=False,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.strict = strict
+        self.layer = None
         self.expand_inputs = expand_inputs
         self.shrink_outputs = shrink_outputs
         self.structure_registry = structure_registry
         self.runningAssignments: Dict[
             str, asyncio.Task
         ] = {}  # Running assignments indexed by assignment reference
+        self.debug = debug
 
-    async def log(self, message, level=LogLevel.INFO):
-        logger.info("{level}: {message}")
+    async def on_provide(self, message: Provision):
+        return None
 
-    async def provide_log(self, message: str, level=LogLevel.INFO):
-        await self.agent.transport.forward(
-            ProvideLogMessage(
-                data={"level": level, "message": message},
-                meta=self.provision.meta.dict(exclude={"type"}),
-            )
-        )
-        logger.info(f"Provide Log: {level}: {message}")
+    async def on_unprovide(self):
+        return None
 
-    def run(self, *args, **kwargs):
-        return koil(self.arun(*args, **kwargs))
-
-    async def acall(self, message: MessageModel):
+    async def apass(self, message: Union[Assignation, Unassignation]):
         await self.in_queue.put(message)
 
-    async def on_provide(self, message: BouncedProvideMessage):
-        return None
-
-    async def on_unprovide(self, message: BouncedProvideMessage):
-        return None
-
-    async def on_assign(self, message: BouncedForwardedAssignMessage):
-        raise NotImplementedError("Needs to be owerwritten in Actor Subclass")
-
-    async def arun(self, provision: BouncedProvideMessage, agent):
+    async def arun(self, provision: Provision, agent):
         self.loop = asyncio.get_running_loop()
         self.provision = provision
         self.agent = agent
@@ -88,112 +55,61 @@ class Actor:
         self.in_queue = asyncio.Queue()
 
         try:
-            self.template = await aget_template(id=self.provision.data.template)
+            self.template = await aget_template(id=self.provision.template)
 
-            await self.transport.forward(
-                ProvideTransitionMessage(
-                    data={
-                        "state": ProvideState.PROVIDING,
-                        "message": "We just got started Bay",
-                    },
-                    meta={
-                        "reference": self.provision.meta.reference,
-                        "extensions": self.provision.meta.extensions,
-                    },
-                )
+            await self.transport.change_provision(
+                self.provision.provision, status=ProvideState.PROVIDING
             )
 
             await self.on_provide(self.provision)
 
-            await self.transport.forward(
-                ProvideTransitionMessage(
-                    data={
-                        "state": ProvideState.ACTIVE,
-                        "message": "We just got started Bay",
-                        "mode": ProvideMode.DEBUG
-                        if agent.config.debug
-                        else ProvideMode.PRODUCTION,
-                    },
-                    meta={
-                        "reference": self.provision.meta.reference,
-                        "extensions": self.provision.meta.extensions,
-                    },
-                )
+            await self.transport.change_provision(
+                self.provision.provision,
+                status=ProvideState.ACTIVE,
+                mode=ProvisionMode.DEBUG if self.debug else ProvisionMode.PRODUCTION,
             )
 
             while True:
-                await self.log("Waiting for assignmements")
+                print("Waiting for assignmements")
                 message = await self.in_queue.get()
                 logger.info(f"Received Message {message}")
 
-                if isinstance(message, BouncedForwardedAssignMessage):
-                    await self.log("Assigningment received")
-                    task = create_task(self.on_assign(message))
-                    self.runningAssignments[message.meta.reference] = task
+                if isinstance(message, Assignation):
+                    task = asyncio.create_task(self.on_assign(message))
+                    self.runningAssignments[message.assignation] = task
 
-                if isinstance(message, BouncedForwardedUnassignMessage):
-                    if message.data.assignation in self.runningAssignments:
-                        task = self.runningAssignments[message.data.assignation]
+                if isinstance(message, Unassignation):
+                    if message.assignation in self.runningAssignments:
+                        task = self.runningAssignments[message.assignation]
                         if not task.done():
-                            logger.info("Task is being cancelled")
+                            print("Cancelling task")
                             task.cancel()
                         else:
                             logger.error("Task was already done")
                     else:
-                        logger.error("Task was never assigned to this actor")
-                        if self.strict:
-                            raise Exception(
-                                "Received cancellation for Task that was never assinged to this actor!"
-                            )
-                        await self.transport.forward(
-                            AssignCancelledMessage(
-                                data={
-                                    "canceller": str(
-                                        "Cancelled because actor receiving this cancellation never had this task but was also not strict"
-                                    )
-                                },
-                                meta={
-                                    "reference": message.data.assignation,
-                                    "extensions": message.meta.extensions,
-                                },
-                            )
+                        await self.layer.change_assignation(
+                            message="Task was never assigned"
                         )
 
+                print(message)
+                raise NotImplementedError("Needs to be owerwritten in Actor Subclass")
+
         except Exception as e:
-            logger.exception(e)
-            await self.log(f"Provision Exception {str(e)}")
-            await self.transport.forward(
-                ProvideTransitionMessage(
-                    data={"state": ProvideState.CRITICAL, "message": f"{e}"},
-                    meta={
-                        "reference": self.provision.meta.reference,
-                        "extensions": self.provision.meta.extensions,
-                    },
-                )
+            print(e)
+            await self.transport.change_provision(
+                self.provision.provision, status=ProvideState.CRITICAL, message=str(e)
             )
 
         except asyncio.CancelledError as e:
 
-            await self.transport.forward(
-                ProvideTransitionMessage(
-                    data={"state": ProvideState.CANCELING, "message": f"{e}"},
-                    meta={
-                        "reference": self.provision.meta.reference,
-                        "extensions": self.provision.meta.extensions,
-                    },
-                )
+            await self.transport.change_provision(
+                self.provision.provision, status=ProvideState.CANCELING, message=str(e)
             )
 
-            await self.on_unprovide(self.provision)
+            await self.on_unprovide()
 
             logger.info("Doing Whatever needs to be done to cancel!")
-            await self.transport.forward(
-                ProvideTransitionMessage(
-                    data={"state": ProvideState.CANCELLED, "message": f"{e}"},
-                    meta={
-                        "reference": self.provision.meta.reference,
-                        "extensions": self.provision.meta.extensions,
-                    },
-                )
+            await self.transport.change_provision(
+                self.provision.provision, status=ProvideState.CANCELLED, message=str(e)
             )
             raise e

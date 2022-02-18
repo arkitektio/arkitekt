@@ -1,14 +1,11 @@
 from asyncio.tasks import sleep
 from importlib import reload, import_module
 import asyncio
-from arkitekt.actors.registry import get_current_actor_registry, register
-from arkitekt.agents.script import ScriptAgent
-import fakts
-from fakts.fakts import Fakts
+from arkitekt.api.schema import adefine
+from arkitekt.definition.registry import get_current_definition_registry, register
 import asyncio
 import sys
 import time
-import logging
 from rich.console import Console
 from watchdog.observers import Observer
 from watchdog.events import (
@@ -85,22 +82,24 @@ class Host:
         os.environ["ARKITEKT_AGENT_DEBUG"] = "True"
 
     async def reprovide(self):
-        registry = get_current_actor_registry()
+        registry = get_current_definition_registry()
         registry.reset()
         reload(self.module)
 
-        if registry.has_actors():
-            self.console.print(
-                "We found functions that ought to be provide. Starting an Agent"
-            )
-            agent = ScriptAgent(registry=registry)
-            await agent.aprovide()
+        try:
+            if registry.has_definitions():
+                for definition, _, _ in registry.definedNodes:
+                    await adefine(definition)
+        except Exception as e:
+            self.console.print_exception()
+
+        self.console.print("Updated :)")
 
     async def restart(self):
         loop = asyncio.get_event_loop()
 
         if self.provide_task:
-            self.console.print("Cancelling old Agent")
+            self.console.print("Files changed, cancelling all tasks")
             self.provide_task.cancel()
             try:
                 await self.provide_task
@@ -133,6 +132,6 @@ class Host:
         await jqueue.wait_closed()
 
 
-async def watch_directory_and_restart(path="watch", entrypoint="run"):
+async def watch_directory_and_mirror(path="watch", entrypoint="run"):
     host = Host(path=path)
     await host.run()
