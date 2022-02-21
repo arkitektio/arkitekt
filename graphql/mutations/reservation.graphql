@@ -4,6 +4,8 @@ mutation reserve(
   $params: ReserveParamsInput
   $title: String
   $callbacks: [Callback]
+  $creator: ID
+  $appGroup: ID
 ) {
   reserve(
     node: $node
@@ -11,10 +13,15 @@ mutation reserve(
     params: $params
     title: $title
     callbacks: $callbacks
+    creator: $creator
+    appGroup: $appGroup
   ) {
-    reference
-    id
-    status
-    statusmessage
+    ...Reservation
+  }
+}
+
+mutation unreserve($id: ID!) {
+  unreserve(id: $id) {
+    ...Reservation
   }
 }

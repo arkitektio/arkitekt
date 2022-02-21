@@ -19,6 +19,15 @@ fragment ListArgPort on ListArgPort {
       __typename
       identifier
     }
+    ... on IntArgPort {
+      __typename
+    }
+    ... on BoolArgPort {
+      __typename
+    }
+    ... on StringArgPort {
+      __typename
+    }
   }
 }
 
@@ -30,12 +39,37 @@ fragment DictArgPort on DictArgPort {
       __typename
       identifier
     }
+    ... on IntArgPort {
+      __typename
+    }
+    ... on BoolArgPort {
+      __typename
+    }
+    ... on StringArgPort {
+      __typename
+    }
   }
 }
 
 fragment DictKwargPort on DictKwargPort {
   key
   defaultDict
+  child {
+    __typename
+    ... on StructureKwargPort {
+      __typename
+      identifier
+    }
+    ... on IntKwargPort {
+      __typename
+    }
+    ... on BoolKwargPort {
+      __typename
+    }
+    ... on StringKwargPort {
+      __typename
+    }
+  }
 }
 
 fragment BoolKwargPort on BoolKwargPort {
@@ -58,7 +92,17 @@ fragment ListKwargPort on ListKwargPort {
   child {
     __typename
     ... on StructureKwargPort {
+      __typename
       identifier
+    }
+    ... on IntKwargPort {
+      __typename
+    }
+    ... on BoolKwargPort {
+      __typename
+    }
+    ... on StringKwargPort {
+      __typename
     }
   }
   defaultList

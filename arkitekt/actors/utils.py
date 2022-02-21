@@ -1,16 +1,8 @@
 from arkitekt.actors.exceptions import ThreadedActorCancelled
-from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
 from arkitekt.legacy.utils import get_running_loop
-from arkitekt.threadvars import (
-    get_current_assign,
-    get_current_cancel_event,
-    get_current_transport,
-    get_current_janus,
-)
-from arkitekt.messages.postman.log import LogLevel
 
 
-async def log_async(message, level: LogLevel = LogLevel.INFO):
+async def log_async(message, level):
     transport = get_current_transport()
     assign = get_current_assign()
 
@@ -33,7 +25,7 @@ def cancelCheck():
         raise ThreadedActorCancelled("Actor Was Cancelled")
 
 
-def log(message: str, level: LogLevel = LogLevel.INFO):
+def log(message: str, level: str = "info"):
     """Logs a message
 
     Depending on both the configuration of Arkitekt and the overwrite set on the

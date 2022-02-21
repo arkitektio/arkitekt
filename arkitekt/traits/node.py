@@ -1,40 +1,10 @@
-from contextvars import Context
 from typing import Any
-from arkitekt.messages.postman.reserve.reserve_transition import ReserveState
-from arkitekt.contracts.reservation import Reservation
 from rich.table import Table
 
 from koil.loop import koil, koil_gen
 
 
 class Reserve:
-    def reserve(
-        self,
-        reference: str = None,
-        provision: str = None,
-        ignore_node_exceptions=False,
-        transition_hook=None,
-        with_log=False,
-        enter_on=[ReserveState.ACTIVE],
-        exit_on=[ReserveState.ERROR, ReserveState.CANCELLED, ReserveState.CRITICAL],
-        context: Context = None,
-        loop=None,
-        **params,
-    ) -> Reservation:
-        return Reservation(
-            self,
-            reference=reference,
-            provision=provision,
-            transition_hook=transition_hook,
-            with_log=with_log,
-            enter_on=enter_on,
-            ignore_node_exceptions=ignore_node_exceptions,
-            exit_on=exit_on,
-            context=context,
-            loop=loop,
-            **params,
-        )
-
     async def call_async_func(self, *args, reserve_params={}, **kwargs):
         async with self.reserve(**reserve_params) as res:
             return await res.assign_async(*args, **kwargs)

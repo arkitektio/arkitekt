@@ -29,3 +29,9 @@ query get_reservation($reference: ID!) {
     }
   }
 }
+
+query waitlist($appGroup: ID) {
+  waitlist(appGroup: $appGroup) {
+    ...Reservation
+  }
+}

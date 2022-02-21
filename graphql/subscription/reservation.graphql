@@ -1,11 +1,11 @@
-subscription subscribe_events {
-  myReservationsEvent {
+subscription waiter($identifier: ID!) {
+  reservations(identifier: $identifier) {
     create {
-      id
+      ...Reservation
     }
-    ended
     update {
-      id
+      ...Reservation
     }
+    delete
   }
 }

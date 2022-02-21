@@ -1,10 +1,11 @@
 from typing import Dict, Union
-from arkitekt.messages.postman.provide.provide_transition import ProvideState
+from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.structures.registry import StructureRegistry
 import asyncio
 import logging
 from arkitekt.api.schema import (
     ProvisionMode,
+    ProvisionStatus,
     aget_template,
     TemplateFragment,
 )
@@ -15,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 class Actor:
     template: TemplateFragment
+    transport: AgentTransport
 
     def __init__(
         self,
@@ -58,14 +60,14 @@ class Actor:
             self.template = await aget_template(id=self.provision.template)
 
             await self.transport.change_provision(
-                self.provision.provision, status=ProvideState.PROVIDING
+                self.provision.provision, status=ProvisionStatus.PROVIDING
             )
 
             await self.on_provide(self.provision)
 
             await self.transport.change_provision(
                 self.provision.provision,
-                status=ProvideState.ACTIVE,
+                status=ProvisionStatus.ACTIVE,
                 mode=ProvisionMode.DEBUG if self.debug else ProvisionMode.PRODUCTION,
             )
 
@@ -97,19 +99,25 @@ class Actor:
         except Exception as e:
             print(e)
             await self.transport.change_provision(
-                self.provision.provision, status=ProvideState.CRITICAL, message=str(e)
+                self.provision.provision,
+                status=ProvisionStatus.CRITICAL,
+                message=str(e),
             )
 
         except asyncio.CancelledError as e:
 
             await self.transport.change_provision(
-                self.provision.provision, status=ProvideState.CANCELING, message=str(e)
+                self.provision.provision,
+                status=ProvisionStatus.CANCELING,
+                message=str(e),
             )
 
             await self.on_unprovide()
 
             logger.info("Doing Whatever needs to be done to cancel!")
             await self.transport.change_provision(
-                self.provision.provision, status=ProvideState.CANCELLED, message=str(e)
+                self.provision.provision,
+                status=ProvisionStatus.CANCELLED,
+                message=str(e),
             )
             raise e

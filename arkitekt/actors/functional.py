@@ -3,23 +3,15 @@ from typing import Any, Coroutine
 from arkitekt.actors.exceptions import ThreadedActorCancelled
 from arkitekt.agents.messages import Assignation
 from arkitekt.api.schema import AssignationStatus
-from arkitekt.messages.postman.assign.assign_log import AssignLogMessage
-import contextvars
-from arkitekt.messages.postman.assign.assign_critical import AssignCriticalMessage
-from arkitekt.messages.postman.assign.assign_cancelled import AssignCancelledMessage
-from arkitekt.messages.postman.assign.assign_return import AssignReturnMessage
-from arkitekt.messages.postman.assign.assign_yield import AssignYieldsMessage
-from arkitekt.messages.postman.assign.assign_done import AssignDoneMessage
-from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
-from arkitekt.threadvars import assign_message, transport, janus_queue, cancel_event
-from arkitekt.messages.postman.assign.bounced_forwarded_assign import (
-    BouncedForwardedAssignMessage,
-)
 from arkitekt.actors.base import Actor
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
 import asyncio
-from arkitekt.structures.actor import expand_inputs, shrink_outputs
-
+from arkitekt.structures.serialization.actor import expand_inputs, shrink_outputs
+from arkitekt.actors.vars import (
+    current_assignation,
+    current_janus_queue,
+    current_cancel_event,
+)
 import logging
 import janus
 
@@ -48,67 +40,52 @@ class FunctionalFuncActor(FunctionalActor):
     async def progress(self, value, percentage):
         await self._progress(value, percentage)
 
-    async def on_assign(self, message: BouncedForwardedAssignMessage):
+    async def on_assign(self, assignation: Assignation):
         try:
             logger.info("Assigning Number two")
             args, kwargs = (
                 await expand_inputs(
                     self.template.node,
-                    message.data.args,
-                    message.data.kwargs,
+                    assignation.args,
+                    assignation.kwargs,
                     structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
-                else (message.data.args, message.data.kwargs)
+                else (assignation.args, assignation.kwargs)
             )
 
-            transport.set(self.transport)
-            assign_message.set(message)
+            current_assignation.set(assignation)
 
             returns = await self.assign(*args, **kwargs)
 
-            assign_message.set(None)
-            transport.set(None)
-            await self.transport.forward(
-                AssignReturnMessage(
-                    data={
-                        "returns": await shrink_outputs(
-                            self.template.node,
-                            returns,
-                            structure_registry=self.structure_registry,
-                        )
-                        if self.shrink_outputs
-                        else returns
-                    },
-                    meta={
-                        "reference": message.meta.reference,
-                        "extensions": message.meta.extensions,
-                    },
+            current_assignation.set(None)
+
+            returns = (
+                await shrink_outputs(
+                    self.template.node,
+                    returns,
+                    structure_registry=self.structure_registry,
                 )
+                if self.shrink_outputs
+                else returns
+            )
+
+            await self.transport.change_assignation(
+                assignation.assignation,
+                status=AssignationStatus.RETURNED,
+                results=returns,
             )
 
         except asyncio.CancelledError as e:
 
-            await self.transport.forward(
-                AssignCancelledMessage(
-                    data={"canceller": str(e)},
-                    meta={
-                        "reference": message.meta.reference,
-                        "extensions": message.meta.extensions,
-                    },
-                )
+            await self.transport.change_assignation(
+                assignation.assignation, status=AssignationStatus.CANCELLED
             )
 
         except Exception as e:
             logger.exception(e)
-            await self.transport.forward(
-                AssignCriticalMessage(
-                    data={"type": e.__class__.__name__, "message": str(e)},
-                    meta={
-                        "reference": message.meta.reference,
-                        "extensions": message.meta.extensions,
-                    },
-                )
+            await self.transport.change_assignation(
+                assignation.assignation, status=AssignationStatus.CRITICAL
             )
 
 
@@ -116,85 +93,53 @@ class FunctionalGenActor(FunctionalActor):
     async def progress(self, value, percentage):
         await self._progress(value, percentage)
 
-    async def on_assign(self, message: BouncedForwardedAssignMessage):
+    async def on_assign(self, message: Assignation):
         try:
             args, kwargs = (
                 await expand_inputs(
                     self.template.node,
-                    message.data.args,
-                    message.data.kwargs,
+                    message.args,
+                    message.kwargs,
                     structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
-                else (message.data.args, message.data.kwargs)
+                else (message.args, message.kwargs)
             )
 
-            transport.set(self.transport)
-            assign_message.set(message)
+            current_assignation.set(message)
 
             async for returns in self.assign(*args, **kwargs):
 
-                await self.transport.forward(
-                    AssignYieldsMessage(
-                        data={
-                            "returns": await shrink_outputs(
-                                self.template.node,
-                                returns,
-                                structure_registry=self.structure_registry,
-                            )
-                            if self.shrink_outputs
-                            else returns
-                        },
-                        meta={
-                            "reference": message.meta.reference,
-                            "extensions": message.meta.extensions,
-                        },
+                returns = (
+                    await shrink_outputs(
+                        self.template.node,
+                        returns,
+                        structure_registry=self.structure_registry,
                     )
+                    if self.shrink_outputs
+                    else returns
                 )
 
-            assign_message.set(None)
-            transport.set(None)
-
-            await self.transport.forward(
-                AssignDoneMessage(
-                    data={
-                        "returns": await shrink_outputs(
-                            self.template.node,
-                            returns,
-                            structure_registry=self.structure_registry,
-                        )
-                        if self.shrink_outputs
-                        else returns
-                    },
-                    meta={
-                        "reference": message.meta.reference,
-                        "extensions": message.meta.extensions,
-                    },
+                await self.transport.change_assignation(
+                    message.assignation, status=AssignationStatus.YIELD, results=returns
                 )
+
+            current_assignation.set(None)
+
+            await self.transport.change_assignation(
+                message.assignation, status=AssignationStatus.DONE
             )
 
         except asyncio.CancelledError as e:
 
-            await self.transport.forward(
-                AssignCancelledMessage(
-                    data={"canceller": str(e)},
-                    meta={
-                        "reference": message.meta.reference,
-                        "extensions": message.meta.extensions,
-                    },
-                )
+            await self.transport.change_assignation(
+                message.assignation, status=AssignationStatus.CANCEL
             )
 
         except Exception as e:
             logger.exception(e)
-            await self.transport.forward(
-                AssignCriticalMessage(
-                    data={"type": e.__class__.__name__, "message": str(e)},
-                    meta={
-                        "reference": message.meta.reference,
-                        "extensions": message.meta.extensions,
-                    },
-                )
+            await self.transport.change_assignation(
+                message.assignation, status=AssignationStatus.CRITICAL
             )
 
 
@@ -338,7 +283,7 @@ class FunctionalThreadedGenActor(FunctionalActor):
         super().__init__(*args, **kwargs)
         self.threadpool = ThreadPoolExecutor(nworkers)
 
-    async def iterate_queue(self, async_q, message: BouncedForwardedAssignMessage):
+    async def iterate_queue(self, async_q, message):
         try:
             while True:
                 val = await async_q.get()
@@ -416,7 +361,7 @@ class FunctionalThreadedGenActor(FunctionalActor):
         assign_message.set(None)
         cancel_event.set(None)
 
-    async def on_assign(self, message: BouncedForwardedAssignMessage):
+    async def on_assign(self, message):
         queue = janus.Queue()
         event = threading.Event()
 

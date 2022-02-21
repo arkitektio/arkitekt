@@ -1,6 +1,7 @@
 fragment Template on Template {
   id
   registry {
+    name
     app {
       name
     }

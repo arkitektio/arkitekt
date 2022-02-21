@@ -13,7 +13,8 @@ inflection = "^0.5.1"
 websockets = "^10.0"
 janus = "^0.6.1"
 watchdog = "^2.1.6"
-herre = "^0.1.59"
+herre = "^0.1.65"
+rath = "^0.1.7"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2.5"

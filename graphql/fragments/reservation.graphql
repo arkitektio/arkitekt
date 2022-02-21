@@ -1,0 +1,9 @@
+fragment Reservation on Reservation {
+  id
+  statusmessage
+  status
+  node {
+    id
+    pure
+  }
+}
