@@ -1,7 +1,7 @@
 from arkitekt.structures.registry import (
     StructureDefinitionError,
     StructureRegistry,
-    register,
+    register_structure,
     StructureOverwriteError,
 )
 import pytest
@@ -10,7 +10,7 @@ import pytest
 async def test_structure_registration():
     registry = StructureRegistry(allow_overwrites=False)
 
-    @register(identifier="test", registry=registry)
+    @register_structure(identifier="test", registry=registry)
     class SerializableObject:
         def __init__(self, number) -> None:
             super().__init__()
@@ -31,7 +31,7 @@ async def test_structure_registration():
 
     with pytest.raises(StructureOverwriteError):
 
-        @register(identifier="test", registry=registry)
+        @register_structure(identifier="test", registry=registry)
         class SerializableObject:
             def __init__(self, number) -> None:
                 super().__init__()
@@ -46,7 +46,7 @@ async def test_structure_registration():
 
     with pytest.raises(StructureDefinitionError):
 
-        @register(identifier="karl", registry=registry)
+        @register_structure(identifier="karl", registry=registry)
         class SerializableObject:
             def __init__(self, number) -> None:
                 super().__init__()

@@ -15,7 +15,6 @@ from arkitekt.api.schema import (
     find,
 )
 from fakts import Fakts
-from arkitekt import ArkitektWard
 from black import format_str, FileMode
 import ast
 import re

@@ -1,4 +1,4 @@
-from arkitekt.structures.registry import StructureRegistry, register
+from arkitekt.structures.registry import StructureRegistry, register_structure
 from arkitekt.api.schema import (
     DefinitionInput,
 )
@@ -13,8 +13,8 @@ def simple_registry():
 
     registry = StructureRegistry()
 
-    register(identifier="test", registry=registry)(SerializableObject)
-    register(identifier="karl", registry=registry)(SecondSerializableObject)
+    register_structure(identifier="test", registry=registry)(SerializableObject)
+    register_structure(identifier="karl", registry=registry)(SecondSerializableObject)
 
     return registry
 
