@@ -5,6 +5,9 @@ projects:
     extensions:
       turms:
         out_dir: arkitekt/api
+        freeze: True
+        object_bases:
+          - "rath.turms.object.GraphQLObject"
         stylers:
           - type: turms.stylers.capitalize.Capitalizer
           - type: turms.stylers.appender.Appender
@@ -16,55 +19,76 @@ projects:
           - type: turms.plugins.inputs.InputsPlugin
           - type: turms.plugins.fragments.FragmentsPlugin
           - type: turms.plugins.operation.OperationsPlugin
-            query_bases:
-              - arkitekt.operation.GraphQLQuery
-            mutation_bases:
-              - arkitekt.operation.GraphQLMutation
-            subscription_bases:
-              - arkitekt.operation.GraphQLSubscription
           - type: turms.plugins.funcs.OperationsFuncPlugin
+            global_kwargs:
+              - type: arkitekt.arkitekt.Arkitekt
+                key: arkitekt
+                description: "The client we want to use (defaults to the currently active client)"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: arkitekt.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: arkitekt.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: arkitekt.funcs.aexecute
+              - type: subscription
+                use: arkitekt.funcs.subscribe
+              - type: query
+                use: arkitekt.funcs.execute
+              - type: mutation
+                use: arkitekt.funcs.execute
         processors:
           - type: turms.processor.black.BlackProcessor
         scalar_definitions:
           uuid: str
           Callback: str
+          Any: typing.Any
           QString: arkitekt.scalars.QString
         additional_bases:
           Node:
-            - arkitekt.mixins.node.NodeMixin
+            - arkitekt.traits.node.Reserve
           IntArgPort:
-            - arkitekt.mixins.ports.IntExpander
+            - arkitekt.traits.ports.IntExpander
           IntKwargPort:
-            - arkitekt.mixins.ports.IntExpander
+            - arkitekt.traits.ports.IntExpander
           IntReturnPort:
-            - arkitekt.mixins.ports.IntExpander
+            - arkitekt.traits.ports.IntExpander
           StructureArgPort:
-            - arkitekt.mixins.ports.StructureExpander
+            - arkitekt.traits.ports.StructureExpander
           StructureKwargPort:
-            - arkitekt.mixins.ports.StructureExpander
+            - arkitekt.traits.ports.StructureExpander
           StructureReturnPort:
-            - arkitekt.mixins.ports.StructureExpander
+            - arkitekt.traits.ports.StructureExpander
           ListArgPort:
-            - arkitekt.mixins.ports.ListExpander
+            - arkitekt.traits.ports.ListExpander
           ListKwargPort:
-            - arkitekt.mixins.ports.ListExpander
+            - arkitekt.traits.ports.ListExpander
           ListReturnPort:
-            - arkitekt.mixins.ports.ListExpander
+            - arkitekt.traits.ports.ListExpander
+          DictArgPort:
+            - arkitekt.traits.ports.DictExpander
+          DictKwargPort:
+            - arkitekt.traits.ports.DictExpander
+          DictReturnPort:
+            - arkitekt.traits.ports.DictExpander
           BoolArgPort:
-            - arkitekt.mixins.ports.BoolExpander
+            - arkitekt.traits.ports.BoolExpander
           BoolKwargPort:
-            - arkitekt.mixins.ports.BoolExpander
+            - arkitekt.traits.ports.BoolExpander
           BoolReturnPort:
-            - arkitekt.mixins.ports.BoolExpander
+            - arkitekt.traits.ports.BoolExpander
           StringArgPort:
-            - arkitekt.mixins.ports.StringExpander
+            - arkitekt.traits.ports.StringExpander
           StringKwargPort:
-            - arkitekt.mixins.ports.StringExpander
+            - arkitekt.traits.ports.StringExpander
           StringReturnPort:
-            - arkitekt.mixins.ports.StringExpander
+            - arkitekt.traits.ports.StringExpander
           EnumArgPort:
-            - arkitekt.mixins.ports.EnumExpander
+            - arkitekt.traits.ports.EnumExpander
           EnumKwargPort:
-            - arkitekt.mixins.ports.EnumExpander
+            - arkitekt.traits.ports.EnumExpander
           EnumReturnPort:
-            - arkitekt.mixins.ports.EnumExpander
+            - arkitekt.traits.ports.EnumExpander

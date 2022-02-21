@@ -76,6 +76,25 @@ class ArkitektQueryResolver(AsyncMockResolver):
         }
 
 
+def replace_keys(data_dict, key_dict):
+    new_dict = {}
+    if isinstance(data_dict, list):
+        dict_value_list = list()
+        for inner_dict in data_dict:
+            dict_value_list.append(replace_keys(inner_dict, key_dict))
+        return dict_value_list
+    else:
+        for key in data_dict.keys():
+            value = data_dict[key]
+            new_key = key_dict.get(key, key)
+            if isinstance(value, dict) or isinstance(value, list):
+                new_dict[new_key] = replace_keys(value, key_dict)
+            else:
+                new_dict[new_key] = value
+        return new_dict
+    return new_dict
+
+
 class ArkitektMutationResolver(AsyncMockResolver):
     def __init__(self) -> None:
         super().__init__()
@@ -90,6 +109,15 @@ class ArkitektMutationResolver(AsyncMockResolver):
             "package": operation.variables["definition"]["package"],
             "description": operation.variables["definition"]["description"],
             "type": operation.variables["definition"]["type"],
+            "args": replace_keys(
+                operation.variables["definition"]["args"], {"typename": "__typename"}
+            ),
+            "kwargs": replace_keys(
+                operation.variables["definition"]["kwargs"], {"typename": "__typename"}
+            ),
+            "returns": replace_keys(
+                operation.variables["definition"]["returns"], {"typename": "__typename"}
+            ),
         }
 
         self.nodeMap[new_node["id"]] = new_node

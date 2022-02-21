@@ -24,9 +24,15 @@ class StructureRegistry:
         if register:
             set_current_structure_registry(registry=self)
 
-    def get_expanded_for_identifier(self, key):
+    def get_expander_for_identifier(self, key):
         try:
             return self.identifier_expander_map[key]
+        except KeyError as e:
+            raise StructureRegistryError(f"{key} is not registered") from e
+
+    def get_shrinker_for_identifier(self, key):
+        try:
+            return self.identifier_shrinker_map[key]
         except KeyError as e:
             raise StructureRegistryError(f"{key} is not registered") from e
 

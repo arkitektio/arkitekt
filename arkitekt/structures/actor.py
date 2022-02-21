@@ -1,7 +1,7 @@
 from typing import Any, Dict, List
 from async_timeout import asyncio
 from arkitekt.api.schema import NodeFragment
-from arkitekt.structures.errors import ShrinkingError
+from arkitekt.structures.errors import ShrinkingError, ExpandingError
 from arkitekt.structures.registry import StructureRegistry
 
 
@@ -22,19 +22,25 @@ async def expand_inputs(
 
     expanded_args = []
 
-    expanded_args = await asyncio.gather(
-        *[
-            port.cause_expand(arg, structure_registry)
-            for port, arg in zip(node.args, args)
-        ]
-    )
-
-    expanded_kwargs = {
-        port.key: await port.cause_expand(
-            kwargs.get(port.key, None), structure_registry
+    try:
+        expanded_args = await asyncio.gather(
+            *[
+                port.cause_expand(arg, structure_registry)
+                for port, arg in zip(node.args, args)
+            ]
         )
-        for port in node.kwargs
-    }
+    except Exception as e:
+        raise ExpandingError(f"Couldn't expand Arguments {args}") from e
+
+    try:
+        expanded_kwargs = {
+            port.key: await port.cause_expand(
+                kwargs.get(port.key, None), structure_registry
+            )
+            for port in node.kwargs
+        }
+    except Exception as e:
+        raise ExpandingError(f"Couldn't expand Kwargs {kwargs}") from e
 
     return expanded_args, expanded_kwargs
 

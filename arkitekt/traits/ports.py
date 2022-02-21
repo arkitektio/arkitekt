@@ -25,10 +25,10 @@ class StructureExpander(Port):
     identifier: str
 
     async def cause_expand(self, value, registry):
-        return await registry.get_expanded_for_identifier(self.identifier)(value)
+        return await registry.get_expander_for_identifier(self.identifier)(value)
 
     async def cause_shrink(self, value, registry):
-        return registry.get_shrinker_for_identifier(self.identifier)(value)
+        return await registry.get_shrinker_for_identifier(self.identifier)(value)
 
 
 class ListExpander(Port):
@@ -40,14 +40,14 @@ class ListExpander(Port):
 
         if isinstance(value, list):
             return await asyncio.gather(
-                *[self.child.expand(item, registry) for item in value]
+                *[self.child.cause_expand(item, registry) for item in value]
             )
         else:
             raise ExpansionError(f"Expected a list got {type(value)}")
 
     async def cause_shrink(self, value, registry):
         return await asyncio.gather(
-            *[self.child.shrink(item, registry) for item in value]
+            *[self.child.cause_shrink(item, registry) for item in value]
         )
 
 
@@ -72,14 +72,20 @@ class StringExpander(Port):
 
 
 class DictExpander(Port):
+    child: Port
+
     async def cause_expand(self, value, registry):
         if not isinstance(value, dict):
             raise ExpansionError(f"Expected an dict got {type(value)}")
 
-        return value
+        return {
+            key: await self.child.cause_expand(value[key], registry) for key in value
+        }
 
     async def cause_shrink(self, value, registry):
-        return str(value)
+        return {
+            key: await self.child.cause_shrink(value[key], registry) for key in value
+        }
 
 
 class EnumExpander(Port):

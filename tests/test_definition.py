@@ -1,11 +1,14 @@
+from docstring_parser import compose
 from arkitekt.structures.registry import StructureRegistry, register_structure
-from arkitekt.api.schema import (
-    DefinitionInput,
-)
+from arkitekt.api.schema import DefinitionInput, NodeFragment, define, adefine
 import pytest
 from .funcs import karl, complex_karl, karl_structure, structured_gen
 from .structures import SecondSerializableObject, SerializableObject
 from arkitekt.definition.define import prepare_definition
+from rath.links import compose, ShrinkingLink, DictingLink
+from rath.links.testing.mock import AsyncMockLink
+from tests.mocks import ArkitektQueryResolver, ArkitektMutationResolver, MockTransport
+from arkitekt import Arkitekt
 
 
 @pytest.fixture
@@ -85,3 +88,63 @@ async def test_define_structured_gen(simple_registry):
     assert (
         functional_definition.name == "Structured Karl"
     ), "Doesnt conform to standard Naming Scheme"
+
+
+@pytest.fixture
+def arkitekt_client():
+
+    link = compose(
+        ShrinkingLink(),
+        DictingLink(),  # after the shrinking so we can override the dicting
+        AsyncMockLink(
+            query_resolver=ArkitektQueryResolver(),
+            mutation_resolver=ArkitektMutationResolver(),
+        ),
+    )
+
+    return Arkitekt(link)
+
+
+async def test_define_to_node_gen(simple_registry, arkitekt_client):
+
+    functional_definition = prepare_definition(
+        structured_gen, structure_registry=simple_registry
+    )
+
+    node = await adefine(functional_definition, arkitekt=arkitekt_client)
+
+    assert isinstance(node, NodeFragment), "Node is not Node"
+    assert node.name == "Structured Karl", "Doesnt conform to standard Naming Scheme"
+    assert node.name == "Structured Karl", "Doesnt conform to standard Naming Scheme"
+    assert len(node.args) == 1, "Wrong amount of Arguments"
+    assert len(node.kwargs) == 1, "Wrong amount of Kwargs"
+    assert len(node.returns) == 2, "Wrong amount of Returns"
+    assert node.args[0].typename == "ListArgPort", "Wasn't defined as a List"
+    assert node.args[0].child.typename == "StructureArgPort", "Wasn't defined as a List"
+    assert node.args[0].child.identifier == "test", "Wasn't indtifier on test"
+
+
+async def test_define_to_node_complex(simple_registry, arkitekt_client):
+
+    functional_definition = prepare_definition(
+        complex_karl, structure_registry=simple_registry
+    )
+
+    node = await adefine(functional_definition, arkitekt=arkitekt_client)
+
+    assert isinstance(node, NodeFragment), "Node is not Node"
+    assert node.name == "Complex Karl", "Doesnt conform to standard Naming Scheme"
+    assert len(node.args) == 2, "Wrong amount of Arguments"
+    assert node.args[0].typename == "ListArgPort", "Wasn't defined as a List"
+    assert node.args[1].typename == "DictArgPort", "Wasn't defined as a Dict"
+    assert (
+        node.args[1].child.typename == "IntArgPort"
+    ), "Child of List is not of type IntArgPort"
+    assert (
+        node.args[0].child.typename == "StringArgPort"
+    ), "Child of Dict is not of type StringArgPort"
+    assert (
+        node.kwargs[0].typename == "StringKwargPort"
+    ), "Kwarg wasn't defined as a StringKwargPort"
+    assert len(functional_definition.returns) == 2, "Wrong amount of Returns"
+    assert node.returns[0].typename == "ListReturnPort", "Needs to Return List"

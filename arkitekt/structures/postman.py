@@ -25,7 +25,8 @@ async def shrink_inputs(
     Returns:
         Tuple[List[Any], Dict[str, Any]]: Parsed Args as a List, Parsed Kwargs as a dict
     """
-    assert len(node.args) == len(args), "Missmatch in Arg Length"
+    if len(node.args) != len(args):
+        raise ShrinkingError("Missmatch in Arg Length")
 
     shrinked_args_futures = [
         port.cause_shrink(arg, structure_registry) for port, arg in zip(node.args, args)
@@ -71,8 +72,8 @@ async def expand_outputs(
     Returns:
         List[Any]: The Expanded Returns
     """
-    assert len(node.returns) == len(returns), "Missmatch in Return Length"
-
+    if len(node.returns) != len(returns):
+        raise ExpandingError("Missmatch in Return Length")
     try:
         returns = await asyncio.gather(
             *[
