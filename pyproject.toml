@@ -8,7 +8,7 @@ packages = [{include = "arkitekt"}]
 
 [tool.poetry.dependencies]
 python = "^3.7"
-docstring-parser = "^0.10"
+docstring-parser = ">=0.11"
 inflection = "^0.5.1"
 websockets = "^10.0"
 janus = "^0.6.1"
@@ -22,6 +22,7 @@ pytest-aiohttp = "^0.3.0"
 tox = "^3.24.3"
 pytest-cov = "^3.0.0"
 black = "^21.12b0"
+pydoc-markdown = "^4.5.0"
 
 [tool.poetry.scripts]
 arkitekt = "arkitekt.cli.main:entrypoint"
@@ -37,4 +38,4 @@ search_path = [ "arkitekt" ]
 
 [tool.pydoc-markdown.renderer]
 type = "docusaurus"
-
+docs_base_path = "website/docs"

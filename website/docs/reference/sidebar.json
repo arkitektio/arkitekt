@@ -1,0 +1,222 @@
+{
+  "items": [
+    {
+      "items": [
+        "reference/__init__/__init__"
+      ],
+      "label": "__init__",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/actors/__init__",
+        "reference/actors/actify",
+        "reference/actors/base",
+        "reference/actors/exceptions",
+        "reference/actors/functional",
+        "reference/actors/registry",
+        "reference/actors/utils",
+        "reference/actors/vars"
+      ],
+      "label": "actors",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            {
+              "items": [
+                "reference/agents/transport/protocols/__init__",
+                "reference/agents/transport/protocols/agent_json"
+              ],
+              "label": "agents.transport.protocols",
+              "type": "category"
+            },
+            "reference/agents/transport/__init__",
+            "reference/agents/transport/base",
+            "reference/agents/transport/errors",
+            "reference/agents/transport/mock",
+            "reference/agents/transport/websocket"
+          ],
+          "label": "agents.transport",
+          "type": "category"
+        },
+        "reference/agents/__init__",
+        "reference/agents/base",
+        "reference/agents/errors",
+        "reference/agents/messages",
+        "reference/agents/standard",
+        "reference/agents/stateful"
+      ],
+      "label": "agents",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/api/__init__",
+        "reference/api/schema"
+      ],
+      "label": "api",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            "reference/cli/dev/__init__",
+            "reference/cli/dev/automirror",
+            "reference/cli/dev/autostage"
+          ],
+          "label": "cli.dev",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/cli/prod/__init__",
+            "reference/cli/prod/run",
+            "reference/cli/prod/waitfor"
+          ],
+          "label": "cli.prod",
+          "type": "category"
+        },
+        "reference/cli/__init__",
+        "reference/cli/main"
+      ],
+      "label": "cli",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/codegen/__init__",
+        "reference/codegen/gen"
+      ],
+      "label": "codegen",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/definition/__init__",
+        "reference/definition/define",
+        "reference/definition/errors",
+        "reference/definition/nodeify",
+        "reference/definition/registry"
+      ],
+      "label": "definition",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/fakts/__init__",
+        "reference/fakts/arkitekt",
+        "reference/fakts/watchman"
+      ],
+      "label": "fakts",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/postmans/__init__",
+        "reference/postmans/base"
+      ],
+      "label": "postmans",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            "reference/qt/port/__init__",
+            "reference/qt/port/widgets"
+          ],
+          "label": "qt.port",
+          "type": "category"
+        },
+        {
+          "items": [
+            "reference/qt/widgets/__init__",
+            "reference/qt/widgets/magic_bar",
+            "reference/qt/widgets/provisions",
+            "reference/qt/widgets/settings_popup",
+            "reference/qt/widgets/templates"
+          ],
+          "label": "qt.widgets",
+          "type": "category"
+        },
+        "reference/qt/__init__",
+        "reference/qt/actor",
+        "reference/qt/agent",
+        "reference/qt/utils"
+      ],
+      "label": "qt",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            "reference/structures/serialization/__init__",
+            "reference/structures/serialization/actor",
+            "reference/structures/serialization/postman"
+          ],
+          "label": "structures.serialization",
+          "type": "category"
+        },
+        "reference/structures/__init__",
+        "reference/structures/errors",
+        "reference/structures/registry"
+      ],
+      "label": "structures",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/traits/__init__",
+        "reference/traits/node",
+        "reference/traits/ports"
+      ],
+      "label": "traits",
+      "type": "category"
+    },
+    {
+      "items": [
+        "reference/turms/__init__",
+        "reference/turms/structure"
+      ],
+      "label": "turms",
+      "type": "category"
+    },
+    {
+      "items": [
+        {
+          "items": [
+            "reference/ui/qtwidgets/__init__",
+            "reference/ui/qtwidgets/base",
+            "reference/ui/qtwidgets/qtlistsearchwidget",
+            "reference/ui/qtwidgets/qtsliderwidget"
+          ],
+          "label": "ui.qtwidgets",
+          "type": "category"
+        },
+        "reference/ui/__init__",
+        "reference/ui/assign_widget",
+        "reference/ui/registry",
+        "reference/ui/ui"
+      ],
+      "label": "ui",
+      "type": "category"
+    },
+    "reference/arkitekt",
+    "reference/comfort",
+    "reference/config",
+    "reference/errors",
+    "reference/funcs",
+    "reference/postman",
+    "reference/registry",
+    "reference/scalars",
+    "reference/watchman",
+    "reference/widgets"
+  ],
+  "label": "Reference",
+  "type": "category"
+}
