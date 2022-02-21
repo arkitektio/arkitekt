@@ -9,7 +9,7 @@ const config = {
   title: 'Arkitekt',
   tagline: 'Call your functions anywhere anytime',
   url: 'https://jhnnsrs.github.io/rath',
-  baseUrl: '/rath/',
+  baseUrl: '/arkitekt/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',
   favicon: 'img/favicon.ico',
