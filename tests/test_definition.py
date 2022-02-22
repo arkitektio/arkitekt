@@ -1,4 +1,6 @@
+from typing import Dict
 from docstring_parser import compose
+from pydantic import ValidationError
 from arkitekt.structures.registry import StructureRegistry, register_structure
 from arkitekt.api.schema import DefinitionInput, NodeFragment, define, adefine
 import pytest
@@ -148,3 +150,22 @@ async def test_define_to_node_complex(simple_registry, arkitekt_client):
     ), "Kwarg wasn't defined as a StringKwargPort"
     assert len(functional_definition.returns) == 2, "Wrong amount of Returns"
     assert node.returns[0].typename == "ListReturnPort", "Needs to Return List"
+
+
+async def test_define_node_has_nested_type(simple_registry, arkitekt_client):
+    """Tests that a node with nested types cant be defined"""
+
+    def x(a: Dict[str, Dict[str, int]]) -> int:
+        """Nanana
+
+        sss
+
+        Args:
+            a (Dict[str, Dict[str, int]]): _description_
+        """
+        return 5
+
+    functional_definition = prepare_definition(x, structure_registry=simple_registry)
+
+    with pytest.raises(ValidationError):
+        node = await adefine(functional_definition, arkitekt=arkitekt_client)

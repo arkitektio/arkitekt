@@ -1,20 +1,19 @@
 ---
 sidebar_position: 5
-sidebar_label: "Rath ❤️ Turms"
+sidebar_label: "Arkitekt ❤️ Fluss"
 ---
 
-# Rath ❤️ Turms
+# Arkitekt ❤️ Fluss
 
-### What is turms?
+### What is Fluss?
 
-Turms is a graphql-codegen inspired code generator for pyhton that generates fully typed and
-serialized operations from your graphql schema. Just define your query in standard graphql syntax
-and let turms create fully typed queries/mutation and subscriptions, that you can use in your favourite
-IDE.
+Fluss is a reactive task scheduler for the arkitekt framework. While arkitekt takes care of discovering
+and calling your apps in a reliable and reusable manner. Fluss plays a role in orchestrating these tasks
 
 ### Design
 
-Rath and Turms are developed independently, but are completely interoperable.
+Fluss enables you to construct workflows in a graphical manner like the one below, utilizing nodes that you
+define within arkitekt
 
 Consider this query
 
