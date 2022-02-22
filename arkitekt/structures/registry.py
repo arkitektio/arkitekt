@@ -1,3 +1,6 @@
+from typing import Any, Awaitable, Callable, Dict, Type
+
+
 class StructureRegistryError(Exception):
     pass
 
@@ -13,10 +16,10 @@ class StructureDefinitionError(StructureRegistryError):
 class StructureRegistry:
     def __init__(self, register=True, allow_overwrites=True) -> None:
 
-        self.identifier_expander_map = {}
-        self.identifier_shrinker_map = {}
-        self.structure_identifier_map = {}
-        self.identifier_structure_map = {}
+        self.identifier_expander_map: Dict[str, Callable[[str], Awaitable[Any]]] = {}
+        self.identifier_shrinker_map: Dict[str, Callable[[Any], Awaitable[str]]] = {}
+        self.structure_identifier_map: Dict[Type, str] = {}
+        self.identifier_structure_map: Dict[str, Type] = {}
         self.allow_overwrites = allow_overwrites
 
         self.structure_default_widget_map = {}

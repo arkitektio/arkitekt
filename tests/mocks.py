@@ -1,6 +1,6 @@
 import asyncio
 from typing import Any, List, Optional
-from arkitekt.agents.messages import Assignation, Provision, Provision, Unprovision
+from arkitekt.messages import Assignation, Provision, Provision, Unprovision
 from arkitekt.api.schema import AssignationStatus, NodeType, ProvisionStatus
 from arkitekt.agents.transport.base import AgentTransport
 from rath.links.testing.mock import AsyncMockResolver
@@ -66,6 +66,10 @@ class MockTransport(AgentTransport):
 
 class ArkitektQueryResolver(AsyncMockResolver):
     async def resolve_node(self, operation: Operation) -> str:
+        if operation.variables["package"] != "mock":
+            raise NotImplementedError(
+                "mock resolver cna only resoplve nodes in the mock package"
+            )
         return {
             "package": "rath",
             "interface": "mock",

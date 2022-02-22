@@ -1238,6 +1238,27 @@ class ListReturnPortFragment(ListExpander,  GraphQLObject)
 
 The child
 
+## DictReturnPortFragmentChildStructureReturnPortFragment Objects
+
+```python
+class DictReturnPortFragmentChildStructureReturnPortFragment(
+    StructureExpander,  DictReturnPortFragmentChildBase)
+```
+
+#### identifier
+
+The identifier of this Model
+
+## DictReturnPortFragment Objects
+
+```python
+class DictReturnPortFragment(DictExpander,  GraphQLObject)
+```
+
+#### child
+
+The child
+
 ## StructureReturnPortFragment Objects
 
 ```python
@@ -1247,6 +1268,24 @@ class StructureReturnPortFragment(StructureExpander,  GraphQLObject)
 #### identifier
 
 The identifier of this Model
+
+## ReserveParamsFragment Objects
+
+```python
+class ReserveParamsFragment(GraphQLObject)
+```
+
+#### registries
+
+Registry thar are allowed
+
+#### minimalInstances
+
+The minimal amount of Instances
+
+#### desiredInstances
+
+The desired amount of Instances
 
 ## ReservationFragmentNode Objects
 

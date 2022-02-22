@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from typing import Any, List, Optional, Union
-from arkitekt.agents.messages import Assignation, Unassignation, Provision, Unprovision
+from arkitekt.messages import Assignation, Unassignation, Provision, Unprovision
 from arkitekt.api.schema import ProvisionMode, ProvisionStatus, AssignationStatus
 
 

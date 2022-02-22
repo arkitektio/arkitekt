@@ -1,12 +1,12 @@
 ---
 sidebar_label: mock
-title: agents.transport.mock
+title: postmans.transport.mock
 ---
 
-## MockAgentTransport Objects
+## MockPostmanTransport Objects
 
 ```python
-class MockAgentTransport(AgentTransport)
+class MockPostmanTransport(PostmanTransport)
 ```
 
 A mock transport for an agent

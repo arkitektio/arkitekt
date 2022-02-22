@@ -24,5 +24,10 @@
             "type": "shell",
             "command": "source venv/bin/activate; python provide.py"
         },
+        {
+            "label": "Docs",
+            "type": "shell",
+            "command": "source venv/bin/activate; pydoc-markdown"
+        },
     ]
 }

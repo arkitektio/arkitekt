@@ -2,7 +2,7 @@ import contextvars
 import janus
 import threading
 
-from arkitekt.agents.messages import Assignation
+from arkitekt.messages import Assignation
 
 current_assignation = contextvars.ContextVar("current_assignation")
 transport = contextvars.ContextVar("transport")

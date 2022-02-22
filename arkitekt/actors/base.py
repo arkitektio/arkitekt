@@ -9,7 +9,7 @@ from arkitekt.api.schema import (
     aget_template,
     TemplateFragment,
 )
-from arkitekt.agents.messages import Assignation, Provision, Unassignation, Unprovision
+from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
 
 logger = logging.getLogger(__name__)
 

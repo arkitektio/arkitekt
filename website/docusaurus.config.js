@@ -8,7 +8,7 @@ const darkCodeTheme = require('prism-react-renderer/themes/dracula');
 const config = {
   title: 'Arkitekt',
   tagline: 'Call your functions anywhere anytime',
-  url: 'https://jhnnsrs.github.io/rath',
+  url: 'https://jhnnsrs.github.io/',
   baseUrl: '/arkitekt/',
   onBrokenLinks: 'throw',
   onBrokenMarkdownLinks: 'warn',

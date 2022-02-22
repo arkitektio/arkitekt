@@ -10,7 +10,7 @@ from arkitekt.api.schema import (
     ProvisionStatus,
 )
 from enum import Enum
-from arkitekt.agents.messages import Assignation, Unassignation, Provision, Unprovision
+from arkitekt.messages import Assignation, Unassignation, Provision, Unprovision
 
 
 class AgentMessageTypes(str, Enum):

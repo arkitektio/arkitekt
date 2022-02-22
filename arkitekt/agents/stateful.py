@@ -1,5 +1,5 @@
 from arkitekt.agents.base import BaseAgent
-from arkitekt.agents.messages import Assignation, Provision
+from arkitekt.messages import Assignation, Provision
 import asyncio
 
 

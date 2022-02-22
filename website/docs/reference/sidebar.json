@@ -45,8 +45,6 @@
         "reference/agents/__init__",
         "reference/agents/base",
         "reference/agents/errors",
-        "reference/agents/messages",
-        "reference/agents/standard",
         "reference/agents/stateful"
       ],
       "label": "agents",
@@ -116,8 +114,29 @@
     },
     {
       "items": [
+        {
+          "items": [
+            {
+              "items": [
+                "reference/postmans/transport/protocols/__init__",
+                "reference/postmans/transport/protocols/postman_json"
+              ],
+              "label": "postmans.transport.protocols",
+              "type": "category"
+            },
+            "reference/postmans/transport/__init__",
+            "reference/postmans/transport/base",
+            "reference/postmans/transport/errors",
+            "reference/postmans/transport/mock",
+            "reference/postmans/transport/websocket"
+          ],
+          "label": "postmans.transport",
+          "type": "category"
+        },
         "reference/postmans/__init__",
-        "reference/postmans/base"
+        "reference/postmans/base",
+        "reference/postmans/errors",
+        "reference/postmans/stateful"
       ],
       "label": "postmans",
       "type": "category"
@@ -211,6 +230,7 @@
     "reference/config",
     "reference/errors",
     "reference/funcs",
+    "reference/messages",
     "reference/postman",
     "reference/registry",
     "reference/scalars",

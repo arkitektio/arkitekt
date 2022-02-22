@@ -1,7 +1,7 @@
 import threading
 from typing import Any, Coroutine
 from arkitekt.actors.exceptions import ThreadedActorCancelled
-from arkitekt.agents.messages import Assignation
+from arkitekt.messages import Assignation
 from arkitekt.api.schema import AssignationStatus
 from arkitekt.actors.base import Actor
 from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
