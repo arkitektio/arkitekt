@@ -2,7 +2,7 @@ from qtpy import QtCore, QtGui, QtWidgets
 from arkitekt.agents.base import Agent
 from arkitekt.api.schema import TemplateFragment
 from arkitekt.qt.agent import QtAgent
-from arkitekt.config import ArkitektConfig
+from snips.config import ArkitektConfig
 from arkitekt.messages.postman.provide.bounced_provide import BouncedProvideMessage
 import webbrowser
 

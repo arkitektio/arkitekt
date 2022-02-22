@@ -1,5 +1,3 @@
-from enum import Enum
-from os import strerror
 from arkitekt.actors.base import Actor
 from arkitekt.actors.functional import (
     FunctionalFuncActor,
@@ -9,14 +7,7 @@ from arkitekt.actors.functional import (
 )
 
 import inspect
-from inspect import signature, Parameter
-from docstring_parser import parse
-import logging
-import inflection
-
 from arkitekt.structures.registry import StructureRegistry
-
-logger = logging.getLogger(__name__)
 from typing import Callable, Dict, List
 import inspect
 

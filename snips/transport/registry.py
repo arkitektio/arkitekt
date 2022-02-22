@@ -2,7 +2,7 @@ from typing import Dict
 from .base import Transport
 from .agent.base import AgentTransport
 from .postman.base import PostmanTransport
-from arkitekt.config import TransportProtocol
+from snips.config import TransportProtocol
 import logging
 
 logger = logging.getLogger(__name__)

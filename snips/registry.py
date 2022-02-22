@@ -5,7 +5,7 @@ CURRENT_AGENT = None
 def get_current_postman(force_creation=True, **kwargs):
     global CURRENT_RPC
     if CURRENT_RPC is None and force_creation:
-        from arkitekt.postman import Postman
+        from snips.postman import Postman
 
         CURRENT_RPC = Postman(**kwargs)
     return CURRENT_RPC

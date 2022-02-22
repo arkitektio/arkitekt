@@ -1,6 +1,6 @@
 from pydantic.main import BaseModel
 from websockets.exceptions import ConnectionClosedError
-from arkitekt.config import TransportProtocol
+from snips.config import TransportProtocol
 from arkitekt.transport.agent.base import AgentTransportConfig
 from arkitekt.transport.base import Transport, TransportConfig
 from arkitekt.messages.utils import expandToMessage

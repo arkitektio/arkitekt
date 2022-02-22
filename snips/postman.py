@@ -1,5 +1,5 @@
 import asyncio
-from arkitekt.config import TransportProtocol
+from snips.config import TransportProtocol
 from arkitekt.messages.base import MessageModel
 from arkitekt.transport.registry import (
     TransportRegistry,
@@ -9,7 +9,7 @@ from arkitekt.transport.base import Transport
 from arkitekt.ward import ArkitektWard
 from herre.herre import Herre, get_current_herre
 from arkitekt.legacy.utils import *
-from arkitekt.registry import set_current_rpc
+from snips.registry import set_current_rpc
 from koil.koil import Koil, get_current_koil
 from fakts import Fakts, get_current_fakts, Config
 

@@ -1,5 +1,5 @@
 from pydantic.main import BaseModel
-from arkitekt.config import TransportProtocol
+from snips.config import TransportProtocol
 from arkitekt.transport.base import Transport, TransportConfig
 from arkitekt.messages.utils import expandToMessage
 from arkitekt.messages.base import MessageMetaExtensionsModel, MessageModel
