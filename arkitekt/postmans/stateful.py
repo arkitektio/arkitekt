@@ -18,7 +18,7 @@ class StatefulPostman(Postman):
         self.ass_update_queues: Dict[str, asyncio.Queue] = {}
 
     async def aconnect(self):
-        await self.transport.aconnect()
+        await super().aconnect()
 
         data = await self.transport.alist_reservations()
         self.reservations = {res.reservation: res for res in data}

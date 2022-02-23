@@ -9,7 +9,7 @@ from .structures import SecondSerializableObject, SerializableObject
 from arkitekt.definition.define import prepare_definition
 from rath.links import compose, ShrinkingLink, DictingLink
 from rath.links.testing.mock import AsyncMockLink
-from tests.mocks import ArkitektQueryResolver, ArkitektMutationResolver, MockTransport
+from tests.mocks import ArkitektMockResolver
 from arkitekt import Arkitekt
 
 
@@ -99,8 +99,7 @@ def arkitekt_client():
         ShrinkingLink(),
         DictingLink(),  # after the shrinking so we can override the dicting
         AsyncMockLink(
-            query_resolver=ArkitektQueryResolver(),
-            mutation_resolver=ArkitektMutationResolver(),
+            query_resolver=ArkitektMockResolver(),
         ),
     )
 

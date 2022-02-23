@@ -19,3 +19,10 @@ class SecondSerializableObject:
     @classmethod
     async def expand(cls, shrinked_value):
         return cls()
+
+
+class SecondObject:
+    pass
+
+    def __init__(self, id) -> None:
+        self.id = id

@@ -89,7 +89,7 @@ class ProvisionListDenied(JSONMessage):
 class ProvisionChangedMessage(JSONMessage):
     type: Literal[AgentMessageTypes.PROVIDE_CHANGED] = AgentMessageTypes.PROVIDE_CHANGED
     provision: str
-    status: ProvisionStatus
+    status: Optional[ProvisionStatus]
     message: Optional[str]
     mode: Optional[ProvisionMode]
 
@@ -113,5 +113,6 @@ class UnprovideSubMessage(JSONMessage, Unprovision):
 class AssignationChangedMessage(JSONMessage):
     type: Literal[AgentMessageTypes.ASSIGN_CHANGED] = AgentMessageTypes.ASSIGN_CHANGED
     assignation: str
-    status: AssignationStatus
-    result: List[Any]
+    status: Optional[AssignationStatus]
+    message: Optional[str]
+    returns: Optional[List[Any]]

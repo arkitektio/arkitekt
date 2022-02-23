@@ -1,5 +1,6 @@
 from arkitekt.agents.base import BaseAgent
-from arkitekt.messages import Assignation, Provision
+from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
+from typing import Optional, Union
 import asyncio
 
 
@@ -12,27 +13,43 @@ class StatefulAgent(BaseAgent):
     """
 
     async def aconnect(self):
-        await self.transport.aconnect()
+        await super().aconnect()
+        await self.astart()
 
     async def astart(self):
         data = await self.transport.list_provisions()
 
         for prov in data:
-            actorBuilder = self.templateActorBuilderMap[prov.template]
-            self.provisionActorMap[prov.provision] = actorBuilder()
-            task = asyncio.create_task(
-                self.provisionActorMap[prov.provision].arun(prov, self)
-            )
-            task.add_done_callback(print)
+            await self.broadcast(prov)
 
         data = await self.transport.list_assignations()
         for ass in data:
-            actor = self.provisionActorMap[ass.provision]
-            task = asyncio.create_task(actor.apass(ass))
-            task.add_done_callback(print)
+            await self.broadcast(ass)
 
-    async def _on_new_assign(self, res: Assignation):
-        raise NotImplementedError()
+    async def broadcast(
+        self, message: Union[Assignation, Provision, Unassignation, Unprovision]
+    ):
 
-    async def _on_new_provide(self, ass: Provision):
-        raise NotImplementedError()
+        if isinstance(message, Assignation) or isinstance(message, Unassignation):
+            actor = self.provisionActorMap[message.provision]
+            await actor.apass(message)
+
+        if isinstance(message, Provision):
+            actorBuilder = self.templateActorBuilderMap[message.template]
+            self.provisionActorMap[message.provision] = actorBuilder(message, self)
+            await self.provisionActorMap[message.provision].arun()
+
+        if isinstance(message, Unprovision):
+            await self.provisionActorMap[message.provision].astop()
+
+        return await super().broadcast(message)
+
+    async def adisconnect(self):
+        await super().adisconnect()
+        cancelations = [actor.astop() for actor in self.provisionActorMap.values()]
+
+        for c in cancelations:
+            try:
+                await c
+            except asyncio.CancelledError:
+                print(f"Cancelled Actor {c}")

@@ -1,4 +1,4 @@
-from arkitekt.actors.exceptions import ThreadedActorCancelled
+from arkitekt.actors.errors import ThreadedActorCancelled
 from arkitekt.legacy.utils import get_running_loop
 
 

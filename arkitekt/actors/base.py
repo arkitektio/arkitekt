@@ -1,5 +1,6 @@
 from typing import Dict, Union
 from arkitekt.agents.transport.base import AgentTransport
+from arkitekt.arkitekt import Arkitekt, set_current_arkitekt
 from arkitekt.structures.registry import StructureRegistry
 import asyncio
 import logging
@@ -10,28 +11,35 @@ from arkitekt.api.schema import (
     TemplateFragment,
 )
 from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
+from arkitekt.actors.errors import UnknownMessageError
 
 logger = logging.getLogger(__name__)
+
+
+class Agent:
+    transport: AgentTransport
+    arkitekt: Arkitekt
 
 
 class Actor:
     template: TemplateFragment
     transport: AgentTransport
+    arkitekt: Arkitekt
 
     def __init__(
         self,
+        provision: Provision,
+        agent: Agent,
         *args,
         strict=False,
         expand_inputs=True,
         shrink_outputs=True,
-        transpilers={},
         structure_registry: StructureRegistry = None,
         debug=False,
         **kwargs,
     ) -> None:
         super().__init__(*args, **kwargs)
         self.strict = strict
-        self.layer = None
         self.expand_inputs = expand_inputs
         self.shrink_outputs = shrink_outputs
         self.structure_registry = structure_registry
@@ -39,23 +47,42 @@ class Actor:
             str, asyncio.Task
         ] = {}  # Running assignments indexed by assignment reference
         self.debug = debug
+        self.provision = provision
+        self.agent = agent
+        self.transport = agent.transport
+        self.arkitekt = agent.arkitekt
 
-    async def on_provide(self, message: Provision):
+    async def on_provide(self):
         return None
 
     async def on_unprovide(self):
         return None
 
+    async def on_assign(self, assignation: Assignation):
+        raise (
+            "Needs to be owerwritten in Actor Subclass. Never use this class directly"
+        )
+
     async def apass(self, message: Union[Assignation, Unassignation]):
         await self.in_queue.put(message)
 
-    async def arun(self, provision: Provision, agent):
-        self.loop = asyncio.get_running_loop()
-        self.provision = provision
-        self.agent = agent
-        self.transport = agent.transport
+    async def arun(self):
         self.in_queue = asyncio.Queue()
+        self.template = await aget_template(
+            id=self.provision.template, arkitekt=self.arkitekt
+        )
+        self.provision_task = asyncio.create_task(self.alisten())
 
+    async def astop(self):
+        self.provision_task.cancel()
+
+        try:
+            await self.provision_task
+        except asyncio.CancelledError:
+            print("Provision was cancelled")
+
+    async def alisten(self):
+        set_current_arkitekt(self.arkitekt)
         try:
             self.template = await aget_template(id=self.provision.template)
 
@@ -63,7 +90,7 @@ class Actor:
                 self.provision.provision, status=ProvisionStatus.PROVIDING
             )
 
-            await self.on_provide(self.provision)
+            await self.on_provide()
 
             await self.transport.change_provision(
                 self.provision.provision,
@@ -74,13 +101,12 @@ class Actor:
             while True:
                 print("Waiting for assignmements")
                 message = await self.in_queue.get()
-                logger.info(f"Received Message {message}")
 
                 if isinstance(message, Assignation):
                     task = asyncio.create_task(self.on_assign(message))
                     self.runningAssignments[message.assignation] = task
 
-                if isinstance(message, Unassignation):
+                elif isinstance(message, Unassignation):
                     if message.assignation in self.runningAssignments:
                         task = self.runningAssignments[message.assignation]
                         if not task.done():
@@ -92,9 +118,8 @@ class Actor:
                         await self.layer.change_assignation(
                             message="Task was never assigned"
                         )
-
-                print(message)
-                raise NotImplementedError("Needs to be owerwritten in Actor Subclass")
+                else:
+                    raise UnknownMessageError(f"{message}")
 
         except Exception as e:
             print(e)
@@ -120,4 +145,20 @@ class Actor:
                 status=ProvisionStatus.CANCELLED,
                 message=str(e),
             )
+
+            cancel_assignations = [i.cancel() for i in self.runningAssignments.values()]
+
+            for i in self.runningAssignments.values():
+                try:
+                    await i
+                except asyncio.CancelledError:
+                    pass
+
             raise e
+
+    async def __aenter__(self):
+        await self.arun()
+        return self
+
+    async def __aexit__(self, *args, **kwargs):
+        await self.astop()

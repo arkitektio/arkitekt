@@ -18,7 +18,7 @@ from arkitekt.structures.serialization.actor import (
 )
 from rath.links import compose, ShrinkingLink, DictingLink, SwitchAsyncLink
 from rath.links.testing.mock import AsyncMockLink
-from tests.mocks import ArkitektQueryResolver, ArkitektMutationResolver, MockTransport
+from tests.mocks import ArkitektMockResolver
 from arkitekt import Arkitekt
 
 
@@ -30,8 +30,7 @@ def context_safe_client():
         ShrinkingLink(),
         DictingLink(),  # after the shrinking so we can override the dicting
         AsyncMockLink(
-            query_resolver=ArkitektQueryResolver(),
-            mutation_resolver=ArkitektMutationResolver(),
+            query_resolver=ArkitektMockResolver(),
         ),
     )
 

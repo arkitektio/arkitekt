@@ -25,10 +25,10 @@ class AgentTransport:
 
     """
 
-    async def aconnect():
+    async def aconnect(self):
         pass
 
-    async def adisconnect():
+    async def adisconnect(self):
         pass
 
     @abstractmethod
@@ -59,7 +59,7 @@ class AgentTransport:
         id: str,
         status: AssignationStatus = None,
         message: str = None,
-        result: List[Any] = None,
+        returns: List[Any] = None,
     ):
         raise NotImplementedError("This is an abstract Base Class")
 
@@ -68,3 +68,10 @@ class AgentTransport:
         self, exclude: Optional[AssignationStatus] = None
     ) -> List[Assignation]:
         raise NotImplementedError("This is an abstract Base Class")
+
+    async def __aenter__(self):
+        await self.aconnect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.adisconnect()
