@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple
-from tests.structures import SecondSerializableObject, SerializableObject
+from tests.structures import SecondObject, SecondSerializableObject, SerializableObject
 
 
 def karl(rep: str, name: str = None) -> str:
@@ -68,3 +68,21 @@ def structured_gen(
         Dict[str, SecondSerializableObject]: [description]
     """
     yield "tested"
+
+
+def function_with_side_register(
+    rep: List[SecondObject], name: Dict[str, SecondObject] = None
+) -> Tuple[str, Dict[str, SecondObject]]:
+    """Structured Karl
+
+    Naoinaoainao
+
+    Args:
+        rep (List[SecondObject]): [description]
+        name (Dict[str, SerializableObject], optional): [description]. Defaults to None.
+
+    Returns:
+        str: [description]
+        Dict[str, SecondSerializableObject]: [description]
+    """
+    yield "tested", {"peter": SecondObject(6)}

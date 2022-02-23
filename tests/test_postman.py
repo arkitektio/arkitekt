@@ -1,7 +1,7 @@
 import pytest
 from rath.links import compose, ShrinkingLink, DictingLink
 from rath.links.testing.mock import AsyncMockLink
-from tests.mocks import ArkitektQueryResolver, ArkitektMutationResolver
+from tests.mocks import ArkitektMockResolver
 from arkitekt import Arkitekt
 
 from arkitekt.definition.registry import DefinitionRegistry, register
@@ -20,8 +20,7 @@ def arkitekt_client():
         ShrinkingLink(),
         DictingLink(),  # after the shrinking so we can override the dicting
         AsyncMockLink(
-            query_resolver=ArkitektQueryResolver(),
-            mutation_resolver=ArkitektMutationResolver(),
+            query_resolver=ArkitektMockResolver(),
         ),
     )
 
@@ -30,15 +29,18 @@ def arkitekt_client():
 
 async def test_postman(mock_postman: StatefulPostman, arkitekt_client):
 
-    await mock_postman.aconnect()
+    async with mock_postman:
 
-    node = await afind(package="mock", interface="run_maboy", arkitekt=arkitekt_client)
+        node = await afind(
+            package="mock", interface="run_maboy", arkitekt=arkitekt_client
+        )
 
-    async def test_function():
-        async with use(node, postman=mock_postman) as res:
-            return await res.assign(a=1, b=2)
+        async def test_function():
+            async with use(node, postman=mock_postman) as res:
+                return await res.assign(a=1, b=2)
 
-    returns = await asyncio.wait_for(test_function(), timeout=2)
+        returns = await asyncio.wait_for(test_function(), timeout=2)
+
     assert returns == [], "x should be empty"
 
 

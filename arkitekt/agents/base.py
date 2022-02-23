@@ -1,4 +1,4 @@
-from typing import Any, Callable, Dict, List, Literal, Optional, Tuple
+from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
 from arkitekt.api.schema import TemplateFragment, acreate_template, adefine, afind
 from arkitekt.definition.registry import (
     DefinitionRegistry,
@@ -7,6 +7,7 @@ from arkitekt.definition.registry import (
 from arkitekt.arkitekt import Arkitekt, get_current_arkitekt
 import asyncio
 from arkitekt.agents.transport.base import AgentTransport
+from arkitekt.messages import Assignation, Unassignation, Unprovision, Provision
 
 
 class BaseAgent:
@@ -40,15 +41,16 @@ class BaseAgent:
         self.templateActorBuilderMap = {}
         self.templateTemplatesMap = {}
         self.provisionActorMap = {}
+        self.provisionTaskMap = {}
 
-    async def broadcast(self):
+    async def broadcast(
+        self, message: Union[Assignation, Provision, Unassignation, Unprovision]
+    ):
         pass
 
     async def aconnect(self):
-        pass
-
-    async def astart(self):
-        pass
+        await self.aregister_definitions()
+        await self.transport.aconnect()
 
     async def aregister_definitions(self):
         if self.definition_registry.templatedNodes:
@@ -102,12 +104,12 @@ class BaseAgent:
                 self.templateActorBuilderMap[arkitekt_template.id] = defined_actor
                 self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
-    async def aprovide(self):
+    async def adisconnect(self):
+        await self.transport.adisconnect()
+
+    async def __aenter__(self):
         await self.aconnect()
+        return self
 
-        await self.aregister_definitions()
-        await self.astart()
-
-        while True:
-            await asyncio.sleep(1)
-            print(self.provisionActorMap)
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.adisconnect()

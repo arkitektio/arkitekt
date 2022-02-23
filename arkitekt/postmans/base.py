@@ -22,9 +22,20 @@ class Postman:
         self.transport.abroadcast = self.abroadcast
 
     async def aconnect(self):
-        pass
+        await self.transport.aconnect()
 
     async def abroadcast(self):
         raise NotImplementedError(
             "This needs to be overwritten by your Postman subclass"
         )
+
+    async def adisconnect(self):
+        await self.transport.adisconnect()
+
+    async def __aenter__(self):
+        await self.aconnect()
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await self.adisconnect()
+        return self

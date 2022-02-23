@@ -30,7 +30,7 @@ def isactor(type):
         return False
 
 
-async def async_none(message):
+async def async_none():
     return None
 
 
@@ -69,12 +69,20 @@ def actify(
     }
 
     if is_coroutine:
-        return lambda: FunctionalFuncActor(**actor_attributes)
+        return lambda provision, agent: FunctionalFuncActor(
+            provision, agent, **actor_attributes
+        )
     elif is_asyncgen:
-        return lambda: FunctionalGenActor(**actor_attributes)
+        return lambda provision, agent: FunctionalGenActor(
+            provision, agent, **actor_attributes
+        )
     elif is_generatorfunction:
-        return lambda: FunctionalThreadedGenActor(**actor_attributes)
+        return lambda provision, agent: FunctionalThreadedGenActor(
+            provision, agent, **actor_attributes
+        )
     elif is_function or is_method:
-        return lambda: FunctionalThreadedFuncActor(**actor_attributes)
+        return lambda provision, agent: FunctionalThreadedFuncActor(
+            provision, agent, **actor_attributes
+        )
     else:
         raise NotImplementedError("No way of converting this to a function")

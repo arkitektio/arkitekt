@@ -38,6 +38,7 @@ class Assignation(UpdatableModel):
 
 class Unassignation(UpdatableModel):
     assignation: str
+    provision: Optional[str]
 
 
 class Provision(UpdatableModel):

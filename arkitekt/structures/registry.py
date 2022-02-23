@@ -14,13 +14,16 @@ class StructureDefinitionError(StructureRegistryError):
 
 
 class StructureRegistry:
-    def __init__(self, register=True, allow_overwrites=True) -> None:
+    def __init__(
+        self, register=True, allow_overwrites=True, allow_auto_register=True
+    ) -> None:
 
         self.identifier_expander_map: Dict[str, Callable[[str], Awaitable[Any]]] = {}
         self.identifier_shrinker_map: Dict[str, Callable[[Any], Awaitable[str]]] = {}
         self.structure_identifier_map: Dict[Type, str] = {}
         self.identifier_structure_map: Dict[str, Type] = {}
         self.allow_overwrites = allow_overwrites
+        self.allow_auto_register = allow_auto_register
 
         self.structure_default_widget_map = {}
 
@@ -49,9 +52,17 @@ class StructureRegistry:
         try:
             return self.structure_identifier_map[cls]
         except KeyError as e:
-            raise StructureRegistryError(
-                f"{cls} is not registered. Please make sure to register this type beforehand"
-            ) from e
+            if self.allow_auto_register:
+                try:
+                    self.register_as_structure(cls)
+                except StructureDefinitionError as e:
+                    raise StructureDefinitionError(
+                        f"{cls} was not registered and could not be registered automatically"
+                    ) from e
+            else:
+                raise StructureRegistryError(
+                    f"{cls} is not registered and allow_auto_register is set to False. Please make sure to register this type beforehand or set allow_auto_register to True"
+                ) from e
 
     def register_as_structure(
         self, cls, identifier=None, expand=None, shrink=None, default_widget=None
@@ -59,7 +70,7 @@ class StructureRegistry:
         if expand is None:
             if not hasattr(cls, "expand"):
                 raise StructureDefinitionError(
-                    "You need to pass 'expand' method or {cls} needs to implement a expand method"
+                    f"You need to pass 'expand' method or {cls} needs to implement a expand method"
                 )
             expand = cls.expand
 

@@ -1,7 +1,8 @@
 from arkitekt.agents.transport.base import AgentTransport
+from arkitekt.agents.transport.protocols.agent_json import *
 from arkitekt.messages import Assignation, Provision, Provision, Unprovision
 from arkitekt.api.schema import AssignationStatus, ProvisionStatus
-from typing import Any, List, Optional
+from typing import Any, List, Optional, Union
 import asyncio
 
 
@@ -12,51 +13,61 @@ class MockAgentTransport(AgentTransport):
         AgentTransport (_type_): _description_
     """
 
+    def __init__(self, *args, **kwargs):
+        pass
+
     async def list_assignations(
         self, exclude: Optional[AssignationStatus] = None
     ) -> List[Assignation]:
-        return [
-            Assignation(
-                assignation="1", provision="1", reservation="1", args=[], kwargs={}
-            ),
-            Assignation(
-                assignation="2", provision="2", reservation="1", args=[], kwargs={}
-            ),
-        ]
+        return []
 
     async def list_provisions(
         self, exclude: Optional[ProvisionStatus] = None
     ) -> List[Provision]:
-        return [
-            Provision(provision="1", template="1"),
-            Provision(provision="2", template="1"),
-        ]
+        return []
 
     async def aconnect(self):
-        self.task = asyncio.create_task(self.send_fake_assignation())
+        self._inqueue = asyncio.Queue()
+        pass
 
     async def change_assignation(
         self,
         id: str,
         status: AssignationStatus = None,
         message: str = None,
-        result: List[Any] = None,
+        returns: List[Any] = None,
     ):
-        pass
-
-    async def send_fake_assignation(self):
-        await asyncio.sleep(1)
-        await self.broadcast(
-            Assignation(
-                assignation="1", provision="1", reservation="1", args=[], kwargs={}
+        await self._inqueue.put(
+            AssignationChangedMessage(
+                assignation=id, status=status, message=message, returns=returns
             )
         )
-        await asyncio.sleep(1)
 
-    async def disconnect(self):
-        self.task.cancel()
+    async def change_provision(
+        self,
+        id: str,
+        status: ProvisionStatus = None,
+        message: str = None,
+        mode: ProvisionMode = None,
+    ):
+        print(f"change_provision {id} {status} {message} {mode}")
+        await self._inqueue.put(
+            ProvisionChangedMessage(
+                provision=id, status=status, message=message, mode=mode
+            )
+        )
 
-        try:
-            await self.task
-        except asyncio.CancelledError as e:
-            pass
+    async def delay(
+        self, message: Union[Assignation, Provision, Unprovision, Unassignation]
+    ):
+        await self.broadcast(message)
+
+    async def receive(self, timeout=None):
+        if timeout:
+            return await asyncio.wait_for(self._inqueue.get(), timeout)
+        return await self._inqueue.get()
+
+    async def adisocnnect(self):
+        for item in range(self._inqueue.qsize()):
+            print(f"Flushing Item {item}")
+            self._inqueue.task_done()

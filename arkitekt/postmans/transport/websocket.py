@@ -205,3 +205,11 @@ class WebsocketPostmanTransport(PostmanTransport):
         await self.send_queue.put(action.json())
         ass_list_reply: AssingListReply = await self.futures[str(action.id)]
         return ass_list_reply.assignations
+
+    async def adisconnect(self):
+        self.connection_task.cancel()
+
+        try:
+            await self.connection_task
+        except asyncio.CancelledError:
+            pass
