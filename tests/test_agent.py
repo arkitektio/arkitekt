@@ -27,7 +27,7 @@ def arkitekt_client():
         ShrinkingLink(),
         DictingLink(),  # after the shrinking so we can override the dicting
         AsyncMockLink(
-            query_resolver=ArkitektMockResolver(),
+            resolver=ArkitektMockResolver(),
         ),
     )
 
