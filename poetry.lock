@@ -230,33 +230,28 @@ python-versions = "*"
 
 [[package]]
 name = "docspec"
-version = "1.2.0"
+version = "1.3.0"
 description = "Docspec is a JSON object specification for representing API documentation of programming languages."
 category = "dev"
 optional = false
-python-versions = ">=3.7.0,<4.0.0"
+python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
 "databind.core" = ">=1.0.0,<2.0.0"
 "databind.json" = ">=1.0.0,<2.0.0"
 Deprecated = ">=1.2.12,<2.0.0"
 
-[package.extras]
-test = ["types-deprecated", "types-termcolor", "databind.core (>=1.2.1,<2.0.0)"]
-
 [[package]]
 name = "docspec-python"
-version = "1.2.0"
+version = "1.3.0"
 description = "A parser based on lib2to3 producing docspec data from Python source code."
 category = "dev"
 optional = false
-python-versions = ">=3.7.0,<4.0.0"
+python-versions = ">=3.7,<4.0"
 
 [package.dependencies]
-docspec = ">=1.2.0,<2.0.0"
-
-[package.extras]
-test = ["types-deprecated"]
+docspec = ">=1.3.0,<2.0.0"
+"nr.util" = ">=0.6.6,<0.7.0"
 
 [[package]]
 name = "docstring-parser"
@@ -476,6 +471,17 @@ python-versions = ">=3.5.0,<4.0.0"
 test = ["pytest"]
 
 [[package]]
+name = "nr.util"
+version = "0.6.7"
+description = "General purpose Python utility library."
+category = "dev"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[package.dependencies]
+deprecated = ">=1.2.0,<2.0.0"
+
+[[package]]
 name = "nr.utils.re"
 version = "0.3.1"
 description = "This module provides some utility functions for applying regular expressions."
@@ -673,7 +679,7 @@ python-versions = ">=2.7,!=3.0.*,!=3.1.*,!=3.2.*,!=3.3.*,!=3.4.*,!=3.5.*"
 
 [[package]]
 name = "rath"
-version = "0.1.7"
+version = "0.1.8"
 description = "aiohttp powered apollo like graphql client"
 category = "main"
 optional = false
@@ -870,7 +876,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "7e11577464d62a2f0f9b0ad5321255c1ce765a7d2bccc2bbcfada0f3652f5a48"
+content-hash = "45a0015e324e228288068adfa1f050a082f5a92065412cc141c5137a435d78bb"
 
 [metadata.files]
 aiohttp = [
@@ -1055,12 +1061,12 @@ distlib = [
     {file = "distlib-0.3.4.zip", hash = "sha256:e4b58818180336dc9c529bfb9a0b58728ffc09ad92027a3f30b7cd91e3458579"},
 ]
 docspec = [
-    {file = "docspec-1.2.0-py3-none-any.whl", hash = "sha256:df3d2d014e0a77ac0997c9052102cf2262f12640c87af3782e2310589be4bb4c"},
-    {file = "docspec-1.2.0.tar.gz", hash = "sha256:5206c061d2c0171add8412028a79b436acc87786cfc582aeda341beda81ae582"},
+    {file = "docspec-1.3.0-py3-none-any.whl", hash = "sha256:e3648f99a8578973941ff023bb1fd540cea6e23f390988c45d259a711bfb278d"},
+    {file = "docspec-1.3.0.tar.gz", hash = "sha256:4fd3709425804c818de29a2dc98f77e270d39c7bfae10c9f75c899df220b9c38"},
 ]
 docspec-python = [
-    {file = "docspec-python-1.2.0.tar.gz", hash = "sha256:491755689aec1f7b5abaed8e7b11b013ab6bfb979c5e7d9855f41cf40cb82192"},
-    {file = "docspec_python-1.2.0-py3-none-any.whl", hash = "sha256:347aae3e2ef3f41d4e27e5e0e4996935286087cf9b7a948d512a6c03b277e530"},
+    {file = "docspec-python-1.3.0.tar.gz", hash = "sha256:4712554d5b0260f13a7e48985fe24051a196e81090f756434e62ab7bdd84462b"},
+    {file = "docspec_python-1.3.0-py3-none-any.whl", hash = "sha256:3f2f078a51763ca1aa6f4ae5f0ae1a79388dc3987b07c5a14038de4c24f69685"},
 ]
 docstring-parser = [
     {file = "docstring_parser-0.13.tar.gz", hash = "sha256:66dd7eac7232202bf220fd98a5f11491863c01f958a75fdd535c7eccac9ced78"},
@@ -1273,6 +1279,10 @@ mypy-extensions = [
     {file = "nr.stream-0.2.3-py3-none-any.whl", hash = "sha256:c55118d56bdd88a4cb2a4809f5cf853963de93ec0d1ce9f28d61792f85617000"},
     {file = "nr.stream-0.2.3.tar.gz", hash = "sha256:76c93c8cc100b22d24fc4d751d35e8850f8094403f28c0862cb55a3644db6592"},
 ]
+"nr.util" = [
+    {file = "nr.util-0.6.7-py3-none-any.whl", hash = "sha256:6f5d78a1ef564c129d30b4b1b926917d8dcbcee0d29733d37b79c0f8cdf299b4"},
+    {file = "nr.util-0.6.7.tar.gz", hash = "sha256:c0703987ef6dbb7289518679e612f994296f96dbeb84ac586fdaeb59d0f82eab"},
+]
 "nr.utils.re" = [
     {file = "nr.utils.re-0.3.1-py3-none-any.whl", hash = "sha256:3a1c5b64fe99cc350724926f049ce9588e2eee72492f35b5847ad3c9810ace95"},
     {file = "nr.utils.re-0.3.1.tar.gz", hash = "sha256:7e4539313620f87ef5361f0b69f85d825247b833a10be8445db75ade54611091"},
@@ -1398,8 +1408,8 @@ qtpy = [
     {file = "QtPy-1.11.3.tar.gz", hash = "sha256:d427addd37386a8d786db81864a5536700861d95bf085cb31d1bea855d699557"},
 ]
 rath = [
-    {file = "rath-0.1.7-py3-none-any.whl", hash = "sha256:ecbdf2d6c94eab7a903824f1bea1cbcf9eced2decb642f4ac9f3660817937999"},
-    {file = "rath-0.1.7.tar.gz", hash = "sha256:00a58c417ff7cd045143a9eafdcc9aaf4dac3a466ea41e9e647e9f6c9efb4498"},
+    {file = "rath-0.1.8-py3-none-any.whl", hash = "sha256:59197e727895acc9bffe0a19977ff4d33e464714caa2b62fbb55d155260b277c"},
+    {file = "rath-0.1.8.tar.gz", hash = "sha256:c8135470714413e3f6f5bb95aa6991a1a302809d269a0145d9c93a4c763eea3a"},
 ]
 requests = [
     {file = "requests-2.27.1-py2.py3-none-any.whl", hash = "sha256:f22fa1e554c9ddfd16e6e41ac79759e17be9e492b3587efa038054674760e72d"},
