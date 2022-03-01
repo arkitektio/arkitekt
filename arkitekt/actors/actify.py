@@ -30,7 +30,11 @@ def isactor(type):
         return False
 
 
-async def async_none():
+async def async_none_provide(prov, template):
+    return None
+
+
+async def async_none_unprovide():
     return None
 
 
@@ -63,8 +67,8 @@ def actify(
         "assign": function_or_actor,
         "expand_inputs": not bypass_expand,
         "shrink_outputs": not bypass_shrink,
-        "on_provide": on_provide if on_provide else async_none,
-        "on_unprovide": on_unprovide if on_unprovide else async_none,
+        "on_provide": on_provide if on_provide else async_none_provide,
+        "on_unprovide": on_unprovide if on_unprovide else async_none_unprovide,
         "structure_registry": structure_registry,
     }
 

@@ -568,9 +568,9 @@ class ReserveParamsInput(BaseModel):
     "Agents that are allowed"
     templates: Optional[List[Optional[str]]]
     "Templates that can be selected"
-    desiredInstances: Optional[int]
+    desiredInstances: int = 1
     "The desired amount of Instances"
-    minimalInstances: Optional[int]
+    minimalInstances: int = 1
     "The minimal amount of Instances"
 
 

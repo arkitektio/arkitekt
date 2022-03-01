@@ -1,26 +1,31 @@
+import contextvars
+from arkitekt.postmans.vars import get_current_postman
 from .stateful import StatefulPostman
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
 import asyncio
 from typing import Union
 from arkitekt.traits.node import Reserve
+from koil import Koil, unkoil
 
 
 class ReservationContract:
     def __init__(
         self,
-        postman: StatefulPostman,
         node: Union[str, Reserve],
-        params: ReserveParamsInput,
+        postman: StatefulPostman = None,
+        params: ReserveParamsInput = None,
     ):
         self.postman = postman
+        print(self.postman)
         if isinstance(node, Reserve):
             self.node_id = node.id
         else:
             assert isinstance(node, str), "Node must be a string or a Node"
             self.node_id = node
-        self.params = params
+        self.params = params or ReserveParamsInput()
         self.reservation = None
-        self.postman = postman
+        self.postman = None
+        self._koil = Koil()
 
     async def assign(self, *args, **kwargs):
         assert self.reservation, "We never entered the context manager"
@@ -54,7 +59,9 @@ class ReservationContract:
             pass
 
     async def __aenter__(self):
+        self.postman = self.postman or get_current_postman()
         self.reservation = await self.postman.areserve(self.node_id, self.params)
+        print(f"Waiting for Reservation {self.reservation}")
         self._updates_queue = asyncio.Queue()
         self._enter_future = asyncio.Future()
         self.postman.register_reservation_queue(
@@ -76,8 +83,16 @@ class ReservationContract:
         await self.postman.aunreserve(self.reservation.reservation)
         self.postman.unregister_reservation_queue(self.reservation.reservation)
 
+    def __enter__(self):
+        self._koil.__enter__()
+        return unkoil(self.__aenter__)
+
+    def __exit__(self, *args, **kwargs):
+        unkoil(self.__aexit__, *args, **kwargs)
+        self._koil.__exit__(*args, **kwargs)
+
 
 def use(
     node: str, params: dict = None, postman: StatefulPostman = None
 ) -> ReservationContract:
-    return ReservationContract(postman, node, params)
+    return ReservationContract(node, postman=postman, params=params)

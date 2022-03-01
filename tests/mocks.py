@@ -1,10 +1,33 @@
 from ctypes import Union
+from curses import def_prog_mode
 from typing import Any, List, Optional
+from arkitekt.agents.stateful import StatefulAgent
+from arkitekt.agents.transport.mock import MockAgentTransport
 from arkitekt.api.schema import (
     NodeType,
 )
-from rath.links.testing.mock import AsyncMockResolver
+from rath.links.testing.mock import AsyncMockResolver, AsyncMockLink
+from rath.links.testing.statefulmock import AsyncMockResolver, AsyncStatefulMockLink
+from rath.links import ShrinkingLink, DictingLink, SwitchAsyncLink, compose, split
 from rath.operation import Operation
+from arkitekt.arkitekt import Arkitekt
+from arkitekt.definition.registry import (
+    DefinitionRegistry,
+    get_current_definition_registry,
+)
+
+from arkitekt.structures.registry import (
+    StructureRegistry,
+    get_current_structure_registry,
+)
+from arkitekt.postmans.transport.mock import MockPostmanTransport
+from arkitekt.postmans.stateful import StatefulPostman
+from arkitekt.apps.base import BaseApp
+import contextvars
+from rath import Rath
+from koil import Koil
+
+mikro_context = contextvars.ContextVar("mikro_context", default=None)
 
 
 def replace_keys(data_dict, key_dict):
@@ -84,3 +107,105 @@ class ArkitektMockResolver(AsyncMockResolver):
 
         self.template_map[new_template["id"]] = new_template
         return new_template
+
+
+class MockApp(BaseApp):
+    def __init__(
+        self,
+        structure_registry: StructureRegistry = None,
+        definition_registry: DefinitionRegistry = None,
+        **kwargs
+    ) -> None:
+
+        structure_registry = structure_registry or get_current_structure_registry()
+        definition_registry = definition_registry or get_current_definition_registry()
+
+        arkitekt = Arkitekt(
+            compose(
+                ShrinkingLink(),
+                DictingLink(),
+                SwitchAsyncLink(),  # after the shrinking so we can override the dicting
+                AsyncMockLink(
+                    resolver=ArkitektMockResolver(),
+                ),
+            )
+        )
+
+        agent_transport = MockAgentTransport()
+
+        agent = StatefulAgent(
+            transport=agent_transport,
+            definition_registry=definition_registry,
+            arkitekt=arkitekt,
+        )
+
+        postman_transport = MockPostmanTransport()
+
+        postman = StatefulPostman(postman_transport)
+
+        super().__init__(
+            arkitekt=arkitekt,
+            definition_registry=definition_registry,
+            structure_registry=structure_registry,
+            agent=agent,
+            postman=postman,
+            **kwargs,
+        )
+
+
+class MikroRath(Rath):
+    def __init__(self) -> None:
+        super().__init__(
+            compose(
+                ShrinkingLink(),
+                DictingLink(),
+                SwitchAsyncLink(),  # after the shrinking so we can override the dicting
+                AsyncMockLink(
+                    query_resolver=ArkitektMockResolver(),
+                ),
+            )
+        )
+
+    async def __aenter__(self) -> None:
+        await super().__aenter__()
+        mikro_context.set(self)
+        print("Was set my friend")
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await super().__aexit__(exc_type, exc_val, exc_tb)
+        mikro_context.set(None)
+
+
+class StatefulMikroRath(Rath):
+    def __init__(self) -> None:
+        super().__init__(
+            compose(
+                ShrinkingLink(),
+                DictingLink(),
+                SwitchAsyncLink(),  # after the shrinking so we can override the dicting
+                AsyncStatefulMockLink(
+                    query_resolver=ArkitektMockResolver(),
+                ),
+            )
+        )
+
+    async def __aenter__(self) -> None:
+        await super().__aenter__()
+        mikro_context.set(self)
+        print("Was set my friend")
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await super().__aexit__(exc_type, exc_val, exc_tb)
+        mikro_context.set(None)
+
+
+def query_current_mikro(query, variables):
+    mikro: MikroRath = mikro_context.get()
+    return mikro.execute(query, variables)
+
+
+async def aquery_current_mikro(query, variables):
+    mikro: MikroRath = mikro_context.get()
+    return await mikro.aexecute(query, variables)

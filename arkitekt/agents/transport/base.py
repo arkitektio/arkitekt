@@ -2,8 +2,10 @@ from abc import abstractmethod
 from typing import Any, List, Optional, Union
 from arkitekt.messages import Assignation, Unassignation, Provision, Unprovision
 from arkitekt.api.schema import ProvisionMode, ProvisionStatus, AssignationStatus
+from koil.decorators import koilable
 
 
+@koilable()
 class AgentTransport:
     """Agent Transport
 

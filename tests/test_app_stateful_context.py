@@ -1,9 +1,49 @@
+import threading
+import pytest
+from rath.links import compose, ShrinkingLink, DictingLink
+from rath.links.testing.mock import AsyncMockLink
+from arkitekt.agents.transport.protocols.agent_json import (
+    AssignationChangedMessage,
+    ProvisionChangedMessage,
+)
+from arkitekt.api.schema import AssignationStatus, ProvisionStatus, afind
+from arkitekt.messages import T, Assignation, Provision
+from tests.mocks import (
+    ArkitektMockResolver,
+    MikroRath,
+    MockApp,
+    StatefulMikroRath,
+    aquery_current_mikro,
+    query_current_mikro,
+)
+from arkitekt import Arkitekt
+
+from arkitekt.definition.registry import DefinitionRegistry, register
+from arkitekt.structures.registry import StructureRegistry, register_structure
+from arkitekt.agents.stateful import StatefulAgent
+from arkitekt.agents.transport.mock import MockAgentTransport
+import asyncio
+from arkitekt.actors.functional import FunctionalFuncActor
+from arkitekt.actors.actify import actify
+from tests.structures import (
+    IdentifiableSerializableObject,
+    SecondSerializableObject,
+    SerializableObject,
+)
+from rath.rath import Rath
+from koil import Koil
+from arkitekt.postmans.transport.mock import MockPostmanTransport
+
+
 @pytest.fixture
-def mock_app_provision_another_stateful_context(stateful_mikro_rath):
+def mock_app():
 
-    app = MockApp(additional_contexts=[stateful_mikro_rath])
+    structure_registry = StructureRegistry()
+    definition_registry = DefinitionRegistry()
 
-    @app.register()
+    app = MockApp(structure_registry, definition_registry)
+
+    @app.register(structure_registry=structure_registry)
     async def hallo_world(i: IdentifiableSerializableObject) -> str:
         """Hallo World
 
@@ -15,9 +55,41 @@ def mock_app_provision_another_stateful_context(stateful_mikro_rath):
         Returns:
             str: A nother little poney in string
         """
-        print("oINOINOINOINOIN")
+        return str(i.number)
+
+    return app
+
+
+@pytest.fixture()
+def mikro_rath():
+    return MikroRath()
+
+
+@pytest.fixture()
+def stateful_mikro_rath():
+    return StatefulMikroRath()
+
+
+@pytest.fixture
+def mock_app_provision_another_stateful_context(stateful_mikro_rath):
+
+    app = MockApp(additional_contexts=[stateful_mikro_rath])
+
+    @app.register()
+    def hallo_world(i: IdentifiableSerializableObject) -> str:
+        """Hallo World
+
+        Hallo world is a mini function
+
+        Args:
+            i (int): My little poney
+
+        Returns:
+            str: A nother little poney in string
+        """
+        print(threading.current_thread())
         print(
-            await aquery_current_mikro(
+            query_current_mikro(
                 """query ($package: String!, $interface: String!) {
                     node(package: $package, interface: $interface) {
                     id

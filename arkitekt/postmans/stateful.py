@@ -2,13 +2,13 @@ from typing import Any, Dict, List, Union
 
 from pytest import param
 from arkitekt.messages import Assignation, Reservation
-from arkitekt.postmans.base import Postman
+from arkitekt.postmans.base import BasePostman
 from arkitekt.postmans.transport.base import PostmanTransport
 from arkitekt.api.schema import ReservationStatus, ReserveParamsInput
 import asyncio
 
 
-class StatefulPostman(Postman):
+class StatefulPostman(BasePostman):
     def __init__(self, transport: PostmanTransport) -> None:
         super().__init__(transport)
         self.assignations: Dict[str, Assignation] = {}
@@ -58,14 +58,14 @@ class StatefulPostman(Postman):
 
     async def abroadcast(self, message: Union[Assignation, Reservation]):
         if isinstance(message, Assignation):
-
+            print(message)
             self.assignations[message.assignation].update(message)
             if message.assignation in self.ass_update_queues:
                 await self.ass_update_queues[message.assignation].put(
                     self.assignations[message.assignation]
                 )
         elif isinstance(message, Reservation):
-
+            print(message)
             self.reservations[message.reservation].update(message)
             if message.reservation in self.res_update_queues:
                 await self.res_update_queues[message.reservation].put(

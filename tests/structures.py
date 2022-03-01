@@ -21,6 +21,21 @@ class SecondSerializableObject:
         return cls()
 
 
+class IdentifiableSerializableObject(BaseModel):
+    number: int
+
+    @classmethod
+    def get_identifier(cls):
+        return "mock.identifiable"
+
+    async def shrink(self):
+        return self.number
+
+    @classmethod
+    async def expand(cls, shrinked_value):
+        return cls(number=shrinked_value)
+
+
 class SecondObject:
     pass
 

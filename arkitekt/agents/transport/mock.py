@@ -1,9 +1,10 @@
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.agents.transport.protocols.agent_json import *
 from arkitekt.messages import Assignation, Provision, Provision, Unprovision
-from arkitekt.api.schema import AssignationStatus, ProvisionStatus
+from arkitekt.api.schema import AssignationStatus, KwargPortFragment, ProvisionStatus
 from typing import Any, List, Optional, Union
 import asyncio
+from koil import unkoil
 
 
 class MockAgentTransport(AgentTransport):
@@ -61,6 +62,14 @@ class MockAgentTransport(AgentTransport):
         self, message: Union[Assignation, Provision, Unprovision, Unassignation]
     ):
         await self.broadcast(message)
+
+    def sync_delay(
+        self, message: Union[Assignation, Provision, Unprovision, Unassignation]
+    ):
+        return unkoil(self.delay, message)
+
+    def sync_receive(self, *args, **kwargs):
+        return unkoil(self.receive, *args, **kwargs)
 
     async def receive(self, timeout=None):
         if timeout:

@@ -55,6 +55,7 @@ class StructureRegistry:
             if self.allow_auto_register:
                 try:
                     self.register_as_structure(cls)
+                    return self.structure_identifier_map[cls]
                 except StructureDefinitionError as e:
                     raise StructureDefinitionError(
                         f"{cls} was not registered and could not be registered automatically"
@@ -98,7 +99,6 @@ class StructureRegistry:
 
         self.identifier_expander_map[identifier] = expand
         self.identifier_shrinker_map[identifier] = shrink
-
         self.identifier_structure_map[identifier] = cls
         self.structure_identifier_map[cls] = identifier
         self.structure_default_widget_map[cls] = default_widget

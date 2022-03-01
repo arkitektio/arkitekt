@@ -1,4 +1,5 @@
 from arkitekt.agents.base import BaseAgent
+from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
 from typing import Optional, Union
 import asyncio
@@ -31,18 +32,33 @@ class StatefulAgent(BaseAgent):
     ):
 
         if isinstance(message, Assignation) or isinstance(message, Unassignation):
-            actor = self.provisionActorMap[message.provision]
-            await actor.apass(message)
+            if message.provision in self.provisionActorMap:
+                actor = self.provisionActorMap[message.provision]
+                await actor.apass(message)
+            else:
+                await self.transport.change_assignation(
+                    message.assignation,
+                    status=AssignationStatus.CRITICAL,
+                    message="Actor that handles this provision is not available",
+                )
 
-        if isinstance(message, Provision):
-            actorBuilder = self.templateActorBuilderMap[message.template]
-            self.provisionActorMap[message.provision] = actorBuilder(message, self)
-            await self.provisionActorMap[message.provision].arun()
+        elif isinstance(message, Provision):
+            if message.template in self.templateActorBuilderMap:
+                actorBuilder = self.templateActorBuilderMap[message.template]
+                self.provisionActorMap[message.provision] = actorBuilder(message, self)
+                await self.provisionActorMap[message.provision].arun()
+            else:
+                await self.transport.change_provision(
+                    message.provision,
+                    status=ProvisionStatus.DENIED,
+                    message="No actor found on the provisioning Agent, this is most likely due to a change in this agent's configuration",
+                )
 
-        if isinstance(message, Unprovision):
+        elif isinstance(message, Unprovision):
             await self.provisionActorMap[message.provision].astop()
 
-        return await super().broadcast(message)
+        else:
+            raise Exception(f"Unknown message type {type(message)}")
 
     async def adisconnect(self):
         await super().adisconnect()

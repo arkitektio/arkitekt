@@ -180,8 +180,8 @@ class WebsocketPostmanTransport(PostmanTransport):
         action = ReservePub(node=node, params=params)
         self.futures[str(action.id)] = asyncio.Future()
         await self.send_queue.put(action.json())
-        ass_list_reply: ReserveListReply = await self.futures[str(action.id)]
-        return ass_list_reply
+        resrep: ReservePubReply = await self.futures[str(action.id)]
+        return resrep
 
     async def aunreserve(self, reservation: str) -> Reservation:
         action = UnreservePub(reservation=reservation)

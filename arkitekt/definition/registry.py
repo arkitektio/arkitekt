@@ -74,17 +74,67 @@ class DefinitionRegistry:
         self.definedNodes = []  # dict are queryparams for the node
         self.templatedNodes = []
 
-    def register(
+    def register_actor_with_defintion(
         self, actorBuilder: Callable, definition: DefinitionInput, **params  # New Node
     ):
         self.definedNodes.append((definition, actorBuilder, params))
         pass
 
-    def template(
+    def register_actor_with_template(
         self, actorBuilder: Callable, q_string: QString, **params
     ):  # Query Path
         self.templatedNodes.append((q_string, actorBuilder, params))
         pass
+
+    def register(
+        self,
+        function,
+        widgets: Dict[str, WidgetInput] = {},
+        interfaces: List[str] = [],
+        on_provide=None,
+        on_unprovide=None,
+        structure_registry: StructureRegistry = None,
+        **actorparams,
+    ):
+
+        structure_registry = structure_registry or get_current_structure_registry()
+
+        actorBuilder = actify(
+            function,
+            on_provide=on_provide,
+            on_unprovide=on_unprovide,
+            structure_registry=structure_registry,
+            **actorparams,
+        )
+
+        definition = prepare_definition(
+            function=function,
+            widgets=widgets,
+            interfaces=interfaces,
+            structure_registry=structure_registry,
+        )
+
+        self.register_actor_with_defintion(actorBuilder, definition, **actorparams)
+
+    def template(
+        self,
+        function,
+        qstring: QString,
+        on_provide=None,
+        on_unprovide=None,
+        structure_registry: StructureRegistry = None,
+        **actorparams,
+    ):
+        structure_registry = structure_registry or get_current_structure_registry()
+
+        actorBuilder = actify(
+            function,
+            on_provide=on_provide,
+            on_unprovide=on_unprovide,
+            structure_registry=structure_registry ** actorparams,
+        )
+
+        self.register_actor_with_template(actorBuilder, qstring, **actorparams)
 
 
 def register(
@@ -94,7 +144,7 @@ def register(
     on_unprovide=None,
     definition_registry: DefinitionRegistry = None,
     structure_registry: StructureRegistry = None,
-    **params
+    **params,
 ):
     """Take a function and register it as a node.
 
@@ -120,7 +170,7 @@ def register(
     Returns:
         Callable: A wrapped function that just returns the original function.
     """
-    registry = definition_registry or get_current_definition_registry()
+    definition_registry = definition_registry or get_current_definition_registry()
     structure_registry = structure_registry or get_current_structure_registry()
 
     def real_decorator(function):
@@ -128,41 +178,44 @@ def register(
         def wrapped_function(*args, **kwargs):
             return function(*args, **kwargs)
 
-        actorBuilder = actify(
+        definition_registry.register(
             function,
-            on_provide=on_provide,
-            on_unprovide=on_unprovide,
-            structure_registry=structure_registry,
-            **params,
-        )
-
-        definition = prepare_definition(
-            function=function,
             widgets=widgets,
             interfaces=interfaces,
             structure_registry=structure_registry,
+            on_provide=on_provide,
+            on_unprovide=on_unprovide,
+            **params,
         )
-        registry.register(actorBuilder, definition, **params)
-
-        return wrapped_function
 
     return real_decorator
 
 
-def template(q_string: QString, on_provide=None, on_unprovide=None, **params):
+def template(
+    q_string: QString,
+    on_provide=None,
+    on_unprovide=None,
+    structure_registry: StructureRegistry = None,
+    definition_registry: DefinitionRegistry = None,
+    **params,
+):
 
-    registry = get_current_definition_registry()
+    definition_registry = definition_registry or get_current_definition_registry()
+    structure_registry = structure_registry or get_current_structure_registry()
 
     def real_decorator(function):
         # Simple bypass for now
         def wrapped_function(*args, **kwargs):
             return function(*args, **kwargs)
 
-        actorBuilder = actify(
-            function, on_provide=on_provide, on_unprovide=on_unprovide, **params
+        definition_registry.template(
+            function,
+            q_string,
+            on_provide=on_provide,
+            on_unprovide=on_unprovide,
+            structure_registry=structure_registry,
+            **params,
         )
-
-        registry.register(actorBuilder, q_string, **params)
 
         # We are registering this as a template
 

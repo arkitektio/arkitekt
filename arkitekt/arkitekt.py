@@ -111,4 +111,12 @@ class Arkitekt(rath.Rath):
         rath (_type_): _description_
     """
 
-    pass
+    async def __aenter__(self):
+        await super().__aenter__()
+        current_arkitekt.set(self)
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await super().__aexit__(exc_type, exc_val, exc_tb)
+        current_arkitekt.set(None)
+        return self

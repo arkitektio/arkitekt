@@ -1,3 +1,4 @@
+from pipes import Template
 from typing import Dict, Union
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.arkitekt import Arkitekt, set_current_arkitekt
@@ -12,6 +13,7 @@ from arkitekt.api.schema import (
 )
 from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
 from arkitekt.actors.errors import UnknownMessageError
+from arkitekt.actors.vars import current_provision_context
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +54,7 @@ class Actor:
         self.transport = agent.transport
         self.arkitekt = agent.arkitekt
 
-    async def on_provide(self):
+    async def on_provide(self, provision: Provision, template: TemplateFragment):
         return None
 
     async def on_unprovide(self):
@@ -90,7 +92,8 @@ class Actor:
                 self.provision.provision, status=ProvisionStatus.PROVIDING
             )
 
-            await self.on_provide()
+            prov_context = await self.on_provide(self.provision, self.template)
+            current_provision_context.set(prov_context)
 
             await self.transport.change_provision(
                 self.provision.provision,
@@ -126,15 +129,17 @@ class Actor:
             await self.transport.change_provision(
                 self.provision.provision,
                 status=ProvisionStatus.CRITICAL,
-                message=str(e),
+                message=repr(e),
             )
 
-        except asyncio.CancelledError as e:
+            current_provision_context.set(None)
 
+        except asyncio.CancelledError as e:
+            print("We are getting cancelled here?")
             await self.transport.change_provision(
                 self.provision.provision,
                 status=ProvisionStatus.CANCELING,
-                message=str(e),
+                message=repr(e),
             )
 
             await self.on_unprovide()
@@ -154,6 +159,7 @@ class Actor:
                 except asyncio.CancelledError:
                     pass
 
+            current_provision_context.set(None)
             raise e
 
     async def __aenter__(self):
