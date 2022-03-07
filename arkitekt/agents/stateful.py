@@ -15,17 +15,20 @@ class StatefulAgent(BaseAgent):
 
     async def aconnect(self):
         await super().aconnect()
-        await self.astart()
 
-    async def astart(self):
+    async def aprovide(self):
         data = await self.transport.list_provisions()
 
         for prov in data:
             await self.broadcast(prov)
 
         data = await self.transport.list_assignations()
+
         for ass in data:
             await self.broadcast(ass)
+
+        while True:
+            await asyncio.sleep(0.1)
 
     async def broadcast(
         self, message: Union[Assignation, Provision, Unassignation, Unprovision]

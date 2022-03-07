@@ -4,7 +4,7 @@ from arkitekt.definition.registry import (
     DefinitionRegistry,
     get_current_definition_registry,
 )
-from arkitekt.arkitekt import Arkitekt, get_current_arkitekt
+from arkitekt.rath import ArkitektRath, current_arkitekt_rath
 import asyncio
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.messages import Assignation, Unassignation, Unprovision, Provision
@@ -23,20 +23,17 @@ class BaseAgent:
         self,
         transport: AgentTransport,
         definition_registry: DefinitionRegistry = None,
-        arkitekt: Arkitekt = None,
+        arkitekt: ArkitektRath = None,
     ) -> None:
         self.transport = transport
-        self.transport.broadcast = self.broadcast
-
         self.definition_registry = (
             definition_registry or get_current_definition_registry()
         )
-        self.arkitekt = arkitekt or get_current_arkitekt()
 
         self.approvedTemplates: List[
             Tuple[TemplateFragment, Callable]
         ] = []  # Template is approved
-
+        self.arkitekt = arkitekt
         # IMportant Maps
         self.templateActorBuilderMap = {}
         self.templateTemplatesMap = {}
@@ -49,7 +46,6 @@ class BaseAgent:
         pass
 
     async def aconnect(self):
-        await self.aregister_definitions()
         await self.transport.aconnect()
 
     async def aregister_definitions(self):
@@ -105,13 +101,13 @@ class BaseAgent:
                 self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
     async def adisconnect(self):
+
         await self.transport.adisconnect()
 
     async def __aenter__(self):
-        print("Self disconnecting")
+        self.transport.broadcast = self.broadcast
         await self.aconnect()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        print("Agent Disconneting")
         await self.adisconnect()

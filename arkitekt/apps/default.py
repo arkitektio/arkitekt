@@ -1,83 +1,24 @@
-from dataclasses import dataclass
-from typing import Awaitable, Callable, Dict, List
+from pydantic import BaseModel, Field
+from arkitekt.apps.base import Arkitekt
 
-from docstring_parser import compose
-from arkitekt.apps.base import BaseApp
-from arkitekt.structures.registry import (
-    StructureRegistry,
-    get_current_structure_registry,
-)
-from arkitekt.definition.registry import (
-    DefinitionRegistry,
-    get_current_definition_registry,
-)
-from arkitekt.arkitekt import Arkitekt
-from rath.links import ShrinkingLink, DictingLink, compose, split, SwitchAsyncLink
-from rath.links.shrink import ShrinkingLink
-from rath.links.aiohttp import AIOHttpLink
-from rath.links.websockets import WebSocketLink
-from graphql import OperationType
-from arkitekt.agents.stateful import StatefulAgent
-from arkitekt.postmans.stateful import StatefulPostman
-from arkitekt.agents.transport.websocket import WebsocketAgentTransport
-from arkitekt.postmans.transport.websocket import WebsocketPostmanTransport
-from rath.links.auth import AuthTokenLink
+from fakts.fakts import Fakts
+from herre.fakts.herre import FaktsHerre
+from herre.herre import Herre
 
 
-class App(BaseApp):
-    def __init__(
-        self,
-        arkitekt_base_url: str = "localhost:8090",
-        instance_id: str = "default",
-        token_loader: Callable[[], Awaitable[str]] = None,
-        structure_registry: StructureRegistry = None,
-        definition_registry: DefinitionRegistry = None,
-    ) -> None:
+class DefaultApp(BaseModel):
+    fakts: Fakts = Field(default_factory=Fakts)
+    herre: Herre = Field(default_factory=FaktsHerre)
+    arkitekt: Arkitekt = Field(default_factory=Arkitekt)
 
-        structure_registry = structure_registry or get_current_structure_registry()
-        definition_registry = definition_registry or get_current_definition_registry()
+    async def __aenter__(self):
 
-        arkitekt = Arkitekt(
-            compose(
-                ShrinkingLink(),
-                DictingLink(),
-                SwitchAsyncLink(),
-                AuthTokenLink(token_loader=token_loader),
-                split(
-                    AIOHttpLink(url=f"http://{arkitekt_base_url}/graphql"),
-                    WebSocketLink(
-                        url=f"ws://{arkitekt_base_url}/graphql",
-                        token_loader=token_loader,
-                    ),
-                    lambda o: o.node.operation != OperationType.SUBSCRIPTION,
-                ),
-            )
-        )
+        await self.fakts.__aenter__()
+        await self.herre.__aenter__()
+        await self.arkitekt.__aenter__()
 
-        agent_transport = WebsocketAgentTransport(
-            ws_url=f"ws://{arkitekt_base_url}/agi/",
-            instance_id=instance_id,
-            token_loader=token_loader,
-        )
+    async def __aexit__(self, *args, **kwargs):
 
-        agent = StatefulAgent(
-            transport=agent_transport,
-            definition_registry=definition_registry,
-            arkitekt=arkitekt,
-        )
-
-        postman_transport = WebsocketPostmanTransport(
-            ws_url=f"ws://{arkitekt_base_url}/watchi/",
-            instance_id=instance_id,
-            token_loader=token_loader,
-        )
-
-        postman = StatefulPostman(postman_transport)
-
-        super().__init__(
-            arkitekt=arkitekt,
-            definition_registry=definition_registry,
-            structure_registry=structure_registry,
-            agent=agent,
-            postman=postman,
-        )
+        await self.arkitekt.__aexit__(*args, **kwargs)
+        await self.herre.__aexit__(*args, **kwargs)
+        await self.fakts.__aexit__(*args, **kwargs)

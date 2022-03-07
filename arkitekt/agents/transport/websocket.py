@@ -7,6 +7,10 @@ from arkitekt.agents.transport.errors import (
     ProvisionListDeniedError,
 )
 from arkitekt.agents.transport.protocols.agent_json import *
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 async def token_loader():
@@ -73,7 +77,7 @@ class WebsocketAgentTransport(AgentTransport):
                     raise task.exception()
 
         except Exception as e:
-            print("Error on Websockets", e)
+            logger.error("Error on Websockets", exc_info=True)
             raise e
 
     async def sending(self, client):

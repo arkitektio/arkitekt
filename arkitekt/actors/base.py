@@ -1,8 +1,8 @@
 from pipes import Template
 from typing import Dict, Union
 from arkitekt.agents.transport.base import AgentTransport
-from arkitekt.arkitekt import Arkitekt, set_current_arkitekt
 from arkitekt.structures.registry import StructureRegistry
+from arkitekt.rath import ArkitektRath
 import asyncio
 import logging
 from arkitekt.api.schema import (
@@ -20,13 +20,13 @@ logger = logging.getLogger(__name__)
 
 class Agent:
     transport: AgentTransport
-    arkitekt: Arkitekt
+    rath: ArkitektRath
 
 
 class Actor:
     template: TemplateFragment
     transport: AgentTransport
-    arkitekt: Arkitekt
+    rath: ArkitektRath
 
     def __init__(
         self,
@@ -52,7 +52,7 @@ class Actor:
         self.provision = provision
         self.agent = agent
         self.transport = agent.transport
-        self.arkitekt = agent.arkitekt
+        self.rath = agent.rath
 
     async def on_provide(self, provision: Provision, template: TemplateFragment):
         return None
@@ -71,7 +71,7 @@ class Actor:
     async def arun(self):
         self.in_queue = asyncio.Queue()
         self.template = await aget_template(
-            id=self.provision.template, arkitekt=self.arkitekt
+            id=self.provision.template, arkitekt=self.rath
         )
         self.provision_task = asyncio.create_task(self.alisten())
 
@@ -84,7 +84,6 @@ class Actor:
             print("Provision was cancelled")
 
     async def alisten(self):
-        set_current_arkitekt(self.arkitekt)
         try:
             self.template = await aget_template(id=self.provision.template)
 

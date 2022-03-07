@@ -4,8 +4,10 @@ from arkitekt.messages import Assignation, Reservation, Unassignation, Unreserva
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
 from koil import unkoil, Koil
 from arkitekt.postmans.vars import current_postman
+from koil.decorators import koilable
 
 
+@koilable(add_connectors=True)
 class BasePostman:
     """Postman
 
@@ -21,10 +23,9 @@ class BasePostman:
 
     def __init__(self, transport: PostmanTransport) -> None:
         self.transport = transport
-        self.transport.abroadcast = self.abroadcast
-        self._koil = None
 
     async def aconnect(self):
+        self.transport.abroadcast = self.abroadcast
         await self.transport.aconnect()
 
     async def abroadcast(self):
@@ -37,20 +38,10 @@ class BasePostman:
 
     async def __aenter__(self):
         print("Connecting to the server")
-        current_postman.set(self)
+        self._token = current_postman.set(self)
         await self.aconnect()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.adisconnect()
-        current_postman.set(None)
-        return self
-
-    def __enter__(self):
-        self._koil.__enter__()
-        return unkoil(self.__aenter__)
-
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        unkoil(self.__aexit__, exc_type, exc_val, exc_tb)
-        self._koil.__exit__(exc_type, exc_val, exc_tb)
-        print("Unsetting Postman")
+        current_postman.reset(self._token)

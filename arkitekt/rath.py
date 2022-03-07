@@ -50,61 +50,10 @@ from rath import rath
 import contextvars
 import logging
 
-current_arkitekt = contextvars.ContextVar("current_arkitekt", default=None)
-GLOBAL_ARKITEKT = None
+current_arkitekt_rath = contextvars.ContextVar("current_arkitekt_rath", default=None)
 
 
-logger = logging.getLogger(__name__)
-
-
-def set_current_arkitekt(herre, set_global=True):
-    """_summary_
-
-    Args:
-        herre (_type_): _description_
-        set_global (bool, optional): _description_. Defaults to True.
-    """
-    global GLOBAL_ARKITEKT
-    current_arkitekt.set(herre)
-    if set_global:
-        GLOBAL_ARKITEKT = herre
-
-
-def set_global_arkitekt(herre):
-    global GLOBAL_ARKITEKT
-    GLOBAL_ARKITEKT = herre
-
-
-def get_current_arkitekt(allow_global=True):
-    global GLOBAL_ARKITEKT
-    arkitekt = current_arkitekt.get()
-
-    if not arkitekt:
-        if not allow_global:
-            raise NoArkitektFound(
-                "No current mikro found and global mikro are not allowed"
-            )
-        if not GLOBAL_ARKITEKT:
-            if os.getenv("ARKITEKT_ALLOW_ARKITEKT_GLOBAL", "True") == "True":
-                try:
-
-                    from arkitekt.fakts.arkitekt import FaktsArkitekt
-
-                    GLOBAL_ARKITEKT = FaktsArkitekt()
-                    return GLOBAL_ARKITEKT
-                except ImportError as e:
-                    raise NoArkitektFound("Error creating Fakts Mikro") from e
-            else:
-                raise NoArkitektFound(
-                    "No current mikro found and and no global mikro found"
-                )
-
-        return GLOBAL_ARKITEKT
-
-    return arkitekt
-
-
-class Arkitekt(rath.Rath):
+class ArkitektRath(rath.Rath):
     """_summary_
 
     Args:
@@ -113,10 +62,10 @@ class Arkitekt(rath.Rath):
 
     async def __aenter__(self):
         await super().__aenter__()
-        current_arkitekt.set(self)
+        self._token = current_arkitekt_rath.set(self)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await super().__aexit__(exc_type, exc_val, exc_tb)
-        current_arkitekt.set(None)
+        current_arkitekt_rath.reset(self._token)
         return self
