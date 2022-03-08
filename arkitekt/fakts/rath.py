@@ -5,8 +5,6 @@ from rath.links.auth import AuthTokenLink
 from rath.links.context import SwitchAsyncLink
 from rath.links.dictinglink import DictingLink
 from rath.links.shrink import ShrinkingLink
-from rath.fakts.links import FaktsAioHttpLink
-from rath.herre.links import HerreAuthTokenLink
 from arkitekt.rath import ArkitektRath
 from herre import Herre, current_herre
 from fakts import Fakts, Config

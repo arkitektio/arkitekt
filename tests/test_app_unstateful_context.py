@@ -16,7 +16,7 @@ from tests.mocks import (
     aquery_current_mikro,
     query_current_mikro,
 )
-from arkitekt import Arkitekt
+from arkitekt.rath import ArkitektRath
 
 from arkitekt.definition.registry import DefinitionRegistry, register
 from arkitekt.structures.registry import StructureRegistry, register_structure

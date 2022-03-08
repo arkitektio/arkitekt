@@ -42,9 +42,7 @@ class FunctionalFuncActor(FunctionalActor):
         await self._progress(value, percentage)
 
     async def on_assign(self, assignation: Assignation):
-        print("Assignation BITIIICH")
         try:
-            logger.info("Assigning Number two")
             args, kwargs = (
                 await expand_inputs(
                     self.template.node,
@@ -77,6 +75,8 @@ class FunctionalFuncActor(FunctionalActor):
                 else returns
             )
 
+            print("Should be returning", returns)
+
             await self.transport.change_assignation(
                 assignation.assignation,
                 status=AssignationStatus.RETURNED,
@@ -92,7 +92,9 @@ class FunctionalFuncActor(FunctionalActor):
         except Exception as e:
             logger.exception(e)
             await self.transport.change_assignation(
-                assignation.assignation, status=AssignationStatus.CRITICAL
+                assignation.assignation,
+                status=AssignationStatus.CRITICAL,
+                message=repr(e),
             )
 
 
@@ -144,7 +146,7 @@ class FunctionalGenActor(FunctionalActor):
             )
 
         except Exception as e:
-            print(e)
+            logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
                 message.assignation, status=AssignationStatus.CRITICAL, message=repr(e)
             )

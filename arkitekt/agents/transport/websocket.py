@@ -156,7 +156,7 @@ class WebsocketAgentTransport(AgentTransport):
         returns: List[Any] = None,
     ):
         action = AssignationChangedMessage(
-            assignation=id, status=status, message=message, result=returns
+            assignation=id, status=status, message=message, returns=returns
         )
         await self.send_queue.put(action.json())
 

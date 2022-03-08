@@ -3,6 +3,9 @@ from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
 from typing import Optional, Union
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class StatefulAgent(BaseAgent):
@@ -33,6 +36,7 @@ class StatefulAgent(BaseAgent):
     async def broadcast(
         self, message: Union[Assignation, Provision, Unassignation, Unprovision]
     ):
+        logger.info(f"Agent received {message}")
 
         if isinstance(message, Assignation) or isinstance(message, Unassignation):
             if message.provision in self.provisionActorMap:
@@ -50,7 +54,9 @@ class StatefulAgent(BaseAgent):
                 actorBuilder = self.templateActorBuilderMap[message.template]
                 self.provisionActorMap[message.provision] = actorBuilder(message, self)
                 await self.provisionActorMap[message.provision].arun()
+                logger.info("Actor started")
             else:
+                logger.info("Actor not found")
                 await self.transport.change_provision(
                     message.provision,
                     status=ProvisionStatus.DENIED,

@@ -23,7 +23,7 @@ class BaseAgent:
         self,
         transport: AgentTransport,
         definition_registry: DefinitionRegistry = None,
-        arkitekt: ArkitektRath = None,
+        rath: ArkitektRath = None,
     ) -> None:
         self.transport = transport
         self.definition_registry = (
@@ -33,7 +33,7 @@ class BaseAgent:
         self.approvedTemplates: List[
             Tuple[TemplateFragment, Callable]
         ] = []  # Template is approved
-        self.arkitekt = arkitekt
+        self.rath = rath
         # IMportant Maps
         self.templateActorBuilderMap = {}
         self.templateTemplatesMap = {}
@@ -57,13 +57,13 @@ class BaseAgent:
             ) in self.definition_registry.templatedNodes:
                 version = params.get("version", "main")
 
-                arkitekt_node = await afind(q=q_string)
+                arkitekt_node = await afind(q=q_string, rath=self.rath)
 
                 arkitekt_template = await acreate_template(
                     node=arkitekt_node.id,
                     params=params,
                     version=version,
-                    arkitekt=self.arkitekt,
+                    rath=self.rath,
                 )
 
                 self.approvedTemplates.append(
@@ -78,15 +78,13 @@ class BaseAgent:
             ) in self.definition_registry.definedNodes:
                 # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
                 # id so we are trying to send them to arkitekt)
-                arkitekt_node = await adefine(
-                    definition=definition, arkitekt=self.arkitekt
-                )
+                arkitekt_node = await adefine(definition=definition, rath=self.rath)
                 version = params.get("version", "main")
                 arkitekt_template = await acreate_template(
                     node=arkitekt_node.id,
                     params={},  # Todo really make this happen
                     version=version,
-                    arkitekt=self.arkitekt,
+                    rath=self.rath,
                 )
 
                 self.approvedTemplates.append(
@@ -101,10 +99,10 @@ class BaseAgent:
                 self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
     async def adisconnect(self):
-
         await self.transport.adisconnect()
 
     async def __aenter__(self):
+        self.rath = self.rath or current_arkitekt_rath.get()
         self.transport.broadcast = self.broadcast
         await self.aconnect()
         return self

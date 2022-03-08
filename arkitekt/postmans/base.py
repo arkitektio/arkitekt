@@ -44,4 +44,4 @@ class BasePostman:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.adisconnect()
-        current_postman.reset(self._token)
+        current_postman.set(None)

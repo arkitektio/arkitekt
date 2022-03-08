@@ -4,7 +4,7 @@ from rath.links.testing.mock import AsyncMockLink
 from arkitekt.agents.transport.protocols.agent_json import AssignationChangedMessage
 from arkitekt.messages import T, Assignation, Provision
 from tests.mocks import ArkitektMockResolver
-from arkitekt import Arkitekt
+from arkitekt.rath import ArkitektRath
 
 from arkitekt.definition.registry import DefinitionRegistry, register
 from arkitekt.structures.registry import StructureRegistry
@@ -16,7 +16,7 @@ from arkitekt.actors.actify import actify
 
 
 @pytest.fixture
-def arkitekt_client():
+def arkitekt_rath():
 
     link = compose(
         ShrinkingLink(),
@@ -26,11 +26,11 @@ def arkitekt_client():
         ),
     )
 
-    return Arkitekt(link)
+    return ArkitektRath(link)
 
 
 @pytest.fixture
-def mock_agent(arkitekt_client):
+def mock_agent():
 
     transport = MockAgentTransport()
 
@@ -56,13 +56,12 @@ def mock_agent(arkitekt_client):
     base_agent = StatefulAgent(
         transport=transport,
         definition_registry=definition_registry,
-        arkitekt=arkitekt_client,
     )
 
     return base_agent
 
 
-async def test_actor_basic(mock_agent):
+async def test_actor_basic(mock_agent, arkitekt_rath):
     transport = mock_agent.transport
 
     async def call_me(i: int) -> str:
@@ -70,12 +69,13 @@ async def test_actor_basic(mock_agent):
 
     x = actify(call_me)(Provision(provision="1", template="1"), mock_agent)
 
-    async with mock_agent:
+    async with arkitekt_rath:
+        async with mock_agent:
 
-        async with x:
-            await x.on_assign(Assignation(assignation="1", provision="1", args=[1]))
+            async with x:
+                await x.on_assign(Assignation(assignation="1", provision="1", args=[1]))
 
-            x = await transport.receive(timeout=1)
-            assert isinstance(
-                x, AssignationChangedMessage
-            ), "Should be an assignation changed message"
+                x = await transport.receive(timeout=1)
+                assert isinstance(
+                    x, AssignationChangedMessage
+                ), "Should be an assignation changed message"

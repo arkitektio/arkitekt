@@ -10,7 +10,7 @@ from rath.links.testing.mock import AsyncMockResolver, AsyncMockLink
 from rath.links.testing.statefulmock import AsyncMockResolver, AsyncStatefulMockLink
 from rath.links import ShrinkingLink, DictingLink, SwitchAsyncLink, compose, split
 from rath.operation import Operation
-from arkitekt.arkitekt import Arkitekt
+from arkitekt.rath import ArkitektRath
 from arkitekt.definition.registry import (
     DefinitionRegistry,
     get_current_definition_registry,
@@ -22,7 +22,7 @@ from arkitekt.structures.registry import (
 )
 from arkitekt.postmans.transport.mock import MockPostmanTransport
 from arkitekt.postmans.stateful import StatefulPostman
-from arkitekt.apps.base import BaseApp
+from arkitekt.apps.base import Arkitekt
 import contextvars
 from rath import Rath
 from koil import Koil
@@ -109,7 +109,7 @@ class ArkitektMockResolver(AsyncMockResolver):
         return new_template
 
 
-class MockApp(BaseApp):
+class MockApp(Arkitekt):
     def __init__(
         self,
         structure_registry: StructureRegistry = None,
@@ -120,7 +120,7 @@ class MockApp(BaseApp):
         structure_registry = structure_registry or get_current_structure_registry()
         definition_registry = definition_registry or get_current_definition_registry()
 
-        arkitekt = Arkitekt(
+        rath = ArkitektRath(
             compose(
                 ShrinkingLink(),
                 DictingLink(),
@@ -136,7 +136,6 @@ class MockApp(BaseApp):
         agent = StatefulAgent(
             transport=agent_transport,
             definition_registry=definition_registry,
-            arkitekt=arkitekt,
         )
 
         postman_transport = MockPostmanTransport()
@@ -144,7 +143,7 @@ class MockApp(BaseApp):
         postman = StatefulPostman(postman_transport)
 
         super().__init__(
-            arkitekt=arkitekt,
+            rath=rath,
             definition_registry=definition_registry,
             structure_registry=structure_registry,
             agent=agent,

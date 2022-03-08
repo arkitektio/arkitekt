@@ -10,7 +10,7 @@ from arkitekt.definition.define import prepare_definition
 from rath.links import compose, ShrinkingLink, DictingLink
 from rath.links.testing.mock import AsyncMockLink
 from tests.mocks import ArkitektMockResolver
-from arkitekt import Arkitekt
+from arkitekt.rath import ArkitektRath
 
 
 @pytest.fixture
@@ -93,7 +93,7 @@ async def test_define_structured_gen(simple_registry):
 
 
 @pytest.fixture
-def arkitekt_client():
+def arkitekt_rath():
 
     link = compose(
         ShrinkingLink(),
@@ -103,55 +103,64 @@ def arkitekt_client():
         ),
     )
 
-    return Arkitekt(link)
+    return ArkitektRath(link)
 
 
-async def test_define_to_node_gen(simple_registry, arkitekt_client):
+async def test_define_to_node_gen(simple_registry, arkitekt_rath):
 
-    functional_definition = prepare_definition(
-        structured_gen, structure_registry=simple_registry
-    )
+    async with arkitekt_rath:
+        functional_definition = prepare_definition(
+            structured_gen, structure_registry=simple_registry
+        )
 
-    node = await adefine(functional_definition, arkitekt=arkitekt_client)
+        node = await adefine(functional_definition)
 
-    assert isinstance(node, NodeFragment), "Node is not Node"
-    assert node.name == "Structured Karl", "Doesnt conform to standard Naming Scheme"
-    assert node.name == "Structured Karl", "Doesnt conform to standard Naming Scheme"
-    assert len(node.args) == 1, "Wrong amount of Arguments"
-    assert len(node.kwargs) == 1, "Wrong amount of Kwargs"
-    assert len(node.returns) == 2, "Wrong amount of Returns"
-    assert node.args[0].typename == "ListArgPort", "Wasn't defined as a List"
-    assert node.args[0].child.typename == "StructureArgPort", "Wasn't defined as a List"
-    assert node.args[0].child.identifier == "test", "Wasn't indtifier on test"
-
-
-async def test_define_to_node_complex(simple_registry, arkitekt_client):
-
-    functional_definition = prepare_definition(
-        complex_karl, structure_registry=simple_registry
-    )
-
-    node = await adefine(functional_definition, arkitekt=arkitekt_client)
-
-    assert isinstance(node, NodeFragment), "Node is not Node"
-    assert node.name == "Complex Karl", "Doesnt conform to standard Naming Scheme"
-    assert len(node.args) == 2, "Wrong amount of Arguments"
-    assert node.args[0].typename == "ListArgPort", "Wasn't defined as a List"
-    assert node.args[1].typename == "DictArgPort", "Wasn't defined as a Dict"
-    assert (
-        node.args[1].child.typename == "IntArgPort"
-    ), "Child of List is not of type IntArgPort"
-    assert (
-        node.args[0].child.typename == "StringArgPort"
-    ), "Child of Dict is not of type StringArgPort"
-    assert (
-        node.kwargs[0].typename == "StringKwargPort"
-    ), "Kwarg wasn't defined as a StringKwargPort"
-    assert len(functional_definition.returns) == 2, "Wrong amount of Returns"
-    assert node.returns[0].typename == "ListReturnPort", "Needs to Return List"
+        assert isinstance(node, NodeFragment), "Node is not Node"
+        assert (
+            node.name == "Structured Karl"
+        ), "Doesnt conform to standard Naming Scheme"
+        assert (
+            node.name == "Structured Karl"
+        ), "Doesnt conform to standard Naming Scheme"
+        assert len(node.args) == 1, "Wrong amount of Arguments"
+        assert len(node.kwargs) == 1, "Wrong amount of Kwargs"
+        assert len(node.returns) == 2, "Wrong amount of Returns"
+        assert node.args[0].typename == "ListArgPort", "Wasn't defined as a List"
+        assert (
+            node.args[0].child.typename == "StructureArgPort"
+        ), "Wasn't defined as a List"
+        assert node.args[0].child.identifier == "test", "Wasn't indtifier on test"
 
 
-async def test_define_node_has_nested_type(simple_registry, arkitekt_client):
+async def test_define_to_node_complex(simple_registry, arkitekt_rath):
+
+    async with arkitekt_rath:
+
+        functional_definition = prepare_definition(
+            complex_karl, structure_registry=simple_registry
+        )
+
+        node = await adefine(functional_definition, rath=arkitekt_rath)
+
+        assert isinstance(node, NodeFragment), "Node is not Node"
+        assert node.name == "Complex Karl", "Doesnt conform to standard Naming Scheme"
+        assert len(node.args) == 2, "Wrong amount of Arguments"
+        assert node.args[0].typename == "ListArgPort", "Wasn't defined as a List"
+        assert node.args[1].typename == "DictArgPort", "Wasn't defined as a Dict"
+        assert (
+            node.args[1].child.typename == "IntArgPort"
+        ), "Child of List is not of type IntArgPort"
+        assert (
+            node.args[0].child.typename == "StringArgPort"
+        ), "Child of Dict is not of type StringArgPort"
+        assert (
+            node.kwargs[0].typename == "StringKwargPort"
+        ), "Kwarg wasn't defined as a StringKwargPort"
+        assert len(functional_definition.returns) == 2, "Wrong amount of Returns"
+        assert node.returns[0].typename == "ListReturnPort", "Needs to Return List"
+
+
+async def test_define_node_has_nested_type(simple_registry, arkitekt_rath):
     """Tests that a node with nested types cant be defined"""
 
     def x(a: Dict[str, Dict[str, int]]) -> int:
@@ -166,5 +175,6 @@ async def test_define_node_has_nested_type(simple_registry, arkitekt_client):
 
     functional_definition = prepare_definition(x, structure_registry=simple_registry)
 
-    with pytest.raises(ValidationError):
-        node = await adefine(functional_definition, arkitekt=arkitekt_client)
+    async with arkitekt_rath:
+        with pytest.raises(ValidationError):
+            node = await adefine(functional_definition, rath=arkitekt_rath)

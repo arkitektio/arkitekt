@@ -81,13 +81,12 @@ class Arkitekt(BaseModel):
         """
         Run the application.
         """
-        async with self:
-            while True:
-                await asyncio.sleep(1)
-                print("Running")
+        await self.agent.aregister_definitions()
+        await self.agent.aprovide()
 
     async def __aenter__(self):
         await self.rath.__aenter__()
+
         await self.agent.__aenter__()
         await self.postman.__aenter__()
 

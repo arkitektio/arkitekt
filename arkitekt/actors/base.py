@@ -1,4 +1,3 @@
-from pipes import Template
 from typing import Dict, Union
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.structures.registry import StructureRegistry
@@ -70,9 +69,7 @@ class Actor:
 
     async def arun(self):
         self.in_queue = asyncio.Queue()
-        self.template = await aget_template(
-            id=self.provision.template, arkitekt=self.rath
-        )
+        self.template = await aget_template(id=self.provision.template, rath=self.rath)
         self.provision_task = asyncio.create_task(self.alisten())
 
     async def astop(self):
@@ -85,7 +82,9 @@ class Actor:
 
     async def alisten(self):
         try:
-            self.template = await aget_template(id=self.provision.template)
+            self.template = await aget_template(
+                id=self.provision.template, rath=self.rath
+            )
 
             await self.transport.change_provision(
                 self.provision.provision, status=ProvisionStatus.PROVIDING
@@ -99,10 +98,11 @@ class Actor:
                 status=ProvisionStatus.ACTIVE,
                 mode=ProvisionMode.DEBUG if self.debug else ProvisionMode.PRODUCTION,
             )
+            logger.info(f"Actor for {self.provision}: Is now active")
 
             while True:
-                print("Waiting for assignmements")
                 message = await self.in_queue.get()
+                logger.info(f"Actor for {self.provision}: Received {message}")
 
                 if isinstance(message, Assignation):
                     task = asyncio.create_task(self.on_assign(message))
@@ -124,7 +124,7 @@ class Actor:
                     raise UnknownMessageError(f"{message}")
 
         except Exception as e:
-            print(e)
+            logger.exception("Actor failed", exc_info=True)
             await self.transport.change_provision(
                 self.provision.provision,
                 status=ProvisionStatus.CRITICAL,

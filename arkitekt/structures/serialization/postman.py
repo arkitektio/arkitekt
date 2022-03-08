@@ -26,7 +26,7 @@ async def shrink_inputs(
         Tuple[List[Any], Dict[str, Any]]: Parsed Args as a List, Parsed Kwargs as a dict
     """
     if len(node.args) != len(args):
-        raise ShrinkingError("Missmatch in Arg Length")
+        raise ShrinkingError(f"Missmatch in Arg Length {node.args} vs {args}")
 
     shrinked_args_futures = [
         port.cause_shrink(arg, structure_registry) for port, arg in zip(node.args, args)
@@ -37,7 +37,9 @@ async def shrink_inputs(
             *shrinked_args_futures
         )  # Worrysome because others won't be cancelled on Exception
     except Exception as e:
-        raise ShrinkingError(f"Couldn't shrink Arguments {args}") from e
+        raise ShrinkingError(
+            f"Couldn't shrink Arguments {args} with {node.args}"
+        ) from e
 
     try:
         shrinked_kwargs = {
@@ -47,7 +49,9 @@ async def shrink_inputs(
             for port in node.kwargs
         }
     except Exception as e:
-        raise ShrinkingError(f"Couldn't shrink KeywordArguments {kwargs}") from e
+        raise ShrinkingError(
+            f"Couldn't shrink KeywordArguments {kwargs} with {node.kwargs}"
+        ) from e
 
     return shrinked_args, shrinked_kwargs
 
@@ -72,6 +76,7 @@ async def expand_outputs(
     Returns:
         List[Any]: The Expanded Returns
     """
+    assert returns, "Returns can't be empty"
     if len(node.returns) != len(returns):
         raise ExpandingError("Missmatch in Return Length")
     try:

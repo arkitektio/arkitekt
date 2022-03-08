@@ -1,9 +1,10 @@
 from arkitekt.rath import ArkitektRath, current_arkitekt_rath
+from koil import unkoil
+from koil.helpers import unkoil_gen
 
 
 def execute(operation, variables, rath: ArkitektRath = None):
-    rath = rath or current_arkitekt_rath.get()
-    return operation(**rath.execute(operation.Meta.document, variables).data)
+    return unkoil(aexecute, operation, variables, rath)
 
 
 async def aexecute(operation, variables, rath: ArkitektRath = None):
@@ -13,10 +14,7 @@ async def aexecute(operation, variables, rath: ArkitektRath = None):
 
 
 def subscribe(operation, variables, rath: ArkitektRath = None):
-    rath = rath or current_arkitekt_rath.get()
-
-    for event in rath.subscribe(operation.Meta.document, variables):
-        yield operation(**event.data)
+    return unkoil_gen(asubscribe, operation, variables, rath)
 
 
 async def asubscribe(operation, variables, rath: ArkitektRath = None):

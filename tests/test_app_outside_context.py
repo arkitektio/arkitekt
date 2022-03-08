@@ -1,6 +1,5 @@
 import threading
 import pytest
-from rath.links import compose, ShrinkingLink, DictingLink
 from rath.links.testing.mock import AsyncMockLink
 from arkitekt.agents.transport.protocols.agent_json import (
     AssignationChangedMessage,
@@ -16,7 +15,7 @@ from tests.mocks import (
     aquery_current_mikro,
     query_current_mikro,
 )
-from arkitekt import Arkitekt
+from arkitekt.rath import ArkitektRath
 
 from arkitekt.definition.registry import DefinitionRegistry, register
 from arkitekt.structures.registry import StructureRegistry, register_structure
@@ -131,15 +130,14 @@ def test_app_provision_with_more_stateful_context():
             """
             print(threading.current_thread())
 
-            with stateful_mikro_rath:
-                stateful_mikro_rath.execute(
-                    """query ($package: String!, $interface: String!) {
-                        node(package: $package, interface: $interface) {
-                        id
-                        }
-                    } """,
-                    variables={"package": "mock", "interface": "node"},
-                )
+            stateful_mikro_rath.execute(
+                """query ($package: String!, $interface: String!) {
+                    node(package: $package, interface: $interface) {
+                    id
+                    }
+                } """,
+                variables={"package": "mock", "interface": "node"},
+            )
 
             print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! here")
 

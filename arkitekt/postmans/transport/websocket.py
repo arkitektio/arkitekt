@@ -14,6 +14,10 @@ from arkitekt.postmans.transport.errors import (
     UnreserveDeniedError,
 )
 from .protocols.postman_json import *
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 async def token_loader():
@@ -61,6 +65,8 @@ class WebsocketPostmanTransport(PostmanTransport):
                 f"{self.ws_url}?token={token}&instance_id={self.instance_id}"
             ) as client:
 
+                logger.info("Postman on Websockets connected")
+
                 send_task = asyncio.create_task(self.sending(client))
                 receive_task = asyncio.create_task(self.receiving(client))
 
@@ -79,7 +85,7 @@ class WebsocketPostmanTransport(PostmanTransport):
                     raise task.exception()
 
         except Exception as e:
-            print("Error on Websockets", e)
+            logger.error("Error on Websockets", exc_info=True)
             raise e
 
     async def sending(self, client):
@@ -89,21 +95,21 @@ class WebsocketPostmanTransport(PostmanTransport):
                 await client.send(message)
                 self.send_queue.task_done()
         except asyncio.CancelledError as e:
-            print("Sending Task sucessfully Cancelled")
+            logger.info("Sending Task sucessfully Cancelled")
 
     async def receiving(self, client):
         try:
             async for message in client:
                 await self.receive(message)
         except asyncio.CancelledError as e:
-            print("Receiving Task sucessfully Cancelled")
+            logger.info("Receiving Task sucessfully Cancelled")
 
     async def receive(self, message):
         json_dict = json.loads(message)
         if "type" in json_dict:
             type = json_dict["type"]
             id = json_dict["id"]
-            print(json_dict)
+            logger.debug(str(json_dict))
 
             # State Layer
             if type == PostmanSubMessageTypes.ASSIGN_UPDATE:
@@ -147,7 +153,7 @@ class WebsocketPostmanTransport(PostmanTransport):
                 self.futures[id].set_exception(UnreserveDeniedError(json_dict["error"]))
 
         else:
-            print(f"Error {json_dict}")
+            logger.error(f"Error {json_dict}")
 
     async def alist_reservations(
         self, exclude: Optional[ReservationStatus] = None
