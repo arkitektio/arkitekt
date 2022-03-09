@@ -76,7 +76,7 @@ class MockAgentTransport(AgentTransport):
             return await asyncio.wait_for(self._inqueue.get(), timeout)
         return await self._inqueue.get()
 
-    async def adisocnnect(self):
+    async def adisconnect(self):
         for item in range(self._inqueue.qsize()):
             print(f"Flushing Item {item}")
             self._inqueue.task_done()

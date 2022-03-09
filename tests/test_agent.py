@@ -107,9 +107,13 @@ async def test_agent_assignation(mock_agent, arkitekt_rath):
 
     async with arkitekt_rath:
         async with mock_agent:
+
+            await mock_agent.start()
             await transport.delay(Provision(provision="1", template="1"))
+            await mock_agent.step()
 
             p = await transport.receive(timeout=1)
+            print(p)
             assert isinstance(p, ProvisionChangedMessage)
             assert (
                 p.status == ProvisionStatus.PROVIDING
@@ -122,6 +126,7 @@ async def test_agent_assignation(mock_agent, arkitekt_rath):
             ), f"The provision should be active {p.message}"
 
             await transport.delay(Assignation(provision="1", assignation="1", args=[1]))
+            await mock_agent.step()
 
             a = await transport.receive(timeout=1)
             assert isinstance(a, AssignationChangedMessage)
@@ -142,6 +147,7 @@ async def test_complex_agent_gen(agent_complex_object, arkitekt_rath):
     transport: MockAgentTransport = agent_complex_object.transport
     async with arkitekt_rath:
         async with agent_complex_object:
+
             await transport.delay(Provision(provision="1", template="1"))
 
             p = await transport.receive(timeout=1)

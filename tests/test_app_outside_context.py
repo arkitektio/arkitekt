@@ -147,8 +147,10 @@ def test_app_provision_with_more_stateful_context():
         ptransport: MockPostmanTransport = app.postman.transport
 
         with app:
+            app.agent.start()
 
             transport.sync_delay(Provision(template="1", provision="1", args=[1]))
+            app.agent.step()
 
             p = transport.sync_receive(timeout=1)
             assert isinstance(p, ProvisionChangedMessage)
@@ -165,6 +167,7 @@ def test_app_provision_with_more_stateful_context():
             transport.sync_delay(
                 Assignation(provision="1", assignation="1", args=[678])
             )
+            app.agent.step()
 
             a = transport.sync_receive(timeout=1)
             assert isinstance(a, AssignationChangedMessage)

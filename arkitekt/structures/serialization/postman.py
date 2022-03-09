@@ -76,7 +76,7 @@ async def expand_outputs(
     Returns:
         List[Any]: The Expanded Returns
     """
-    assert returns, "Returns can't be empty"
+    assert returns is not None, "Returns can't be empty"
     if len(node.returns) != len(returns):
         raise ExpandingError("Missmatch in Return Length")
     try:

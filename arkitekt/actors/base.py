@@ -5,6 +5,7 @@ from arkitekt.rath import ArkitektRath
 import asyncio
 import logging
 from arkitekt.api.schema import (
+    AssignationStatus,
     ProvisionMode,
     ProvisionStatus,
     aget_template,
@@ -117,8 +118,9 @@ class Actor:
                         else:
                             logger.error("Task was already done")
                     else:
-                        await self.layer.change_assignation(
-                            message="Task was never assigned"
+                        await self.transport.change_assignation(
+                            status=AssignationStatus.CRITICAL,
+                            message="Task was never assigned",
                         )
                 else:
                     raise UnknownMessageError(f"{message}")

@@ -64,9 +64,23 @@ class ArkitektMockResolver(AsyncMockResolver):
             "package": "rath",
             "interface": "mock",
             "description": "hallo",
-            "type": NodeType.GENERATOR,
+            "type": NodeType.FUNCTION,
             "id": "1",
             "name": "mock",
+            "args": [],
+            "kwargs": [
+                {
+                    "__typename": "IntKwargPort",
+                    "key": "a",
+                    "default": 0,
+                },
+                {
+                    "__typename": "IntKwargPort",
+                    "key": "b",
+                    "default": 1,
+                },
+            ],
+            "returns": [],
         }
 
     async def resolve_template(self, operation: Operation) -> str:

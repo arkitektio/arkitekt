@@ -74,9 +74,11 @@ async def test_app_basic(mock_app: MockApp):
     transport: MockAgentTransport = mock_app.agent.transport
     ptransport: MockPostmanTransport = mock_app.postman.transport
 
-    async with mock_app:
+    async with mock_app as app:
+        await app.agent.astart()
 
         await transport.delay(Provision(template="1", provision="1", args=[1]))
+        await app.agent.astep()
 
         p = await transport.receive(timeout=1)
         assert isinstance(p, ProvisionChangedMessage)
@@ -91,6 +93,8 @@ async def test_app_basic(mock_app: MockApp):
         ), f"The provision should be active {p.message}"
 
         await transport.delay(Assignation(provision="1", assignation="1", args=[678]))
+
+        await app.agent.astep()
 
         a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
@@ -139,9 +143,11 @@ async def test_app_provision(mock_app_provision: MockApp):
     transport: MockAgentTransport = mock_app_provision.agent.transport
     ptransport: MockPostmanTransport = mock_app_provision.postman.transport
 
-    async with mock_app_provision:
+    async with mock_app_provision as app:
+        await app.agent.astart()
 
         await transport.delay(Provision(template="1", provision="1", args=[1]))
+        await app.agent.astep()
 
         p = await transport.receive(timeout=1)
         assert isinstance(p, ProvisionChangedMessage)
@@ -156,6 +162,7 @@ async def test_app_provision(mock_app_provision: MockApp):
         ), f"The provision should be active {p.message}"
 
         await transport.delay(Assignation(provision="1", assignation="1", args=[678]))
+        await app.agent.astep()
 
         a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
@@ -214,9 +221,11 @@ async def test_app_provision_with_more_context(
         mock_app_provision_another_context.postman.transport
     )
 
-    async with mock_app_provision_another_context:
+    async with mock_app_provision_another_context as app:
+        await app.agent.astart()
 
         await transport.delay(Provision(template="1", provision="1", args=[1]))
+        await app.agent.astep()
 
         p = await transport.receive(timeout=1)
         assert isinstance(p, ProvisionChangedMessage)
@@ -231,6 +240,7 @@ async def test_app_provision_with_more_context(
         ), f"The provision should be active {p.message}"
 
         await transport.delay(Assignation(provision="1", assignation="1", args=[678]))
+        await app.agent.astep()
 
         a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
@@ -254,9 +264,11 @@ async def test_app_provision_with_more_context_duo(
         mock_app_provision_another_context.postman.transport
     )
 
-    async with mock_app_provision_another_context:
+    async with mock_app_provision_another_context as app:
 
+        await app.agent.astart()
         await transport.delay(Provision(template="1", provision="1", args=[1]))
+        await app.agent.astep()
 
         p = await transport.receive(timeout=1)
         assert isinstance(p, ProvisionChangedMessage)
@@ -271,6 +283,7 @@ async def test_app_provision_with_more_context_duo(
         ), f"The provision should be active {p.message}"
 
         await transport.delay(Assignation(provision="1", assignation="1", args=[678]))
+        await app.agent.astep()
 
         a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
@@ -295,10 +308,11 @@ async def test_app_provision_with_more_context_and_again(
         mock_app_provision_another_context.postman.transport
     )
 
-    async with mock_app_provision_another_context:
+    async with mock_app_provision_another_context as app:
+        await app.agent.astart()
 
         await transport.delay(Provision(template="1", provision="1", args=[1]))
-
+        await app.agent.astep()
         p = await transport.receive(timeout=1)
         assert isinstance(p, ProvisionChangedMessage)
         assert (
@@ -312,7 +326,7 @@ async def test_app_provision_with_more_context_and_again(
         ), f"The provision should be active {p.message}"
 
         await transport.delay(Assignation(provision="1", assignation="1", args=[678]))
-
+        await app.agent.astep()
         a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
         assert (

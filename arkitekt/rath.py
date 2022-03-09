@@ -68,4 +68,3 @@ class ArkitektRath(rath.Rath):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await super().__aexit__(exc_type, exc_val, exc_tb)
         current_arkitekt_rath.set(None)
-        return self

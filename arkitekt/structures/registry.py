@@ -1,5 +1,7 @@
 from typing import Any, Awaitable, Callable, Dict, Type
 
+from pydantic import BaseModel
+
 
 class StructureRegistryError(Exception):
     pass
@@ -11,6 +13,10 @@ class StructureOverwriteError(StructureRegistryError):
 
 class StructureDefinitionError(StructureRegistryError):
     pass
+
+
+async def id_shrink(self):
+    return self.id
 
 
 class StructureRegistry:
@@ -66,7 +72,13 @@ class StructureRegistry:
                 ) from e
 
     def register_as_structure(
-        self, cls, identifier=None, expand=None, shrink=None, default_widget=None
+        self,
+        cls,
+        identifier=None,
+        expand=None,
+        shrink=None,
+        default_widget=None,
+        id_shrink=True,
     ):
         if expand is None:
             if not hasattr(cls, "expand"):
@@ -77,9 +89,13 @@ class StructureRegistry:
 
         if shrink is None:
             if not hasattr(cls, "shrink"):
-                raise StructureDefinitionError(
-                    f"You need to pass 'shrink' method or {cls} needs to implement a shrink method"
-                )
+                if issubclass(cls, BaseModel):
+                    if "id" in cls.__fields__:
+                        cls.shrink = id_shrink
+                    else:
+                        raise StructureDefinitionError(
+                            f"You need to pass 'shrink' method or {cls} needs to implement a shrink method"
+                        )
             shrink = cls.shrink
 
         if identifier is None:

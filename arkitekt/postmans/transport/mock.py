@@ -123,7 +123,7 @@ class MockPostmanTransport(PostmanTransport):
                 ass.status = AssignationStatus.RETURNED
                 ass.returns = []
 
-                self.assignationState[ass.assignation] = res
+                self.assignationState[ass.assignation] = ass
                 await self.abroadcast(ass)
 
     async def adisconnect(self):

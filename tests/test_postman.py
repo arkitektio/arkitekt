@@ -45,10 +45,11 @@ async def test_postman(mock_postman, arkitekt_rath):
         async with mock_postman:
 
             node = await afind(package="mock", interface="run_maboy")
+            print(node)
 
             async def test_function():
-                async with use(node, postman=mock_postman) as res:
-                    return await res.assign(a=1, b=2)
+                async with use(node) as res:
+                    return await res.aassign(a=1, b=2)
 
             returns = await asyncio.wait_for(test_function(), timeout=2)
 

@@ -117,9 +117,12 @@ async def test_app_provision_with_more_stateful_context(
         mock_app_provision_another_stateful_context.postman.transport
     )
 
-    async with mock_app_provision_another_stateful_context:
+    async with mock_app_provision_another_stateful_context as app:
+
+        await app.agent.astart()
 
         await transport.delay(Provision(template="1", provision="1", args=[1]))
+        await app.agent.astep()
 
         p = await transport.receive(timeout=1)
         assert isinstance(p, ProvisionChangedMessage)
@@ -134,6 +137,7 @@ async def test_app_provision_with_more_stateful_context(
         ), f"The provision should be active {p.message}"
 
         await transport.delay(Assignation(provision="1", assignation="1", args=[678]))
+        await app.agent.astep()
 
         a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)

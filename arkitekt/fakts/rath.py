@@ -1,5 +1,5 @@
 from graphql import OperationType
-from rath import compose
+from rath.links import compose
 from rath.links.aiohttp import AIOHttpLink
 from rath.links.auth import AuthTokenLink
 from rath.links.context import SwitchAsyncLink

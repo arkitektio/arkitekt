@@ -16,24 +16,7 @@ class StatefulAgent(BaseAgent):
         BaseAgent (_type_): _description_
     """
 
-    async def aconnect(self):
-        await super().aconnect()
-
-    async def aprovide(self):
-        data = await self.transport.list_provisions()
-
-        for prov in data:
-            await self.broadcast(prov)
-
-        data = await self.transport.list_assignations()
-
-        for ass in data:
-            await self.broadcast(ass)
-
-        while True:
-            await asyncio.sleep(0.1)
-
-    async def broadcast(
+    async def process(
         self, message: Union[Assignation, Provision, Unassignation, Unprovision]
     ):
         logger.info(f"Agent received {message}")

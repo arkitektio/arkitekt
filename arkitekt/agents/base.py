@@ -8,6 +8,7 @@ from arkitekt.rath import ArkitektRath, current_arkitekt_rath
 import asyncio
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.messages import Assignation, Unassignation, Unprovision, Provision
+from koil import unkoil, unkoil_gen
 
 
 class BaseAgent:
@@ -43,10 +44,15 @@ class BaseAgent:
     async def broadcast(
         self, message: Union[Assignation, Provision, Unassignation, Unprovision]
     ):
-        pass
+        await self._inqueue.put(message)
 
     async def aconnect(self):
         await self.transport.aconnect()
+
+    async def process(self):
+        raise NotImplementedError(
+            "This method needs to be implemented by the agents subclass"
+        )
 
     async def aregister_definitions(self):
         if self.definition_registry.templatedNodes:
@@ -98,11 +104,42 @@ class BaseAgent:
                 self.templateActorBuilderMap[arkitekt_template.id] = defined_actor
                 self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
+    async def astep(self):
+        await self.process(await self._inqueue.get())
+
+    async def astart(self):
+        await self.aregister_definitions()
+
+        data = await self.transport.list_provisions()
+
+        for prov in data:
+            await self.broadcast(prov)
+
+        data = await self.transport.list_assignations()
+
+        for ass in data:
+            await self.broadcast(ass)
+
+    def step(self, *args, **kwargs):
+        return unkoil(self.astep, *args, **kwargs)
+
+    def start(self, *args, **kwargs):
+        return unkoil(self.astart, *args, **kwargs)
+
+    def provide(self, *args, **kwargs):
+        return unkoil(self.aprovide, *args, **kwargs)
+
+    async def aprovide(self):
+        await self.astart()
+        while True:
+            await self.astep()
+
     async def adisconnect(self):
         await self.transport.adisconnect()
 
     async def __aenter__(self):
         self.rath = self.rath or current_arkitekt_rath.get()
+        self._inqueue = asyncio.Queue()
         self.transport.broadcast = self.broadcast
         await self.aconnect()
         return self
