@@ -26,6 +26,7 @@ from arkitekt.apps.base import Arkitekt
 import contextvars
 from rath import Rath
 from koil import Koil
+from koil.vars import current_loop
 
 mikro_context = contextvars.ContextVar("mikro_context", default=None)
 
@@ -196,8 +197,7 @@ class StatefulMikroRath(Rath):
             compose(
                 ShrinkingLink(),
                 DictingLink(),
-                SwitchAsyncLink(),  # after the shrinking so we can override the dicting
-                AsyncStatefulMockLink(
+                AsyncMockLink(
                     query_resolver=ArkitektMockResolver(),
                 ),
             )
@@ -213,16 +213,15 @@ class StatefulMikroRath(Rath):
     ):
         try:
             print("Running this")
+            print(current_loop.get())
             return super().execute(query, variables, headers, operation_name, **kwargs)
         except Exception as e:
             print(e)
             raise e
 
     async def __aenter__(self) -> None:
-        await super().__aenter__()
         mikro_context.set(self)
-        print("Was set my friend")
-        return self
+        return await super().__aenter__()
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
         await super().__aexit__(exc_type, exc_val, exc_tb)

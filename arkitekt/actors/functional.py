@@ -15,7 +15,7 @@ from arkitekt.actors.vars import (
 import logging
 import janus
 from koil.vars import current_cancel_event, current_loop
-
+from koil.helpers import iterate_spawned, run_spawned
 
 logger = logging.getLogger(__name__)
 
@@ -161,90 +161,7 @@ class FunctionalThreadedFuncActor(FunctionalActor):
             nworkers, thread_name_prefix=f"actor-thread-{provision.provision}"
         )
 
-    async def iterate_queue(self, async_q, message: Assignation):
-        try:
-            while True:
-                val = await async_q.get()
-                action = val[0]
-                value = val[1]
-
-                if action == "log":
-                    raise NotImplementedError("Logging does not work right now")
-                if action == "return":
-
-                    returns = (
-                        await shrink_outputs(
-                            self.template.node,
-                            value,
-                            structure_registry=self.structure_registry,
-                        )
-                        if self.shrink_outputs
-                        else value
-                    )
-                    print(returns)
-
-                    await self.transport.change_assignation(
-                        message.assignation,
-                        status=AssignationStatus.RETURNED,
-                        returns=returns,
-                    )
-
-                    async_q.task_done()
-                    break
-
-                if action == "exception":
-                    async_q.task_done()
-                    raise value
-
-        except asyncio.CancelledError as e:
-            print(f"Received Cancellation to iterate over async queue")
-            while True:
-                val = await async_q.get()
-                action = val[0]
-                value = val[1]
-                if action == "exception":
-                    async_q.task_done()
-                    try:
-                        raise value  # Lets try to raise the exception
-                    except ThreadedActorCancelled:
-                        raise e
-
-    def _assign_threaded(
-        self,
-        queue: janus._SyncQueueProxy,
-        message: Assignation,
-        args: List[Any],
-        kwargs: Dict[str, Any],
-        parent_context: Optional[contextvars.Context],
-        cancel_event: threading.Event,
-        loop: asyncio.AbstractEventLoop,
-    ):
-        for var, value in parent_context.items():
-            var.set(value)
-
-        current_cancel_event.set(cancel_event)
-        current_loop.set(loop)
-        current_janus_queue.set(queue)
-        current_assignation.set(message)
-        try:
-            result = self.assign(*args, **kwargs)
-            queue.put(("return", result))
-            queue.join()
-
-        except Exception as e:
-            queue.put(("exception", e))
-            queue.join()
-
-        current_janus_queue.set(None)
-        current_assignation.set(None)
-        current_cancel_event.set(None)
-        current_loop.set(None)
-        print("We are done here")
-
     async def on_assign(self, message: Assignation):
-        loop = asyncio.get_event_loop()
-        queue = janus.Queue()
-        cancel_event = threading.Event()
 
         try:
             logger.info("Assigning Number two")
@@ -263,49 +180,35 @@ class FunctionalThreadedFuncActor(FunctionalActor):
                 message.assignation,
                 status=AssignationStatus.ASSIGNED,
             )
-
-            parent_context = contextvars.copy_context()
-
-            threadedfut = loop.run_in_executor(
-                self.threadpool,
-                self._assign_threaded,
-                queue.sync_q,
-                message,
-                args,
-                kwargs,
-                parent_context,
-                cancel_event,
-                loop,
+            print("RUnnindosindfosidnfoisndfoin")
+            returns = await run_spawned(self.assign, *args, **kwargs)
+            print("oinsoisnosinsoinsoin")
+            shrinked_returns = (
+                await shrink_outputs(
+                    self.template.node,
+                    returns,
+                    structure_registry=self.structure_registry,
+                )
+                if self.expand_inputs
+                else (message.args, message.kwargs)
             )
 
-            print("Stuff happens here?")
-            queuefut = asyncio.create_task(self.iterate_queue(queue.async_q, message))
-            print("Are we here?")
-            try:
-                await asyncio.gather(threadedfut, queuefut)
-                print("We are there?")
-                queue.close()
-                await queue.wait_closed()
-                print("Done in threaded")
-
-            except asyncio.CancelledError as e:
-                print(e)
-                print("Arrived here?")
-                queuefut.cancel()  # We cancel the quefuture and are now only waiting for cancellation requests
-                cancel_event.set()  # We are sending the request to the queue
-
-                try:
-                    await queuefut
-                except asyncio.CancelledError as e:
-                    raise e
+            await self.transport.change_assignation(
+                message.assignation,
+                status=AssignationStatus.RETURNED,
+                returns=shrinked_returns,
+            )
 
         except asyncio.CancelledError as e:
+            print("Canelled here")
 
             await self.transport.change_assignation(
                 message.assignation, status=AssignationStatus.CANCELLED, message=str(e)
             )
 
         except Exception as e:
+            print("Actor cancelled with exception", repr(e))
+            logger.exception(e)
             await self.transport.change_assignation(
                 message.assignation, status=AssignationStatus.CRITICAL, message=str(e)
             )

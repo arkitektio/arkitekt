@@ -99,6 +99,7 @@ def mock_app_provision_another_stateful_context(stateful_mikro_rath):
                 {"package": "mock", "interface": "node"},
             )
         )
+        print("Returning stuff herrre")
 
         print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! here")
 
@@ -145,11 +146,13 @@ async def test_app_provision_with_more_stateful_context(
             a.status == AssignationStatus.ASSIGNED
         ), f"The assignaiton should be assigned {a.message}"
 
-        a = await transport.receive(timeout=2)
+        a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
         assert (
             a.status == AssignationStatus.RETURNED
         ), f"The assignaiton should have returned {a.message}"
-        assert a.returns == ["678"], f"The provision should have returned {a.message}"
+        assert a.returns == [
+            "678"
+        ], f"The provision should have returned 678 not {a.returns}"
 
         print("nananana")
