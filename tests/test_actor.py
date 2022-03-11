@@ -71,6 +71,9 @@ async def test_actor_basic(mock_agent, arkitekt_rath):
 
     async with arkitekt_rath:
         async with mock_agent as agent:
+
+            await agent.astart()
+
             async with x:
                 ##await x.on_assign(Assignation(assignation="1", provision="1", args=[1]))
 

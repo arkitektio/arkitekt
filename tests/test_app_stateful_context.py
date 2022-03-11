@@ -145,8 +145,6 @@ async def test_app_provision_with_more_stateful_context(
             a.status == AssignationStatus.ASSIGNED
         ), f"The assignaiton should be assigned {a.message}"
 
-        print("We are the best :)")
-
         a = await transport.receive(timeout=2)
         assert isinstance(a, AssignationChangedMessage)
         assert (

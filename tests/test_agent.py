@@ -146,9 +146,12 @@ async def test_complex_agent_gen(agent_complex_object, arkitekt_rath):
 
     transport: MockAgentTransport = agent_complex_object.transport
     async with arkitekt_rath:
-        async with agent_complex_object:
+        async with agent_complex_object as a:
+
+            await a.astart()
 
             await transport.delay(Provision(provision="1", template="1"))
+            await a.astep()
 
             p = await transport.receive(timeout=1)
             assert isinstance(p, ProvisionChangedMessage)
@@ -171,7 +174,10 @@ async def test_complex_agent_gen(agent_complex_object, arkitekt_rath):
                 )
             )
 
+            await a.astep()
+
             a = await transport.receive(timeout=1)
+
             assert isinstance(a, AssignationChangedMessage)
             assert (
                 a.status == AssignationStatus.ASSIGNED

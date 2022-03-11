@@ -106,7 +106,7 @@ def mock_app_provision_another_stateful_context():
     return app
 
 
-def test_app_provision_with_more_stateful_context():
+def test_app_provision_with_more_stateful_context_sync():
 
     stateful_mikro_rath = StatefulMikroRath()
 

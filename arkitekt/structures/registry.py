@@ -94,8 +94,13 @@ class StructureRegistry:
                         cls.shrink = id_shrink
                     else:
                         raise StructureDefinitionError(
-                            f"You need to pass 'shrink' method or {cls} needs to implement a shrink method"
+                            f"You need to pass 'shrink' method or {cls} needs to implement a shrink method. A BaseModel can be automatically shrinked by providing an id field"
                         )
+                else:
+                    raise StructureDefinitionError(
+                        f"You need to pass 'shrink' method or {cls} needs to implement a shrink method"
+                    )
+
             shrink = cls.shrink
 
         if identifier is None:

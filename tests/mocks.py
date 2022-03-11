@@ -1,6 +1,6 @@
 from ctypes import Union
 from curses import def_prog_mode
-from typing import Any, List, Optional
+from typing import Any, Dict, List, Optional
 from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.agents.transport.mock import MockAgentTransport
 from arkitekt.api.schema import (
@@ -202,6 +202,21 @@ class StatefulMikroRath(Rath):
                 ),
             )
         )
+
+    def execute(
+        self,
+        query: str,
+        variables: Dict[str, Any] = None,
+        headers: Dict[str, Any] = ...,
+        operation_name=None,
+        **kwargs
+    ):
+        try:
+            print("Running this")
+            return super().execute(query, variables, headers, operation_name, **kwargs)
+        except Exception as e:
+            print(e)
+            raise e
 
     async def __aenter__(self) -> None:
         await super().__aenter__()
