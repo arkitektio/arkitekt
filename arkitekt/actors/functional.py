@@ -181,7 +181,7 @@ class FunctionalThreadedFuncActor(FunctionalActor):
                 status=AssignationStatus.ASSIGNED,
             )
             print("RUnnindosindfosidnfoisndfoin")
-            returns = await run_spawned(self.assign, *args, **kwargs)
+            returns = await run_spawned(self.assign, *args, **kwargs, pass_context=True)
             print("oinsoisnosinsoinsoin")
             shrinked_returns = (
                 await shrink_outputs(

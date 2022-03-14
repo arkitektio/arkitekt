@@ -50,7 +50,7 @@ class MockPostmanTransport(PostmanTransport):
     ) -> List[Reservation]:
         return self.reservationState.values()
 
-    async def aconnect(self):
+    async def __aenter__(self):
         self.task = asyncio.create_task(self.aresolve_reservations())
 
     async def aassign(
@@ -126,7 +126,7 @@ class MockPostmanTransport(PostmanTransport):
                 self.assignationState[ass.assignation] = ass
                 await self.abroadcast(ass)
 
-    async def adisconnect(self):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         self.task.cancel()
 
         try:

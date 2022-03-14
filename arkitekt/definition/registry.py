@@ -89,6 +89,7 @@ class DefinitionRegistry:
     def register(
         self,
         function,
+        builder=None,
         widgets: Dict[str, WidgetInput] = {},
         interfaces: List[str] = [],
         on_provide=None,
@@ -101,6 +102,7 @@ class DefinitionRegistry:
 
         actorBuilder = actify(
             function,
+            builder=builder,
             on_provide=on_provide,
             on_unprovide=on_unprovide,
             structure_registry=structure_registry,

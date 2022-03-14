@@ -27,12 +27,6 @@ class AgentTransport:
 
     """
 
-    async def aconnect(self):
-        pass
-
-    async def adisconnect(self):
-        pass
-
     @abstractmethod
     def broadcast(
         self, message: Union[Assignation, Unassignation, Provision, Unprovision]
@@ -72,8 +66,7 @@ class AgentTransport:
         raise NotImplementedError("This is an abstract Base Class")
 
     async def __aenter__(self):
-        await self.aconnect()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.adisconnect()
+        pass

@@ -46,9 +46,6 @@ class BaseAgent:
     ):
         await self._inqueue.put(message)
 
-    async def aconnect(self):
-        await self.transport.aconnect()
-
     async def process(self):
         raise NotImplementedError(
             "This method needs to be implemented by the agents subclass"
@@ -134,15 +131,12 @@ class BaseAgent:
         while True:
             await self.astep()
 
-    async def adisconnect(self):
-        await self.transport.adisconnect()
-
     async def __aenter__(self):
         self.rath = self.rath or current_arkitekt_rath.get()
         self._inqueue = asyncio.Queue()
         self.transport.broadcast = self.broadcast
-        await self.aconnect()
+        await self.transport.__aenter__()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.adisconnect()
+        await self.transport.__aexit__(exc_type, exc_val, exc_tb)

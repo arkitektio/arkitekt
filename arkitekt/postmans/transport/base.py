@@ -6,12 +6,6 @@ from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReservePar
 class PostmanTransport:
     pass
 
-    async def aconnect():
-        pass
-
-    async def adisconnect():
-        pass
-
     async def abroadcast(self, message: Union[Assignation, Reservation]):
         raise NotImplementedError("soinsoisn")
 

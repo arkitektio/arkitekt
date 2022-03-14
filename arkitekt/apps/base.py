@@ -41,8 +41,11 @@ class Arkitekt(BaseModel):
     additional_contexts: List[AsyncContextManager] = []
     koil: Optional[Koil] = None
 
+    _connected = False
+
     def register(
         self,
+        builder=None,
         widgets: Dict[str, WidgetInput] = {},
         interfaces: List[str] = [],
         on_provide: Callable[[Provision, TemplateFragment], Awaitable[Any]] = None,
@@ -61,6 +64,7 @@ class Arkitekt(BaseModel):
 
             self.definition_registry.register(
                 function,
+                builder=builder,
                 widgets=widgets,
                 interfaces=interfaces,
                 structure_registry=structure_registry,
@@ -81,10 +85,14 @@ class Arkitekt(BaseModel):
         """
         Run the application.
         """
-        await self.agent.aregister_definitions()
+        assert (
+            self._connected
+        ), "You must be connected before you run. Please use `with` or `async with`."
         await self.agent.aprovide()
 
     async def __aenter__(self):
+        self._connected = True
+
         await self.rath.__aenter__()
 
         await self.agent.__aenter__()
@@ -106,3 +114,4 @@ class Arkitekt(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
+        underscore_attrs_are_private = True

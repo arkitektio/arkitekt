@@ -27,7 +27,7 @@ class MockAgentTransport(AgentTransport):
     ) -> List[Provision]:
         return []
 
-    async def aconnect(self):
+    async def __aenter__(self):
         self._inqueue = asyncio.Queue()
         pass
 
@@ -76,7 +76,7 @@ class MockAgentTransport(AgentTransport):
             return await asyncio.wait_for(self._inqueue.get(), timeout)
         return await self._inqueue.get()
 
-    async def adisconnect(self):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         for item in range(self._inqueue.qsize()):
             print(f"Flushing Item {item}")
             self._inqueue.task_done()

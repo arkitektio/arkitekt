@@ -24,24 +24,17 @@ class BasePostman:
     def __init__(self, transport: PostmanTransport) -> None:
         self.transport = transport
 
-    async def aconnect(self):
-        self.transport.abroadcast = self.abroadcast
-        await self.transport.aconnect()
-
     async def abroadcast(self):
         raise NotImplementedError(
             "This needs to be overwritten by your Postman subclass"
         )
 
-    async def adisconnect(self):
-        await self.transport.adisconnect()
-
     async def __aenter__(self):
-        print("Connecting to the server")
         self._token = current_postman.set(self)
-        await self.aconnect()
+        self.transport.abroadcast = self.abroadcast
+        await self.transport.__aenter__()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.adisconnect()
+        await self.transport.__aexit__(exc_type, exc_val, exc_tb)
         current_postman.set(None)

@@ -52,8 +52,8 @@ class StatefulAgent(BaseAgent):
         else:
             raise Exception(f"Unknown message type {type(message)}")
 
-    async def adisconnect(self):
-        await super().adisconnect()
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        await super().__aexit__(exc_type, exc_val, exc_tb)
         cancelations = [actor.astop() for actor in self.provisionActorMap.values()]
 
         for c in cancelations:

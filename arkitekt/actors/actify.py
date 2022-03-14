@@ -40,6 +40,7 @@ async def async_none_unprovide():
 
 def actify(
     function_or_actor,
+    builder: Callable[[], Actor] = None,
     bypass_shrink=False,
     bypass_expand=False,
     on_provide=None,
@@ -71,6 +72,9 @@ def actify(
         "on_unprovide": on_unprovide if on_unprovide else async_none_unprovide,
         "structure_registry": structure_registry,
     }
+
+    if builder:
+        return builder(**actor_attributes)
 
     if is_coroutine:
         return lambda provision, agent: FunctionalFuncActor(
