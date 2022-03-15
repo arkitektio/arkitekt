@@ -353,5 +353,4 @@ def prepare_definition(
         }
     )
 
-    print(x.dict(by_alias=True))
     return x

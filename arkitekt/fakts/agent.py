@@ -16,16 +16,6 @@ class AgentConfig(Config):
 
 
 class FaktsAgent(StatefulAgent):
-    def __init__(
-        self,
-        fakts: Fakts = None,
-        definition_registry: DefinitionRegistry = None,
-    ) -> None:
-
-        self.fakts = fakts
-
-        super().__init__(None, definition_registry, None)  #
-
     def configure(self, config: AgentConfig, herre: Herre, rath: ArkitektRath) -> None:
 
         self.transport = WebsocketAgentTransport(
@@ -38,7 +28,7 @@ class FaktsAgent(StatefulAgent):
 
     async def __aenter__(self):
 
-        config = await AgentConfig.from_fakts(self.fakts)
+        config = await AgentConfig.from_fakts()
         self.configure(
             config, herre=current_herre.get(), rath=current_arkitekt_rath.get()
         )

@@ -22,8 +22,8 @@ class StatefulAgent(BaseAgent):
         logger.info(f"Agent received {message}")
 
         if isinstance(message, Assignation) or isinstance(message, Unassignation):
-            if message.provision in self.provisionActorMap:
-                actor = self.provisionActorMap[message.provision]
+            if message.provision in self._provisionActorMap:
+                actor = self._provisionActorMap[message.provision]
                 await actor.apass(message)
             else:
                 await self.transport.change_assignation(
@@ -33,10 +33,10 @@ class StatefulAgent(BaseAgent):
                 )
 
         elif isinstance(message, Provision):
-            if message.template in self.templateActorBuilderMap:
-                actorBuilder = self.templateActorBuilderMap[message.template]
-                self.provisionActorMap[message.provision] = actorBuilder(message, self)
-                await self.provisionActorMap[message.provision].arun()
+            if message.template in self._templateActorBuilderMap:
+                actorBuilder = self._templateActorBuilderMap[message.template]
+                self._provisionActorMap[message.provision] = actorBuilder(message, self)
+                await self._provisionActorMap[message.provision].arun()
                 logger.info("Actor started")
             else:
                 logger.info("Actor not found")
@@ -47,17 +47,19 @@ class StatefulAgent(BaseAgent):
                 )
 
         elif isinstance(message, Unprovision):
-            await self.provisionActorMap[message.provision].astop()
+            await self._provisionActorMap[message.provision].astop()
 
         else:
             raise Exception(f"Unknown message type {type(message)}")
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await super().__aexit__(exc_type, exc_val, exc_tb)
-        cancelations = [actor.astop() for actor in self.provisionActorMap.values()]
+
+        cancelations = [actor.astop() for actor in self._provisionActorMap.values()]
 
         for c in cancelations:
             try:
                 await c
             except asyncio.CancelledError:
                 print(f"Cancelled Actor {c}")
+
+        await super().__aexit__(exc_type, exc_val, exc_tb)

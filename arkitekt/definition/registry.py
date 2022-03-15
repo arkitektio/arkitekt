@@ -1,4 +1,5 @@
 import contextvars
+from email.policy import default
 from arkitekt.api.schema import DefinitionInput, NodeFragment
 from arkitekt.actors.actify import actify
 from arkitekt.definition.define import prepare_definition
@@ -10,6 +11,7 @@ from arkitekt.structures.registry import (
 from arkitekt.api.schema import WidgetInput
 from typing import Dict, List, Callable, Tuple
 import os
+from pydantic import Field, BaseModel
 
 
 current_definition_registry = contextvars.ContextVar(
@@ -18,54 +20,32 @@ current_definition_registry = contextvars.ContextVar(
 GLOBAL_DEFINITION_REGISTRY = None
 
 
-def set_current_definition_registry(herre, set_global=True):
+def get_default_definition_registry():
     global GLOBAL_DEFINITION_REGISTRY
-    current_definition_registry.set(herre)
-    if set_global:
-        GLOBAL_DEFINITION_REGISTRY = herre
-
-
-def set_global_definition_registry(herre):
-    global GLOBAL_DEFINITION_REGISTRY
-    GLOBAL_DEFINITION_REGISTRY = herre
+    if GLOBAL_DEFINITION_REGISTRY is None:
+        GLOBAL_DEFINITION_REGISTRY = DefinitionRegistry()
+    return GLOBAL_DEFINITION_REGISTRY
 
 
 def get_current_definition_registry(allow_global=True):
-    global GLOBAL_DEFINITION_REGISTRY
-    arkitekt = current_definition_registry.get()
-
-    if not arkitekt:
-        if not allow_global:
-            raise NoDefinitionRegistryFound(
-                "No current_definition_registry found and global mikro are not allowed"
-            )
-        if not GLOBAL_DEFINITION_REGISTRY:
-            if os.getenv("ARKITEKT_ALLOW_DEFINITION_REGISTRY_GLOBAL", "True") == "True":
-                try:
-                    GLOBAL_DEFINITION_REGISTRY = DefinitionRegistry()
-                    return GLOBAL_DEFINITION_REGISTRY
-                except ImportError as e:
-                    raise NoDefinitionRegistryFound("Error creating Fakts Mikro") from e
-            else:
-                raise NoDefinitionRegistryFound(
-                    "No current mikro found and and no global mikro found"
-                )
-
-        return GLOBAL_DEFINITION_REGISTRY
-
-    return arkitekt
+    return current_definition_registry.get(get_default_definition_registry())
 
 
 QString = str
 
 
-class DefinitionRegistry:
-    def __init__(self) -> None:
-        self.definedNodes: List[
-            Tuple[DefinitionInput, Callable]
-        ] = []  # node is already saved and has id
-        self.templatedNodes: List[Tuple[QString, Callable]] = []
-        # Node is not saved and has undefined id
+class DefinitionRegistry(BaseModel):
+    defined_nodes: List[Tuple[DefinitionInput, Callable]] = Field(default_factory=list)
+    templated_nodes: List[Tuple[QString, Callable]] = Field(default_factory=list)
+    copy_from_default: bool = False
+
+    _token: contextvars.Token = None
+
+    def __post_init__(self):
+        if self.copy_from_default:
+            default = get_default_definition_registry()
+            self.defined_nodes = default.defined_nodes + self.defined_nodes
+            self.templated_nodes = default.templated_nodes + self.templated_nodes
 
     def has_definitions(self):
         return len(self.definedNodes) > 0 or len(self.templatedNodes) > 0
@@ -77,13 +57,13 @@ class DefinitionRegistry:
     def register_actor_with_defintion(
         self, actorBuilder: Callable, definition: DefinitionInput, **params  # New Node
     ):
-        self.definedNodes.append((definition, actorBuilder, params))
+        self.defined_nodes.append((definition, actorBuilder, params))
         pass
 
     def register_actor_with_template(
         self, actorBuilder: Callable, q_string: QString, **params
     ):  # Query Path
-        self.templatedNodes.append((q_string, actorBuilder, params))
+        self.templated_nodes.append((q_string, actorBuilder, params))
         pass
 
     def register(
@@ -137,6 +117,13 @@ class DefinitionRegistry:
         )
 
         self.register_actor_with_template(actorBuilder, qstring, **actorparams)
+
+    def __enter__(self):
+        self._token = current_definition_registry.set(self)
+        return self
+
+    def __exit__(self, *args, **kwargs):
+        current_definition_registry.reset(self._token)
 
 
 def register(

@@ -1,4 +1,6 @@
 from typing import Any, Callable, Dict, List, Literal, Optional, Tuple, Union
+
+from pydantic import BaseModel, Field
 from arkitekt.api.schema import TemplateFragment, acreate_template, adefine, afind
 from arkitekt.definition.registry import (
     DefinitionRegistry,
@@ -8,10 +10,12 @@ from arkitekt.rath import ArkitektRath, current_arkitekt_rath
 import asyncio
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.messages import Assignation, Unassignation, Unprovision, Provision
-from koil import unkoil, unkoil_gen
+from koil import koil, unkoil, unkoil_gen
+from koil.decorators import koilable
 
 
-class BaseAgent:
+@koilable(fieldname="koil", add_connectors=True)
+class BaseAgent(BaseModel):
     """Agent
 
     Agents are the governing entities in the arkitekt system. They are responsible for
@@ -20,28 +24,18 @@ class BaseAgent:
 
     """
 
-    def __init__(
-        self,
-        transport: AgentTransport,
-        definition_registry: DefinitionRegistry = None,
-        rath: ArkitektRath = None,
-    ) -> None:
-        self.transport = transport
-        self.definition_registry = (
-            definition_registry or get_current_definition_registry()
-        )
+    transport: Optional[AgentTransport] = None
+    definition_registry: Optional[DefinitionRegistry] = None
+    _approved_templates: List[Tuple[TemplateFragment, Callable]] = []
+    rath: Optional[ArkitektRath] = None
 
-        self.approvedTemplates: List[
-            Tuple[TemplateFragment, Callable]
-        ] = []  # Template is approved
-        self.rath = rath
-        # IMportant Maps
-        self.templateActorBuilderMap = {}
-        self.templateTemplatesMap = {}
-        self.provisionActorMap = {}
-        self.provisionTaskMap = {}
+    _templateActorBuilderMap = {}
+    _templateTemplatesMap: Dict[str, TemplateFragment] = {}
+    _provisionActorMap = {}
+    _provisionTaskMap: Dict[str, asyncio.Task] = Field(default_factory=dict)
+    _inqueue: Optional[asyncio.Queue] = None
 
-    async def broadcast(
+    async def abroadcast(
         self, message: Union[Assignation, Provision, Unassignation, Unprovision]
     ):
         await self._inqueue.put(message)
@@ -52,12 +46,12 @@ class BaseAgent:
         )
 
     async def aregister_definitions(self):
-        if self.definition_registry.templatedNodes:
+        if self.definition_registry.templated_nodes:
             for (
                 q_string,
                 actor_builder,
                 params,
-            ) in self.definition_registry.templatedNodes:
+            ) in self.definition_registry.templated_nodes:
                 version = params.get("version", "main")
 
                 arkitekt_node = await afind(q=q_string, rath=self.rath)
@@ -69,16 +63,16 @@ class BaseAgent:
                     rath=self.rath,
                 )
 
-                self.approvedTemplates.append(
+                self._approved_templates.append(
                     (arkitekt_template, actor_builder, params)
                 )
 
-        if self.definition_registry.definedNodes:
+        if self.definition_registry.defined_nodes:
             for (
                 definition,
                 actor_builder,
                 params,
-            ) in self.definition_registry.definedNodes:
+            ) in self.definition_registry.defined_nodes:
                 # Defined Node are nodes that are not yet reflected on arkitekt (i.e they dont have an instance
                 # id so we are trying to send them to arkitekt)
                 arkitekt_node = await adefine(definition=definition, rath=self.rath)
@@ -90,16 +84,16 @@ class BaseAgent:
                     rath=self.rath,
                 )
 
-                self.approvedTemplates.append(
+                self._approved_templates.append(
                     (arkitekt_template, actor_builder, params)
                 )
 
-        if self.approvedTemplates:
+        if self._approved_templates:
 
-            for arkitekt_template, defined_actor, params in self.approvedTemplates:
+            for arkitekt_template, defined_actor, params in self._approved_templates:
                 # Generating Maps for Easy access
-                self.templateActorBuilderMap[arkitekt_template.id] = defined_actor
-                self.templateTemplatesMap[arkitekt_template.id] = arkitekt_template
+                self._templateActorBuilderMap[arkitekt_template.id] = defined_actor
+                self._templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
     async def astep(self):
         await self.process(await self._inqueue.get())
@@ -110,12 +104,12 @@ class BaseAgent:
         data = await self.transport.list_provisions()
 
         for prov in data:
-            await self.broadcast(prov)
+            await self.abroadcast(prov)
 
         data = await self.transport.list_assignations()
 
         for ass in data:
-            await self.broadcast(ass)
+            await self.abroadcast(ass)
 
     def step(self, *args, **kwargs):
         return unkoil(self.astep, *args, **kwargs)
@@ -132,11 +126,16 @@ class BaseAgent:
             await self.astep()
 
     async def __aenter__(self):
+        self.definition_registry = get_current_definition_registry()
         self.rath = self.rath or current_arkitekt_rath.get()
         self._inqueue = asyncio.Queue()
-        self.transport.broadcast = self.broadcast
+        self.transport.abroadcast = self.abroadcast
         await self.transport.__aenter__()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         await self.transport.__aexit__(exc_type, exc_val, exc_tb)
+
+    class Config:
+        arbitrary_types_allowed = True
+        underscore_attrs_are_private = True

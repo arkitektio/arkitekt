@@ -12,6 +12,7 @@ from arkitekt.messages import Provision
 from arkitekt.structures.registry import (
     StructureRegistry,
     get_current_structure_registry,
+    get_default_structure_registry,
 )
 from arkitekt.definition.registry import (
     DefinitionRegistry,
@@ -24,24 +25,22 @@ from herre.fakts.herre import FaktsHerre
 from herre.herre import Herre
 from koil import Koil, unkoil
 import koil
+from koil.composition import Composition
 from koil.decorators import koilable
 
 
 @koilable(fieldname="koil", add_connectors=True)
-class Arkitekt(BaseModel):
+class Arkitekt(Composition):
     rath: ArkitektRath = Field(default_factory=FaktsArkitektRath)
     structure_registry: StructureRegistry = Field(
-        default_factory=get_current_structure_registry
+        default_factory=get_default_structure_registry
     )
     definition_registry: DefinitionRegistry = Field(
         default_factory=get_current_definition_registry
     )
     agent: BaseAgent = Field(default_factory=FaktsAgent)
     postman: BasePostman = Field(default_factory=FaktsPostman)
-    additional_contexts: List[AsyncContextManager] = []
-    koil: Optional[Koil] = None
-
-    _connected = False
+    additional_contexts: List[AsyncContextManager] = Field(default_factory=list)
 
     def register(
         self,
@@ -56,6 +55,7 @@ class Arkitekt(BaseModel):
         """
         Register a new function
         """
+        structure_registry = structure_registry or self.structure_registry
 
         def real_decorator(function):
             # Simple bypass for now
@@ -67,7 +67,7 @@ class Arkitekt(BaseModel):
                 builder=builder,
                 widgets=widgets,
                 interfaces=interfaces,
-                structure_registry=structure_registry,
+                structure_registry=self.structure_registry,
                 on_provide=on_provide,
                 on_unprovide=on_unprovide,
                 **actorparams,
@@ -79,38 +79,14 @@ class Arkitekt(BaseModel):
         """
         Run the application.
         """
-        unkoil(self.arun, *args, **kwargs)
+        return unkoil(self.arun, *args, **kwargs)
 
     async def arun(self) -> None:
         """
         Run the application.
         """
-        assert (
-            self._connected
-        ), "You must be connected before you run. Please use `with` or `async with`."
+        assert self.agent.transport.connected, "Transport is not connected"
         await self.agent.aprovide()
-
-    async def __aenter__(self):
-        self._connected = True
-
-        await self.rath.__aenter__()
-
-        await self.agent.__aenter__()
-        await self.postman.__aenter__()
-
-        for context in self.additional_contexts:
-            await context.__aenter__()  # ATTENTION: GATHER DOES NOT COPY THE CONTEXT VARIABLES
-
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-
-        for context in self.additional_contexts:
-            await context.__aexit__(exc_type, exc_val, exc_tb)
-
-        await self.agent.__aexit__(exc_type, exc_val, exc_tb)
-        await self.postman.__aexit__(exc_type, exc_val, exc_tb)
-        await self.rath.__aexit__(exc_type, exc_val, exc_tb)
 
     class Config:
         arbitrary_types_allowed = True

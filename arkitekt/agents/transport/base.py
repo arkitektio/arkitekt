@@ -27,8 +27,12 @@ class AgentTransport:
 
     """
 
+    @property
+    def connected(self):
+        return NotImplementedError("Implement this method")
+
     @abstractmethod
-    def broadcast(
+    def abroadcast(
         self, message: Union[Assignation, Unassignation, Provision, Unprovision]
     ):
         raise NotImplementedError("This is an abstract Base Class")
