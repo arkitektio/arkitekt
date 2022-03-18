@@ -24,7 +24,7 @@ def arkitekt_rath():
         ),
     )
 
-    return ArkitektRath(link)
+    return ArkitektRath(link=link)
 
 
 @pytest.fixture

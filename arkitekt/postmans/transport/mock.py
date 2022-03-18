@@ -1,3 +1,4 @@
+from inflection import underscore
 from arkitekt.postmans.transport.base import PostmanTransport
 from arkitekt.messages import (
     Assignation,
@@ -17,6 +18,7 @@ from arkitekt.api.schema import (
 from typing import Any, Dict, List, Optional
 import asyncio
 import random
+from pydantic import Field
 
 
 class MockPostmanTransport(PostmanTransport):
@@ -26,19 +28,10 @@ class MockPostmanTransport(PostmanTransport):
         AgentTransport (_type_): _description_
     """
 
-    def __init__(
-        self,
-        initial_assignations: List[Assignation] = [],
-        initial_reservations: List[Reservation] = [],
-    ) -> None:
-        super().__init__()
+    assignationState: Dict[str, Assignation] = Field(default_factory=dict)
+    reservationState: Dict[str, Assignation] = Field(default_factory=dict)
 
-        self.reservationState: Dict[str, Reservation] = {
-            res.reservation: res for res in initial_reservations
-        }
-        self.assignationState: Dict[str, Assignation] = {
-            ass.assignation: ass for ass in initial_assignations
-        }
+    _task: Optional[asyncio.Task] = None
 
     async def alist_assignations(
         self, exclude: Optional[AssignationStatus] = None
@@ -51,7 +44,7 @@ class MockPostmanTransport(PostmanTransport):
         return self.reservationState.values()
 
     async def __aenter__(self):
-        self.task = asyncio.create_task(self.aresolve_reservations())
+        self._task = asyncio.create_task(self.aresolve_reservations())
 
     async def aassign(
         self,
@@ -127,9 +120,12 @@ class MockPostmanTransport(PostmanTransport):
                 await self.abroadcast(ass)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        self.task.cancel()
+        self._task.cancel()
 
         try:
-            await self.task
+            await self._task
         except asyncio.CancelledError as e:
             pass
+
+    class Config:
+        underscore_attrs_are_private = True

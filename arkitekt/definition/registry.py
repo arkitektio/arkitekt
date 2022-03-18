@@ -9,9 +9,10 @@ from arkitekt.structures.registry import (
     get_current_structure_registry,
 )
 from arkitekt.api.schema import WidgetInput
-from typing import Dict, List, Callable, Tuple
+from typing import Dict, List, Callable, Optional, Tuple
 import os
 from pydantic import Field, BaseModel
+from koil.composition import KoiledModel
 
 
 current_definition_registry = contextvars.ContextVar(
@@ -34,7 +35,8 @@ def get_current_definition_registry(allow_global=True):
 QString = str
 
 
-class DefinitionRegistry(BaseModel):
+class DefinitionRegistry(KoiledModel):
+    structure_registry: Optional[StructureRegistry] = None
     defined_nodes: List[Tuple[DefinitionInput, Callable]] = Field(default_factory=list)
     templated_nodes: List[Tuple[QString, Callable]] = Field(default_factory=list)
     copy_from_default: bool = False
@@ -78,7 +80,11 @@ class DefinitionRegistry(BaseModel):
         **actorparams,
     ):
 
-        structure_registry = structure_registry or get_current_structure_registry()
+        structure_registry = (
+            structure_registry
+            or self.structure_registry
+            or get_current_structure_registry()
+        )
 
         actorBuilder = actify(
             function,
@@ -107,7 +113,11 @@ class DefinitionRegistry(BaseModel):
         structure_registry: StructureRegistry = None,
         **actorparams,
     ):
-        structure_registry = structure_registry or get_current_structure_registry()
+        structure_registry = (
+            structure_registry
+            or self.structure_registry
+            or get_current_structure_registry()
+        )
 
         actorBuilder = actify(
             function,
@@ -118,12 +128,15 @@ class DefinitionRegistry(BaseModel):
 
         self.register_actor_with_template(actorBuilder, qstring, **actorparams)
 
-    def __enter__(self):
-        self._token = current_definition_registry.set(self)
+    async def __aenter__(self):
+        self.structure_registry = (
+            self.structure_registry or get_current_structure_registry()
+        )
+        current_definition_registry.set(self)
         return self
 
-    def __exit__(self, *args, **kwargs):
-        current_definition_registry.reset(self._token)
+    async def __exit__(self, *args, **kwargs):
+        current_definition_registry.set(None)
 
 
 def register(

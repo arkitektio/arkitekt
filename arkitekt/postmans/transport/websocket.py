@@ -40,12 +40,10 @@ class DefiniteConnectionFail(PostmanTransportException):
     pass
 
 
-@dataclass
 class WebsocketPostmanTransport(PostmanTransport):
     ws_url: str
     instance_id: Optional[str]
     token_loader: Callable[[], Awaitable[str]]
-    abroadcast: Optional[Callable[[Union[Assignation, Reservation]], Awaitable[None]]]
     max_retries = 5
     time_between_retries = 5
     allow_reconnect = True

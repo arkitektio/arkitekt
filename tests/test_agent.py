@@ -1,6 +1,7 @@
 import pytest
 from rath.links import compose, ShrinkingLink, DictingLink
 from rath.links.testing.mock import AsyncMockLink
+from arkitekt.actors.base import Agent
 from arkitekt.agents.transport.protocols.agent_json import (
     AssignationChangedMessage,
     ProvisionChangedMessage,
@@ -8,7 +9,7 @@ from arkitekt.agents.transport.protocols.agent_json import (
 from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision
 from tests.funcs import function_with_side_register
-from tests.mocks import ArkitektMockResolver
+from tests.mocks import ArkitektMockResolver, MockApp, MockArkitekt
 from arkitekt.rath import ArkitektRath
 
 from arkitekt.definition.registry import DefinitionRegistry, register
@@ -21,21 +22,7 @@ from tests.structures import SecondObject
 
 
 @pytest.fixture
-def arkitekt_rath():
-
-    link = compose(
-        ShrinkingLink(),
-        DictingLink(),  # after the shrinking so we can override the dicting
-        AsyncMockLink(
-            resolver=ArkitektMockResolver(),
-        ),
-    )
-
-    return ArkitektRath(link)
-
-
-@pytest.fixture
-def agent_complex_object():
+def complex_definition_registry():
     """Tests async expansion in a threaded context
 
     Args:
@@ -44,10 +31,8 @@ def agent_complex_object():
     Returns:
         _type_: _description_
     """
-    transport = MockAgentTransport()
 
     structure_registry = StructureRegistry()
-    definition_registry = DefinitionRegistry()
 
     async def expand_second(id):
         return SecondObject(id)
@@ -59,27 +44,18 @@ def agent_complex_object():
         SecondObject, "second", expand_second, shrink_second
     )
 
-    register(
-        definition_registry=definition_registry, structure_registry=structure_registry
-    )(function_with_side_register)
+    definition_registry = DefinitionRegistry(structure_registry=structure_registry)
 
-    return StatefulAgent(
-        transport=transport,
-        definition_registry=definition_registry,
-    )
+    definition_registry.register(function_with_side_register)
+
+    return definition_registry
 
 
-@pytest.fixture
-def mock_agent():
+async def test_agent_assignation():
 
-    transport = MockAgentTransport()
+    mockapp = MockApp()
 
-    structure_registry = StructureRegistry()
-    definition_registry = DefinitionRegistry()
-
-    @register(
-        definition_registry=definition_registry, structure_registry=structure_registry
-    )
+    @mockapp.arkitekt.register()
     async def hallo_world(i: int) -> int:
         """Hallo World
 
@@ -93,108 +69,104 @@ def mock_agent():
         """
         return i + 1
 
-    base_agent = StatefulAgent(
-        transport=transport,
-        definition_registry=definition_registry,
+    async with mockapp:
+        mock_agent = mockapp.arkitekt.agent
+        transport = mockapp.arkitekt.agent.transport
+
+        await mock_agent.start()
+        await transport.delay(Provision(provision="1", template="1"))
+        await mock_agent.step()
+
+        p = await transport.receive(timeout=1)
+        print(p)
+        assert isinstance(p, ProvisionChangedMessage)
+        assert (
+            p.status == ProvisionStatus.PROVIDING
+        ), f"First provision should be providing {p.message}"
+
+        p = await transport.receive(timeout=1)
+        assert isinstance(p, ProvisionChangedMessage)
+        assert (
+            p.status == ProvisionStatus.ACTIVE
+        ), f"The provision should be active {p.message}"
+
+        await transport.delay(Assignation(provision="1", assignation="1", args=[1]))
+        await mock_agent.step()
+
+        a = await transport.receive(timeout=1)
+        assert isinstance(a, AssignationChangedMessage)
+        assert (
+            a.status == AssignationStatus.ASSIGNED
+        ), f"The assignaiton should be assigned {a.message}"
+
+        a = await transport.receive(timeout=1)
+        assert isinstance(a, AssignationChangedMessage)
+        assert (
+            a.status == AssignationStatus.RETURNED
+        ), f"The assignaiton should have returned {a.message}"
+        assert a.returns == [2], f"The provision should have returned {a.message}"
+
+
+async def test_complex_agent_gen(complex_definition_registry):
+
+    mockapp = MockApp(
+        arkitekt=MockArkitekt(
+            definition_registry=complex_definition_registry,
+        )
     )
 
-    return base_agent
+    transport: MockAgentTransport = mockapp.arkitekt.agent.transport
+    a: Agent = mockapp.arkitekt.agent
 
+    async with mockapp:
 
-async def test_agent_assignation(mock_agent, arkitekt_rath):
+        await a.astart()
 
-    transport: MockAgentTransport = mock_agent.transport
+        await transport.delay(Provision(provision="1", template="1"))
+        await a.astep()
 
-    async with arkitekt_rath:
-        async with mock_agent:
+        p = await transport.receive(timeout=1)
+        assert isinstance(p, ProvisionChangedMessage)
+        assert (
+            p.status == ProvisionStatus.PROVIDING
+        ), f"First provision should be providing {p.message}"
 
-            await mock_agent.start()
-            await transport.delay(Provision(provision="1", template="1"))
-            await mock_agent.step()
+        p = await transport.receive(timeout=1)
+        assert isinstance(p, ProvisionChangedMessage)
+        assert (
+            p.status == ProvisionStatus.ACTIVE
+        ), f"The provision should be active {p.message}"
 
-            p = await transport.receive(timeout=1)
-            print(p)
-            assert isinstance(p, ProvisionChangedMessage)
-            assert (
-                p.status == ProvisionStatus.PROVIDING
-            ), f"First provision should be providing {p.message}"
-
-            p = await transport.receive(timeout=1)
-            assert isinstance(p, ProvisionChangedMessage)
-            assert (
-                p.status == ProvisionStatus.ACTIVE
-            ), f"The provision should be active {p.message}"
-
-            await transport.delay(Assignation(provision="1", assignation="1", args=[1]))
-            await mock_agent.step()
-
-            a = await transport.receive(timeout=1)
-            assert isinstance(a, AssignationChangedMessage)
-            assert (
-                a.status == AssignationStatus.ASSIGNED
-            ), f"The assignaiton should be assigned {a.message}"
-
-            a = await transport.receive(timeout=1)
-            assert isinstance(a, AssignationChangedMessage)
-            assert (
-                a.status == AssignationStatus.RETURNED
-            ), f"The assignaiton should have returned {a.message}"
-            assert a.returns == [2], f"The provision should have returned {a.message}"
-
-
-async def test_complex_agent_gen(agent_complex_object, arkitekt_rath):
-
-    transport: MockAgentTransport = agent_complex_object.transport
-    async with arkitekt_rath:
-        async with agent_complex_object as a:
-
-            await a.astart()
-
-            await transport.delay(Provision(provision="1", template="1"))
-            await a.astep()
-
-            p = await transport.receive(timeout=1)
-            assert isinstance(p, ProvisionChangedMessage)
-            assert (
-                p.status == ProvisionStatus.PROVIDING
-            ), f"First provision should be providing {p.message}"
-
-            p = await transport.receive(timeout=1)
-            assert isinstance(p, ProvisionChangedMessage)
-            assert (
-                p.status == ProvisionStatus.ACTIVE
-            ), f"The provision should be active {p.message}"
-
-            await transport.delay(
-                Assignation(
-                    provision="1",
-                    assignation="1",
-                    args=[[1]],
-                    kwargs={"name": {"hallo": 1}},
-                )
+        await transport.delay(
+            Assignation(
+                provision="1",
+                assignation="1",
+                args=[[1]],
+                kwargs={"name": {"hallo": 1}},
             )
+        )
 
-            await a.astep()
+        await a.astep()
 
-            a = await transport.receive(timeout=1)
+        a = await transport.receive(timeout=1)
 
-            assert isinstance(a, AssignationChangedMessage)
-            assert (
-                a.status == AssignationStatus.ASSIGNED
-            ), f"The assignaiton should be assigned {a.message}"
+        assert isinstance(a, AssignationChangedMessage)
+        assert (
+            a.status == AssignationStatus.ASSIGNED
+        ), f"The assignaiton should be assigned {a.message}"
 
-            a = await transport.receive(timeout=1)
-            assert isinstance(a, AssignationChangedMessage)
-            assert (
-                a.status == AssignationStatus.YIELD
-            ), f"The assignaiton should have returned {a.message}"
-            assert a.returns == [
-                "tested",
-                {"peter": 6},
-            ], f"The provision should have returned {a.message}"
+        a = await transport.receive(timeout=1)
+        assert isinstance(a, AssignationChangedMessage)
+        assert (
+            a.status == AssignationStatus.YIELD
+        ), f"The assignaiton should have returned {a.message}"
+        assert a.returns == [
+            "tested",
+            {"peter": 6},
+        ], f"The provision should have returned {a.message}"
 
-            a = await transport.receive(timeout=1)
-            assert isinstance(a, AssignationChangedMessage)
-            assert (
-                a.status == AssignationStatus.DONE
-            ), f"The assignaiton should have been done {a.message}"
+        a = await transport.receive(timeout=1)
+        assert isinstance(a, AssignationChangedMessage)
+        assert (
+            a.status == AssignationStatus.DONE
+        ), f"The assignaiton should have been done {a.message}"

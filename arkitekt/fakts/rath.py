@@ -21,10 +21,6 @@ class ArkitektRathConfig(Config):
 
 
 class FaktsArkitektRath(ArkitektRath):
-    def __init__(self, fakts: Fakts = None, **kwargs) -> None:
-        super().__init__(None, **kwargs)
-        self.fakts = fakts
-
     def configure(self, config: ArkitektRathConfig, herre: Herre) -> None:
         self.link = compose(
             ShrinkingLink(),
@@ -44,7 +40,7 @@ class FaktsArkitektRath(ArkitektRath):
 
         herre = current_herre.get()
 
-        config = await ArkitektRathConfig.from_fakts(fakts=self.fakts)
+        config = await ArkitektRathConfig.from_fakts()
         self.configure(config, herre)
 
         return await super().__aenter__()

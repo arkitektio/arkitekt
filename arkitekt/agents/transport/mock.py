@@ -61,7 +61,7 @@ class MockAgentTransport(AgentTransport):
     async def delay(
         self, message: Union[Assignation, Provision, Unprovision, Unassignation]
     ):
-        await self.broadcast(message)
+        await self.abroadcast(message)
 
     def sync_delay(
         self, message: Union[Assignation, Provision, Unprovision, Unassignation]

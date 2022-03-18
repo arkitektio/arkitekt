@@ -1,13 +1,15 @@
-from typing import List, Optional, Dict, Any, Union
+from typing import Awaitable, Callable, List, Optional, Dict, Any, Union
 from arkitekt.messages import Assignation, Reservation, Unassignation, Unreservation
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
+from koil.composition import KoiledModel
 
 
-class PostmanTransport:
+class PostmanTransport(KoiledModel):
+    abroadcast: Optional[
+        Callable[[Union[Assignation, Reservation]], Awaitable[None]]
+    ] = None
+
     pass
-
-    async def abroadcast(self, message: Union[Assignation, Reservation]):
-        raise NotImplementedError("soinsoisn")
 
     async def aassign(
         self,

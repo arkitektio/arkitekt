@@ -23,10 +23,10 @@ async def test_structure_registration():
         async def expand(cls, shrinked_value):
             return cls(shrinked_value)
 
-    assert "test" in registry.identifier_structure_map, "Registration fails"
-    assert "test" in registry.identifier_expander_map, "Registration of expand failed"
+    assert "test" in registry._identifier_shrinker_map, "Registration fails"
+    assert "test" in registry._identifier_expander_map, "Registration of expand failed"
     assert (
-        SerializableObject.expand == registry.identifier_expander_map["test"]
+        SerializableObject.expand == registry._identifier_expander_map["test"]
     ), "Is not the same instance"
 
     with pytest.raises(StructureOverwriteError):

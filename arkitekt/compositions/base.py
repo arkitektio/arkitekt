@@ -40,7 +40,6 @@ class Arkitekt(Composition):
     )
     agent: BaseAgent = Field(default_factory=FaktsAgent)
     postman: BasePostman = Field(default_factory=FaktsPostman)
-    additional_contexts: List[AsyncContextManager] = Field(default_factory=list)
 
     def register(
         self,
@@ -67,7 +66,7 @@ class Arkitekt(Composition):
                 builder=builder,
                 widgets=widgets,
                 interfaces=interfaces,
-                structure_registry=self.structure_registry,
+                structure_registry=structure_registry,
                 on_provide=on_provide,
                 on_unprovide=on_unprovide,
                 **actorparams,
@@ -91,3 +90,4 @@ class Arkitekt(Composition):
     class Config:
         arbitrary_types_allowed = True
         underscore_attrs_are_private = True
+        extra = "forbid"

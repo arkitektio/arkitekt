@@ -14,7 +14,7 @@ class ArkitektRath(rath.Rath):
 
     async def __aenter__(self):
         await super().__aenter__()
-        self._token = current_arkitekt_rath.set(self)
+        current_arkitekt_rath.set(self)
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):

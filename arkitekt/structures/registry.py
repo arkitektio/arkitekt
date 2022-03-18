@@ -32,11 +32,6 @@ class StructureRegistry(BaseModel):
 
     _token: contextvars.Token = None
 
-    def __post_init__(self):
-        if self.copy_from_default:
-            default = get_default_structure_registry()
-            print(default)
-
     def get_expander_for_identifier(self, key):
         try:
             return self._identifier_expander_map[key]
@@ -125,12 +120,12 @@ class StructureRegistry(BaseModel):
         self._structure_identifier_map[cls] = identifier
         self._structure_default_widget_map[cls] = default_widget
 
-    def __enter__(self):
-        self._token = current_structure_registry.set(self)
+    async def __aenter__(self):
+        current_structure_registry.set(self)
         return self
 
-    def __exit__(self, exc_type, exc_val, exc_tb):
-        current_structure_registry.reset(self._token)
+    async def __exit__(self, exc_type, exc_val, exc_tb):
+        current_structure_registry.set(None)
 
     class Config:
         arbitrary_types_allowed = True

@@ -103,7 +103,7 @@ def arkitekt_rath():
         ),
     )
 
-    return ArkitektRath(link)
+    return ArkitektRath(link=link)
 
 
 async def test_define_to_node_gen(simple_registry, arkitekt_rath):

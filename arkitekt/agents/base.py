@@ -12,10 +12,10 @@ from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.messages import Assignation, Unassignation, Unprovision, Provision
 from koil import koil, unkoil, unkoil_gen
 from koil.decorators import koilable
+from koil.composition import KoiledModel
 
 
-@koilable(fieldname="koil", add_connectors=True)
-class BaseAgent(BaseModel):
+class BaseAgent(KoiledModel):
     """Agent
 
     Agents are the governing entities in the arkitekt system. They are responsible for
@@ -26,9 +26,9 @@ class BaseAgent(BaseModel):
 
     transport: Optional[AgentTransport] = None
     definition_registry: Optional[DefinitionRegistry] = None
-    _approved_templates: List[Tuple[TemplateFragment, Callable]] = []
     rath: Optional[ArkitektRath] = None
 
+    _approved_templates: List[Tuple[TemplateFragment, Callable]] = []
     _templateActorBuilderMap = {}
     _templateTemplatesMap: Dict[str, TemplateFragment] = {}
     _provisionActorMap = {}
@@ -126,7 +126,9 @@ class BaseAgent(BaseModel):
             await self.astep()
 
     async def __aenter__(self):
-        self.definition_registry = get_current_definition_registry()
+        self.definition_registry = (
+            self.definition_registry or get_current_definition_registry()
+        )
         self.rath = self.rath or current_arkitekt_rath.get()
         self._inqueue = asyncio.Queue()
         self.transport.abroadcast = self.abroadcast

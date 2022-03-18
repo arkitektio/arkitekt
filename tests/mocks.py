@@ -1,11 +1,15 @@
 from ctypes import Union
 from curses import def_prog_mode
 from typing import Any, Dict, List, Optional
+
+from pydantic import Field
+from arkitekt.actors.base import Agent
 from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.agents.transport.mock import MockAgentTransport
 from arkitekt.api.schema import (
     NodeType,
 )
+from rath.links.base import TerminatingLink
 from rath.links.testing.mock import AsyncMockResolver, AsyncMockLink
 from rath.links.testing.statefulmock import AsyncMockResolver, AsyncStatefulMockLink
 from rath.links import ShrinkingLink, DictingLink, SwitchAsyncLink, compose, split
@@ -22,11 +26,14 @@ from arkitekt.structures.registry import (
 )
 from arkitekt.postmans.transport.mock import MockPostmanTransport
 from arkitekt.postmans.stateful import StatefulPostman
-from arkitekt.apps.base import Arkitekt
+from arkitekt.app import ArkitektApp
+from arkitekt.compositions.base import Arkitekt
 import contextvars
 from rath import Rath
 from koil import Koil
 from koil.vars import current_loop
+from koil.composition import Composition
+
 
 mikro_context = contextvars.ContextVar("mikro_context", default=None)
 
@@ -124,77 +131,37 @@ class ArkitektMockResolver(AsyncMockResolver):
         return new_template
 
 
-class MockApp(Arkitekt):
-    def __init__(
-        self,
-        structure_registry: StructureRegistry = None,
-        definition_registry: DefinitionRegistry = None,
-        **kwargs
-    ) -> None:
-
-        structure_registry = structure_registry or get_current_structure_registry()
-        definition_registry = definition_registry or get_current_definition_registry()
-
-        rath = ArkitektRath(
-            compose(
-                ShrinkingLink(),
-                DictingLink(),
-                SwitchAsyncLink(),  # after the shrinking so we can override the dicting
-                AsyncMockLink(
-                    resolver=ArkitektMockResolver(),
-                ),
-            )
+class MockArkitektRath(ArkitektRath):
+    link: TerminatingLink = Field(
+        default_factory=lambda: compose(
+            ShrinkingLink(),
+            DictingLink(),
+            SwitchAsyncLink(),  # after the shrinking so we can override the dicting
+            AsyncMockLink(
+                resolver=ArkitektMockResolver(),
+            ),
         )
-
-        agent_transport = MockAgentTransport()
-
-        agent = StatefulAgent(
-            transport=agent_transport,
-            definition_registry=definition_registry,
-        )
-
-        postman_transport = MockPostmanTransport()
-
-        postman = StatefulPostman(postman_transport)
-
-        super().__init__(
-            rath=rath,
-            definition_registry=definition_registry,
-            structure_registry=structure_registry,
-            agent=agent,
-            postman=postman,
-            **kwargs,
-        )
+    )
 
 
-class MikroRath(Rath):
+class MockAgent(StatefulAgent):
+    transport: MockAgentTransport = Field(default_factory=MockAgentTransport)
+
+
+class MockPostman(StatefulPostman):
+    transport: MockPostmanTransport = Field(default_factory=MockPostmanTransport)
+
+
+class MockArkitekt(Arkitekt):
+    rath: MockArkitektRath = Field(default_factory=MockArkitektRath)
+    agent: Agent = Field(default_factory=MockAgent)
+    postman: MockPostman = Field(default_factory=MockPostman)
+
+
+class MockRath(Rath):
     def __init__(self) -> None:
         super().__init__(
-            compose(
-                ShrinkingLink(),
-                DictingLink(),
-                SwitchAsyncLink(),  # after the shrinking so we can override the dicting
-                AsyncMockLink(
-                    query_resolver=ArkitektMockResolver(),
-                ),
-            )
-        )
-
-    async def __aenter__(self) -> None:
-        await super().__aenter__()
-        mikro_context.set(self)
-        print("Was set my friend")
-        return self
-
-    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        await super().__aexit__(exc_type, exc_val, exc_tb)
-        mikro_context.set(None)
-
-
-class StatefulMikroRath(Rath):
-    def __init__(self) -> None:
-        super().__init__(
-            compose(
+            link=compose(
                 ShrinkingLink(),
                 DictingLink(),
                 AsyncMockLink(
@@ -202,22 +169,6 @@ class StatefulMikroRath(Rath):
                 ),
             )
         )
-
-    def execute(
-        self,
-        query: str,
-        variables: Dict[str, Any] = None,
-        headers: Dict[str, Any] = ...,
-        operation_name=None,
-        **kwargs
-    ):
-        try:
-            print("Running this")
-            print(current_loop.get())
-            return super().execute(query, variables, headers, operation_name, **kwargs)
-        except Exception as e:
-            print(e)
-            raise e
 
     async def __aenter__(self) -> None:
         mikro_context.set(self)
@@ -229,10 +180,18 @@ class StatefulMikroRath(Rath):
 
 
 def query_current_mikro(query, variables):
-    mikro: MikroRath = mikro_context.get()
+    mikro: MockRath = mikro_context.get()
     return mikro.execute(query, variables)
 
 
 async def aquery_current_mikro(query, variables):
-    mikro: MikroRath = mikro_context.get()
+    mikro: MockRath = mikro_context.get()
     return await mikro.aexecute(query, variables)
+
+
+class MockApp(Composition):
+    arkitekt: MockArkitekt = Field(default_factory=MockArkitekt)
+
+
+class MockComposedApp(MockApp):
+    additional_rath: Rath = Field(default_factory=MockRath)

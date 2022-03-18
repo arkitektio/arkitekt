@@ -1,14 +1,18 @@
 from typing import Any, Dict, List, Optional
+
+from pydantic import Field
 from arkitekt.postmans.transport.base import PostmanTransport
 from arkitekt.messages import Assignation, Reservation, Unassignation, Unreservation
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
 from koil import unkoil, Koil
 from arkitekt.postmans.vars import current_postman
 from koil.decorators import koilable
+from koil.composition import KoiledModel
 
 
-@koilable(add_connectors=True)
-class BasePostman:
+class BasePostman(KoiledModel):
+    transport: Optional[PostmanTransport] = None
+
     """Postman
 
 
@@ -21,16 +25,8 @@ class BasePostman:
 
     """
 
-    def __init__(self, transport: PostmanTransport) -> None:
-        self.transport = transport
-
-    async def abroadcast(self):
-        raise NotImplementedError(
-            "This needs to be overwritten by your Postman subclass"
-        )
-
     async def __aenter__(self):
-        self._token = current_postman.set(self)
+        current_postman.set(self)
         self.transport.abroadcast = self.abroadcast
         await self.transport.__aenter__()
         return self
