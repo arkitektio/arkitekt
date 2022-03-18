@@ -265,6 +265,20 @@ python-versions = ">=3.6"
 test = ["pytest", "black"]
 
 [[package]]
+name = "fakts"
+version = "0.1.47"
+description = "asynchronous configuration protocol for dynamic client-server relations"
+category = "main"
+optional = false
+python-versions = ">=3.7,<4.0"
+
+[package.dependencies]
+koil = ">=0.1.96,<0.2.0"
+pydantic = ">=1.8.2,<2.0.0"
+PyYAML = ">=5.2"
+QtPy = ">=1.11.2,<2.0.0"
+
+[[package]]
 name = "filelock"
 version = "3.6.0"
 description = "A platform independent file lock."
@@ -672,7 +686,7 @@ testing = ["fields", "hunter", "process-tests", "six", "pytest-xdist", "virtuale
 name = "pyyaml"
 version = "5.4.1"
 description = "YAML parser and emitter for Python"
-category = "dev"
+category = "main"
 optional = false
 python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*, !=3.5.*"
 
@@ -902,7 +916,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.7"
-content-hash = "c85be2786c72c53981251303a64637c1c4dd4893b6a6f761c2b70c2d7be87a3b"
+content-hash = "21ba36554b8f8437da59578ca5e8358ec53355377bb6a7e971eddde3f2de19f1"
 
 [metadata.files]
 aiohttp = [
@@ -1096,6 +1110,10 @@ docspec-python = [
 ]
 docstring-parser = [
     {file = "docstring_parser-0.13.tar.gz", hash = "sha256:66dd7eac7232202bf220fd98a5f11491863c01f958a75fdd535c7eccac9ced78"},
+]
+fakts = [
+    {file = "fakts-0.1.47-py3-none-any.whl", hash = "sha256:b9f37a7c35e4fff7ef37d54a169d12f08449f7ba64d910e14497389fc2497915"},
+    {file = "fakts-0.1.47.tar.gz", hash = "sha256:1378c252aaaf81d602e2d5064f82b8f3eccf91ce909d3932fb9e17c84adcf5d6"},
 ]
 filelock = [
     {file = "filelock-3.6.0-py3-none-any.whl", hash = "sha256:f8314284bfffbdcfa0ff3d7992b023d4c628ced6feb957351d4c48d059f56bc0"},
