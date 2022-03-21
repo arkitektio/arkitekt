@@ -1,17 +1,14 @@
 import contextvars
-from email.policy import default
-from arkitekt.api.schema import DefinitionInput, NodeFragment
+from arkitekt.api.schema import DefinitionInput
 from arkitekt.actors.actify import actify
 from arkitekt.definition.define import prepare_definition
-from arkitekt.definition.errors import NoDefinitionRegistryFound
 from arkitekt.structures.registry import (
     StructureRegistry,
     get_current_structure_registry,
 )
 from arkitekt.api.schema import WidgetInput
 from typing import Dict, List, Callable, Optional, Tuple
-import os
-from pydantic import Field, BaseModel
+from pydantic import Field
 from koil.composition import KoiledModel
 
 
@@ -60,13 +57,11 @@ class DefinitionRegistry(KoiledModel):
         self, actorBuilder: Callable, definition: DefinitionInput, **params  # New Node
     ):
         self.defined_nodes.append((definition, actorBuilder, params))
-        pass
 
     def register_actor_with_template(
         self, actorBuilder: Callable, q_string: QString, **params
     ):  # Query Path
         self.templated_nodes.append((q_string, actorBuilder, params))
-        pass
 
     def register(
         self,

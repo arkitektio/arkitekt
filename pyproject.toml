@@ -25,6 +25,8 @@ black = "^21.12b0"
 pydoc-markdown = "^4.5.0"
 mypy = "^0.931"
 turms = {version = "^0.2.3", python = "^3.9"}
+autoflake = "^1.4"
+pylint = "^2.12.2"
 
 [tool.poetry.scripts]
 arkitekt = "arkitekt.cli.main:entrypoint"

@@ -1,7 +1,7 @@
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.agents.transport.protocols.agent_json import *
 from arkitekt.messages import Assignation, Provision, Provision, Unprovision
-from arkitekt.api.schema import AssignationStatus, KwargPortFragment, ProvisionStatus
+from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from typing import Any, List, Optional, Union
 import asyncio
 from koil import unkoil
@@ -29,7 +29,6 @@ class MockAgentTransport(AgentTransport):
 
     async def __aenter__(self):
         self._inqueue = asyncio.Queue()
-        pass
 
     async def change_assignation(
         self,

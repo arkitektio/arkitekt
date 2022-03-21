@@ -7,7 +7,7 @@ from rath.links.dictinglink import DictingLink
 from rath.links.shrink import ShrinkingLink
 from arkitekt.rath import ArkitektRath
 from herre import Herre, current_herre
-from fakts import Fakts, Config
+from fakts import Config
 from rath.links.split import SplitLink
 from rath.links.websockets import WebSocketLink
 

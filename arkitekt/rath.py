@@ -1,6 +1,5 @@
 from rath import rath
 import contextvars
-import logging
 
 current_arkitekt_rath = contextvars.ContextVar("current_arkitekt_rath", default=None)
 

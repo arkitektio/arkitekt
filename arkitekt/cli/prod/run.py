@@ -1,11 +1,9 @@
-import asyncio
-from importlib import import_module, reload
-from typing import List
+from importlib import import_module
 import logging
 import sys
 import os
 from rich.console import Console
-from arkitekt.actors.registry import get_current_actor_registry, register
+from arkitekt.actors.registry import get_current_actor_registry
 
 logger = logging.getLogger(__name__)
 

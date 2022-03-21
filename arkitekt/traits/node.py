@@ -1,4 +1,3 @@
-from typing import Any
 from rich.table import Table
 
 

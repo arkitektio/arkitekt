@@ -1,7 +1,7 @@
 from arkitekt.agents.base import BaseAgent
 from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
-from typing import Optional, Union
+from typing import Union
 import asyncio
 import logging
 

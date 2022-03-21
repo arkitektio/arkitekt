@@ -1,7 +1,6 @@
 from enum import Enum
-from typing import Callable, List
+from typing import Callable
 import inflection
-from pydantic import BaseModel
 from arkitekt.api.schema import (
     ArgPortInput,
     DefinitionInput,

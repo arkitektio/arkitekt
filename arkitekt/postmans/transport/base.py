@@ -9,7 +9,6 @@ class PostmanTransport(KoiledModel):
         Callable[[Union[Assignation, Reservation]], Awaitable[None]]
     ] = None
 
-    pass
 
     async def aassign(
         self,

@@ -11,7 +11,7 @@ from arkitekt.api.schema import (
     aget_template,
     TemplateFragment,
 )
-from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
+from arkitekt.messages import Assignation, Provision, Unassignation
 from arkitekt.actors.errors import UnknownMessageError
 from arkitekt.actors.vars import current_provision_context
 

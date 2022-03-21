@@ -1,10 +1,7 @@
 from typing import Any, Dict, List, Union
 
-from pytest import param
 from arkitekt.messages import Assignation, Reservation
 from arkitekt.postmans.base import BasePostman
-from arkitekt.postmans.transport.base import PostmanTransport
-from arkitekt.api.schema import ReservationStatus, ReserveParamsInput
 import asyncio
 from pydantic import Field
 

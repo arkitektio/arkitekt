@@ -1,11 +1,11 @@
 import asyncio
-from dataclasses import dataclass, field
+from dataclasses import field
 import json
 
 import websockets
 from arkitekt.postmans.transport.base import PostmanTransport
-from typing import Any, Awaitable, Callable, Dict, List, Optional, Union
-from arkitekt.messages import Assignation, Reservation, Unassignation, Unreservation
+from typing import Any, Awaitable, Callable, Dict, List, Optional
+from arkitekt.messages import Assignation, Reservation
 from arkitekt.postmans.transport.errors import (
     AssignDeniedError,
     AssignationListDeniedError,
@@ -18,9 +18,7 @@ from arkitekt.postmans.transport.errors import (
 from .protocols.postman_json import *
 import logging
 from websockets.exceptions import (
-    ConnectionClosed,
     ConnectionClosedError,
-    ConnectionClosedOK,
 )
 
 logger = logging.getLogger(__name__)

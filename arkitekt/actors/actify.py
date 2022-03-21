@@ -8,7 +8,7 @@ from arkitekt.actors.functional import (
 
 import inspect
 from arkitekt.structures.registry import StructureRegistry
-from typing import Callable, Dict, List
+from typing import Callable
 import inspect
 
 

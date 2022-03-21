@@ -1,5 +1,4 @@
 from dataclasses import dataclass, field
-from re import A
 from typing import Awaitable, Callable, Dict, Union
 import websockets
 from arkitekt.agents.transport.base import AgentTransport
@@ -13,9 +12,7 @@ from arkitekt.agents.transport.errors import (
 from arkitekt.agents.transport.protocols.agent_json import *
 import logging
 from websockets.exceptions import (
-    ConnectionClosed,
     ConnectionClosedError,
-    ConnectionClosedOK,
 )
 
 logger = logging.getLogger(__name__)

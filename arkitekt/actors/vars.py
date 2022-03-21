@@ -1,7 +1,6 @@
 import contextvars
 from typing import Any
 import janus
-import threading
 
 from arkitekt.messages import Assignation
 

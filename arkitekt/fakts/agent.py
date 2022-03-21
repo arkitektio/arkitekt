@@ -1,8 +1,7 @@
 from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.agents.transport.websocket import WebsocketAgentTransport
 from arkitekt.rath import ArkitektRath
-from arkitekt.definition.registry import DefinitionRegistry
-from fakts import Fakts, Config
+from fakts import Config
 from herre.herre import Herre, current_herre
 from arkitekt.rath import ArkitektRath, current_arkitekt_rath
 

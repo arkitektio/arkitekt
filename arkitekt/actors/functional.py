@@ -5,7 +5,7 @@ from arkitekt.actors.errors import ThreadedActorCancelled
 from arkitekt.messages import Assignation
 from arkitekt.api.schema import AssignationStatus
 from arkitekt.actors.base import Actor
-from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 import asyncio
 from arkitekt.structures.serialization.actor import expand_inputs, shrink_outputs
 from arkitekt.actors.vars import (
@@ -14,8 +14,8 @@ from arkitekt.actors.vars import (
 )
 import logging
 import janus
-from koil.vars import current_cancel_event, current_loop
-from koil.helpers import iterate_spawned, run_spawned
+from koil.vars import current_cancel_event
+from koil.helpers import run_spawned
 
 logger = logging.getLogger(__name__)
 

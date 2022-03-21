@@ -1,13 +1,11 @@
-import contextvars
 from arkitekt.postmans.vars import current_postman
 from arkitekt.structures.registry import get_current_structure_registry
 from koil.decorators import koilable
 from .stateful import StatefulPostman
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
 import asyncio
-from typing import Union
 from arkitekt.traits.node import Reserve
-from koil import Koil, unkoil
+from koil import unkoil
 import logging
 from arkitekt.structures.serialization.postman import shrink_inputs, expand_outputs
 

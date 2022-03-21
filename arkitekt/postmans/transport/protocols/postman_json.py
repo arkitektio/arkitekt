@@ -49,7 +49,6 @@ class JSONMessage(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     type: str
     meta: JSONMeta = Field(default_factory=JSONMeta)
-    pass
 
 
 class ReserveList(JSONMessage):

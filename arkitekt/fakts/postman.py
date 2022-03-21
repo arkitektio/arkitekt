@@ -1,6 +1,5 @@
 from arkitekt.postmans.stateful import StatefulPostman
 from arkitekt.postmans.transport.websocket import WebsocketPostmanTransport
-from arkitekt.rath import ArkitektRath
 from fakts.config.base import Config
 from fakts.fakts import Fakts
 from herre.herre import Herre, current_herre
@@ -9,7 +8,6 @@ from herre.herre import Herre, current_herre
 class PostmanConfig(Config):
     endpoint_url: str
     instance_id: str
-    pass
 
     class Config:
         group = "arkitekt.postman"

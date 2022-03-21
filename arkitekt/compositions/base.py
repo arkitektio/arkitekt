@@ -1,8 +1,5 @@
-import asyncio
-import contextvars
-from dataclasses import dataclass
-from typing import Any, AsyncContextManager, Awaitable, Callable, Dict, List, Optional
-from pydantic import BaseModel, Field, PrivateAttr
+from typing import Any, Awaitable, Callable, Dict, List
+from pydantic import Field
 from arkitekt.api.schema import TemplateFragment, WidgetInput
 from arkitekt.fakts.agent import FaktsAgent
 from arkitekt.fakts.postman import FaktsPostman
@@ -11,7 +8,6 @@ from arkitekt.rath import ArkitektRath
 from arkitekt.messages import Provision
 from arkitekt.structures.registry import (
     StructureRegistry,
-    get_current_structure_registry,
     get_default_structure_registry,
 )
 from arkitekt.definition.registry import (
@@ -20,11 +16,7 @@ from arkitekt.definition.registry import (
 )
 from arkitekt.agents.base import BaseAgent
 from arkitekt.postmans.base import BasePostman
-from fakts.fakts import Fakts
-from herre.fakts.herre import FaktsHerre
-from herre.herre import Herre
-from koil import Koil, unkoil
-import koil
+from koil import unkoil
 from koil.composition import Composition
 from koil.decorators import koilable
 

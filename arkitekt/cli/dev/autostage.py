@@ -1,7 +1,5 @@
-from asyncio.tasks import sleep
 from importlib import reload, import_module
 import asyncio
-from arkitekt.actors.registry import get_current_actor_registry, register
 import asyncio
 import sys
 import time
@@ -10,14 +8,11 @@ from watchdog.observers import Observer
 from watchdog.events import (
     FileModifiedEvent,
     FileSystemEventHandler,
-    LoggingEventHandler,
 )
 import os
-import subprocess
 import janus
 import threading
 import os
-import signal
 
 from arkitekt.agents.base import BaseAgent
 from arkitekt.definition.registry import get_current_definition_registry
