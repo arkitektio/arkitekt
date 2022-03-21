@@ -1,5 +1,5 @@
 from arkitekt.agents.transport.mock import MockAgentTransport
-from tests.mocks import MockAgent, MockApp, MockArkitekt, MockPostman
+from tests.mocks import MockAgent, MockArkitekt, MockPostman
 
 
 MockAgentTransport()

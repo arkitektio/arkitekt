@@ -1,20 +1,18 @@
-from typing import Dict, List, Tuple
-from arkitekt.api.schema import adefine, define
+from typing import Dict
+from arkitekt.api.schema import adefine
 from arkitekt.definition.define import prepare_definition
 import pytest
 from arkitekt.structures.registry import StructureRegistry, register_structure
 
 from tests.structures import SecondSerializableObject, SerializableObject
-from tests.funcs import karl_structure, complex_karl, karl, structured_gen
+from tests.funcs import complex_karl, karl, structured_gen
 from arkitekt.structures.serialization.postman import (
     shrink_inputs,
     expand_outputs,
     ShrinkingError,
 )
 from arkitekt.structures.serialization.actor import (
-    shrink_outputs,
     expand_inputs,
-    ExpandingError,
 )
 from rath.links import compose, ShrinkingLink, DictingLink, SwitchAsyncLink
 from rath.links.testing.mock import AsyncMockLink

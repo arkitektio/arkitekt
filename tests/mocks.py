@@ -1,6 +1,3 @@
-from ctypes import Union
-from curses import def_prog_mode
-from typing import Any, Dict, List, Optional
 
 from pydantic import Field
 from arkitekt.actors.base import Agent
@@ -11,27 +8,16 @@ from arkitekt.api.schema import (
 )
 from rath.links.base import TerminatingLink
 from rath.links.testing.mock import AsyncMockResolver, AsyncMockLink
-from rath.links.testing.statefulmock import AsyncMockResolver, AsyncStatefulMockLink
-from rath.links import ShrinkingLink, DictingLink, SwitchAsyncLink, compose, split
+from rath.links.testing.statefulmock import AsyncMockResolver
+from rath.links import DictingLink, ShrinkingLink, SwitchAsyncLink, compose
 from rath.operation import Operation
 from arkitekt.rath import ArkitektRath
-from arkitekt.definition.registry import (
-    DefinitionRegistry,
-    get_current_definition_registry,
-)
 
-from arkitekt.structures.registry import (
-    StructureRegistry,
-    get_current_structure_registry,
-)
 from arkitekt.postmans.transport.mock import MockPostmanTransport
 from arkitekt.postmans.stateful import StatefulPostman
-from arkitekt.app import ArkitektApp
 from arkitekt.compositions.base import Arkitekt
 import contextvars
 from rath import Rath
-from koil import Koil
-from koil.vars import current_loop
 from koil.composition import Composition
 
 

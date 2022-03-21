@@ -4,8 +4,6 @@ from rath.links.testing.mock import AsyncMockLink
 from tests.mocks import ArkitektMockResolver
 from arkitekt.rath import ArkitektRath
 
-from arkitekt.definition.registry import DefinitionRegistry, register
-from arkitekt.structures.registry import StructureRegistry
 from arkitekt.postmans.transport.mock import MockPostmanTransport
 from arkitekt.postmans.stateful import StatefulPostman
 from arkitekt.postmans.utils import use

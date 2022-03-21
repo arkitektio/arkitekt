@@ -1,6 +1,4 @@
 import pytest
-from rath.links import compose, ShrinkingLink, DictingLink
-from rath.links.testing.mock import AsyncMockLink
 from arkitekt.actors.base import Agent
 from arkitekt.agents.transport.protocols.agent_json import (
     AssignationChangedMessage,
@@ -9,14 +7,11 @@ from arkitekt.agents.transport.protocols.agent_json import (
 from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision
 from tests.funcs import function_with_side_register
-from tests.mocks import ArkitektMockResolver, MockApp, MockArkitekt
-from arkitekt.rath import ArkitektRath
+from tests.mocks import MockApp, MockArkitekt
 
-from arkitekt.definition.registry import DefinitionRegistry, register
+from arkitekt.definition.registry import DefinitionRegistry
 from arkitekt.structures.registry import StructureRegistry
-from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.agents.transport.mock import MockAgentTransport
-import asyncio
 
 from tests.structures import SecondObject
 
