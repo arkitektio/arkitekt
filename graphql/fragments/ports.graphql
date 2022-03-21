@@ -116,6 +116,35 @@ fragment ListReturnPort on ListReturnPort {
       __typename
       identifier
     }
+    ... on StringReturnPort {
+      __typename
+    }
+    ... on IntReturnPort {
+      __typename
+    }
+    ... on BoolReturnPort {
+      __typename
+    }
+  }
+}
+
+fragment DictReturnPort on DictReturnPort {
+  key
+  child {
+    __typename
+    ... on StructureReturnPort {
+      __typename
+      identifier
+    }
+    ... on StringReturnPort {
+      __typename
+    }
+    ... on IntReturnPort {
+      __typename
+    }
+    ... on BoolReturnPort {
+      __typename
+    }
   }
 }
 
@@ -143,6 +172,7 @@ fragment ReturnPort on ReturnPort {
   ...StructureReturnPort
   ...StringReturnPort
   ...IntReturnPort
+  ...DictReturnPort
 }
 
 fragment KwargPort on KwargPort {

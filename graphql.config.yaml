@@ -6,24 +6,24 @@ projects:
       turms:
         out_dir: arkitekt/api
         freeze: True
-        object_bases:
-          - "rath.turms.object.GraphQLObject"
+        always_resolve_interfaces: True
+        parsers:
+          - type: turms.parsers.polyfill.PolyfillParser
+            python_version: 3.7
         stylers:
-          - type: turms.stylers.capitalize.Capitalizer
-          - type: turms.stylers.appender.Appender
-            append_input: ""
-            append_enum: ""
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
             append_fragment: "Fragment"
         plugins:
           - type: turms.plugins.enums.EnumsPlugin
           - type: turms.plugins.inputs.InputsPlugin
           - type: turms.plugins.fragments.FragmentsPlugin
-          - type: turms.plugins.operation.OperationsPlugin
-          - type: turms.plugins.funcs.OperationsFuncPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
             global_kwargs:
-              - type: arkitekt.arkitekt.Arkitekt
-                key: arkitekt
-                description: "The client we want to use (defaults to the currently active client)"
+              - type: arkitekt.rath.ArkitektRath
+                key: rath
+                description: "The arkitekt rath client"
             definitions:
               - type: subscription
                 is_async: True
@@ -41,7 +41,7 @@ projects:
               - type: mutation
                 use: arkitekt.funcs.execute
         processors:
-          - type: turms.processor.black.BlackProcessor
+          - type: turms.processors.black.BlackProcessor
         scalar_definitions:
           uuid: str
           Callback: str
