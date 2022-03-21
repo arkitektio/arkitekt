@@ -1,5 +1,7 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 import uuid
+from typing_extensions import Literal
+
 
 from pydantic import BaseModel, Field
 from datetime import datetime
