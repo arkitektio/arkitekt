@@ -1,10 +1,27 @@
-@pytest.fixture
-def mock_app_provision_another_stateful_context(stateful_mikro_rath):
+from arkitekt.agents.transport.protocols.agent_json import (
+    AssignationChangedMessage,
+    ProvisionChangedMessage,
+)
+from arkitekt.api.schema import AssignationStatus, ProvisionStatus
+from arkitekt.messages import Assignation, Provision
 
-    app = MockApp(additional_contexts=[stateful_mikro_rath])
+from arkitekt.structures.registry import StructureRegistry
+from tests.mocks import MockArkitekt, MockComposedApp, query_current_mikro
+from tests.structures import (
+    IdentifiableSerializableObject,
+)
 
-    @app.register()
-    async def hallo_world(i: IdentifiableSerializableObject) -> str:
+
+async def test_app_provision_with_more_stateful_context():
+
+    app = MockComposedApp(
+        arkitekt=MockArkitekt(
+            structure_registry=StructureRegistry(allow_auto_register=True),
+        )
+    )
+
+    @app.arkitekt.register()
+    def hallo_world(i: IdentifiableSerializableObject) -> str:
         """Hallo World
 
         Hallo world is a mini function
@@ -15,39 +32,28 @@ def mock_app_provision_another_stateful_context(stateful_mikro_rath):
         Returns:
             str: A nother little poney in string
         """
-        print("oINOINOINOINOIN")
-        print(
-            await aquery_current_mikro(
-                """query ($package: String!, $interface: String!) {
+        query_current_mikro(
+            """query ($package: String!, $interface: String!) {
                     node(package: $package, interface: $interface) {
                     id
                     }
                 } 
             """,
-                {"package": "mock", "interface": "node"},
-            )
+            {"package": "mock", "interface": "node"},
         )
-
-        print("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! here")
 
         return str(i.number)
 
-    return app
+    transport = app.arkitekt.agent.transport
+    ptransport = app.arkitekt.agent.transport
+    agent = app.arkitekt.agent
 
+    async with app:
 
-async def test_app_provision_with_more_stateful_context(
-    mock_app_provision_another_stateful_context: MockApp,
-):
-    transport: MockAgentTransport = (
-        mock_app_provision_another_stateful_context.agent.transport
-    )
-    ptransport: MockPostmanTransport = (
-        mock_app_provision_another_stateful_context.postman.transport
-    )
-
-    async with mock_app_provision_another_stateful_context:
+        await agent.astart()
 
         await transport.delay(Provision(template="1", provision="1", args=[1]))
+        await agent.astep()
 
         p = await transport.receive(timeout=1)
         assert isinstance(p, ProvisionChangedMessage)
@@ -62,6 +68,7 @@ async def test_app_provision_with_more_stateful_context(
         ), f"The provision should be active {p.message}"
 
         await transport.delay(Assignation(provision="1", assignation="1", args=[678]))
+        await agent.astep()
 
         a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
@@ -69,13 +76,13 @@ async def test_app_provision_with_more_stateful_context(
             a.status == AssignationStatus.ASSIGNED
         ), f"The assignaiton should be assigned {a.message}"
 
-        print("We are the best :)")
-
-        a = await transport.receive(timeout=2)
+        a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
         assert (
             a.status == AssignationStatus.RETURNED
         ), f"The assignaiton should have returned {a.message}"
-        assert a.returns == ["678"], f"The provision should have returned {a.message}"
+        assert a.returns == [
+            "678"
+        ], f"The provision should have returned 678 not {a.returns}"
 
         print("nananana")

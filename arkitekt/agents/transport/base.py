@@ -2,8 +2,10 @@ from abc import abstractmethod
 from typing import Any, List, Optional, Union
 from arkitekt.messages import Assignation, Unassignation, Provision, Unprovision
 from arkitekt.api.schema import ProvisionMode, ProvisionStatus, AssignationStatus
+from koil.decorators import koilable
 
 
+@koilable()
 class AgentTransport:
     """Agent Transport
 
@@ -25,14 +27,12 @@ class AgentTransport:
 
     """
 
-    async def aconnect(self):
-        pass
-
-    async def adisconnect(self):
-        pass
+    @property
+    def connected(self):
+        return NotImplementedError("Implement this method")
 
     @abstractmethod
-    def broadcast(
+    def abroadcast(
         self, message: Union[Assignation, Unassignation, Provision, Unprovision]
     ):
         raise NotImplementedError("This is an abstract Base Class")
@@ -70,8 +70,7 @@ class AgentTransport:
         raise NotImplementedError("This is an abstract Base Class")
 
     async def __aenter__(self):
-        await self.aconnect()
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        await self.adisconnect()
+        pass

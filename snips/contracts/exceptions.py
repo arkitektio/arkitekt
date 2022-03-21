@@ -1,2 +1,0 @@
-class AssignmentException(Exception):
-    pass

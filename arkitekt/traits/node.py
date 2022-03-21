@@ -1,7 +1,4 @@
-from typing import Any
 from rich.table import Table
-
-from koil.loop import koil, koil_gen
 
 
 class Reserve:
@@ -13,27 +10,6 @@ class Reserve:
         async with self.reserve(**reserve_params) as res:
             async for result in res.stream_async(*args, **kwargs):
                 yield result
-
-    def __call__(self, *args: Any, fill_graphical=True, **kwargs) -> Any:
-        """Call
-
-        Call is a convenience on max function, its reserves the Node and wraps it either as
-        an geneator (both async and non async depending on context) or call it as a function
-        this should only be done if you know what you are doing.
-
-        Args:
-            reserve_params (dict, optional): [description]. Defaults to {}.
-
-        Returns:
-            Any: Generator or Function
-        """
-        from arkitekt.api.schema import NodeType  # TODO: FIX ciruclar input
-
-        if self.type == NodeType.FUNCTION:
-            return koil(self.call_async_func(*args, **kwargs))
-
-        if self.type == NodeType.GENERATOR:
-            return koil_gen(self.call_async_gen(*args, **kwargs))
 
     def __rich_repr__(self):
         yield self.name

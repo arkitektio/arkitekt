@@ -1,6 +1,5 @@
 import pytest
-from rath.links import compose, ShrinkingLink, DictingLink
-from rath.links.testing.mock import AsyncMockLink
+from arkitekt.actors.base import Agent
 from arkitekt.agents.transport.protocols.agent_json import (
     AssignationChangedMessage,
     ProvisionChangedMessage,
@@ -8,34 +7,17 @@ from arkitekt.agents.transport.protocols.agent_json import (
 from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision
 from tests.funcs import function_with_side_register
-from tests.mocks import ArkitektMockResolver
-from arkitekt import Arkitekt
+from tests.mocks import MockApp, MockArkitekt
 
-from arkitekt.definition.registry import DefinitionRegistry, register
+from arkitekt.definition.registry import DefinitionRegistry
 from arkitekt.structures.registry import StructureRegistry
-from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.agents.transport.mock import MockAgentTransport
-import asyncio
 
 from tests.structures import SecondObject
 
 
 @pytest.fixture
-def arkitekt_client():
-
-    link = compose(
-        ShrinkingLink(),
-        DictingLink(),  # after the shrinking so we can override the dicting
-        AsyncMockLink(
-            resolver=ArkitektMockResolver(),
-        ),
-    )
-
-    return Arkitekt(link)
-
-
-@pytest.fixture
-def agent_complex_object(arkitekt_client):
+def complex_definition_registry():
     """Tests async expansion in a threaded context
 
     Args:
@@ -44,10 +26,8 @@ def agent_complex_object(arkitekt_client):
     Returns:
         _type_: _description_
     """
-    transport = MockAgentTransport()
 
     structure_registry = StructureRegistry()
-    definition_registry = DefinitionRegistry()
 
     async def expand_second(id):
         return SecondObject(id)
@@ -59,28 +39,18 @@ def agent_complex_object(arkitekt_client):
         SecondObject, "second", expand_second, shrink_second
     )
 
-    register(
-        definition_registry=definition_registry, structure_registry=structure_registry
-    )(function_with_side_register)
+    definition_registry = DefinitionRegistry(structure_registry=structure_registry)
 
-    return StatefulAgent(
-        transport=transport,
-        definition_registry=definition_registry,
-        arkitekt=arkitekt_client,
-    )
+    definition_registry.register(function_with_side_register)
+
+    return definition_registry
 
 
-@pytest.fixture
-def mock_agent(arkitekt_client):
+async def test_agent_assignation():
 
-    transport = MockAgentTransport()
+    mockapp = MockApp()
 
-    structure_registry = StructureRegistry()
-    definition_registry = DefinitionRegistry()
-
-    @register(
-        definition_registry=definition_registry, structure_registry=structure_registry
-    )
+    @mockapp.arkitekt.register()
     async def hallo_world(i: int) -> int:
         """Hallo World
 
@@ -94,22 +64,16 @@ def mock_agent(arkitekt_client):
         """
         return i + 1
 
-    base_agent = StatefulAgent(
-        transport=transport,
-        definition_registry=definition_registry,
-        arkitekt=arkitekt_client,
-    )
+    async with mockapp:
+        mock_agent = mockapp.arkitekt.agent
+        transport = mockapp.arkitekt.agent.transport
 
-    return base_agent
-
-
-async def test_agent_assignation(mock_agent):
-
-    transport: MockAgentTransport = mock_agent.transport
-    async with mock_agent:
+        await mock_agent.start()
         await transport.delay(Provision(provision="1", template="1"))
+        await mock_agent.step()
 
         p = await transport.receive(timeout=1)
+        print(p)
         assert isinstance(p, ProvisionChangedMessage)
         assert (
             p.status == ProvisionStatus.PROVIDING
@@ -122,6 +86,7 @@ async def test_agent_assignation(mock_agent):
         ), f"The provision should be active {p.message}"
 
         await transport.delay(Assignation(provision="1", assignation="1", args=[1]))
+        await mock_agent.step()
 
         a = await transport.receive(timeout=1)
         assert isinstance(a, AssignationChangedMessage)
@@ -137,11 +102,23 @@ async def test_agent_assignation(mock_agent):
         assert a.returns == [2], f"The provision should have returned {a.message}"
 
 
-async def test_complex_agent_gen(agent_complex_object):
+async def test_complex_agent_gen(complex_definition_registry):
 
-    transport: MockAgentTransport = agent_complex_object.transport
-    async with agent_complex_object:
+    mockapp = MockApp(
+        arkitekt=MockArkitekt(
+            definition_registry=complex_definition_registry,
+        )
+    )
+
+    transport: MockAgentTransport = mockapp.arkitekt.agent.transport
+    a: Agent = mockapp.arkitekt.agent
+
+    async with mockapp:
+
+        await a.astart()
+
         await transport.delay(Provision(provision="1", template="1"))
+        await a.astep()
 
         p = await transport.receive(timeout=1)
         assert isinstance(p, ProvisionChangedMessage)
@@ -164,7 +141,10 @@ async def test_complex_agent_gen(agent_complex_object):
             )
         )
 
+        await a.astep()
+
         a = await transport.receive(timeout=1)
+
         assert isinstance(a, AssignationChangedMessage)
         assert (
             a.status == AssignationStatus.ASSIGNED

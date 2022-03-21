@@ -1,7 +1,6 @@
 from enum import Enum
-from typing import Callable, List
+from typing import Callable
 import inflection
-from pydantic import BaseModel
 from arkitekt.api.schema import (
     ArgPortInput,
     DefinitionInput,
@@ -104,9 +103,13 @@ def convert_kwarg_to_kwargport(
         # Generic Cases
 
         if issubclass(cls, bool) or isinstance(default, bool):
-            return KwargPortInput(
+            print(f"RUnning into this {default}")
+            t = KwargPortInput(
                 typename="BoolKwargPort", widget=widget, key=key, defaultBool=default
             )  # catch bool is subclass of int
+            print(t.dict(by_alias=True))
+            return t
+
         if issubclass(cls, Enum) or isinstance(default, Enum):
             return KwargPortInput(
                 typename="EnumKwargPort",
@@ -139,7 +142,7 @@ def convert_kwarg_to_kwargport(
 
 
 def convert_return_to_returnport(
-    cls, registry: StructureRegistry, key=None, default=None
+    cls, registry: StructureRegistry, key=None
 ) -> ReturnPortInput:
     """
     Convert a class to an ArgPort
@@ -153,7 +156,6 @@ def convert_return_to_returnport(
                 typename="ListReturnPort",
                 key=key,
                 child=child,
-                defaultList=default,
             )
 
         if cls._name == "Dict":
@@ -162,7 +164,6 @@ def convert_return_to_returnport(
                 typename="DictReturnPort",
                 key=key,
                 child=child,
-                defaultDict=default,
             )
 
     if inspect.isclass(cls):
@@ -337,16 +338,18 @@ def prepare_definition(
             updates = doc_param_map[port.key]
             port.description = updates["description"] or port.description
 
-    return DefinitionInput(
+    x = DefinitionInput(
         **{
             "name": name,
             "interface": interface,
             "package": "test",  # TODO: IMplement correctly
             "description": description,
-            "args": args,  # exclude={"typename"} for input?
+            "args": args,
             "kwargs": kwargs,
             "returns": returns,
             "type": NodeTypeInput.GENERATOR if is_generator else NodeTypeInput.FUNCTION,
             "interfaces": interfaces,
         }
     )
+
+    return x

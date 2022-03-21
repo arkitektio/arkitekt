@@ -1,18 +1,13 @@
 import argparse
 from enum import Enum
-from genericpath import isfile
-from runpy import run_path
-from typing import List
 from arkitekt.cli.dev.automirror import watch_directory_and_mirror
 from arkitekt.cli.dev.autostage import watch_directory_and_stage
 from arkitekt.cli.prod.run import import_directory_and_start
 from arkitekt.cli.prod.waitfor import wait_for_connection
 from fakts import Fakts
 from fakts.beacon.beacon import FaktsEndpoint
-from fakts.grants.beacon import BeaconGrant
 from fakts.grants.endpoint import EndpointGrant
 from fakts.grants.cli.clibeacon import CLIBeaconGrant
-from fakts.grants.yaml import YamlGrant
 from herre import Herre
 from rich.console import Console
 from rich.prompt import Prompt, Confirm

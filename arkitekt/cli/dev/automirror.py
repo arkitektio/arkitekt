@@ -1,24 +1,16 @@
-from asyncio.tasks import sleep
-from importlib import reload, import_module
 import asyncio
-from arkitekt.api.schema import adefine
-from arkitekt.definition.registry import get_current_definition_registry, register
-import asyncio
+import os
 import sys
-import time
-from rich.console import Console
-from watchdog.observers import Observer
-from watchdog.events import (
-    FileModifiedEvent,
-    FileSystemEventHandler,
-    LoggingEventHandler,
-)
-import os
-import subprocess
-import janus
 import threading
-import os
-import signal
+import time
+from importlib import import_module, reload
+
+import janus
+from arkitekt.api.schema import adefine
+from arkitekt.definition.registry import get_current_definition_registry
+from rich.console import Console
+from watchdog.events import FileModifiedEvent, FileSystemEventHandler
+from watchdog.observers import Observer
 
 
 class QueueHandler(FileSystemEventHandler):

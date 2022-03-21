@@ -30,7 +30,9 @@ async def expand_inputs(
             ]
         )
     except Exception as e:
-        raise ExpandingError(f"Couldn't expand Arguments {args}") from e
+        raise ExpandingError(
+            f"Couldn't expand Arguments {args} with {node.args}"
+        ) from e
 
     try:
         expanded_kwargs = {
@@ -40,7 +42,9 @@ async def expand_inputs(
             for port in node.kwargs
         }
     except Exception as e:
-        raise ExpandingError(f"Couldn't expand Kwargs {kwargs}") from e
+        raise ExpandingError(
+            f"Couldn't expand Kwargs {kwargs}  with {node.kwargs}"
+        ) from e
 
     return expanded_args, expanded_kwargs
 

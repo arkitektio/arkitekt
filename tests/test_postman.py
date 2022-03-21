@@ -2,10 +2,8 @@ import pytest
 from rath.links import compose, ShrinkingLink, DictingLink
 from rath.links.testing.mock import AsyncMockLink
 from tests.mocks import ArkitektMockResolver
-from arkitekt import Arkitekt
+from arkitekt.rath import ArkitektRath
 
-from arkitekt.definition.registry import DefinitionRegistry, register
-from arkitekt.structures.registry import StructureRegistry
 from arkitekt.postmans.transport.mock import MockPostmanTransport
 from arkitekt.postmans.stateful import StatefulPostman
 from arkitekt.postmans.utils import use
@@ -14,7 +12,7 @@ from arkitekt.api.schema import afind
 
 
 @pytest.fixture
-def arkitekt_client():
+def arkitekt_rath():
 
     link = compose(
         ShrinkingLink(),
@@ -24,28 +22,11 @@ def arkitekt_client():
         ),
     )
 
-    return Arkitekt(link)
-
-
-async def test_postman(mock_postman: StatefulPostman, arkitekt_client):
-
-    async with mock_postman:
-
-        node = await afind(
-            package="mock", interface="run_maboy", arkitekt=arkitekt_client
-        )
-
-        async def test_function():
-            async with use(node, postman=mock_postman) as res:
-                return await res.assign(a=1, b=2)
-
-        returns = await asyncio.wait_for(test_function(), timeout=2)
-
-    assert returns == [], "x should be empty"
+    return ArkitektRath(link=link)
 
 
 @pytest.fixture
-def mock_postman(arkitekt_client):
+def mock_postman():
 
     transport = MockPostmanTransport()
 
@@ -54,3 +35,20 @@ def mock_postman(arkitekt_client):
     )
 
     return postman
+
+
+async def test_postman(mock_postman, arkitekt_rath):
+
+    async with arkitekt_rath:
+        async with mock_postman:
+
+            node = await afind(package="mock", interface="run_maboy")
+            print(node)
+
+            async def test_function():
+                async with use(node) as res:
+                    return await res.aassign(a=1, b=2)
+
+            returns = await asyncio.wait_for(test_function(), timeout=2)
+
+        assert returns == [], "x should be empty"

@@ -14,7 +14,6 @@ from arkitekt.api.schema import (
     StructureReturnPortFragment,
     find,
 )
-from fakts import Fakts
 from black import format_str, FileMode
 import ast
 import re

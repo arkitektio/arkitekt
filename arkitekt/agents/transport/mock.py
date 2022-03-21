@@ -4,6 +4,7 @@ from arkitekt.messages import Assignation, Provision, Provision, Unprovision
 from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from typing import Any, List, Optional, Union
 import asyncio
+from koil import unkoil
 
 
 class MockAgentTransport(AgentTransport):
@@ -26,9 +27,8 @@ class MockAgentTransport(AgentTransport):
     ) -> List[Provision]:
         return []
 
-    async def aconnect(self):
+    async def __aenter__(self):
         self._inqueue = asyncio.Queue()
-        pass
 
     async def change_assignation(
         self,
@@ -60,14 +60,22 @@ class MockAgentTransport(AgentTransport):
     async def delay(
         self, message: Union[Assignation, Provision, Unprovision, Unassignation]
     ):
-        await self.broadcast(message)
+        await self.abroadcast(message)
+
+    def sync_delay(
+        self, message: Union[Assignation, Provision, Unprovision, Unassignation]
+    ):
+        return unkoil(self.delay, message)
+
+    def sync_receive(self, *args, **kwargs):
+        return unkoil(self.receive, *args, **kwargs)
 
     async def receive(self, timeout=None):
         if timeout:
             return await asyncio.wait_for(self._inqueue.get(), timeout)
         return await self._inqueue.get()
 
-    async def adisocnnect(self):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         for item in range(self._inqueue.qsize()):
             print(f"Flushing Item {item}")
             self._inqueue.task_done()

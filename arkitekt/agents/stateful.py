@@ -1,7 +1,11 @@
 from arkitekt.agents.base import BaseAgent
+from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
-from typing import Optional, Union
+from typing import Union
 import asyncio
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class StatefulAgent(BaseAgent):
@@ -12,44 +16,50 @@ class StatefulAgent(BaseAgent):
         BaseAgent (_type_): _description_
     """
 
-    async def aconnect(self):
-        await super().aconnect()
-        await self.astart()
-
-    async def astart(self):
-        data = await self.transport.list_provisions()
-
-        for prov in data:
-            await self.broadcast(prov)
-
-        data = await self.transport.list_assignations()
-        for ass in data:
-            await self.broadcast(ass)
-
-    async def broadcast(
+    async def process(
         self, message: Union[Assignation, Provision, Unassignation, Unprovision]
     ):
+        logger.info(f"Agent received {message}")
 
         if isinstance(message, Assignation) or isinstance(message, Unassignation):
-            actor = self.provisionActorMap[message.provision]
-            await actor.apass(message)
+            if message.provision in self._provisionActorMap:
+                actor = self._provisionActorMap[message.provision]
+                await actor.apass(message)
+            else:
+                await self.transport.change_assignation(
+                    message.assignation,
+                    status=AssignationStatus.CRITICAL,
+                    message="Actor that handles this provision is not available",
+                )
 
-        if isinstance(message, Provision):
-            actorBuilder = self.templateActorBuilderMap[message.template]
-            self.provisionActorMap[message.provision] = actorBuilder(message, self)
-            await self.provisionActorMap[message.provision].arun()
+        elif isinstance(message, Provision):
+            if message.template in self._templateActorBuilderMap:
+                actorBuilder = self._templateActorBuilderMap[message.template]
+                self._provisionActorMap[message.provision] = actorBuilder(message, self)
+                await self._provisionActorMap[message.provision].arun()
+                logger.info("Actor started")
+            else:
+                logger.info("Actor not found")
+                await self.transport.change_provision(
+                    message.provision,
+                    status=ProvisionStatus.DENIED,
+                    message="No actor found on the provisioning Agent, this is most likely due to a change in this agent's configuration",
+                )
 
-        if isinstance(message, Unprovision):
-            await self.provisionActorMap[message.provision].astop()
+        elif isinstance(message, Unprovision):
+            await self._provisionActorMap[message.provision].astop()
 
-        return await super().broadcast(message)
+        else:
+            raise Exception(f"Unknown message type {type(message)}")
 
-    async def adisconnect(self):
-        await super().adisconnect()
-        cancelations = [actor.astop() for actor in self.provisionActorMap.values()]
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+
+        cancelations = [actor.astop() for actor in self._provisionActorMap.values()]
 
         for c in cancelations:
             try:
                 await c
             except asyncio.CancelledError:
                 print(f"Cancelled Actor {c}")
+
+        await super().__aexit__(exc_type, exc_val, exc_tb)

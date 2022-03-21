@@ -34,6 +34,7 @@ class Assignation(UpdatableModel):
     persist: Optional[bool]
     log: Optional[bool]
     status: Optional[AssignationStatus]
+    message: Optional[str]
 
 
 class Unassignation(UpdatableModel):

@@ -1,5 +1,7 @@
-from typing import Any, Dict, List, Literal, Optional
+from typing import Any, Dict, List, Optional
 import uuid
+from typing_extensions import Literal
+
 
 from pydantic import BaseModel, Field
 from datetime import datetime
@@ -49,7 +51,6 @@ class JSONMessage(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     type: str
     meta: JSONMeta = Field(default_factory=JSONMeta)
-    pass
 
 
 class ReserveList(JSONMessage):

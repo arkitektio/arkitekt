@@ -8,7 +8,7 @@ from arkitekt.actors.functional import (
 
 import inspect
 from arkitekt.structures.registry import StructureRegistry
-from typing import Callable, Dict, List
+from typing import Callable
 import inspect
 
 
@@ -30,12 +30,17 @@ def isactor(type):
         return False
 
 
-async def async_none():
+async def async_none_provide(prov, template):
+    return None
+
+
+async def async_none_unprovide():
     return None
 
 
 def actify(
     function_or_actor,
+    builder: Callable[[], Actor] = None,
     bypass_shrink=False,
     bypass_expand=False,
     on_provide=None,
@@ -63,10 +68,13 @@ def actify(
         "assign": function_or_actor,
         "expand_inputs": not bypass_expand,
         "shrink_outputs": not bypass_shrink,
-        "on_provide": on_provide if on_provide else async_none,
-        "on_unprovide": on_unprovide if on_unprovide else async_none,
+        "on_provide": on_provide if on_provide else async_none_provide,
+        "on_unprovide": on_unprovide if on_unprovide else async_none_unprovide,
         "structure_registry": structure_registry,
     }
+
+    if builder:
+        return builder(**actor_attributes)
 
     if is_coroutine:
         return lambda provision, agent: FunctionalFuncActor(

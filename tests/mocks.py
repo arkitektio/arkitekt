@@ -1,10 +1,27 @@
-from ctypes import Union
-from typing import Any, List, Optional
+
+from pydantic import Field
+from arkitekt.actors.base import Agent
+from arkitekt.agents.stateful import StatefulAgent
+from arkitekt.agents.transport.mock import MockAgentTransport
 from arkitekt.api.schema import (
     NodeType,
 )
-from rath.links.testing.mock import AsyncMockResolver
+from rath.links.base import TerminatingLink
+from rath.links.testing.mock import AsyncMockResolver, AsyncMockLink
+from rath.links.testing.statefulmock import AsyncMockResolver
+from rath.links import DictingLink, ShrinkingLink, SwitchAsyncLink, compose
 from rath.operation import Operation
+from arkitekt.rath import ArkitektRath
+
+from arkitekt.postmans.transport.mock import MockPostmanTransport
+from arkitekt.postmans.stateful import StatefulPostman
+from arkitekt.compositions.base import Arkitekt
+import contextvars
+from rath import Rath
+from koil.composition import Composition
+
+
+mikro_context = contextvars.ContextVar("mikro_context", default=None)
 
 
 def replace_keys(data_dict, key_dict):
@@ -41,9 +58,23 @@ class ArkitektMockResolver(AsyncMockResolver):
             "package": "rath",
             "interface": "mock",
             "description": "hallo",
-            "type": NodeType.GENERATOR,
+            "type": NodeType.FUNCTION,
             "id": "1",
             "name": "mock",
+            "args": [],
+            "kwargs": [
+                {
+                    "__typename": "IntKwargPort",
+                    "key": "a",
+                    "default": 0,
+                },
+                {
+                    "__typename": "IntKwargPort",
+                    "key": "b",
+                    "default": 1,
+                },
+            ],
+            "returns": [],
         }
 
     async def resolve_template(self, operation: Operation) -> str:
@@ -84,3 +115,69 @@ class ArkitektMockResolver(AsyncMockResolver):
 
         self.template_map[new_template["id"]] = new_template
         return new_template
+
+
+class MockArkitektRath(ArkitektRath):
+    link: TerminatingLink = Field(
+        default_factory=lambda: compose(
+            ShrinkingLink(),
+            DictingLink(),
+            SwitchAsyncLink(),  # after the shrinking so we can override the dicting
+            AsyncMockLink(
+                resolver=ArkitektMockResolver(),
+            ),
+        )
+    )
+
+
+class MockAgent(StatefulAgent):
+    transport: MockAgentTransport = Field(default_factory=MockAgentTransport)
+
+
+class MockPostman(StatefulPostman):
+    transport: MockPostmanTransport = Field(default_factory=MockPostmanTransport)
+
+
+class MockArkitekt(Arkitekt):
+    rath: MockArkitektRath = Field(default_factory=MockArkitektRath)
+    agent: Agent = Field(default_factory=MockAgent)
+    postman: MockPostman = Field(default_factory=MockPostman)
+
+
+class MockRath(Rath):
+    def __init__(self) -> None:
+        super().__init__(
+            link=compose(
+                ShrinkingLink(),
+                DictingLink(),
+                AsyncMockLink(
+                    query_resolver=ArkitektMockResolver(),
+                ),
+            )
+        )
+
+    async def __aenter__(self) -> None:
+        mikro_context.set(self)
+        return await super().__aenter__()
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
+        await super().__aexit__(exc_type, exc_val, exc_tb)
+        mikro_context.set(None)
+
+
+def query_current_mikro(query, variables):
+    mikro: MockRath = mikro_context.get()
+    return mikro.execute(query, variables)
+
+
+async def aquery_current_mikro(query, variables):
+    mikro: MockRath = mikro_context.get()
+    return await mikro.aexecute(query, variables)
+
+
+class MockApp(Composition):
+    arkitekt: MockArkitekt = Field(default_factory=MockArkitekt)
+
+
+class MockComposedApp(MockApp):
+    additional_rath: Rath = Field(default_factory=MockRath)

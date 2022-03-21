@@ -1,25 +1,23 @@
-from arkitekt.arkitekt import Arkitekt, get_current_arkitekt
+from arkitekt.rath import ArkitektRath, current_arkitekt_rath
+from koil import unkoil
+from koil.helpers import unkoil_gen
 
 
-def execute(operation, variables, arkitekt: Arkitekt = None):
-    arkitekt = arkitekt or get_current_arkitekt()
-    return operation(**arkitekt.execute(operation.Meta.document, variables).data)
+def execute(operation, variables, rath: ArkitektRath = None):
+    return unkoil(aexecute, operation, variables, rath)
 
 
-async def aexecute(operation, variables, arkitekt: Arkitekt = None):
-    arkitekt = arkitekt or get_current_arkitekt()
-    x = await arkitekt.aexecute(operation.Meta.document, variables)
+async def aexecute(operation, variables, rath: ArkitektRath = None):
+    rath = rath or current_arkitekt_rath.get()
+    x = await rath.aexecute(operation.Meta.document, variables)
     return operation(**x.data)
 
 
-def subscribe(operation, variables, arkitekt: Arkitekt = None):
-    mikro = arkitekt or get_current_arkitekt()
-
-    for event in mikro.subscribe(operation.Meta.document, variables):
-        yield operation(**event.data)
+def subscribe(operation, variables, rath: ArkitektRath = None):
+    return unkoil_gen(asubscribe, operation, variables, rath)
 
 
-async def asubscribe(operation, variables, arkitekt: Arkitekt = None):
-    mikro = arkitekt or get_current_arkitekt()
-    async for event in mikro.asubscribe(operation.Meta.document, variables):
+async def asubscribe(operation, variables, rath: ArkitektRath = None):
+    rath = rath or current_arkitekt_rath.get()
+    async for event in rath.asubscribe(operation.Meta.document, variables):
         yield operation(**event.data)

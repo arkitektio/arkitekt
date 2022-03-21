@@ -1,3 +1,9 @@
+fragment ReserveParams on ReserveParams {
+  registries
+  minimalInstances
+  desiredInstances
+}
+
 fragment Reservation on Reservation {
   id
   statusmessage
@@ -5,5 +11,8 @@ fragment Reservation on Reservation {
   node {
     id
     pure
+  }
+  params {
+    ...ReserveParams
   }
 }

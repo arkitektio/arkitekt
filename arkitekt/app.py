@@ -1,17 +1,12 @@
-from arkitekt.structures.registry import StructureRegistry
-from arkitekt.definition.registry import DefinitionRegistry
-import fakts
+from pydantic import Field
+from herre import Herre
+from fakts import Fakts
+from herre.fakts.herre import FaktsHerre
+from koil.composition import Composition
+from arkitekt.compositions.base import Arkitekt
 
 
-class App:
-    def __init__(
-        self,
-        fakts: fakts.Fakts,
-        structure_registry: StructureRegistry = None,
-        definition_registry: DefinitionRegistry = None,
-    ) -> None:
-
-        self.arkitekt = FaktsArkitekt()
-
-        self.structure_registry = structure_registry or StructureRegistry()
-        self.definition_registry = definition_registry or DefinitionRegistry()
+class ArkitektApp(Composition):
+    fakts: Fakts = Field(default_factory=Fakts)
+    herre: Herre = Field(default_factory=FaktsHerre)
+    arkitekt: Arkitekt = Field(default_factory=Arkitekt)

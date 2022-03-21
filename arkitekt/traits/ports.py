@@ -1,5 +1,6 @@
 from abc import abstractmethod
 import asyncio
+from typing import Dict, Optional
 
 
 class Port:
@@ -52,7 +53,11 @@ class ListExpander(Port):
 
 
 class IntExpander(Port):
+    default_int: Optional[int]
+
     async def cause_expand(self, value, registry):
+        if value == None:
+            value = self.default_int
         if not isinstance(value, int):
             raise ExpansionError(f"Expected an int got {type(value)}")
         return value
@@ -62,7 +67,11 @@ class IntExpander(Port):
 
 
 class StringExpander(Port):
+    default_string: Optional[str]
+
     async def cause_expand(self, value, registry):
+        if value == None:
+            value = self.default_string
         if not isinstance(value, str):
             raise ExpansionError(f"Expected an str got {type(value)}")
         return value
@@ -73,8 +82,11 @@ class StringExpander(Port):
 
 class DictExpander(Port):
     child: Port
+    default_dict: Optional[Dict]
 
     async def cause_expand(self, value, registry):
+        if value == None:
+            value = self.default_dict
         if not isinstance(value, dict):
             raise ExpansionError(f"Expected an dict got {type(value)}")
 
@@ -89,7 +101,12 @@ class DictExpander(Port):
 
 
 class EnumExpander(Port):
+    default_enum: Optional[str]
+
     async def cause_expand(self, value, registry):
+        if value == None:
+            value = self.default_enum
+
         return value
 
     async def cause_shrink(self, value, registry):
@@ -97,7 +114,12 @@ class EnumExpander(Port):
 
 
 class BoolExpander(Port):
+    default_bool: Optional[bool]
+
     async def cause_expand(self, value, registry):
+        if value == None:
+            value = self.default_bool
+
         return bool(value)
 
     async def cause_shrink(self, value, registry):

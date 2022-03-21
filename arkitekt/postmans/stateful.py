@@ -1,24 +1,21 @@
 from typing import Any, Dict, List, Union
 
-from pytest import param
 from arkitekt.messages import Assignation, Reservation
-from arkitekt.postmans.base import Postman
-from arkitekt.postmans.transport.base import PostmanTransport
-from arkitekt.api.schema import ReservationStatus, ReserveParamsInput
+from arkitekt.postmans.base import BasePostman
 import asyncio
+from pydantic import Field
 
 
-class StatefulPostman(Postman):
-    def __init__(self, transport: PostmanTransport) -> None:
-        super().__init__(transport)
-        self.assignations: Dict[str, Assignation] = {}
-        self.reservations: Dict[str, Reservation] = {}
+class StatefulPostman(BasePostman):
 
-        self.res_update_queues: Dict[str, asyncio.Queue] = {}
-        self.ass_update_queues: Dict[str, asyncio.Queue] = {}
+    assignations: Dict[str, Assignation] = Field(default_factory=dict)
+    reservations: Dict[str, Reservation] = Field(default_factory=dict)
 
-    async def aconnect(self):
-        await super().aconnect()
+    _res_update_queues: Dict[str, asyncio.Queue] = {}
+    _ass_update_queues: Dict[str, asyncio.Queue] = {}
+
+    async def __aenter__(self):
+        await super().__aenter__()
 
         data = await self.transport.alist_reservations()
         self.reservations = {res.reservation: res for res in data}
@@ -51,24 +48,22 @@ class StatefulPostman(Postman):
         return assignation
 
     def register_reservation_queue(self, res_id: str, queue: asyncio.Queue):
-        self.res_update_queues[res_id] = queue
+        self._res_update_queues[res_id] = queue
 
     def register_assignation_queue(self, ass_id: str, queue: asyncio.Queue):
-        self.ass_update_queues[ass_id] = queue
+        self._ass_update_queues[ass_id] = queue
 
     async def abroadcast(self, message: Union[Assignation, Reservation]):
         if isinstance(message, Assignation):
-
             self.assignations[message.assignation].update(message)
-            if message.assignation in self.ass_update_queues:
-                await self.ass_update_queues[message.assignation].put(
+            if message.assignation in self._ass_update_queues:
+                await self._ass_update_queues[message.assignation].put(
                     self.assignations[message.assignation]
                 )
         elif isinstance(message, Reservation):
-
             self.reservations[message.reservation].update(message)
-            if message.reservation in self.res_update_queues:
-                await self.res_update_queues[message.reservation].put(
+            if message.reservation in self._res_update_queues:
+                await self._res_update_queues[message.reservation].put(
                     self.reservations[message.reservation]
                 )
 
@@ -76,7 +71,7 @@ class StatefulPostman(Postman):
             raise Exception("Unknown message type")
 
     def unregister_reservation_queue(self, res_id: str):
-        del self.res_update_queues[res_id]
+        del self._res_update_queues[res_id]
 
     def unregister_assignation_queue(self, ass_id: str):
-        del self.ass_update_queues[ass_id]
+        del self._ass_update_queues[ass_id]
