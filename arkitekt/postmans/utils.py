@@ -1,5 +1,8 @@
+from typing import Optional
+from arkitekt.messages import Reservation
 from arkitekt.postmans.vars import current_postman
 from arkitekt.structures.registry import get_current_structure_registry
+from koil.composition import KoiledModel
 from koil.decorators import koilable
 from .stateful import StatefulPostman
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
@@ -13,24 +16,15 @@ from arkitekt.structures.serialization.postman import shrink_inputs, expand_outp
 logger = logging.getLogger(__name__)
 
 
-@koilable(fieldname="_koil", add_connectors=True)
-class ReservationContract:
-    def __init__(
-        self,
-        node: Reserve,
-        postman: StatefulPostman = None,
-        params: ReserveParamsInput = None,
-        auto_unreserve: bool = True,
-    ):
-        self.postman = postman
-        if isinstance(node, Reserve):
-            self.node = node
-        else:
-            raise NotImplementedError("You need to pass a Reservable Instance")
-        self.params = params or ReserveParamsInput()
-        self.reservation = None
-        self.postman = None
-        self.auto_unreserve = auto_unreserve
+class ReservationContract(KoiledModel):
+    node: Reserve
+    postman: Optional[StatefulPostman] = None
+    params: Optional[ReserveParamsInput] = None
+    auto_unreserve = True
+
+    _reservation: Reservation = None
+    _enter_future: asyncio.Future = None
+    _updates_queue: asyncio.Queue = None
 
     async def aassign(self, *args, structure_registry=None, **kwargs):
         assert self.reservation, "We never entered the context manager"
@@ -111,6 +105,10 @@ class ReservationContract:
 
     def __enter__(self) -> "ReservationContract":
         ...
+
+    class Config:
+        arbitrary_types_allowed = True
+        underscore_attrs_are_private = True
 
 
 def use(

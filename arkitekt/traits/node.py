@@ -1,7 +1,8 @@
+from pydantic import BaseModel
 from rich.table import Table
 
 
-class Reserve:
+class Reserve(BaseModel):
     async def call_async_func(self, *args, reserve_params={}, **kwargs):
         async with self.reserve(**reserve_params) as res:
             return await res.assign_async(*args, **kwargs)

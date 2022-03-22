@@ -1,7 +1,8 @@
+from typing import Optional
 from arkitekt.postmans.stateful import StatefulPostman
 from arkitekt.postmans.transport.websocket import WebsocketPostmanTransport
 from fakts.config.base import Config
-from fakts.fakts import Fakts
+from fakts.fakts import Fakts, current_fakts
 from herre.herre import Herre, current_herre
 
 
@@ -14,9 +15,8 @@ class PostmanConfig(Config):
 
 
 class FaktsPostman(StatefulPostman):
-    def __init__(self, fakts: Fakts = None) -> None:
-        super().__init__(None)
-        self.fakts = fakts
+    herre: Optional[Herre] = None
+    fakts: Optional[Fakts] = None
 
     def configure(
         self,
@@ -31,9 +31,10 @@ class FaktsPostman(StatefulPostman):
 
     async def __aenter__(self):
 
-        herre = current_herre.get()
+        herre = self.herre or current_herre.get()
+        fakts = self.fakts or current_fakts.get()
 
-        config = await PostmanConfig.from_fakts(fakts=self.fakts)
+        config = await PostmanConfig.from_fakts(fakts=fakts)
         self.configure(config, herre)
 
         return await super().__aenter__()

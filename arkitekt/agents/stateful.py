@@ -60,6 +60,6 @@ class StatefulAgent(BaseAgent):
             try:
                 await c
             except asyncio.CancelledError:
-                print(f"Cancelled Actor {c}")
+                pass
 
         await super().__aexit__(exc_type, exc_val, exc_tb)

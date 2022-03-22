@@ -32,8 +32,6 @@ def watcher(path, queue, event: threading.Event):
     while not event.is_set():
         time.sleep(1)
 
-    print("Cancelled because threading event is set")
-
 
 async def buffered_queue(queue, timeout=4):
     buffer = [None]

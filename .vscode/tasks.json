@@ -25,13 +25,13 @@
       "command": "source venv/bin/activate; python provide.py"
     },
     {
-      "label": "Docs",
+      "label": "Generate Docs",
       "type": "shell",
       "command": "source venv/bin/activate; pydoc-markdown"
     },
     {
       "type": "shell",
-      "label": "Autoflake Ark",
+      "label": "Autoflake",
       "command": "${command:python.interpreterPath}",
       "args": [
         "-m",
@@ -39,21 +39,8 @@
         "-i",
         "--remove-all-unused-imports",
         "-r",
-        "tests"
-      ],
-      "problemMatcher": []
-    },
-    {
-      "type": "shell",
-      "label": "Autoflake Tests",
-      "command": "${command:python.interpreterPath}",
-      "args": [
-        "-m",
-        "autoflake",
-        "-i",
-        "--remove-all-unused-imports",
-        "-r",
-        "tests"
+        "tests",
+        "mikro"
       ],
       "problemMatcher": []
     }

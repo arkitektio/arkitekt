@@ -130,7 +130,7 @@ class BaseAgent(KoiledModel):
         )
         self.rath = self.rath or current_arkitekt_rath.get()
         self._inqueue = asyncio.Queue()
-        self.transport.abroadcast = self.abroadcast
+        self.transport._abroadcast = self.abroadcast
         await self.transport.__aenter__()
         return self
 

@@ -1,4 +1,6 @@
 from typing import Awaitable, Callable, List, Optional, Dict, Any, Union
+
+from pydantic import Field
 from arkitekt.messages import Assignation, Reservation, Unassignation, Unreservation
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
 from koil.composition import KoiledModel
@@ -7,8 +9,7 @@ from koil.composition import KoiledModel
 class PostmanTransport(KoiledModel):
     abroadcast: Optional[
         Callable[[Union[Assignation, Reservation]], Awaitable[None]]
-    ] = None
-
+    ] = Field(default=None, exclude=True)
 
     async def aassign(
         self,

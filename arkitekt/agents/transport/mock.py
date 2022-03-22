@@ -14,9 +14,6 @@ class MockAgentTransport(AgentTransport):
         AgentTransport (_type_): _description_
     """
 
-    def __init__(self, *args, **kwargs):
-        pass
-
     async def list_assignations(
         self, exclude: Optional[AssignationStatus] = None
     ) -> List[Assignation]:
@@ -50,7 +47,6 @@ class MockAgentTransport(AgentTransport):
         message: str = None,
         mode: ProvisionMode = None,
     ):
-        print(f"change_provision {id} {status} {message} {mode}")
         await self._inqueue.put(
             ProvisionChangedMessage(
                 provision=id, status=status, message=message, mode=mode
@@ -77,5 +73,4 @@ class MockAgentTransport(AgentTransport):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         for item in range(self._inqueue.qsize()):
-            print(f"Flushing Item {item}")
             self._inqueue.task_done()

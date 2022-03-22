@@ -1,5 +1,7 @@
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Dict, Union
+from inflection import underscore
+from numpy import True_
 import websockets
 from arkitekt.agents.transport.base import AgentTransport
 import asyncio
@@ -32,26 +34,23 @@ class DefiniteConnectionFail(AgentTransportException):
     pass
 
 
-@dataclass
 class WebsocketAgentTransport(AgentTransport):
     ws_url: str
     instance_id: Optional[str]
-    token_loader: Callable[[], Awaitable[str]]
-    abroadcast: Optional[
-        Callable[[Union[Assignation, Provision]], Awaitable[None]]
-    ] = None
+    token_loader: Callable[[], Awaitable[str]] = Field(exclude=True)
     max_retries = 5
     time_between_retries = 5
     allow_reconnect = True
 
-    _futures: Dict[str, asyncio.Future] = field(default_factory=dict)
+    _futures: Optional[Dict[str, asyncio.Future]] = None
     _connected = False
     _healthy = False
     _send_queue: Optional[asyncio.Queue] = None
     _connection_task: Optional[asyncio.Task] = None
 
     async def __aenter__(self):
-        assert self.abroadcast is not None, "Broadcast must be defined"
+        assert self._abroadcast is not None, "Broadcast must be defined"
+        self._futures = {}
         self._send_queue = asyncio.Queue()
         self._connection_task = asyncio.create_task(self.websocket_loop())
         self._connected = True
@@ -139,14 +138,13 @@ class WebsocketAgentTransport(AgentTransport):
         if "type" in json_dict:
             type = json_dict["type"]
             id = json_dict["id"]
-            print(json_dict)
 
             # State Layer
             if type == AgentSubMessageTypes.ASSIGN:
-                await self.broadcast(AssignSubMessage(**json_dict))
+                await self._abroadcast(AssignSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.PROVIDE:
-                await self.broadcast(ProvideSubMessage(**json_dict))
+                await self._abroadcast(ProvideSubMessage(**json_dict))
 
             if type == AgentMessageTypes.LIST_ASSIGNATIONS_REPLY:
                 self._futures[id].set_result(AssignationsListReply(**json_dict))
@@ -163,7 +161,7 @@ class WebsocketAgentTransport(AgentTransport):
                 )
 
         else:
-            print(f"Error {json_dict}")
+            logger.error(f"Unexpected messsage: {json_dict}")
 
     async def awaitaction(self, action: JSONMessage):
         assert self._connected, "Websocket is not connected"

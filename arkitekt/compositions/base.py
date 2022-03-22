@@ -1,5 +1,6 @@
 from typing import Any, Awaitable, Callable, Dict, List
 from pydantic import Field
+from rich import get_console
 from arkitekt.api.schema import TemplateFragment, WidgetInput
 from arkitekt.fakts.agent import FaktsAgent
 from arkitekt.fakts.postman import FaktsPostman
@@ -77,7 +78,8 @@ class Arkitekt(Composition):
         Run the application.
         """
         assert self.agent.transport.connected, "Transport is not connected"
-        await self.agent.aprovide()
+        with get_console().status("Running"):
+            await self.agent.aprovide()
 
     class Config:
         arbitrary_types_allowed = True

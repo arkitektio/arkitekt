@@ -103,11 +103,9 @@ def convert_kwarg_to_kwargport(
         # Generic Cases
 
         if issubclass(cls, bool) or isinstance(default, bool):
-            print(f"RUnning into this {default}")
             t = KwargPortInput(
                 typename="BoolKwargPort", widget=widget, key=key, defaultBool=default
             )  # catch bool is subclass of int
-            print(t.dict(by_alias=True))
             return t
 
         if issubclass(cls, Enum) or isinstance(default, Enum):

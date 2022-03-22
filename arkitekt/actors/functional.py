@@ -75,8 +75,6 @@ class FunctionalFuncActor(FunctionalActor):
                 else returns
             )
 
-            print("Should be returning", returns)
-
             await self.transport.change_assignation(
                 assignation.assignation,
                 status=AssignationStatus.RETURNED,
@@ -180,9 +178,8 @@ class FunctionalThreadedFuncActor(FunctionalActor):
                 message.assignation,
                 status=AssignationStatus.ASSIGNED,
             )
-            print("RUnnindosindfosidnfoisndfoin")
+
             returns = await run_spawned(self.assign, *args, **kwargs, pass_context=True)
-            print("oinsoisnosinsoinsoin")
             shrinked_returns = (
                 await shrink_outputs(
                     self.template.node,
@@ -200,20 +197,17 @@ class FunctionalThreadedFuncActor(FunctionalActor):
             )
 
         except asyncio.CancelledError as e:
-            print("Canelled here")
+            logger.info("Actor Cancelled")
 
             await self.transport.change_assignation(
                 message.assignation, status=AssignationStatus.CANCELLED, message=str(e)
             )
 
         except Exception as e:
-            print("Actor cancelled with exception", repr(e))
-            logger.exception(e)
+            logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
                 message.assignation, status=AssignationStatus.CRITICAL, message=str(e)
             )
-
-        print("Done in assignation")
 
 
 class FunctionalThreadedGenActor(FunctionalActor):

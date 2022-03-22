@@ -18,13 +18,6 @@ logging.basicConfig(level="INFO", handlers=[RichHandler()])
 fakts = Fakts(subapp="basic", grants=[EndpointGrant(FaktsEndpoint())])
 
 
-actor_registry = ActorRegistry()
-structure_registry = StructureRegistry()
-
-
-agent = ScriptAgent(with_monitor=False)
-
-
 class YieldType(Enum):
     YIELD_EVERY = "Yields every second"
     YIELD_NONE = "Yields never"

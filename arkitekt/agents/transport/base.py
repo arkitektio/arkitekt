@@ -1,12 +1,14 @@
 from abc import abstractmethod
-from typing import Any, List, Optional, Union
+from typing import Any, Awaitable, Callable, List, Optional, Union
+
+from pydantic import Field
 from arkitekt.messages import Assignation, Unassignation, Provision, Unprovision
 from arkitekt.api.schema import ProvisionMode, ProvisionStatus, AssignationStatus
+from koil.composition import KoiledModel
 from koil.decorators import koilable
 
 
-@koilable()
-class AgentTransport:
+class AgentTransport(KoiledModel):
     """Agent Transport
 
     A Transport is a means of communicating with an Agent. It is responsible for sending
@@ -27,15 +29,15 @@ class AgentTransport:
 
     """
 
+    _abroadcast: Optional[
+        Callable[
+            [Union[Assignation, Unassignation, Unprovision, Provision]], Awaitable[None]
+        ]
+    ] = Field(default=None, exclude=True)
+
     @property
     def connected(self):
         return NotImplementedError("Implement this method")
-
-    @abstractmethod
-    def abroadcast(
-        self, message: Union[Assignation, Unassignation, Provision, Unprovision]
-    ):
-        raise NotImplementedError("This is an abstract Base Class")
 
     @abstractmethod
     async def list_provisions(
@@ -74,3 +76,7 @@ class AgentTransport:
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         pass
+
+    class Config:
+        underscore_attrs_are_private = True
+        arbitrary_types_allowed = True

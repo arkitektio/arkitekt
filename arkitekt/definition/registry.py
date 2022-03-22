@@ -34,8 +34,12 @@ QString = str
 
 class DefinitionRegistry(KoiledModel):
     structure_registry: Optional[StructureRegistry] = None
-    defined_nodes: List[Tuple[DefinitionInput, Callable]] = Field(default_factory=list)
-    templated_nodes: List[Tuple[QString, Callable]] = Field(default_factory=list)
+    defined_nodes: List[Tuple[DefinitionInput, Callable]] = Field(
+        default_factory=list, exclude=True
+    )
+    templated_nodes: List[Tuple[QString, Callable]] = Field(
+        default_factory=list, exclude=True
+    )
     copy_from_default: bool = False
 
     _token: contextvars.Token = None

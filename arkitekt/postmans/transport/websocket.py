@@ -1,6 +1,6 @@
 import asyncio
-from dataclasses import field
 import json
+from inflection import underscore
 
 import websockets
 from arkitekt.postmans.transport.base import PostmanTransport
@@ -15,6 +15,7 @@ from arkitekt.postmans.transport.errors import (
     UnassignDeniedError,
     UnreserveDeniedError,
 )
+from pydantic import Field
 from .protocols.postman_json import *
 import logging
 from websockets.exceptions import (
@@ -41,12 +42,12 @@ class DefiniteConnectionFail(PostmanTransportException):
 class WebsocketPostmanTransport(PostmanTransport):
     ws_url: str
     instance_id: Optional[str]
-    token_loader: Callable[[], Awaitable[str]]
+    token_loader: Callable[[], Awaitable[str]] = Field(exclude=True)
     max_retries = 5
     time_between_retries = 5
     allow_reconnect = True
 
-    _futures: Dict[str, asyncio.Future] = field(default_factory=dict)
+    _futures: Dict[str, asyncio.Future] = {}
     _connected = False
     _healthy = False
     _send_queue: Optional[asyncio.Queue] = None
@@ -261,3 +262,7 @@ class WebsocketPostmanTransport(PostmanTransport):
             await self._connection_task
         except asyncio.CancelledError:
             pass
+
+    class Config:
+        arbitrary_types_allowed = True
+        underscore_attrs_are_private = True

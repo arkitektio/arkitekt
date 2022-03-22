@@ -28,11 +28,11 @@ class FaktsArkitektRath(ArkitektRath):
             SwitchAsyncLink(),
             AuthTokenLink(token_loader=herre.aget_token),
             SplitLink(
-                AIOHttpLink(url=config.endpoint_url),
-                WebSocketLink(
+                left=AIOHttpLink(url=config.endpoint_url),
+                right=WebSocketLink(
                     url=config.ws_endpoint_url, token_loader=herre.aget_token
                 ),
-                lambda o: o.node.operation != OperationType.SUBSCRIPTION,
+                split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
             ),
         )
 
