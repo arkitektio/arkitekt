@@ -1,4 +1,6 @@
 from typing import Optional
+
+from pydantic import Field
 from arkitekt.messages import Reservation
 from arkitekt.postmans.vars import current_postman
 from arkitekt.structures.registry import get_current_structure_registry
@@ -18,18 +20,20 @@ logger = logging.getLogger(__name__)
 
 class ReservationContract(KoiledModel):
     node: Reserve
+    params: ReserveParamsInput = Field(default_factory=ReserveParamsInput)
+    auto_unreserve: bool = True
+
     postman: Optional[StatefulPostman] = None
-    params: Optional[ReserveParamsInput] = None
-    auto_unreserve = True
 
     _reservation: Reservation = None
     _enter_future: asyncio.Future = None
     _updates_queue: asyncio.Queue = None
+    _updates_watcher: asyncio.Task = None
 
     async def aassign(self, *args, structure_registry=None, **kwargs):
-        assert self.reservation, "We never entered the context manager"
+        assert self._reservation, "We never entered the context manager"
         assert (
-            self.reservation.status == ReservationStatus.ACTIVE
+            self._reservation.status == ReservationStatus.ACTIVE
         ), "Reservation is not active"
 
         structure_registry = structure_registry or get_current_structure_registry()
@@ -40,34 +44,44 @@ class ReservationContract(KoiledModel):
         )
 
         ass = await self.postman.aassign(
-            self.reservation.reservation, shrinked_args, shrinked_kwargs
+            self._reservation.reservation, shrinked_args, shrinked_kwargs
         )
         self.postman.register_assignation_queue(ass.assignation, _ass_queue)
         logger.info(f"Listening to assignation updates for {ass}")
-        while True:  # Waiting for assignation
-            ass = await _ass_queue.get()
-            logger.info(f"Reservation Context: {ass}")
-            if ass.status == AssignationStatus.RETURNED:
-                self.postman.unregister_assignation_queue(ass.assignation)
-                return await expand_outputs(
-                    self.node, ass.returns, structure_registry=structure_registry
-                )
+        try:
+            while True:  # Waiting for assignation
+                ass = await _ass_queue.get()
+                logger.info(f"Reservation Context: {ass}")
+                if ass.status == AssignationStatus.RETURNED:
+                    self.postman.unregister_assignation_queue(ass.assignation)
+                    return await expand_outputs(
+                        self.node, ass.returns, structure_registry=structure_registry
+                    )
 
-            if ass.status == AssignationStatus.CRITICAL:
-                self.postman.unregister_assignation_queue(ass.assignation)
-                raise Exception(f"Critical error: {ass.message}")
+                if ass.status == AssignationStatus.CRITICAL:
+                    self.postman.unregister_assignation_queue(ass.assignation)
+                    raise Exception(f"Critical error: {ass.message}")
+        except asyncio.CancelledError as e:
+            await self.postman.aunassign(ass.assignation)
+
+            ass = await asyncio.wait_for(_ass_queue.get(), timeout=2)
+            if ass.status == AssignationStatus.CANCELLED:
+                logger.info("Wonderfully cancelled that assignation!")
+                raise e
+
+            raise Exception(f"Critical error: {ass}")
 
     def assign(self, *args, **kwargs):
         return unkoil(self.aassign, *args, **kwargs)
 
     async def watch_updates(self):
         try:
-            if self.reservation.status == ReservationStatus.ACTIVE:
+            if self._reservation.status == ReservationStatus.ACTIVE:
                 self._enter_future.set_result(True)
 
             while True:
-                self.reservation = await self._updates_queue.get()
-                if self.reservation.status == ReservationStatus.ACTIVE:
+                self._reservation = await self._updates_queue.get()
+                if self._reservation.status == ReservationStatus.ACTIVE:
                     if self._enter_future and not self._enter_future.done():
                         self._enter_future.set_result(True)
 
@@ -77,34 +91,31 @@ class ReservationContract(KoiledModel):
     async def __aenter__(self):
         self.postman = self.postman or current_postman.get()
         logger.info(f"Trying to reserve {self.node}")
-        self.reservation = await self.postman.areserve(self.node.id, self.params)
-        logger.info(f"Waiting for Reservation {self.reservation}")
+        self._reservation = await self.postman.areserve(self.node.id, self.params)
+        logger.info(f"Waiting for Reservation {self._reservation}")
         self._updates_queue = asyncio.Queue()
         self._enter_future = asyncio.Future()
         self.postman.register_reservation_queue(
-            self.reservation.reservation, self._updates_queue
+            self._reservation.reservation, self._updates_queue
         )
-        self.updates_watcher = asyncio.create_task(self.watch_updates())
+        self._updates_watcher = asyncio.create_task(self.watch_updates())
         await self._enter_future  # Waiting to enter
 
         return self
 
     async def __aexit__(self, *args, **kwargs):
-        self.updates_watcher.cancel()
+        self._updates_watcher.cancel()
 
         try:
-            await self.updates_watcher
+            await self._updates_watcher
         except asyncio.CancelledError:
             pass
 
         if self.auto_unreserve:
             await asyncio.wait_for(
-                self.postman.aunreserve(self.reservation.reservation), timeout=1
+                self.postman.aunreserve(self._reservation.reservation), timeout=1
             )
-        self.postman.unregister_reservation_queue(self.reservation.reservation)
-
-    def __enter__(self) -> "ReservationContract":
-        ...
+        self.postman.unregister_reservation_queue(self._reservation.reservation)
 
     class Config:
         arbitrary_types_allowed = True
@@ -112,11 +123,14 @@ class ReservationContract(KoiledModel):
 
 
 def use(
-    node: str,
+    node: Reserve,
     params: ReserveParamsInput = None,
     postman: StatefulPostman = None,
     auto_unreserve=True,
 ) -> ReservationContract:
     return ReservationContract(
-        node, postman=postman, params=params, auto_unreserve=auto_unreserve
+        node=node,
+        postman=postman,
+        params=params or ReserveParamsInput(),
+        auto_unreserve=auto_unreserve,
     )

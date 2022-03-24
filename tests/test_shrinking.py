@@ -14,25 +14,13 @@ from arkitekt.structures.serialization.postman import (
 from arkitekt.structures.serialization.actor import (
     expand_inputs,
 )
-from rath.links import compose, ShrinkingLink, DictingLink, SwitchAsyncLink
-from rath.links.testing.mock import AsyncMockLink
-from tests.mocks import ArkitektMockResolver
-from arkitekt.rath import ArkitektRath
+from tests.mocks import MockArkitektRath
 
 
 @pytest.fixture
 def arkitekt_rath():
 
-    link = compose(
-        SwitchAsyncLink(),
-        ShrinkingLink(),
-        DictingLink(),  # after the shrinking so we can override the dicting
-        AsyncMockLink(
-            resolver=ArkitektMockResolver(),
-        ),
-    )
-
-    return ArkitektRath(link=link)
+    return MockArkitektRath()
 
 
 @pytest.fixture

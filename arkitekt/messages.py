@@ -57,6 +57,7 @@ class Reservation(UpdatableModel):
     template: Optional[str]
     node: Optional[str]
     status: Optional[ReservationStatus] = None
+    message: Optional[str] = ""
 
 
 class Unreservation(BaseModel):

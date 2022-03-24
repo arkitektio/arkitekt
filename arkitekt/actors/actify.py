@@ -1,3 +1,4 @@
+from subprocess import call
 from arkitekt.actors.base import Actor
 from arkitekt.actors.functional import (
     FunctionalFuncActor,
@@ -74,7 +75,9 @@ def actify(
     }
 
     if builder:
-        return builder(**actor_attributes)
+        assert hasattr(builder, "build_actor"), "Builder must have a build_actor method"
+        instance = builder(**actor_attributes)
+        return lambda prov, agent: instance.build_actor(prov, agent)
 
     if is_coroutine:
         return lambda provision, agent: FunctionalFuncActor(

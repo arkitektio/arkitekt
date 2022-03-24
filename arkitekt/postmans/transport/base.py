@@ -10,6 +10,7 @@ class PostmanTransport(KoiledModel):
     abroadcast: Optional[
         Callable[[Union[Assignation, Reservation]], Awaitable[None]]
     ] = Field(default=None, exclude=True)
+    instance_id: Optional[str]
 
     async def aassign(
         self,

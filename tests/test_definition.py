@@ -7,10 +7,7 @@ import pytest
 from .funcs import karl, complex_karl, karl_structure, structured_gen
 from .structures import SecondSerializableObject, SerializableObject
 from arkitekt.definition.define import prepare_definition
-from rath.links import compose, ShrinkingLink, DictingLink
-from rath.links.testing.mock import AsyncMockLink
-from tests.mocks import ArkitektMockResolver
-from arkitekt.rath import ArkitektRath
+from tests.mocks import MockArkitektRath
 
 
 @pytest.fixture
@@ -95,15 +92,7 @@ async def test_define_structured_gen(simple_registry):
 @pytest.fixture
 def arkitekt_rath():
 
-    link = compose(
-        ShrinkingLink(),
-        DictingLink(),  # after the shrinking so we can override the dicting
-        AsyncMockLink(
-            resolver=ArkitektMockResolver(),
-        ),
-    )
-
-    return ArkitektRath(link=link)
+    return MockArkitektRath()
 
 
 async def test_define_to_node_gen(simple_registry, arkitekt_rath):

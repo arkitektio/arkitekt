@@ -1,4 +1,3 @@
-
 from pydantic import Field
 from arkitekt.actors.base import Agent
 from arkitekt.agents.stateful import StatefulAgent
@@ -9,7 +8,10 @@ from arkitekt.api.schema import (
 from rath.links.base import TerminatingLink
 from rath.links.testing.mock import AsyncMockResolver, AsyncMockLink
 from rath.links.testing.statefulmock import AsyncMockResolver
-from rath.links import DictingLink, ShrinkingLink, SwitchAsyncLink, compose
+from rath.links import compose
+from rath.links.dictinglink import DictingLink
+from rath.links.shrink import ShrinkingLink
+from rath.links.context import SwitchAsyncLink
 from rath.operation import Operation
 from arkitekt.rath import ArkitektRath
 
@@ -124,7 +126,7 @@ class MockArkitektRath(ArkitektRath):
             DictingLink(),
             SwitchAsyncLink(),  # after the shrinking so we can override the dicting
             AsyncMockLink(
-                resolver=ArkitektMockResolver(),
+                resolver=ArkitektMockResolver().to_dict(),
             ),
         )
     )
@@ -151,7 +153,7 @@ class MockRath(Rath):
                 ShrinkingLink(),
                 DictingLink(),
                 AsyncMockLink(
-                    query_resolver=ArkitektMockResolver(),
+                    query_resolver=ArkitektMockResolver().to_dict(),
                 ),
             )
         )

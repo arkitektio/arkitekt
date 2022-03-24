@@ -14,6 +14,8 @@ class MockAgentTransport(AgentTransport):
         AgentTransport (_type_): _description_
     """
 
+    _inqueue: asyncio.Queue = None
+
     async def list_assignations(
         self, exclude: Optional[AssignationStatus] = None
     ) -> List[Assignation]:
@@ -53,20 +55,18 @@ class MockAgentTransport(AgentTransport):
             )
         )
 
-    async def delay(
+    async def adelay(
         self, message: Union[Assignation, Provision, Unprovision, Unassignation]
     ):
-        await self.abroadcast(message)
+        await self._abroadcast(message)
 
-    def sync_delay(
-        self, message: Union[Assignation, Provision, Unprovision, Unassignation]
-    ):
-        return unkoil(self.delay, message)
+    def delay(self, message: Union[Assignation, Provision, Unprovision, Unassignation]):
+        return unkoil(self.adelay, message)
 
-    def sync_receive(self, *args, **kwargs):
-        return unkoil(self.receive, *args, **kwargs)
+    def receive(self, *args, **kwargs):
+        return unkoil(self.areceive, *args, **kwargs)
 
-    async def receive(self, timeout=None):
+    async def areceive(self, timeout=None):
         if timeout:
             return await asyncio.wait_for(self._inqueue.get(), timeout)
         return await self._inqueue.get()
@@ -74,3 +74,6 @@ class MockAgentTransport(AgentTransport):
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         for item in range(self._inqueue.qsize()):
             self._inqueue.task_done()
+
+    class Config:
+        underscore_attrs_are_private = True

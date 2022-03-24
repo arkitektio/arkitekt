@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Dict, Union
 from inflection import underscore
-from numpy import True_
 import websockets
 from arkitekt.agents.transport.base import AgentTransport
 import asyncio
@@ -13,9 +12,7 @@ from arkitekt.agents.transport.errors import (
 )
 from arkitekt.agents.transport.protocols.agent_json import *
 import logging
-from websockets.exceptions import (
-    ConnectionClosedError,
-)
+from websockets.exceptions import ConnectionClosedError, InvalidStatusCode
 
 logger = logging.getLogger(__name__)
 
@@ -55,18 +52,18 @@ class WebsocketAgentTransport(AgentTransport):
         self._connection_task = asyncio.create_task(self.websocket_loop())
         self._connected = True
 
-    async def websocket_loop(self, retry=0):
+    async def websocket_loop(self, retry=0, reload_token=False):
         send_task = None
         receive_task = None
         try:
             try:
-                token = await self.token_loader()
+                token = await self.token_loader(force_refresh=reload_token)
 
                 async with websockets.connect(
                     f"{self.ws_url}?token={token}&instance_id={self.instance_id}"
                 ) as client:
 
-                    logger.info("Postman on Websockets connected")
+                    logger.info("Agent on Websockets connected")
 
                     send_task = asyncio.create_task(self.sending(client))
                     receive_task = asyncio.create_task(self.receiving(client))
@@ -84,6 +81,14 @@ class WebsocketAgentTransport(AgentTransport):
                     for task in done:
                         raise task.exception()
 
+            except InvalidStatusCode as e:
+                logger.warning(
+                    "Websocket Connect was denied. Trying to reload token",
+                    exc_info=True,
+                )
+                reload_token = True
+                raise CorrectableConnectionFail from e
+
             except ConnectionClosedError as e:
                 logger.warning("Websocket was closed", exc_info=True)
                 raise CorrectableConnectionFail from e
@@ -99,7 +104,7 @@ class WebsocketAgentTransport(AgentTransport):
 
             await asyncio.sleep(self.time_between_retries)
             logger.info(f"Retrying to connect")
-            await self.websocket_loop(retry=retry + 1)
+            await self.websocket_loop(retry=retry + 1, reload_token=reload_token)
 
         except DefiniteConnectionFail as e:
             logger.error("Websocket excepted closed definetely", exc_info=True)
@@ -129,6 +134,7 @@ class WebsocketAgentTransport(AgentTransport):
     async def receiving(self, client):
         try:
             async for message in client:
+                logger.info(f"Receiving message {message}")
                 await self.receive(message)
         except asyncio.CancelledError as e:
             logger.info("Receiving Task sucessfully Cancelled")
@@ -142,6 +148,12 @@ class WebsocketAgentTransport(AgentTransport):
             # State Layer
             if type == AgentSubMessageTypes.ASSIGN:
                 await self._abroadcast(AssignSubMessage(**json_dict))
+
+            if type == AgentSubMessageTypes.UNASSIGN:
+                await self._abroadcast(UnassignSubMessage(**json_dict))
+
+            if type == AgentSubMessageTypes.UNPROVIDE:
+                await self._abroadcast(UnprovideSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.PROVIDE:
                 await self._abroadcast(ProvideSubMessage(**json_dict))

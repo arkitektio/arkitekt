@@ -1,4 +1,5 @@
 from typing import Any, Dict, List, Union
+from arkitekt.api.schema import AssignationStatus
 
 from arkitekt.messages import Assignation, Reservation
 from arkitekt.postmans.base import BasePostman
@@ -46,6 +47,17 @@ class StatefulPostman(BasePostman):
         )
         self.assignations[assignation.assignation] = assignation
         return assignation
+
+    async def aunassign(
+        self,
+        assignation: str,
+    ) -> Assignation:
+        print(assignation)
+        unassignation = await self.transport.aunassign(assignation)
+        self.assignations[
+            unassignation.assignation
+        ].status = AssignationStatus.CANCELING
+        return unassignation
 
     def register_reservation_queue(self, res_id: str, queue: asyncio.Queue):
         self._res_update_queues[res_id] = queue

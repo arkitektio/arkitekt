@@ -1,7 +1,6 @@
 import pytest
-from rath.links import compose, ShrinkingLink, DictingLink
-from rath.links.testing.mock import AsyncMockLink
-from tests.mocks import ArkitektMockResolver
+
+from tests.mocks import MockArkitektRath
 from arkitekt.rath import ArkitektRath
 
 from arkitekt.postmans.transport.mock import MockPostmanTransport
@@ -14,15 +13,7 @@ from arkitekt.api.schema import afind
 @pytest.fixture
 def arkitekt_rath():
 
-    link = compose(
-        ShrinkingLink(),
-        DictingLink(),  # after the shrinking so we can override the dicting
-        AsyncMockLink(
-            query_resolver=ArkitektMockResolver(),
-        ),
-    )
-
-    return ArkitektRath(link=link)
+    return MockArkitektRath()
 
 
 @pytest.fixture

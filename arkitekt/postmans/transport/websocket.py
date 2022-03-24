@@ -18,9 +18,7 @@ from arkitekt.postmans.transport.errors import (
 from pydantic import Field
 from .protocols.postman_json import *
 import logging
-from websockets.exceptions import (
-    ConnectionClosedError,
-)
+from websockets.exceptions import ConnectionClosedError, InvalidStatusCode
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +39,6 @@ class DefiniteConnectionFail(PostmanTransportException):
 
 class WebsocketPostmanTransport(PostmanTransport):
     ws_url: str
-    instance_id: Optional[str]
     token_loader: Callable[[], Awaitable[str]] = Field(exclude=True)
     max_retries = 5
     time_between_retries = 5
@@ -63,12 +60,12 @@ class WebsocketPostmanTransport(PostmanTransport):
         self._connection_task = asyncio.create_task(self.websocket_loop())
         self._connected = True
 
-    async def websocket_loop(self, retry=0):
+    async def websocket_loop(self, retry=0, reload_token=False):
         send_task = None
         receive_task = None
         try:
             try:
-                token = await self.token_loader()
+                token = await self.token_loader(force_refresh=reload_token)
 
                 async with websockets.connect(
                     f"{self.ws_url}?token={token}&instance_id={self.instance_id}"
@@ -92,6 +89,14 @@ class WebsocketPostmanTransport(PostmanTransport):
                     for task in done:
                         raise task.exception()
 
+            except InvalidStatusCode as e:
+                logger.warning(
+                    "Websocket Connect was denied. Trying to reload token",
+                    exc_info=True,
+                )
+                reload_token = True
+                raise CorrectableConnectionFail from e
+
             except ConnectionClosedError as e:
                 logger.warning("Websocket was closed", exc_info=True)
                 raise CorrectableConnectionFail from e
@@ -107,7 +112,7 @@ class WebsocketPostmanTransport(PostmanTransport):
 
             await asyncio.sleep(self.time_between_retries)
             logger.info(f"Retrying to connect")
-            await self.websocket_loop(retry=retry + 1)
+            await self.websocket_loop(retry=retry + 1, reload_token=reload_token)
 
         except DefiniteConnectionFail as e:
             logger.error("Websocket excepted closed definetely", exc_info=True)
