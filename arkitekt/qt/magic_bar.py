@@ -1,6 +1,6 @@
 from qtpy import QtWidgets, QtGui, QtCore
 from arkitekt.app import ArkitektApp
-from koil.qt import QtTask, QtCoro
+from koil.qt import QtRunner, QtCoro
 from koil.composition.qt import QtPedanticKoil
 from .utils import get_image_path
 
@@ -12,11 +12,11 @@ class MagicBar(QtWidgets.QWidget):
         assert isinstance(self.app.koil, QtPedanticKoil), "Koil should be Qt Koil"
         self.dark_mode = dark_mode
 
-        self.connect_task = self.app.koil.create_runner(self.app.connect)
+        self.connect_task = QtRunner(self.app.aconnect)
         self.connect_task.errored.connect(print)
         self.connect_task.returned.connect(self.on_connected)
 
-        self.provide_task: QtTask = self.app.arkitekt.run(as_task=True)
+        self.provide_task: QtRunner = QtRunner(self.app.arkitekt.arun)
         self.provide_task.errored.connect(print)
         self.provide_task.returned.connect(self.on_providing_ended)
 

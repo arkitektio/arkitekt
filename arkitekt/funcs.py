@@ -9,7 +9,9 @@ def execute(operation, variables, rath: ArkitektRath = None):
 
 async def aexecute(operation, variables, rath: ArkitektRath = None):
     rath = rath or current_arkitekt_rath.get()
-    x = await rath.aexecute(operation.Meta.document, variables)
+    x = await rath.aexecute(
+        operation.Meta.document, operation.Arguments(**variables).dict(by_alias=True)
+    )
     return operation(**x.data)
 
 
@@ -19,5 +21,7 @@ def subscribe(operation, variables, rath: ArkitektRath = None):
 
 async def asubscribe(operation, variables, rath: ArkitektRath = None):
     rath = rath or current_arkitekt_rath.get()
-    async for event in rath.asubscribe(operation.Meta.document, variables):
+    async for event in rath.asubscribe(
+        operation.Meta.document, operation.Arguments(**variables).dict(by_alias=True)
+    ):
         yield operation(**event.data)

@@ -49,7 +49,7 @@ class WebsocketAgentTransport(AgentTransport):
     _connection_task: Contextual[asyncio.Task] = None
 
     async def __aenter__(self):
-        assert self._abroadcast is not None, "Broadcast ss be defined"
+        assert self.abroadcast is not None, "Broadcast ss be defined"
         self._futures = {}
         self._send_queue = asyncio.Queue()
         self._connection_task = asyncio.create_task(self.websocket_loop())
