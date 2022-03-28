@@ -6,14 +6,14 @@ from arkitekt.agents.transport.protocols.agent_json import (
 )
 from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision
-from tests.funcs import function_with_side_register
-from tests.mocks import MockApp, MockArkitekt
+from .funcs import function_with_side_register
+from .mocks import MockApp, MockArkitekt
 
 from arkitekt.definition.registry import DefinitionRegistry
 from arkitekt.structures.registry import StructureRegistry
 from arkitekt.agents.transport.mock import MockAgentTransport
 
-from tests.structures import SecondObject
+from .structures import SecondObject
 
 
 @pytest.fixture

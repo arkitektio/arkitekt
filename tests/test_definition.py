@@ -7,7 +7,7 @@ import pytest
 from .funcs import karl, complex_karl, karl_structure, structured_gen
 from .structures import SecondSerializableObject, SerializableObject
 from arkitekt.definition.define import prepare_definition
-from tests.mocks import MockArkitektRath
+from .mocks import MockArkitektRath
 
 
 @pytest.fixture

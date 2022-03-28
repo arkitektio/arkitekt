@@ -1,5 +1,5 @@
 from typing import Dict, List, Tuple
-from tests.structures import SecondObject, SecondSerializableObject, SerializableObject
+from .structures import SecondObject, SecondSerializableObject, SerializableObject
 
 
 def karl(rep: str, name: str = None) -> str:

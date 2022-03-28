@@ -4,20 +4,20 @@ from pydantic.main import BaseModel
 class SerializableObject(BaseModel):
     number: int
 
-    async def shrink(self):
+    async def ashrink(self):
         return self.number
 
     @classmethod
-    async def expand(cls, shrinked_value):
+    async def aexpand(cls, shrinked_value):
         return cls(number=shrinked_value)
 
 
 class SecondSerializableObject:
-    async def shrink(self):
+    async def ashrink(self):
         return 5
 
     @classmethod
-    async def expand(cls, shrinked_value):
+    async def aexpand(cls, shrinked_value):
         return cls()
 
 
@@ -28,11 +28,11 @@ class IdentifiableSerializableObject(BaseModel):
     def get_identifier(cls):
         return "mock.identifiable"
 
-    async def shrink(self):
+    async def ashrink(self):
         return self.number
 
     @classmethod
-    async def expand(cls, shrinked_value):
+    async def aexpand(cls, shrinked_value):
         return cls(number=shrinked_value)
 
 

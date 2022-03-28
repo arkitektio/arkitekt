@@ -4,8 +4,8 @@ from arkitekt.definition.define import prepare_definition
 import pytest
 from arkitekt.structures.registry import StructureRegistry, register_structure
 
-from tests.structures import SecondSerializableObject, SerializableObject
-from tests.funcs import complex_karl, karl, structured_gen
+from .structures import SecondSerializableObject, SerializableObject
+from .funcs import complex_karl, karl, structured_gen
 from arkitekt.structures.serialization.postman import (
     shrink_inputs,
     expand_outputs,
@@ -14,7 +14,7 @@ from arkitekt.structures.serialization.postman import (
 from arkitekt.structures.serialization.actor import (
     expand_inputs,
 )
-from tests.mocks import MockArkitektRath
+from .mocks import MockArkitektRath
 
 
 @pytest.fixture

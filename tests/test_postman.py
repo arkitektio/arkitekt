@@ -1,6 +1,6 @@
 import pytest
 
-from tests.mocks import MockArkitektRath
+from .mocks import MockArkitektRath
 from arkitekt.rath import ArkitektRath
 
 from arkitekt.postmans.transport.mock import MockPostmanTransport

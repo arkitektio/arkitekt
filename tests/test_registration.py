@@ -16,17 +16,17 @@ async def test_structure_registration():
             super().__init__()
             self.number = number
 
-        async def shrink(self):
+        async def ashrink(self):
             return self.number
 
         @classmethod
-        async def expand(cls, shrinked_value):
+        async def aexpand(cls, shrinked_value):
             return cls(shrinked_value)
 
     assert "test" in registry._identifier_shrinker_map, "Registration fails"
     assert "test" in registry._identifier_expander_map, "Registration of expand failed"
     assert (
-        SerializableObject.expand == registry._identifier_expander_map["test"]
+        SerializableObject.aexpand == registry._identifier_expander_map["test"]
     ), "Is not the same instance"
 
     with pytest.raises(StructureOverwriteError):
@@ -37,11 +37,11 @@ async def test_structure_registration():
                 super().__init__()
                 self.number = number
 
-            async def shrink(self):
+            async def ashrink(self):
                 return self.number
 
             @classmethod
-            async def expand(cls, shrinked_value):
+            async def aexpand(cls, shrinked_value):
                 return cls(shrinked_value)
 
     with pytest.raises(StructureDefinitionError):
@@ -53,5 +53,5 @@ async def test_structure_registration():
                 self.number = number
 
             @classmethod
-            async def expand(cls, shrinked_value):
+            async def aexpand(cls, shrinked_value):
                 return cls(shrinked_value)
