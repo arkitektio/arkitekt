@@ -78,8 +78,13 @@ async def expand_outputs(
     """
     assert returns is not None, "Returns can't be empty"
     if len(node.returns) != len(returns):
-        raise ExpandingError("Missmatch in Return Length")
+        raise ExpandingError(
+            f"Missmatch in Return Length. Node requires {len(node.returns)} returns, but got {len(returns)}"
+        )
     try:
+        if len(returns) == 0:
+            return None
+
         returns = await asyncio.gather(
             *[
                 port.cause_expand(val, structure_registry)

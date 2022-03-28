@@ -58,7 +58,7 @@ class MockAgentTransport(AgentTransport):
     async def adelay(
         self, message: Union[Assignation, Provision, Unprovision, Unassignation]
     ):
-        await self._abroadcast(message)
+        await self.abroadcast(message)
 
     def delay(self, message: Union[Assignation, Provision, Unprovision, Unassignation]):
         return unkoil(self.adelay, message)

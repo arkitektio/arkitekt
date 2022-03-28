@@ -8,7 +8,7 @@ from arkitekt.definition.registry import (
 )
 from arkitekt.rath import ArkitektRath, current_arkitekt_rath
 import asyncio
-from arkitekt.agents.transport.base import AgentTransport
+from arkitekt.agents.transport.base import AgentTransport, Contextual
 from arkitekt.messages import Assignation, Unassignation, Unprovision, Provision
 from koil import unkoil
 from koil.composition import KoiledModel
@@ -32,7 +32,7 @@ class BaseAgent(KoiledModel):
     _templateTemplatesMap: Dict[str, TemplateFragment] = {}
     _provisionActorMap = {}
     _provisionTaskMap: Dict[str, asyncio.Task] = Field(default_factory=dict)
-    _inqueue: Optional[asyncio.Queue] = None
+    _inqueue: Contextual[asyncio.Queue] = None
 
     async def abroadcast(
         self, message: Union[Assignation, Provision, Unassignation, Unprovision]
@@ -130,7 +130,7 @@ class BaseAgent(KoiledModel):
         )
         self.rath = self.rath or current_arkitekt_rath.get()
         self._inqueue = asyncio.Queue()
-        self.transport._abroadcast = self.abroadcast
+        self.transport.abroadcast = self.abroadcast
         await self.transport.__aenter__()
         return self
 

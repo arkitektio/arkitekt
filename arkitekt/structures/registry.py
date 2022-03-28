@@ -79,7 +79,7 @@ class StructureRegistry(BaseModel):
         if expand is None:
             if not hasattr(cls, "aexpand"):
                 raise StructureDefinitionError(
-                    f"You need to pass 'expand' method or {cls} needs to implement a expand method"
+                    f"You need to pass 'aexpand' method or {cls} needs to implement a aexpand method"
                 )
             expand = cls.aexpand
 
@@ -90,11 +90,11 @@ class StructureRegistry(BaseModel):
                         cls.ashrink = id_shrink
                     else:
                         raise StructureDefinitionError(
-                            f"You need to pass 'shrink' method or {cls} needs to implement a shrink method. A BaseModel can be automatically shrinked by providing an id field"
+                            f"You need to pass 'ashrink' method or {cls} needs to implement a ashrink method. A BaseModel can be automatically shrinked by providing an id field"
                         )
                 else:
                     raise StructureDefinitionError(
-                        f"You need to pass 'shrink' method or {cls} needs to implement a shrink method"
+                        f"You need to pass 'ashrink' method or {cls} needs to implement a ashrink method"
                     )
 
             shrink = cls.ashrink

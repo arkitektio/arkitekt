@@ -12,15 +12,21 @@ T = TypeVar("T", bound=BaseModel)
 class UpdatableModel(BaseModel):
     pass
 
-    def update(self: T, other: BaseModel, in_place=True) -> Optional[T]:
+    def update(self: T, use: BaseModel = None, in_place=True, **kwargs) -> Optional[T]:
         if in_place:
-            for key, value in other.dict().items():
-                if key in self.__fields__:
-                    if value != None:  # None is not a valid update!
-                        setattr(self, key, value)
+            if use:
+                for key, value in use.dict().items():
+                    if key in self.__fields__:
+                        if value != None:  # None is not a valid update!
+                            setattr(self, key, value)
+            if kwargs:
+                for key in kwargs:
+                    setattr(self, key, kwargs[key])
+
+            return self
         else:
             copy = self.copy()
-            copy.update(other)
+            copy.update(use=use, **kwargs)
             return copy
 
 

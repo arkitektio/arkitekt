@@ -1,3 +1,4 @@
+from contextvars import ContextVar
 from dataclasses import dataclass, field
 from typing import Awaitable, Callable, Dict, Union
 from inflection import underscore
@@ -13,6 +14,8 @@ from arkitekt.agents.transport.errors import (
 from arkitekt.agents.transport.protocols.agent_json import *
 import logging
 from websockets.exceptions import ConnectionClosedError, InvalidStatusCode
+
+from koil.types import ContextBool, Contextual
 
 logger = logging.getLogger(__name__)
 
@@ -39,14 +42,14 @@ class WebsocketAgentTransport(AgentTransport):
     time_between_retries = 5
     allow_reconnect = True
 
-    _futures: Optional[Dict[str, asyncio.Future]] = None
-    _connected = False
-    _healthy = False
-    _send_queue: Optional[asyncio.Queue] = None
-    _connection_task: Optional[asyncio.Task] = None
+    _futures: Contextual[Dict[str, asyncio.Future]] = None
+    _connected: ContextBool = False
+    _healthy: ContextBool = False
+    _send_queue: Contextual[asyncio.Queue] = None
+    _connection_task: Contextual[asyncio.Task] = None
 
     async def __aenter__(self):
-        assert self._abroadcast is not None, "Broadcast must be defined"
+        assert self._abroadcast is not None, "Broadcast ss be defined"
         self._futures = {}
         self._send_queue = asyncio.Queue()
         self._connection_task = asyncio.create_task(self.websocket_loop())
@@ -147,16 +150,16 @@ class WebsocketAgentTransport(AgentTransport):
 
             # State Layer
             if type == AgentSubMessageTypes.ASSIGN:
-                await self._abroadcast(AssignSubMessage(**json_dict))
+                await self.abroadcast(AssignSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.UNASSIGN:
-                await self._abroadcast(UnassignSubMessage(**json_dict))
+                await self.abroadcast(UnassignSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.UNPROVIDE:
-                await self._abroadcast(UnprovideSubMessage(**json_dict))
+                await self.abroadcast(UnprovideSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.PROVIDE:
-                await self._abroadcast(ProvideSubMessage(**json_dict))
+                await self.abroadcast(ProvideSubMessage(**json_dict))
 
             if type == AgentMessageTypes.LIST_ASSIGNATIONS_REPLY:
                 self._futures[id].set_result(AssignationsListReply(**json_dict))

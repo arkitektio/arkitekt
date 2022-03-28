@@ -1,3 +1,4 @@
+from inflection import underscore
 from arkitekt.postmans.transport.base import PostmanTransport
 from arkitekt.messages import (
     Assignation,
@@ -10,13 +11,14 @@ from arkitekt.api.schema import (
     ReservationStatus,
     ReserveParamsInput,
 )
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 import asyncio
 import random
 from pydantic import Field
+from koil import unkoil
 
 
-class MockPostmanTransport(PostmanTransport):
+class MockAutoresolvingPostmanTransport(PostmanTransport):
     """A mock transport for an agent
 
     Args:
@@ -24,7 +26,9 @@ class MockPostmanTransport(PostmanTransport):
     """
 
     assignationState: Dict[str, Assignation] = Field(default_factory=dict)
-    reservationState: Dict[str, Assignation] = Field(default_factory=dict)
+    unassignationState: Dict[str, Unassignation] = Field(default_factory=dict)
+    unreservationState: Dict[str, Unreservation] = Field(default_factory=dict)
+    reservationState: Dict[str, Reservation] = Field(default_factory=dict)
 
     _task: Optional[asyncio.Task] = None
 
@@ -86,6 +90,7 @@ class MockPostmanTransport(PostmanTransport):
     async def aresolve_reservations(self):
 
         while True:
+
             await asyncio.sleep(0.1)
 
             ress = [
@@ -124,3 +129,95 @@ class MockPostmanTransport(PostmanTransport):
 
     class Config:
         underscore_attrs_are_private = True
+
+
+class MockPostmanTransport(PostmanTransport):
+
+    assignationState: Dict[str, Assignation] = Field(default_factory=dict)
+    unassignationState: Dict[str, Unassignation] = Field(default_factory=dict)
+    unreservationState: Dict[str, Unreservation] = Field(default_factory=dict)
+    reservationState: Dict[str, Reservation] = Field(default_factory=dict)
+
+    _inqueue: asyncio.Queue = None
+
+    async def alist_assignations(
+        self, exclude: Optional[AssignationStatus] = None
+    ) -> List[Assignation]:
+        return []
+
+    async def alist_reservations(
+        self, exclude: Optional[ReservationStatus] = None
+    ) -> List[Reservation]:
+        return []
+
+    async def __aenter__(self):
+        self._inqueue = asyncio.Queue()
+
+    async def aassign(
+        self,
+        reservation: str,
+        args: List[Any],
+        kwargs: Dict[str, Any],
+        persist=True,
+        log=False,
+    ) -> Assignation:
+
+        assignation = Assignation(
+            assignation=str(len(self.assignationState) + 1),
+            reservation=reservation,
+            args=args,
+            kwargs=kwargs,
+            status=AssignationStatus.PENDING,
+        )
+        self.assignationState[assignation.assignation] = assignation
+        await self._inqueue.put(assignation)
+        return assignation
+
+    async def areserve(
+        self, node: str, params: ReserveParamsInput = None
+    ) -> Reservation:
+        print("Called")
+        reservation = Reservation(
+            reservation=str(len(self.reservationState) + 1),
+            node=node,
+            status=ReservationStatus.ROUTING,
+        )
+        self.reservationState[reservation.reservation] = reservation
+        await self._inqueue.put(reservation)
+        return reservation
+
+    async def aunreserve(self, reservation: str) -> Unreservation:
+        unreservation = Unreservation(reservation=reservation)
+        await self._inqueue.put(unreservation)
+        return unreservation
+
+    async def aunassign(self, assignation: str) -> Unassignation:
+        unassignation = Unassignation(assignation=assignation)
+        await self._inqueue.put(Unassignation(assignation=assignation))
+        return unassignation
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        for item in range(self._inqueue.qsize()):
+            self._inqueue.task_done()
+
+    async def adelay(
+        self, message: Union[Assignation, Reservation, Unreservation, Unassignation]
+    ):
+        await self.abroadcast(message)
+
+    async def areceive(self, timeout=None):
+        if timeout:
+            return await asyncio.wait_for(self._inqueue.get(), timeout)
+        return await self._inqueue.get()
+
+    def delay(
+        self, message: Union[Assignation, Reservation, Unreservation, Unassignation]
+    ):
+        return unkoil(self.adelay, message)
+
+    def receive(self, *args, **kwargs):
+        return unkoil(self.areceive, *args, **kwargs)
+
+    class Config:
+        underscore_attrs_are_private = True
+        arbitrary_types_allowed = True

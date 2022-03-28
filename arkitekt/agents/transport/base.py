@@ -6,6 +6,7 @@ from arkitekt.messages import Assignation, Unassignation, Provision, Unprovision
 from arkitekt.api.schema import ProvisionMode, ProvisionStatus, AssignationStatus
 from koil.composition import KoiledModel
 from koil.decorators import koilable
+from koil.types import Contextual
 
 
 class AgentTransport(KoiledModel):
@@ -29,7 +30,7 @@ class AgentTransport(KoiledModel):
 
     """
 
-    _abroadcast: Optional[
+    abroadcast: Contextual[
         Callable[
             [Union[Assignation, Unassignation, Unprovision, Provision]], Awaitable[None]
         ]

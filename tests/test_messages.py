@@ -23,7 +23,7 @@ def test_update_message():
         assignation=1, status=AssignationStatus.RETURNED, args=["nana"], kwargs=None
     )
 
-    t = x.update(y, in_place=False)
+    t = x.update(use=y, in_place=False)
     assert x.status == AssignationStatus.PENDING, "Status should have not been updated"
     assert x.kwargs == {"a": 1}, "Kwargs should have not been updated"
 

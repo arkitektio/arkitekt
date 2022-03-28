@@ -1,0 +1,3 @@
+mutation slate($identifier: String!) {
+  slate(identifier: $identifier)
+}
