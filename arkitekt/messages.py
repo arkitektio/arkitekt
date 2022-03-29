@@ -56,6 +56,7 @@ class Provision(UpdatableModel):
 
 class Unprovision(UpdatableModel):
     provision: str
+    message: Optional[str]
 
 
 class Reservation(UpdatableModel):

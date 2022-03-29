@@ -1,3 +1,4 @@
+import asyncio
 from typing import Dict, List, Tuple
 from .structures import SecondObject, SecondSerializableObject, SerializableObject
 
@@ -86,3 +87,23 @@ def function_with_side_register(
         Dict[str, SecondSerializableObject]: [description]
     """
     yield "tested", {"peter": SecondObject(6)}
+
+
+async def function_with_side_register_async(
+    rep: List[SecondObject], name: Dict[str, SecondObject] = None
+) -> Tuple[str, Dict[str, SecondObject]]:
+    """function_with_side_register_async
+
+    Naoinaoainao
+
+    Args:
+        rep (List[SecondObject]): [description]
+        name (Dict[str, SerializableObject], optional): [description]. Defaults to None.
+
+    Returns:
+        str: [description]
+        Dict[str, SecondSerializableObject]: [description]
+    """
+    while True:
+        await asyncio.sleep(0.2)
+        yield "tested", {"peter": SecondObject(6)}

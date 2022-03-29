@@ -27,6 +27,7 @@ class ReservationContract(KoiledModel):
 
     _reservation: Reservation = None
     _enter_future: asyncio.Future = None
+    _exit_future: asyncio.Future = None
     _updates_queue: asyncio.Queue = None
     _updates_watcher: asyncio.Task = None
 
@@ -95,6 +96,7 @@ class ReservationContract(KoiledModel):
         logger.info(f"Waiting for Reservation {self._reservation}")
         self._updates_queue = asyncio.Queue()
         self._enter_future = asyncio.Future()
+
         self.postman.register_reservation_queue(
             self._reservation.reservation, self._updates_queue
         )
@@ -104,6 +106,14 @@ class ReservationContract(KoiledModel):
         return self
 
     async def __aexit__(self, *args, **kwargs):
+
+        if self.auto_unreserve:
+
+            unreservation = await asyncio.wait_for(
+                self.postman.aunreserve(self._reservation.reservation), timeout=1
+            )
+            logger.info(f"Unreserved {unreservation}")
+
         self._updates_watcher.cancel()
 
         try:
@@ -111,10 +121,6 @@ class ReservationContract(KoiledModel):
         except asyncio.CancelledError:
             pass
 
-        if self.auto_unreserve:
-            await asyncio.wait_for(
-                self.postman.aunreserve(self._reservation.reservation), timeout=1
-            )
         self.postman.unregister_reservation_queue(self._reservation.reservation)
 
     class Config:

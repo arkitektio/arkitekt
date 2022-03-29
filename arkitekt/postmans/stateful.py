@@ -1,5 +1,5 @@
 from typing import Any, Dict, List, Union
-from arkitekt.api.schema import AssignationStatus
+from arkitekt.api.schema import AssignationStatus, ReservationStatus
 
 from arkitekt.messages import Assignation, Reservation
 from arkitekt.postmans.base import BasePostman
@@ -30,9 +30,11 @@ class StatefulPostman(BasePostman):
         return reservation
 
     async def aunreserve(self, reservation_id: str) -> Reservation:
-        reservation = await self.transport.aunreserve(reservation_id)
-        self.reservations[reservation.reservation] = reservation
-        return reservation
+        unreservation = await self.transport.aunreserve(reservation_id)
+        self.reservations[
+            unreservation.reservation
+        ].status = ReservationStatus.CANCELING
+        return self.reservations[unreservation.reservation]
 
     async def aassign(
         self,

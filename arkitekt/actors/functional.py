@@ -115,6 +115,11 @@ class FunctionalGenActor(FunctionalActor):
 
             current_assignation.set(message)
 
+            await self.transport.change_assignation(
+                message.assignation,
+                status=AssignationStatus.ASSIGNED,
+            )
+
             async for returns in self.assign(*args, **kwargs):
 
                 returns = (
@@ -128,7 +133,7 @@ class FunctionalGenActor(FunctionalActor):
                 )
 
                 await self.transport.change_assignation(
-                    message.assignation, status=AssignationStatus.YIELD, results=returns
+                    message.assignation, status=AssignationStatus.YIELD, returns=returns
                 )
 
             current_assignation.set(None)
@@ -140,13 +145,13 @@ class FunctionalGenActor(FunctionalActor):
         except asyncio.CancelledError as e:
 
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.CANCEL
+                message.assignation, status=AssignationStatus.CANCELLED, message=str(e)
             )
 
         except Exception as e:
             logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.CRITICAL, message=repr(e)
+                message.assignation, status=AssignationStatus.CRITICAL, message=str(e)
             )
 
             raise e

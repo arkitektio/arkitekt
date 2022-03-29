@@ -26,6 +26,9 @@ class StatefulAgent(BaseAgent):
                 actor = self._provisionActorMap[message.provision]
                 await actor.apass(message)
             else:
+                logger.warning(
+                    f"Received assignation for a provision that is not running {self._provisionActorMap} {message.provision}"
+                )
                 await self.transport.change_assignation(
                     message.assignation,
                     status=AssignationStatus.CRITICAL,
@@ -47,7 +50,16 @@ class StatefulAgent(BaseAgent):
                 )
 
         elif isinstance(message, Unprovision):
-            await self._provisionActorMap[message.provision].astop()
+            if message.provision in self._provisionActorMap:
+                actor = self._provisionActorMap[message.provision]
+                await actor.astop()
+                del self._provisionActorMap[message.provision]
+                logger.info("Actor stopped")
+
+            else:
+                logger.error(
+                    f"Received Unprovision for never provisioned provision {message}"
+                )
 
         else:
             raise Exception(f"Unknown message type {type(message)}")

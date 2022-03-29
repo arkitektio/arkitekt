@@ -146,11 +146,6 @@ class Actor:
             await self.on_unprovide()
 
             logger.info("Doing Whatever needs to be done to cancel!")
-            await self.transport.change_provision(
-                self.provision.provision,
-                status=ProvisionStatus.CANCELLED,
-                message=str(e),
-            )
 
             cancel_assignations = [i.cancel() for i in self.runningAssignments.values()]
 
@@ -161,6 +156,11 @@ class Actor:
                     pass
 
             current_provision_context.set(None)
+            await self.transport.change_provision(
+                self.provision.provision,
+                status=ProvisionStatus.CANCELLED,
+                message=str(e),
+            )
             raise e
 
     async def __aenter__(self):
