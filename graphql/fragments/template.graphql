@@ -12,4 +12,5 @@ fragment Template on Template {
   node {
     ...Node
   }
+  params
 }

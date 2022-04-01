@@ -1,4 +1,5 @@
 from typing import Awaitable, Callable, List, Optional, Dict, Any, Union
+from inflection import underscore
 
 from pydantic import Field
 from arkitekt.messages import Assignation, Reservation, Unassignation, Unreservation
@@ -7,10 +8,9 @@ from koil.composition import KoiledModel
 
 
 class PostmanTransport(KoiledModel):
-    abroadcast: Optional[
-        Callable[[Union[Assignation, Reservation]], Awaitable[None]]
-    ] = Field(default=None, exclude=True)
     instance_id: Optional[str]
+
+    _abroadcast: Optional[Callable[[Union[Assignation, Reservation]], Awaitable[None]]]
 
     async def aassign(
         self,
@@ -47,3 +47,6 @@ class PostmanTransport(KoiledModel):
         self, exclude: Optional[ReservationStatus] = None
     ) -> List[Reservation]:
         raise NotImplementedError()
+
+    class Config:
+        underscore_attrs_are_private = True

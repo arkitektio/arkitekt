@@ -12,7 +12,7 @@ query get_provision($reference: ID!) {
       }
       extensions
     }
-    bound {
+    agent {
       registry {
         id
         name

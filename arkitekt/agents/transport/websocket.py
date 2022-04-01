@@ -49,7 +49,7 @@ class WebsocketAgentTransport(AgentTransport):
     _connection_task: Contextual[asyncio.Task] = None
 
     async def __aenter__(self):
-        assert self.abroadcast is not None, "Broadcast ss be defined"
+        assert self._abroadcast is not None, "Broadcast ss be defined"
         self._futures = {}
         self._send_queue = asyncio.Queue()
         self._connection_task = asyncio.create_task(self.websocket_loop())
@@ -150,16 +150,16 @@ class WebsocketAgentTransport(AgentTransport):
 
             # State Layer
             if type == AgentSubMessageTypes.ASSIGN:
-                await self.abroadcast(AssignSubMessage(**json_dict))
+                await self._abroadcast(AssignSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.UNASSIGN:
-                await self.abroadcast(UnassignSubMessage(**json_dict))
+                await self._abroadcast(UnassignSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.UNPROVIDE:
-                await self.abroadcast(UnprovideSubMessage(**json_dict))
+                await self._abroadcast(UnprovideSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.PROVIDE:
-                await self.abroadcast(ProvideSubMessage(**json_dict))
+                await self._abroadcast(ProvideSubMessage(**json_dict))
 
             if type == AgentMessageTypes.LIST_ASSIGNATIONS_REPLY:
                 self._futures[id].set_result(AssignationsListReply(**json_dict))

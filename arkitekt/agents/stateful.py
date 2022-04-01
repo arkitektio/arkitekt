@@ -22,12 +22,12 @@ class StatefulAgent(BaseAgent):
         logger.info(f"Agent received {message}")
 
         if isinstance(message, Assignation) or isinstance(message, Unassignation):
-            if message.provision in self._provisionActorMap:
-                actor = self._provisionActorMap[message.provision]
+            if message.provision in self.provisionActorMap:
+                actor = self.provisionActorMap[message.provision]
                 await actor.apass(message)
             else:
                 logger.warning(
-                    f"Received assignation for a provision that is not running {self._provisionActorMap} {message.provision}"
+                    f"Received assignation for a provision that is not running {self.provisionActorMap} {message.provision}"
                 )
                 await self.transport.change_assignation(
                     message.assignation,
@@ -36,24 +36,19 @@ class StatefulAgent(BaseAgent):
                 )
 
         elif isinstance(message, Provision):
-            if message.template in self._templateActorBuilderMap:
-                actorBuilder = self._templateActorBuilderMap[message.template]
-                self._provisionActorMap[message.provision] = actorBuilder(message, self)
-                await self._provisionActorMap[message.provision].arun()
-                logger.info("Actor started")
-            else:
+            try:
+                await self.aspawn_actor(message)
+            except Exception as e:
                 logger.info("Actor not found")
                 await self.transport.change_provision(
-                    message.provision,
-                    status=ProvisionStatus.DENIED,
-                    message="No actor found on the provisioning Agent, this is most likely due to a change in this agent's configuration",
+                    message.provision, status=ProvisionStatus.DENIED, message=str(e)
                 )
 
         elif isinstance(message, Unprovision):
-            if message.provision in self._provisionActorMap:
-                actor = self._provisionActorMap[message.provision]
+            if message.provision in self.provisionActorMap:
+                actor = self.provisionActorMap[message.provision]
                 await actor.astop()
-                del self._provisionActorMap[message.provision]
+                del self.provisionActorMap[message.provision]
                 logger.info("Actor stopped")
 
             else:
@@ -66,7 +61,7 @@ class StatefulAgent(BaseAgent):
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
 
-        cancelations = [actor.astop() for actor in self._provisionActorMap.values()]
+        cancelations = [actor.astop() for actor in self.provisionActorMap.values()]
 
         for c in cancelations:
             try:

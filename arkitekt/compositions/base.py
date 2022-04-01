@@ -7,10 +7,11 @@ from arkitekt.fakts.postman import FaktsPostman
 from arkitekt.fakts.rath import FaktsArkitektRath
 from arkitekt.rath import ArkitektRath
 from arkitekt.messages import Provision
+from arkitekt.structures.default import get_default_structure_registry
 from arkitekt.structures.registry import (
     StructureRegistry,
-    get_default_structure_registry,
 )
+
 from arkitekt.definition.registry import (
     DefinitionRegistry,
     get_current_definition_registry,

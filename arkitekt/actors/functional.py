@@ -1,8 +1,10 @@
 import contextvars
 import threading
-from typing import Any, Coroutine, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
+
+from pydantic import Field
 from arkitekt.actors.errors import ThreadedActorCancelled
-from arkitekt.messages import Assignation
+from arkitekt.messages import Assignation, Provision
 from arkitekt.api.schema import AssignationStatus
 from arkitekt.actors.base import Actor
 from concurrent.futures import ThreadPoolExecutor
@@ -21,23 +23,12 @@ logger = logging.getLogger(__name__)
 
 
 class FunctionalActor(Actor):
-    pass
-
-    def __init__(
-        self, *args, assign=None, on_provide=None, on_unprovide=None, **kwargs
-    ) -> None:
-        super().__init__(*args, **kwargs)
-        self.assign = assign or self.assign
-        self.on_provide = on_provide or self.on_provide
-        self.on_unprovide = on_unprovide or self.on_unprovide
-
-    def assign(self, *args, **kwargs):
-        raise NotImplementedError("Please overwrite this")
+    assign: Callable[..., Any]
+    provide: Optional[Callable[[Provision], Awaitable[Any]]]
+    unprovide: Optional[Callable[[], Awaitable[Any]]]
 
 
 class FunctionalFuncActor(FunctionalActor):
-    assign: Coroutine[Any, Any, Any]
-
     async def progress(self, value, percentage):
         await self._progress(value, percentage)
 
@@ -158,11 +149,9 @@ class FunctionalGenActor(FunctionalActor):
 
 
 class FunctionalThreadedFuncActor(FunctionalActor):
-    def __init__(self, provision, *args, nworkers=4, **kwargs) -> None:
-        super().__init__(provision, *args, **kwargs)
-        self.threadpool = ThreadPoolExecutor(
-            nworkers, thread_name_prefix=f"actor-thread-{provision.provision}"
-        )
+    threadpool: ThreadPoolExecutor = Field(
+        default_factory=lambda: ThreadPoolExecutor(4)
+    )
 
     async def on_assign(self, message: Assignation):
 
@@ -216,11 +205,9 @@ class FunctionalThreadedFuncActor(FunctionalActor):
 
 
 class FunctionalThreadedGenActor(FunctionalActor):
-    def __init__(self, provision, *args, nworkers=4, **kwargs) -> None:
-        super().__init__(provision, *args, **kwargs)
-        self.threadpool = ThreadPoolExecutor(
-            nworkers, thread_name_prefix=f"actor-thread-{provision.provision}"
-        )
+    threadpool: ThreadPoolExecutor = Field(
+        default_factory=lambda: ThreadPoolExecutor(4)
+    )
 
     async def iterate_queue(
         self, async_q: janus._AsyncQueueProxy, message: Assignation

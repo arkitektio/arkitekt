@@ -30,11 +30,11 @@ class AgentTransport(KoiledModel):
 
     """
 
-    abroadcast: Contextual[
+    _abroadcast: Contextual[
         Callable[
             [Union[Assignation, Unassignation, Unprovision, Provision]], Awaitable[None]
         ]
-    ] = Field(default=None, exclude=True)
+    ]
 
     @property
     def connected(self):

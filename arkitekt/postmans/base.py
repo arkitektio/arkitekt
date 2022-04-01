@@ -22,7 +22,7 @@ class BasePostman(KoiledModel):
 
     async def __aenter__(self):
         current_postman.set(self)
-        self.transport.abroadcast = self.abroadcast
+        self.transport._abroadcast = self.abroadcast
         await self.transport.__aenter__()
         return self
 

@@ -1,6 +1,0 @@
-fragment Transcript on Transcript {
-  postman {
-    type
-    kwargs
-  }
-}

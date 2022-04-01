@@ -19,12 +19,16 @@ logger = logging.getLogger(__name__)
 
 
 class ReservationContract(KoiledModel):
+    # TODO:Assert that we can actually assign to this? validating that all of the nodes inputs are
+    # registered in the structure registry?
+
     node: Reserve
     params: ReserveParamsInput = Field(default_factory=ReserveParamsInput)
-    auto_unreserve: bool = True
+    auto_unreserve: bool = False
+    shrink_inputs: bool = True
+    expand_outputs: bool = True
 
     postman: Optional[StatefulPostman] = None
-
     _reservation: Reservation = None
     _enter_future: asyncio.Future = None
     _exit_future: asyncio.Future = None
@@ -40,8 +44,12 @@ class ReservationContract(KoiledModel):
         structure_registry = structure_registry or get_current_structure_registry()
         _ass_queue = asyncio.Queue()
 
-        shrinked_args, shrinked_kwargs = await shrink_inputs(
-            self.node, args, kwargs, structure_registry=structure_registry
+        shrinked_args, shrinked_kwargs = (
+            await shrink_inputs(
+                self.node, args, kwargs, structure_registry=structure_registry
+            )
+            if self.shrink_inputs
+            else (args, kwargs)
         )
 
         ass = await self.postman.aassign(
@@ -55,9 +63,16 @@ class ReservationContract(KoiledModel):
                 logger.info(f"Reservation Context: {ass}")
                 if ass.status == AssignationStatus.RETURNED:
                     self.postman.unregister_assignation_queue(ass.assignation)
-                    return await expand_outputs(
-                        self.node, ass.returns, structure_registry=structure_registry
+                    outputs = (
+                        await expand_outputs(
+                            self.node,
+                            ass.returns,
+                            structure_registry=structure_registry,
+                        )
+                        if self.expand_outputs
+                        else ass.returns
                     )
+                    return outputs
 
                 if ass.status == AssignationStatus.CRITICAL:
                     self.postman.unregister_assignation_queue(ass.assignation)
@@ -132,11 +147,13 @@ def use(
     node: Reserve,
     params: ReserveParamsInput = None,
     postman: StatefulPostman = None,
-    auto_unreserve=True,
+    auto_unreserve=False,
+    **kwargs,
 ) -> ReservationContract:
     return ReservationContract(
         node=node,
         postman=postman,
         params=params or ReserveParamsInput(),
         auto_unreserve=auto_unreserve,
+        **kwargs,
     )

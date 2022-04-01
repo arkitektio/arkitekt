@@ -1,6 +1,12 @@
-from typing import Dict, Union
+from typing import Dict, Optional, Union
+from inflection import underscore
+
+from pydantic import BaseModel, Field
 from arkitekt.agents.transport.base import AgentTransport
-from arkitekt.structures.registry import StructureRegistry
+from arkitekt.structures.registry import (
+    StructureRegistry,
+    get_current_structure_registry,
+)
 from arkitekt.rath import ArkitektRath
 import asyncio
 import logging
@@ -14,45 +20,31 @@ from arkitekt.api.schema import (
 from arkitekt.messages import Assignation, Provision, Unassignation
 from arkitekt.actors.errors import UnknownMessageError
 from arkitekt.actors.vars import current_provision_context
+from koil.types import Contextual
 
 logger = logging.getLogger(__name__)
 
 
-class Agent:
+class Actor(BaseModel):
+    provision: Provision
     transport: AgentTransport
-    rath: ArkitektRath
 
+    strict: bool = False
+    expand_inputs: bool = True
+    shrink_outputs: bool = True
+    structure_registry: StructureRegistry = Field(
+        default_factory=get_current_structure_registry
+    )
+    rath: Optional[ArkitektRath] = Field(default=None)
 
-class Actor:
-    template: TemplateFragment
-    transport: AgentTransport
-    rath: ArkitektRath
+    template: Contextual[TemplateFragment] = None
+    debug: bool = False
 
-    def __init__(
-        self,
-        provision: Provision,
-        agent: Agent,
-        *args,
-        strict=False,
-        expand_inputs=True,
-        shrink_outputs=True,
-        structure_registry: StructureRegistry = None,
-        debug=False,
-        **kwargs,
-    ) -> None:
-        super().__init__(*args, **kwargs)
-        self.strict = strict
-        self.expand_inputs = expand_inputs
-        self.shrink_outputs = shrink_outputs
-        self.structure_registry = structure_registry
-        self.runningAssignments: Dict[
-            str, asyncio.Task
-        ] = {}  # Running assignments indexed by assignment reference
-        self.debug = debug
-        self.provision = provision
-        self.agent = agent
-        self.transport = agent.transport
-        self.rath = agent.rath
+    runningAssignments: Dict[str, Assignation] = Field(default_factory=dict)
+
+    _in_queue: Contextual[asyncio.Queue] = None
+    _runningTasks: Dict[str, asyncio.Task] = {}
+    _provision_task: asyncio.Task = None
 
     async def on_provide(self, provision: Provision, template: TemplateFragment):
         return None
@@ -66,22 +58,23 @@ class Actor:
         )
 
     async def apass(self, message: Union[Assignation, Unassignation]):
-        await self.in_queue.put(message)
+        assert hasattr(self, "_in_queue"), "Actor is currently not listening"
+        await self._in_queue.put(message)
 
     async def arun(self):
-        self.in_queue = asyncio.Queue()
-        self.template = await aget_template(id=self.provision.template, rath=self.rath)
-        self.provision_task = asyncio.create_task(self.alisten())
+        self._in_queue = asyncio.Queue()
+        self._provision_task = asyncio.create_task(self.alisten())
 
     async def astop(self):
-        self.provision_task.cancel()
+        self._provision_task.cancel()
 
         try:
-            await self.provision_task
+            await self._provision_task
         except asyncio.CancelledError:
             print("Provision was cancelled")
 
     async def alisten(self):
+        self.template = await aget_template(id=self.provision.template, rath=self.rath)
         try:
             self.template = await aget_template(
                 id=self.provision.template, rath=self.rath
@@ -102,7 +95,7 @@ class Actor:
             logger.info(f"Actor for {self.provision}: Is now active")
 
             while True:
-                message = await self.in_queue.get()
+                message = await self._in_queue.get()
                 logger.info(f"Actor for {self.provision}: Received {message}")
 
                 if isinstance(message, Assignation):
@@ -126,6 +119,7 @@ class Actor:
                     raise UnknownMessageError(f"{message}")
 
         except Exception as e:
+            print(e)
             logger.exception("Actor failed", exc_info=True)
             await self.transport.change_provision(
                 self.provision.provision,
@@ -169,3 +163,7 @@ class Actor:
 
     async def __aexit__(self, *args, **kwargs):
         await self.astop()
+
+    class Config:
+        arbitrary_types_allowed = True
+        underscore_attrs_are_private = True

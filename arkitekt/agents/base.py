@@ -1,6 +1,9 @@
 from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from pydantic import Field
+import inspect
+from arkitekt.actors.base import Actor
+from arkitekt.actors.types import ActorBuilder
 from arkitekt.api.schema import TemplateFragment, acreate_template, adefine, afind
 from arkitekt.definition.registry import (
     DefinitionRegistry,
@@ -25,12 +28,14 @@ class BaseAgent(KoiledModel):
 
     transport: Optional[AgentTransport] = None
     definition_registry: Optional[DefinitionRegistry] = None
+    provisionActorMap: Dict[str, Actor] = Field(default_factory=dict)
     rath: Optional[ArkitektRath] = None
 
+    _hooks = {}
+
     _approved_templates: List[Tuple[TemplateFragment, Callable]] = []
-    _templateActorBuilderMap = {}
+    _templateActorBuilderMap: Dict[str, ActorBuilder] = {}
     _templateTemplatesMap: Dict[str, TemplateFragment] = {}
-    _provisionActorMap = {}
     _provisionTaskMap: Dict[str, asyncio.Task] = Field(default_factory=dict)
     _inqueue: Contextual[asyncio.Queue] = None
 
@@ -94,6 +99,33 @@ class BaseAgent(KoiledModel):
                 self._templateActorBuilderMap[arkitekt_template.id] = defined_actor
                 self._templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
+    def hook(self, on: str):
+        def decorator(func):
+            assert inspect.iscoroutinefunction(func), "needs to be a coroutine"
+            self._hooks.setdefault(on, []).append(func)
+            return func
+
+        return decorator
+
+    async def run_hook(self, hook_name: str, *args, **kwargs):
+        for hook in self._hooks.get(hook_name, []):
+            await hook(self, *args, **kwargs)
+
+    async def aspawn_actor(self, provision: Provision) -> Actor:
+        """Spawns an Actor from a Provision"""
+
+        await self.run_hook("before_spawn", provision)
+        actor_builder = self._templateActorBuilderMap[provision.template]
+
+        actor = actor_builder(
+            provision=provision,
+            transport=self.transport,
+        )
+        await actor.arun()
+        await self.run_hook("after_spawn", actor)
+        self.provisionActorMap[provision.provision] = actor
+        return actor
+
     async def astep(self):
         await self.process(await self._inqueue.get())
 
@@ -130,7 +162,7 @@ class BaseAgent(KoiledModel):
         )
         self.rath = self.rath or current_arkitekt_rath.get()
         self._inqueue = asyncio.Queue()
-        self.transport.abroadcast = self.abroadcast
+        self.transport._abroadcast = self.abroadcast
         await self.transport.__aenter__()
         return self
 

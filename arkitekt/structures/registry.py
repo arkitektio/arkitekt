@@ -7,16 +7,18 @@ from .errors import (
     StructureOverwriteError,
     StructureRegistryError,
 )
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 
-current_structure_registry = contextvars.ContextVar(
-    "current_structure_registry", default=None
-)
+current_structure_registry = contextvars.ContextVar("current_structure_registry")
 
 
 async def id_shrink(self):
     return self.id
+
+
+Identifier = str
+""" A unique identifier of this structure on the arkitekt platform"""
 
 
 class StructureRegistry(BaseModel):
@@ -24,11 +26,13 @@ class StructureRegistry(BaseModel):
     allow_overwrites: bool = True
     allow_auto_register: bool = False
 
+    identifier_structure_map: Dict[str, Type] = Field(
+        default_factory=dict, exclude=True
+    )
     _identifier_expander_map: Dict[str, Callable[[str], Awaitable[Any]]] = {}
     _identifier_shrinker_map: Dict[str, Callable[[Any], Awaitable[str]]] = {}
     _structure_identifier_map: Dict[Type, str] = {}
     _structure_default_widget_map: Dict[Type, WidgetInput] = {}
-    _identifier_structure_map: Dict[str, Type] = {}
 
     _token: contextvars.Token = None
 
@@ -74,7 +78,6 @@ class StructureRegistry(BaseModel):
         expand=None,
         shrink=None,
         default_widget=None,
-        id_shrink=True,
     ):
         if expand is None:
             if not hasattr(cls, "aexpand"):
@@ -87,7 +90,7 @@ class StructureRegistry(BaseModel):
             if not hasattr(cls, "ashrink"):
                 if issubclass(cls, BaseModel):
                     if "id" in cls.__fields__:
-                        cls.ashrink = id_shrink
+                        shrink = id_shrink
                     else:
                         raise StructureDefinitionError(
                             f"You need to pass 'ashrink' method or {cls} needs to implement a ashrink method. A BaseModel can be automatically shrinked by providing an id field"
@@ -96,8 +99,8 @@ class StructureRegistry(BaseModel):
                     raise StructureDefinitionError(
                         f"You need to pass 'ashrink' method or {cls} needs to implement a ashrink method"
                     )
-
-            shrink = cls.ashrink
+            else:
+                shrink = cls.ashrink
 
         if identifier is None:
             if not hasattr(cls, "get_identifier"):
@@ -109,14 +112,14 @@ class StructureRegistry(BaseModel):
         if default_widget:
             pass
 
-        if identifier in self._identifier_structure_map and not self.allow_overwrites:
+        if identifier in self.identifier_structure_map and not self.allow_overwrites:
             raise StructureOverwriteError(
-                f"{identifier} is already registered. Previously registered {self._identifier_structure_map[identifier]}"
+                f"{identifier} is already registered. Previously registered {self.identifier_structure_map[identifier]}"
             )
 
         self._identifier_expander_map[identifier] = expand
         self._identifier_shrinker_map[identifier] = shrink
-        self._identifier_structure_map[identifier] = cls
+        self.identifier_structure_map[identifier] = cls
         self._structure_identifier_map[cls] = identifier
         self._structure_default_widget_map[cls] = default_widget
 
@@ -135,15 +138,8 @@ class StructureRegistry(BaseModel):
 DEFAULT_STRUCTURE_REGISTRY = None
 
 
-def get_default_structure_registry():
-    global DEFAULT_STRUCTURE_REGISTRY
-    if not DEFAULT_STRUCTURE_REGISTRY:
-        DEFAULT_STRUCTURE_REGISTRY = StructureRegistry()
-    return DEFAULT_STRUCTURE_REGISTRY
-
-
 def get_current_structure_registry(allow_default=True):
-    return current_structure_registry.get(get_default_structure_registry())
+    return current_structure_registry.get()
 
 
 def register_structure(

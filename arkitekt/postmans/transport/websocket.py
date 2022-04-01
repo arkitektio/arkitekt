@@ -52,7 +52,7 @@ class WebsocketPostmanTransport(PostmanTransport):
 
     async def __aenter__(self):
         assert (
-            self.abroadcast is not None
+            self._abroadcast is not None
         ), "Broadcast must be defined (either overwrite abroadcast or pass this in constructor of transport)"
 
         assert self.instance_id, "Needs an instance id"
@@ -155,10 +155,10 @@ class WebsocketPostmanTransport(PostmanTransport):
 
             # State Layer
             if type == PostmanSubMessageTypes.ASSIGN_UPDATE:
-                await self.abroadcast(AssignSubUpdate(**json_dict))
+                await self._abroadcast(AssignSubUpdate(**json_dict))
 
             if type == PostmanSubMessageTypes.RESERVE_UPDATE:
-                await self.abroadcast(ReserveSubUpdate(**json_dict))
+                await self._abroadcast(ReserveSubUpdate(**json_dict))
 
             if type == PostmanMessageTypes.LIST_ASSIGNATION_REPLY:
                 self._futures[id].set_result(AssingListReply(**json_dict))

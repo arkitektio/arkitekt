@@ -9,8 +9,9 @@ from arkitekt.actors.functional import (
 
 import inspect
 from arkitekt.structures.registry import StructureRegistry
-from typing import Callable
+from typing import Callable, Optional
 import inspect
+from .types import ActorBuilder
 
 
 class ConversionError(Exception):
@@ -41,7 +42,7 @@ async def async_none_unprovide():
 
 def actify(
     function_or_actor,
-    builder: Callable[[], Actor] = None,
+    builder: Optional[ActorBuilder] = None,
     bypass_shrink=False,
     bypass_expand=False,
     on_provide=None,
@@ -69,8 +70,8 @@ def actify(
         "assign": function_or_actor,
         "expand_inputs": not bypass_expand,
         "shrink_outputs": not bypass_shrink,
-        "on_provide": on_provide if on_provide else async_none_provide,
-        "on_unprovide": on_unprovide if on_unprovide else async_none_unprovide,
+        "provide": on_provide if on_provide else async_none_provide,
+        "provide": on_unprovide if on_unprovide else async_none_unprovide,
         "structure_registry": structure_registry,
     }
 
@@ -80,20 +81,20 @@ def actify(
         return lambda prov, agent: instance.build_actor(prov, agent)
 
     if is_coroutine:
-        return lambda provision, agent: FunctionalFuncActor(
-            provision, agent, **actor_attributes
+        return lambda provision, transport: FunctionalFuncActor(
+            provision=provision, transport=transport, **actor_attributes
         )
     elif is_asyncgen:
-        return lambda provision, agent: FunctionalGenActor(
-            provision, agent, **actor_attributes
+        return lambda provision, transport: FunctionalGenActor(
+            provision=provision, transport=transport, **actor_attributes
         )
     elif is_generatorfunction:
-        return lambda provision, agent: FunctionalThreadedGenActor(
-            provision, agent, **actor_attributes
+        return lambda provision, transport: FunctionalThreadedGenActor(
+            provision=provision, transport=transport, **actor_attributes
         )
     elif is_function or is_method:
-        return lambda provision, agent: FunctionalThreadedFuncActor(
-            provision, agent, **actor_attributes
+        return lambda provision, transport: FunctionalThreadedFuncActor(
+            provision=provision, transport=transport, **actor_attributes
         )
     else:
         raise NotImplementedError("No way of converting this to a function")
