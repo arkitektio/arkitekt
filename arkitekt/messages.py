@@ -1,6 +1,7 @@
 from typing import Any, Dict, List, Optional, TypeVar
 from pydantic import BaseModel
 from arkitekt.api.schema import (
+    LogLevelInput,
     ProvisionStatus,
     ReservationStatus,
     AssignationStatus,
@@ -69,3 +70,15 @@ class Reservation(UpdatableModel):
 
 class Unreservation(BaseModel):
     reservation: str
+
+
+class AssignationLog(BaseModel):
+    assignation: str
+    level: LogLevelInput
+    message: Optional[str]
+
+
+class ProvisionLog(BaseModel):
+    provision: str
+    level: LogLevelInput
+    message: Optional[str]

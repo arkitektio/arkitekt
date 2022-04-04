@@ -19,7 +19,6 @@ from arkitekt.api.schema import (
 )
 from arkitekt.messages import Assignation, Provision, Unassignation
 from arkitekt.actors.errors import UnknownMessageError
-from arkitekt.actors.vars import current_provision_context
 from koil.types import Contextual
 
 logger = logging.getLogger(__name__)
@@ -85,7 +84,6 @@ class Actor(BaseModel):
             )
 
             prov_context = await self.on_provide(self.provision, self.template)
-            current_provision_context.set(prov_context)
 
             await self.transport.change_provision(
                 self.provision.provision,
@@ -149,7 +147,6 @@ class Actor(BaseModel):
                 except asyncio.CancelledError:
                     pass
 
-            current_provision_context.set(None)
             await self.transport.change_provision(
                 self.provision.provision,
                 status=ProvisionStatus.CANCELLED,

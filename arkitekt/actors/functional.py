@@ -4,6 +4,7 @@ from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
 
 from pydantic import Field
 from arkitekt.actors.errors import ThreadedActorCancelled
+from arkitekt.actors.helper import ActorHelper, AsyncActorHelper
 from arkitekt.messages import Assignation, Provision
 from arkitekt.api.schema import AssignationStatus
 from arkitekt.actors.base import Actor
@@ -13,6 +14,7 @@ from arkitekt.structures.serialization.actor import expand_inputs, shrink_output
 from arkitekt.actors.vars import (
     current_assignation,
     current_janus_queue,
+    current_actor_helper,
 )
 import logging
 import janus
@@ -50,6 +52,10 @@ class FunctionalFuncActor(FunctionalActor):
             await self.transport.change_assignation(
                 assignation.assignation,
                 status=AssignationStatus.ASSIGNED,
+            )
+
+            current_actor_helper.set(
+                AsyncActorHelper(self, assignation, self.provision)
             )
 
             returns = await self.assign(*args, **kwargs)

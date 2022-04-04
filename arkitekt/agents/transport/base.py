@@ -3,7 +3,12 @@ from typing import Any, Awaitable, Callable, List, Optional, Union
 
 from pydantic import Field
 from arkitekt.messages import Assignation, Unassignation, Provision, Unprovision
-from arkitekt.api.schema import ProvisionMode, ProvisionStatus, AssignationStatus
+from arkitekt.api.schema import (
+    LogLevelInput,
+    ProvisionMode,
+    ProvisionStatus,
+    AssignationStatus,
+)
 from koil.composition import KoiledModel
 from koil.decorators import koilable
 from koil.types import Contextual
@@ -63,6 +68,24 @@ class AgentTransport(KoiledModel):
         status: AssignationStatus = None,
         message: str = None,
         returns: List[Any] = None,
+    ):
+        raise NotImplementedError("This is an abstract Base Class")
+
+    @abstractmethod
+    async def log_to_provision(
+        self,
+        id: str,
+        level: LogLevelInput = None,
+        message: str = None,
+    ):
+        raise NotImplementedError("This is an abstract Base Class")
+
+    @abstractmethod
+    async def log_to_assignation(
+        self,
+        id: str,
+        level: LogLevelInput = None,
+        message: str = None,
     ):
         raise NotImplementedError("This is an abstract Base Class")
 

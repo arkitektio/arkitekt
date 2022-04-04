@@ -14,6 +14,7 @@ from arkitekt.agents.transport.errors import (
 from arkitekt.agents.transport.protocols.agent_json import *
 import logging
 from websockets.exceptions import ConnectionClosedError, InvalidStatusCode
+from arkitekt.api.schema import LogLevelInput
 
 from koil.types import ContextBool, Contextual
 
@@ -229,6 +230,18 @@ class WebsocketAgentTransport(AgentTransport):
         action = AssignationsList(exclude=exclude)
         ass_list_reply: AssignationsListReply = await self.awaitaction(action)
         return ass_list_reply.assignations
+
+    async def log_to_assignation(
+        self, id: str, level: LogLevelInput = None, message: str = None
+    ):
+        action = AssignationLogMessage(assignation=id, level=level, message=message)
+        await self.delayaction(action)
+
+    async def log_to_provision(
+        self, id: str, level: LogLevelInput = None, message: str = None
+    ):
+        action = ProvisionLogMessage(provision=id, level=level, message=message)
+        await self.delayaction(action)
 
     async def __aexit__(self, *args, **kwargs):
         self._connection_task.cancel()

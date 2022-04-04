@@ -1,5 +1,5 @@
 import pytest
-from arkitekt.actors.base import Agent
+from arkitekt.agents.base import BaseAgent
 from arkitekt.agents.transport.protocols.agent_json import (
     AssignationChangedMessage,
     ProvisionChangedMessage,
@@ -119,7 +119,7 @@ async def test_complex_agent_gen(complex_definition_registry):
     )
 
     transport: MockAgentTransport = mockapp.arkitekt.agent.transport
-    a: Agent = mockapp.arkitekt.agent
+    a: BaseAgent = mockapp.arkitekt.agent
 
     async with mockapp:
 
@@ -186,7 +186,7 @@ async def test_complex_agent_gen_assignation_cancellation(
     )
 
     transport: MockAgentTransport = mockapp.arkitekt.agent.transport
-    agent: Agent = mockapp.arkitekt.agent
+    agent: BaseAgent = mockapp.arkitekt.agent
 
     async with mockapp:
 
@@ -262,7 +262,7 @@ async def test_complex_agent_gen_provision_cancellation(
     )
 
     transport: MockAgentTransport = mockapp.arkitekt.agent.transport
-    agent: Agent = mockapp.arkitekt.agent
+    agent: BaseAgent = mockapp.arkitekt.agent
 
     async with mockapp:
 

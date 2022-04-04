@@ -6,7 +6,14 @@ from typing import Any, List, Optional
 
 from typing_extensions import Literal
 from arkitekt.api.schema import AssignationStatus, ProvisionMode, ProvisionStatus
-from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
+from arkitekt.messages import (
+    Assignation,
+    AssignationLog,
+    Provision,
+    ProvisionLog,
+    Unassignation,
+    Unprovision,
+)
 from pydantic import BaseModel, Field
 
 
@@ -14,6 +21,9 @@ class AgentMessageTypes(str, Enum):
 
     ASSIGN_CHANGED = "ASSIGN_CHANGED"
     PROVIDE_CHANGED = "PROVIDE_CHANGED"
+
+    ASSIGN_LOG = "ASSIGN_LOG"
+    PROVIDE_LOG = "PROVIDE_LOG"
 
     LIST_ASSIGNATIONS = "LIST_ASSIGNATIONS"
     LIST_ASSIGNATIONS_REPLY = "LIST_ASSIGNATIONS_REPLY"
@@ -106,9 +116,13 @@ class UnprovideSubMessage(JSONMessage, Unprovision):
     type: Literal[AgentSubMessageTypes.UNPROVIDE] = AgentSubMessageTypes.UNPROVIDE
 
 
-class AssignationChangedMessage(JSONMessage):
+class AssignationChangedMessage(JSONMessage, Assignation):
     type: Literal[AgentMessageTypes.ASSIGN_CHANGED] = AgentMessageTypes.ASSIGN_CHANGED
-    assignation: str
-    status: Optional[AssignationStatus]
-    message: Optional[str]
-    returns: Optional[List[Any]]
+
+
+class AssignationLogMessage(JSONMessage, AssignationLog):
+    type: Literal[AgentMessageTypes.ASSIGN_LOG] = AgentMessageTypes.ASSIGN_LOG
+
+
+class ProvisionLogMessage(JSONMessage, ProvisionLog):
+    type: Literal[AgentMessageTypes.PROVIDE_LOG] = AgentMessageTypes.PROVIDE_LOG

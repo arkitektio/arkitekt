@@ -6,6 +6,7 @@ from arkitekt.postmans.vars import current_postman
 from arkitekt.structures.registry import get_current_structure_registry
 from koil.composition import KoiledModel
 from koil.decorators import koilable
+from koil.types import ContextBool
 from .stateful import StatefulPostman
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
 import asyncio
@@ -28,6 +29,7 @@ class ReservationContract(KoiledModel):
     shrink_inputs: bool = True
     expand_outputs: bool = True
 
+    active: ContextBool = False
     postman: Optional[StatefulPostman] = None
     _reservation: Reservation = None
     _enter_future: asyncio.Future = None
@@ -117,10 +119,11 @@ class ReservationContract(KoiledModel):
         )
         self._updates_watcher = asyncio.create_task(self.watch_updates())
         await self._enter_future  # Waiting to enter
-
+        self.active = True
         return self
 
     async def __aexit__(self, *args, **kwargs):
+        self.active = False
 
         if self.auto_unreserve:
 

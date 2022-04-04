@@ -1,5 +1,5 @@
 from pydantic import Field
-from arkitekt.actors.base import Agent
+from arkitekt.agents.base import BaseAgent
 from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.agents.transport.mock import MockAgentTransport
 from arkitekt.api.schema import (
@@ -142,7 +142,7 @@ class MockPostman(StatefulPostman):
 
 class MockArkitekt(Arkitekt):
     rath: MockArkitektRath = Field(default_factory=MockArkitektRath)
-    agent: Agent = Field(default_factory=MockAgent)
+    agent: BaseAgent = Field(default_factory=MockAgent)
     postman: MockPostman = Field(default_factory=MockPostman)
 
 
