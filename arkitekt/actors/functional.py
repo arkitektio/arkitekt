@@ -1,25 +1,20 @@
+import asyncio
 import contextvars
+import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
 
-from pydantic import Field
-from arkitekt.actors.errors import ThreadedActorCancelled
-from arkitekt.actors.helper import ActorHelper, AsyncActorHelper
-from arkitekt.messages import Assignation, Provision
-from arkitekt.api.schema import AssignationStatus
-from arkitekt.actors.base import Actor
-from concurrent.futures import ThreadPoolExecutor
-import asyncio
-from arkitekt.structures.serialization.actor import expand_inputs, shrink_outputs
-from arkitekt.actors.vars import (
-    current_assignation,
-    current_janus_queue,
-    current_actor_helper,
-)
-import logging
 import janus
-from koil.vars import current_cancel_event
-from koil.helpers import run_spawned
+from arkitekt.actors.base import Actor
+from arkitekt.actors.errors import ThreadedActorCancelled
+from arkitekt.actors.helper import AsyncAssignationHelper, ThreadedAssignationHelper
+from arkitekt.actors.vars import current_assignation_helper
+from arkitekt.api.schema import AssignationStatus
+from arkitekt.messages import Assignation, Provision
+from arkitekt.structures.serialization.actor import expand_inputs, shrink_outputs
+from koil.helpers import iterate_spawned, run_spawned
+from pydantic import Field
 
 logger = logging.getLogger(__name__)
 
@@ -47,20 +42,20 @@ class FunctionalFuncActor(FunctionalActor):
                 else (assignation.args, assignation.kwargs)
             )
 
-            current_assignation.set(assignation)
-
             await self.transport.change_assignation(
                 assignation.assignation,
                 status=AssignationStatus.ASSIGNED,
             )
 
-            current_actor_helper.set(
-                AsyncActorHelper(self, assignation, self.provision)
+            current_assignation_helper.set(
+                AsyncAssignationHelper(
+                    actor=self, assignation=assignation, provision=self.provision
+                )
             )
 
             returns = await self.assign(*args, **kwargs)
 
-            current_assignation.set(None)
+            current_assignation_helper.set(None)
 
             returns = (
                 await shrink_outputs(
@@ -110,7 +105,11 @@ class FunctionalGenActor(FunctionalActor):
                 else (message.args, message.kwargs)
             )
 
-            current_assignation.set(message)
+            current_assignation_helper.set(
+                AsyncAssignationHelper(
+                    actor=self, assignation=message, provision=self.provision
+                )
+            )
 
             await self.transport.change_assignation(
                 message.assignation,
@@ -133,7 +132,7 @@ class FunctionalGenActor(FunctionalActor):
                     message.assignation, status=AssignationStatus.YIELD, returns=returns
                 )
 
-            current_assignation.set(None)
+            current_assignation_helper.set(None)
 
             await self.transport.change_assignation(
                 message.assignation, status=AssignationStatus.DONE
@@ -179,7 +178,14 @@ class FunctionalThreadedFuncActor(FunctionalActor):
                 status=AssignationStatus.ASSIGNED,
             )
 
+            current_assignation_helper.set(
+                ThreadedAssignationHelper(
+                    actor=self, assignation=message, provision=self.provision
+                )
+            )
             returns = await run_spawned(self.assign, *args, **kwargs, pass_context=True)
+
+            current_assignation_helper.set(None)
             shrinked_returns = (
                 await shrink_outputs(
                     self.template.node,
@@ -215,98 +221,8 @@ class FunctionalThreadedGenActor(FunctionalActor):
         default_factory=lambda: ThreadPoolExecutor(4)
     )
 
-    async def iterate_queue(
-        self, async_q: janus._AsyncQueueProxy, message: Assignation
-    ):
-        try:
-            while True:
-                val = await async_q.get()
-                action = val[0]
-                value = val[1]
-
-                if action == "log":
-                    raise NotImplementedError("Logging does not work right now")
-                    async_q.task_done()
-                if action == "yield":
-
-                    returns = (
-                        await shrink_outputs(
-                            self.template.node,
-                            value,
-                            structure_registry=self.structure_registry,
-                        )
-                        if self.shrink_outputs
-                        else value
-                    )
-
-                    await self.transport.change_assignation(
-                        message.assignation,
-                        status=AssignationStatus.YIELD,
-                        returns=returns,
-                    )
-                    async_q.task_done()
-                if action == "done":
-                    await self.transport.change_assignation(
-                        message.assignation,
-                        status=AssignationStatus.DONE,
-                    )
-                    async_q.task_done()
-                    break
-                if action == "exception":
-                    async_q.task_done()
-                    raise value
-
-        except asyncio.CancelledError as cancelled_error:
-            while True:
-                val = await async_q.get()
-                action = val[0]
-                value = val[1]
-                if action == "exception":
-                    async_q.task_done()
-                    try:
-                        raise value
-                    except ThreadedActorCancelled:
-                        raise cancelled_error
-
-    def _assign_threaded(
-        self,
-        queue: janus._SyncQueueProxy,
-        cancel_event_instance: threading.Event,
-        message: Assignation,
-        args: List[Any],
-        kwargs: Dict[str, Any],
-        parent_context: Optional[contextvars.Context],
-    ):
-        for var, value in parent_context.items():
-            var.set(value)
-
-        current_janus_queue.set(queue)
-        current_assignation.set(message)
-        current_cancel_event.set(cancel_event_instance)
-        try:
-            for result in self.assign(*args, **kwargs):
-                queue.put(("yield", result))
-                queue.join()
-
-            queue.put(("done", "Happy doneness"))
-            queue.join()
-
-        except Exception as e:
-            logger.exception(e)
-            queue.put(("exception", e))
-            queue.join()
-
-        current_janus_queue.set(None)
-        current_assignation.set(None)
-        current_cancel_event.set(None)
-
     async def on_assign(self, message: Assignation):
-        loop = asyncio.get_event_loop()
-        queue = janus.Queue()
-        event = threading.Event()
-
         try:
-            logger.info("Assigning Number two")
             args, kwargs = (
                 await expand_inputs(
                     self.template.node,
@@ -318,41 +234,40 @@ class FunctionalThreadedGenActor(FunctionalActor):
                 else (message.args, message.kwargs)
             )
 
+            current_assignation_helper.set(
+                ThreadedAssignationHelper(
+                    actor=self, assignation=message, provision=self.provision
+                )
+            )
+
             await self.transport.change_assignation(
                 message.assignation,
                 status=AssignationStatus.ASSIGNED,
             )
 
-            parent_context = contextvars.copy_context()
+            async for returns in iterate_spawned(
+                self.assign, *args, **kwargs, pass_context=True
+            ):
 
-            threadedfut = loop.run_in_executor(
-                self.threadpool,
-                self._assign_threaded,
-                queue.sync_q,
-                event,
-                message,
-                args,
-                kwargs,
-                parent_context,
-            )
-            queuefut = self.iterate_queue(queue.async_q, message)
-
-            try:
-                await asyncio.gather(
-                    asyncio.shield(threadedfut), asyncio.shield(queuefut)
+                returns = (
+                    await shrink_outputs(
+                        self.template.node,
+                        returns,
+                        structure_registry=self.structure_registry,
+                    )
+                    if self.shrink_outputs
+                    else returns
                 )
-                queue.close()
-                await queue.wait_closed()
 
-            except asyncio.CancelledError as e:
+                await self.transport.change_assignation(
+                    message.assignation, status=AssignationStatus.YIELD, returns=returns
+                )
 
-                queuefut.cancel()  # We cancel the quefuture and are now only waiting for cancellation requests
-                event.set()  # We are sending the request to the queue
+            current_assignation_helper.set(None)
 
-                try:
-                    await queuefut
-                except asyncio.CancelledError as e:
-                    raise e
+            await self.transport.change_assignation(
+                message.assignation, status=AssignationStatus.DONE
+            )
 
         except asyncio.CancelledError as e:
 
@@ -361,6 +276,9 @@ class FunctionalThreadedGenActor(FunctionalActor):
             )
 
         except Exception as e:
+            logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
                 message.assignation, status=AssignationStatus.CRITICAL, message=str(e)
             )
+
+            raise e

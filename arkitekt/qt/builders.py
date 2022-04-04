@@ -1,5 +1,6 @@
 from typing import Any
 from qtpy import QtCore
+from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.messages import Provision
 from koil.qt import QtCoro
 from arkitekt.actors.functional import FunctionalFuncActor
@@ -28,10 +29,13 @@ class QtInLoopBuilder(QtCore.QObject, ActorBuilder):
     async def on_assign(self, *args, **kwargs) -> None:
         return await self.coro.acall(*args)
 
-    def build_actor(self, provision: Provision, agent: BaseAgent) -> Any:
+    def build_actor(self, provision: Provision, transport: AgentTransport) -> Any:
         try:
             ac = FunctionalFuncActor(
-                provision, agent, assign=self.on_assign, **self.actor_kwargs
+                provision=provision,
+                transport=transport,
+                assign=self.on_assign,
+                **self.actor_kwargs
             )
             return ac
         except Exception as e:

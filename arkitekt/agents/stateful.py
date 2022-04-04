@@ -39,7 +39,7 @@ class StatefulAgent(BaseAgent):
             try:
                 await self.aspawn_actor(message)
             except Exception as e:
-                logger.info("Actor not found")
+                logger.error("Spawning error", exc_info=True)
                 await self.transport.change_provision(
                     message.provision, status=ProvisionStatus.DENIED, message=str(e)
                 )

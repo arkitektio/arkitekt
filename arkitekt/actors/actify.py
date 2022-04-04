@@ -78,7 +78,7 @@ def actify(
     if builder:
         assert hasattr(builder, "build_actor"), "Builder must have a build_actor method"
         instance = builder(**actor_attributes)
-        return lambda prov, agent: instance.build_actor(prov, agent)
+        return lambda provision, transport: instance.build_actor(provision, transport)
 
     if is_coroutine:
         return lambda provision, transport: FunctionalFuncActor(
