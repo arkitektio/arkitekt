@@ -146,17 +146,4 @@ class ReservationContract(KoiledModel):
         underscore_attrs_are_private = True
 
 
-def use(
-    node: Reserve,
-    params: ReserveParamsInput = None,
-    postman: StatefulPostman = None,
-    auto_unreserve=False,
-    **kwargs,
-) -> ReservationContract:
-    return ReservationContract(
-        node=node,
-        postman=postman,
-        params=params or ReserveParamsInput(),
-        auto_unreserve=auto_unreserve,
-        **kwargs,
-    )
+use = ReservationContract
