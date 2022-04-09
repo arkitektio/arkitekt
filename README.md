@@ -48,6 +48,8 @@ def rpc_function(x: int, name: str) -> str
 
 ```
 
+https://www.youtube.com/watch?v=-IZlOPciSl0
+
 Run example:
 
 ```bash 
