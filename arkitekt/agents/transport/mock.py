@@ -1,7 +1,7 @@
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.agents.transport.protocols.agent_json import *
 from arkitekt.messages import Assignation, Provision, Provision, Unprovision
-from arkitekt.api.schema import AssignationStatus, ProvisionStatus
+from arkitekt.api.schema import AssignationStatus, LogLevelInput, ProvisionStatus
 from typing import Any, List, Optional, Union
 import asyncio
 from koil import unkoil
@@ -42,6 +42,16 @@ class MockAgentTransport(AgentTransport):
             )
         )
 
+    async def log_to_assignation(
+        self, id: str, level: LogLevelInput = None, message: str = None
+    ):
+        print(f"{id} {level} {message}")
+
+    async def log_to_provision(
+        self, id: str, level: LogLevelInput = None, message: str = None
+    ):
+        print(f"{id} {level} {message}")
+
     async def change_provision(
         self,
         id: str,
@@ -58,7 +68,7 @@ class MockAgentTransport(AgentTransport):
     async def adelay(
         self, message: Union[Assignation, Provision, Unprovision, Unassignation]
     ):
-        await self.abroadcast(message)
+        await self._abroadcast(message)
 
     def delay(self, message: Union[Assignation, Provision, Unprovision, Unassignation]):
         return unkoil(self.adelay, message)

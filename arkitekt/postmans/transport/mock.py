@@ -103,7 +103,7 @@ class MockAutoresolvingPostmanTransport(PostmanTransport):
                 res.status = ReservationStatus.ACTIVE
 
                 self.reservationState[res.reservation] = res
-                await self.abroadcast(res)
+                await self._abroadcast(res)
 
             asss = [
                 ass
@@ -117,7 +117,7 @@ class MockAutoresolvingPostmanTransport(PostmanTransport):
                 ass.returns = []
 
                 self.assignationState[ass.assignation] = ass
-                await self.abroadcast(ass)
+                await self._abroadcast(ass)
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
         self._task.cancel()
@@ -203,7 +203,7 @@ class MockPostmanTransport(PostmanTransport):
     async def adelay(
         self, message: Union[Assignation, Reservation, Unreservation, Unassignation]
     ):
-        await self.abroadcast(message)
+        await self._abroadcast(message)
 
     async def areceive(self, timeout=None):
         if timeout:

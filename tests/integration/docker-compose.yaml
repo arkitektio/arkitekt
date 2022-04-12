@@ -1,0 +1,42 @@
+version: "3.4"
+
+services:
+  daten:
+    image: jhnnsrs/daten:prod
+    restart: always
+    environment:
+      POSTGRES_MULTIPLE_DATABASES: herredb, arkitektdb
+      POSTGRES_PASSWORD: hello_django
+      POSTGRES_USER: hello_django
+  herre:
+    image: jhnnsrs/herre:prod
+    command: bash run-debug.sh
+    volumes:
+      - ./herre.yaml:/workspace/config.yaml
+    ports:
+      - 8008:8000
+    depends_on:
+      - daten
+  arkitekt:
+    image: jhnnsrs/arkitekt:prod
+    command: bash runnew.sh
+    volumes:
+      - ./arkitekt.yaml:/workspace/config.yaml
+    ports:
+      - 8098:8090
+    labels:
+      platform: arkitekt
+    depends_on:
+      - redis
+      - mister
+      - daten
+  redis:
+    image: redis:latest
+    labels:
+      platform: redis
+  mister:
+    image: jhnnsrs/mister:fancy
+    hostname: localhost
+    command: rabbitmq-server
+    labels:
+      platform: arkitekt.broker

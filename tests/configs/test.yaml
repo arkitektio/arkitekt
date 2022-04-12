@@ -1,0 +1,22 @@
+herre:
+  authorization_grant_type: CLIENT_CREDENTIALS
+  base_url: http://localhost:8008/o
+  client_id: DSNwVKbSmvKuIUln36FmpWNVE2KrbS2oRX0ke8PJ
+  client_secret: Gp3VldiWUmHgKkIxZjL2aEjVmNwnSyIGHWbQJo6bWMDoIUlBqvUyoGWUWAe6jI3KRXDOsD13gkYVCZR0po1BLFO9QT4lktKODHDs0GyyJEzmIjkpEOItfdCC4zIa3Qzu
+  endpoint_url: http://localhost:8008/graphql
+  healthz: http://localhost:8008/ht
+  scopes:
+    - introspection
+  secure: false
+arkitekt:
+  agent:
+    endpoint_url: ws://localhost:8098/agi/
+    instance_id: default
+  endpoint_url: http://localhost:8098/graphql
+  healthz: http://localhost:8098/ht
+  instance_id: default
+  postman:
+    endpoint_url: ws://localhost:8098/watchi/
+    instance_id: default
+  secure: false
+  ws_endpoint_url: ws://localhost:8098/graphql

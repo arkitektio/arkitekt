@@ -127,7 +127,7 @@ class StructureRegistry(BaseModel):
         current_structure_registry.set(self)
         return self
 
-    async def __exit__(self, exc_type, exc_val, exc_tb):
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
         current_structure_registry.set(None)
 
     class Config:

@@ -1,8 +1,7 @@
-from sre_parse import State
-from numpy import isin
 import pytest
 
 from arkitekt.messages import Assignation, Reservation
+from arkitekt.structures.registry import StructureRegistry
 
 from .mocks import MockArkitektRath
 from arkitekt.rath import ArkitektRath
@@ -38,18 +37,19 @@ def mock_autoresolving_postman():
 
 async def test_postman(mock_autoresolving_postman, arkitekt_rath):
 
-    async with arkitekt_rath:
-        async with mock_autoresolving_postman:
+    async with StructureRegistry() as s:
+        async with arkitekt_rath:
+            async with mock_autoresolving_postman:
 
-            node = await afind(package="mock", interface="run_maboy")
+                node = await afind(package="mock", interface="run_maboy")
 
-            async def test_function():
-                async with use(node) as res:
-                    return await res.aassign(a=1, b=2)
+                async def test_function():
+                    async with use(node=node) as res:
+                        return await res.aassign(a=1, b=2)
 
-            returns = await asyncio.wait_for(test_function(), timeout=2)
+                returns = await asyncio.wait_for(test_function(), timeout=2)
 
-        assert returns == None, "x should be empty"
+            assert returns == None, "x should be empty"
 
 
 async def test_reserve_and_return():
@@ -65,7 +65,7 @@ async def test_reserve_and_return():
         node = await afind(package="mock", interface="run_maboy")
 
         async def test_function():
-            async with use(node) as res:
+            async with use(node=node) as res:
                 return await res.aassign(a=1, b=2)
 
         reserve_task = asyncio.create_task(test_function())
@@ -96,7 +96,7 @@ async def test_reserve_provide_and_return():
         node = await afind(package="mock", interface="run_maboy")
 
         async def test_function():
-            async with use(node) as res:
+            async with use(node=node) as res:
                 return await res.aassign(a=1, b=2)
 
         reserve_task = asyncio.create_task(test_function())

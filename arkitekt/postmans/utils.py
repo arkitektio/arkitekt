@@ -146,4 +146,5 @@ class ReservationContract(KoiledModel):
         underscore_attrs_are_private = True
 
 
-use = ReservationContract
+class use(ReservationContract):
+    pass
