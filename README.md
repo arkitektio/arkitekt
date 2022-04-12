@@ -2,13 +2,13 @@
 
 [![codecov](https://codecov.io/gh/jhnnsrs/arkitekt-client/branch/master/graph/badge.svg?token=UGXEA2THBV)](https://codecov.io/gh/jhnnsrs/arkitekt-client)
 
-self-documenting asynchronous scalable RPC
+self-documenting asynchronous scalable RPC based on provisionable actors 
 
 ## Idea
 
 arkitekt is the python client for the arkitekt server, a central repository for the provision and calling of functions in distributed apps.
 
-Together with fluss it provides the backbone of the mikro platform, that enables distributed scalable reactive workflows.
+Together with fluss (a reactive scheduler) it enables distributed scalable reactive workflows.
 
 
 
