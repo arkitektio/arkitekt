@@ -11,7 +11,6 @@ from rath.links.testing.statefulmock import AsyncMockResolver
 from rath.links import compose
 from rath.links.dictinglink import DictingLink
 from rath.links.shrink import ShrinkingLink
-from rath.links.context import SwitchAsyncLink
 from rath.operation import Operation
 from arkitekt.rath import ArkitektRath
 
@@ -123,8 +122,7 @@ class MockArkitektRath(ArkitektRath):
     link: TerminatingLink = Field(
         default_factory=lambda: compose(
             ShrinkingLink(),
-            DictingLink(),
-            SwitchAsyncLink(),  # after the shrinking so we can override the dicting
+            DictingLink(),  # after the shrinking so we can override the dicting
             AsyncMockLink(
                 resolver=ArkitektMockResolver().to_dict(),
             ),

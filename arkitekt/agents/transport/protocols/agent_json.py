@@ -2,7 +2,7 @@
 import uuid
 from datetime import datetime
 from enum import Enum
-from typing import Any, List, Optional
+from typing import List, Optional
 
 from typing_extensions import Literal
 from arkitekt.api.schema import AssignationStatus, ProvisionMode, ProvisionStatus

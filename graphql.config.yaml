@@ -1,7 +1,7 @@
 projects:
   arkitekt:
     schema: http://localhost:8090/graphql
-    documents: graphql/*/**.graphql
+    documents: graphql/arkitekt/*/**.graphql
     extensions:
       turms:
         out_dir: arkitekt/api
@@ -47,6 +47,7 @@ projects:
           Callback: str
           Any: typing.Any
           QString: arkitekt.scalars.QString
+          ID: rath.scalars.ID
         additional_bases:
           Node:
             - arkitekt.traits.node.Reserve

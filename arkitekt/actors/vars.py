@@ -1,5 +1,4 @@
 import contextvars
-from typing import Any
 from arkitekt.actors.helper import AssignationHelper, ProvisionHelper
 
 

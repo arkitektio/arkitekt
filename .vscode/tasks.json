@@ -40,7 +40,7 @@
         "--remove-all-unused-imports",
         "-r",
         "tests",
-        "mikro"
+        "arkitekt"
       ],
       "problemMatcher": []
     }

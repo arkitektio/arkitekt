@@ -1,5 +1,5 @@
-query get_reservation($reference: ID!) {
-  reservation(reference: $reference) {
+query get_reservation($id: ID!) {
+  reservation(id: $id) {
     id
     template {
       id

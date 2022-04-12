@@ -1,6 +1,11 @@
 # arkitekt
 
-[![codecov](https://codecov.io/gh/jhnnsrs/arkitekt-client/branch/master/graph/badge.svg?token=UGXEA2THBV)](https://codecov.io/gh/jhnnsrs/arkitekt-client)
+[![codecov](https://codecov.io/gh/jhnnsrs/arkitekt/branch/master/graph/badge.svg?token=UGXEA2THBV)](https://codecov.io/gh/jhnnsrs/arkitekt)
+[![PyPI version](https://badge.fury.io/py/arkitekt.svg)](https://pypi.org/project/arkitekt/)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://pypi.org/project/arkitekt/)
+![Maintainer](https://img.shields.io/badge/maintainer-jhnnsrs-blue)
+[![PyPI pyversions](https://img.shields.io/pypi/pyversions/arkitekt.svg)](https://pypi.python.org/pypi/arkitekt/)
+[![PyPI status](https://img.shields.io/pypi/status/arkitekt.svg)](https://pypi.python.org/pypi/arkitekt/)
 
 self-documenting asynchronous scalable RPC based on provisionable actors 
 
@@ -10,8 +15,6 @@ arkitekt is the python client for the arkitekt server, a central repository for 
 
 Together with fluss (a reactive scheduler) it enables distributed scalable reactive workflows.
 
-
-
 ## Install
 
 ```bash
@@ -20,18 +23,15 @@ pip install arkitekt
 
 arkitekt is relying heavily on asyncio patters and therfore supports python 3.7 and above. It also relies on the pydantic stack for serialization.
 
+arkitekt installs also _three sister packages_:
 
-arkitekt installs also *three sister packages*:
-
-**koil** -  an abstraction layer on top of asyncio to enable usage of async apis (syncronously) in other event loops (qt, juypter)
+**koil** - an abstraction layer on top of asyncio to enable usage of async apis (syncronously) in other event loops (qt, juypter)
 
 **fakts** - an configuration discovery agent that helps with locating the backend services (think oauth2 for configuration)
 
 **herre** - an async implentation of oauth2 authenticaiton flows. (authorizaiton code + client credentials)
 
 > If you are working in image analysis checkout the mikro platform that also provides data structures for image analysis.
-
-
 
 ## Get started
 
@@ -40,7 +40,7 @@ from arkitekt import register
 
 @register()
 def rpc_function(x: int, name: str) -> str
-    """ 
+    """
     A rpc function that we can
     simple call from anywhere
 
@@ -52,7 +52,7 @@ https://www.youtube.com/watch?v=-IZlOPciSl0
 
 Run example:
 
-```bash 
+```bash
 arkitekt dev
 ```
 
@@ -71,8 +71,8 @@ Arkitekt takes care of serialization and documentation of standard python datast
 - Enum
 - Dict
 - List
-  
-To increase performance and latency it is not  possible to serialize complex python objects like numpy arrays into the messages. These are best transformed into immutable objects on a centrally accessible storage and then only the reference is passed.
+
+To increase performance and latency it is not possible to serialize complex python objects like numpy arrays into the messages. These are best transformed into immutable objects on a centrally accessible storage and then only the reference is passed.
 
 Arkitekt does not impose any rules on how you handle this storage (see mikro for ideas), it provides however a simple api.
 
@@ -95,7 +95,7 @@ by providing two functions:
 
 - shrink
 - expand
-  
+
 You can now use this Structure with simple typehints and arkitekt will automaticall shrink (serialize) and expand (deserialize) the structure on calling.
 
 ```python
@@ -105,10 +105,6 @@ def complex_call(x: ComplexStrucuture) -> int:
 
 ```
 
-
-
-
-
 ## Terminology
 
 **Node** A concept (documentatio) of a function that is enabled on the platform.
@@ -116,8 +112,7 @@ def complex_call(x: ComplexStrucuture) -> int:
 **App**: A provider of functions, that negotiates
 access right to data and other Apps through Oauth2
 
-**Template**: An Implementation of a Node by an App. 
-
+**Template**: An Implementation of a Node by an App.
 
 **Agent**: An active instance of this App, its the host of actors. Agents connect and disconnect.
 

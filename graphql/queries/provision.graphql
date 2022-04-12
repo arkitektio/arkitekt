@@ -1,5 +1,5 @@
-query get_provision($reference: ID!) {
-  provision(reference: $reference) {
+query get_provision($id: ID!) {
+  provision(id: $id) {
     template {
       id
       node {

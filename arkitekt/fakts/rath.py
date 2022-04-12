@@ -2,7 +2,6 @@ from graphql import OperationType
 from rath.links import compose
 from rath.links.aiohttp import AIOHttpLink
 from rath.links.auth import AuthTokenLink
-from rath.links.context import SwitchAsyncLink
 from rath.links.dictinglink import DictingLink
 from rath.links.shrink import ShrinkingLink
 from arkitekt.rath import ArkitektRath
@@ -24,8 +23,7 @@ class FaktsArkitektRath(ArkitektRath):
     def configure(self, config: ArkitektRathConfig, herre: Herre) -> None:
         self.link = compose(
             ShrinkingLink(),
-            DictingLink(),  # after the shrinking so we can override the dicting
-            SwitchAsyncLink(),
+            DictingLink(),
             AuthTokenLink(token_loader=herre.aget_token),
             SplitLink(
                 left=AIOHttpLink(url=config.endpoint_url),

@@ -1,13 +1,9 @@
 import asyncio
-import contextvars
 import logging
-import threading
 from concurrent.futures import ThreadPoolExecutor
-from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional
+from typing import Any, Awaitable, Callable, Optional
 
-import janus
 from arkitekt.actors.base import Actor
-from arkitekt.actors.errors import ThreadedActorCancelled
 from arkitekt.actors.helper import AsyncAssignationHelper, ThreadedAssignationHelper
 from arkitekt.actors.vars import current_assignation_helper
 from arkitekt.api.schema import AssignationStatus

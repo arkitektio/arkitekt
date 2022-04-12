@@ -1,5 +1,4 @@
 from arkitekt.actors.base import Actor
-from arkitekt.agents.base import BaseAgent
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.messages import Provision
 

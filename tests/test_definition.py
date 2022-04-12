@@ -1,6 +1,4 @@
 from typing import Dict
-from docstring_parser import compose
-from pydantic import ValidationError
 from arkitekt.structures.registry import StructureRegistry, register_structure
 from arkitekt.api.schema import DefinitionInput, NodeFragment, adefine
 import pytest
@@ -150,8 +148,6 @@ async def test_define_to_node_complex(simple_registry, arkitekt_rath):
 
 
 async def test_define_node_has_nested_type(simple_registry, arkitekt_rath):
-    """Tests that a node with nested types cant be defined"""
-
     def x(a: Dict[str, Dict[str, int]]) -> int:
         """Nanana
 
@@ -165,5 +161,4 @@ async def test_define_node_has_nested_type(simple_registry, arkitekt_rath):
     functional_definition = prepare_definition(x, structure_registry=simple_registry)
 
     async with arkitekt_rath:
-        with pytest.raises(ValidationError):
-            node = await adefine(functional_definition, rath=arkitekt_rath)
+        node = await adefine(functional_definition, rath=arkitekt_rath)

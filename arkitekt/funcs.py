@@ -9,7 +9,7 @@ def execute(operation, variables, rath: ArkitektRath = None):
 
 async def aexecute(operation, variables, rath: ArkitektRath = None):
     rath = rath or current_arkitekt_rath.get()
-    x = await rath.aexecute(
+    x = await rath.aquery(
         operation.Meta.document, operation.Arguments(**variables).dict(by_alias=True)
     )
     return operation(**x.data)
