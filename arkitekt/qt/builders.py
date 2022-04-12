@@ -5,7 +5,6 @@ from arkitekt.messages import Provision
 from koil.qt import QtCoro
 from arkitekt.actors.functional import FunctionalFuncActor
 from arkitekt.actors.builder import ActorBuilder
-from arkitekt.agents.base import BaseAgent
 
 
 class QtInLoopBuilder(QtCore.QObject, ActorBuilder):

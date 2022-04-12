@@ -1,4 +1,3 @@
-from subprocess import call
 from arkitekt.actors.base import Actor
 from arkitekt.actors.functional import (
     FunctionalFuncActor,

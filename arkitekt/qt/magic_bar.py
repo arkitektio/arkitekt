@@ -1,6 +1,6 @@
 from qtpy import QtWidgets, QtGui, QtCore
 from arkitekt.app import ArkitektApp
-from koil.qt import QtRunner, QtCoro
+from koil.qt import QtRunner
 from koil.composition.qt import QtPedanticKoil
 from .utils import get_image_path
 

@@ -4,7 +4,6 @@ from arkitekt.messages import Assignation, Reservation
 from arkitekt.structures.registry import StructureRegistry
 
 from .mocks import MockArkitektRath
-from arkitekt.rath import ArkitektRath
 
 from arkitekt.postmans.transport.mock import (
     MockAutoresolvingPostmanTransport,

@@ -1,6 +1,5 @@
 import asyncio
 import json
-from inflection import underscore
 
 import websockets
 from arkitekt.postmans.transport.base import PostmanTransport

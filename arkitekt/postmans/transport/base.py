@@ -1,7 +1,5 @@
 from typing import Awaitable, Callable, List, Optional, Dict, Any, Union
-from inflection import underscore
 
-from pydantic import Field
 from arkitekt.messages import Assignation, Reservation, Unassignation, Unreservation
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
 from koil.composition import KoiledModel

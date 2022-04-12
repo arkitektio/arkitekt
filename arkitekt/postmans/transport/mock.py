@@ -1,4 +1,3 @@
-from inflection import underscore
 from arkitekt.postmans.transport.base import PostmanTransport
 from arkitekt.messages import (
     Assignation,

@@ -5,7 +5,6 @@ from arkitekt.messages import Reservation
 from arkitekt.postmans.vars import current_postman
 from arkitekt.structures.registry import get_current_structure_registry
 from koil.composition import KoiledModel
-from koil.decorators import koilable
 from koil.types import ContextBool
 from .stateful import StatefulPostman
 from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput

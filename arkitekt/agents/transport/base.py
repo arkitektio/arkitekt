@@ -1,7 +1,6 @@
 from abc import abstractmethod
 from typing import Any, Awaitable, Callable, List, Optional, Union
 
-from pydantic import Field
 from arkitekt.messages import Assignation, Unassignation, Provision, Unprovision
 from arkitekt.api.schema import (
     LogLevelInput,
@@ -10,7 +9,6 @@ from arkitekt.api.schema import (
     AssignationStatus,
 )
 from koil.composition import KoiledModel
-from koil.decorators import koilable
 from koil.types import Contextual
 
 

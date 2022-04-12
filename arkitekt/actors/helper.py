@@ -8,7 +8,6 @@ class AssignationHelper(BaseModel):
     actor: Actor
     assignation: Assignation
     provision: Provision
-    pass
 
     async def alog(self, level: LogLevelInput, message: str) -> None:
         raise NotImplementedError()
@@ -17,7 +16,6 @@ class AssignationHelper(BaseModel):
 class ProvisionHelper(BaseModel):
     actor: Actor
     provision: Provision
-    pass
 
     async def alog(self, level: LogLevelInput, message: str) -> None:
         raise NotImplementedError()

@@ -1,5 +1,4 @@
 from typing import Dict, Optional, Union
-from inflection import underscore
 
 from pydantic import BaseModel, Field
 from arkitekt.agents.transport.base import AgentTransport
