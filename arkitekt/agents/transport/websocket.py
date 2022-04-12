@@ -1,4 +1,4 @@
-from typing import Awaitable, Callable, Dict
+from typing import Awaitable, Callable, Dict, Any
 import websockets
 from arkitekt.agents.transport.base import AgentTransport
 import asyncio
