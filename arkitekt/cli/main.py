@@ -5,8 +5,6 @@ from arkitekt.cli.dev.autostage import watch_directory_and_stage
 from arkitekt.cli.prod.run import import_directory_and_start
 from arkitekt.cli.prod.waitfor import wait_for_connection
 from fakts import Fakts
-from fakts.beacon.beacon import FaktsEndpoint
-from fakts.grants.endpoint import EndpointGrant
 from fakts.grants.cli.clibeacon import CLIBeaconGrant
 from herre import Herre
 from rich.console import Console

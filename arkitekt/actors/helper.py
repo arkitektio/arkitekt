@@ -1,21 +1,23 @@
 from pydantic import BaseModel
 from arkitekt.actors.base import Actor
 from arkitekt.api.schema import LogLevelInput
-from arkitekt.messages import Assignation, Provision
+from arkitekt.messages import Assignation
 
 
 class AssignationHelper(BaseModel):
     actor: Actor
     assignation: Assignation
-    provision: Provision
 
     async def alog(self, level: LogLevelInput, message: str) -> None:
         raise NotImplementedError()
 
+    class Config:
+        arbitrary_types_allowed = True
+        
+
 
 class ProvisionHelper(BaseModel):
     actor: Actor
-    provision: Provision
 
     async def alog(self, level: LogLevelInput, message: str) -> None:
         raise NotImplementedError()
@@ -32,8 +34,8 @@ class AsyncAssignationHelper(AssignationHelper):
         )
 
 
-class AsyncProvisionHelper(AssignationHelper):
+class AsyncProvisionHelper(ProvisionHelper):
     async def alog(self, message: str, level: LogLevelInput = LogLevelInput.DEBUG):
-        await self.actor.transport.log_to_assignation(
-            id=self.assignation.assignation, level=level, message=message
+        await self.actor.transport.log_to_provision(
+            id=self.actor.provision.id, level=level, message=message
         )

@@ -70,7 +70,7 @@ def actify(
         "expand_inputs": not bypass_expand,
         "shrink_outputs": not bypass_shrink,
         "provide": on_provide if on_provide else async_none_provide,
-        "provide": on_unprovide if on_unprovide else async_none_unprovide,
+        "unprovide": on_unprovide if on_unprovide else async_none_unprovide,
         "structure_registry": structure_registry,
     }
 

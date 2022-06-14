@@ -32,6 +32,7 @@
   },
   "python.testing.pytestArgs": ["tests"],
   "python.testing.unittestEnabled": false,
-  "python.linting.pylintEnabled": true,
-  "python.linting.pylintArgs": ["--enable=W0614"]
+  "python.linting.pylintEnabled": false,
+  "python.linting.pylintArgs": ["--enable=W0614"],
+  "python.testing.pytestEnabled": true
 }

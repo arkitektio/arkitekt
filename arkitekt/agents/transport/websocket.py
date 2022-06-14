@@ -33,12 +33,13 @@ class DefiniteConnectionFail(AgentTransportException):
 
 
 class WebsocketAgentTransport(AgentTransport):
-    ws_url: str
+    endpoint_url: str
     instance_id: Optional[str]
     token_loader: Callable[[], Awaitable[str]] = Field(exclude=True)
     max_retries = 5
     time_between_retries = 5
     allow_reconnect = True
+    auto_connect = True
 
     _futures: Contextual[Dict[str, asyncio.Future]] = None
     _connected: ContextBool = False
@@ -50,6 +51,8 @@ class WebsocketAgentTransport(AgentTransport):
         assert self._abroadcast is not None, "Broadcast ss be defined"
         self._futures = {}
         self._send_queue = asyncio.Queue()
+
+    async def aconnect(self):
         self._connection_task = asyncio.create_task(self.websocket_loop())
         self._connected = True
 
@@ -61,7 +64,7 @@ class WebsocketAgentTransport(AgentTransport):
                 token = await self.token_loader(force_refresh=reload_token)
 
                 async with websockets.connect(
-                    f"{self.ws_url}?token={token}&instance_id={self.instance_id}"
+                    f"{self.endpoint_url}?token={token}&instance_id={self.instance_id}"
                 ) as client:
 
                     logger.info("Agent on Websockets connected")
@@ -177,7 +180,12 @@ class WebsocketAgentTransport(AgentTransport):
             logger.error(f"Unexpected messsage: {json_dict}")
 
     async def awaitaction(self, action: JSONMessage):
-        assert self._connected, "Websocket is not connected"
+
+        if not self._connected:
+            assert (
+                self.auto_connect
+            ), "Websocket not connected, and autoconnect to false"
+            await self.aconnect()
         if action.id in self._futures:
             raise ValueError("Action already has a future")
 
@@ -187,7 +195,11 @@ class WebsocketAgentTransport(AgentTransport):
         return await future
 
     async def delayaction(self, action: JSONMessage):
-        assert self._connected, "Websocket is not connected"
+        if not self._connected:
+            assert (
+                self.auto_connect
+            ), "Websocket not connected, and autoconnect to false"
+            await self.aconnect()
         await self._send_queue.put(action.json())
 
     async def list_provisions(
@@ -240,7 +252,7 @@ class WebsocketAgentTransport(AgentTransport):
         action = ProvisionLogMessage(provision=id, level=level, message=message)
         await self.delayaction(action)
 
-    async def __aexit__(self, *args, **kwargs):
+    async def adisconnect(self):
         self._connection_task.cancel()
         self._connected = False
 
@@ -248,3 +260,9 @@ class WebsocketAgentTransport(AgentTransport):
             await self._connection_task
         except asyncio.CancelledError:
             pass
+
+        self._connection_task = None
+
+    async def __aexit__(self, *args, **kwargs):
+        if self._connection_task:
+            self._connection_task.cancel()

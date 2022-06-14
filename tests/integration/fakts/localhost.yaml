@@ -1,0 +1,19 @@
+info:
+  host: localhost
+  name: localhost
+services:
+  herre:
+    base_url: http://localhost:8019/o
+    endpoint_url: http://localhost:8019/graphql
+    healthz: http://localhost:8019/ht
+    secure: false
+    ws_endpoint_url: ws://localhost:8019/graphql
+  arkitekt:
+    agent:
+      endpoint_url: ws://localhost:8098/agi/
+    endpoint_url: http://localhost:8098/graphql
+    healthz: http://localhost:8098/ht
+    postman:
+      endpoint_url: ws://localhost:8098/watchi/
+    secure: false
+    ws_endpoint_url: ws://localhost:8098/graphql

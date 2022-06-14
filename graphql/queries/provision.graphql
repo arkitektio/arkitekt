@@ -1,34 +1,5 @@
 query get_provision($id: ID!) {
   provision(id: $id) {
-    template {
-      id
-      node {
-        name
-      }
-      registry {
-        app {
-          name
-        }
-      }
-      extensions
-    }
-    agent {
-      registry {
-        id
-        name
-      }
-      name
-      identifier
-    }
-    reservations {
-      id
-      reference
-      creator {
-        username
-      }
-      app {
-        name
-      }
-    }
+    ...Provision
   }
 }

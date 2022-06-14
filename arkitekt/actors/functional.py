@@ -2,15 +2,15 @@ import asyncio
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Awaitable, Callable, Optional
-
+from koil.helpers import iterate_spawned, run_spawned
+from pydantic import Field
 from arkitekt.actors.base import Actor
 from arkitekt.actors.helper import AsyncAssignationHelper, ThreadedAssignationHelper
 from arkitekt.actors.vars import current_assignation_helper
 from arkitekt.api.schema import AssignationStatus
 from arkitekt.messages import Assignation, Provision
 from arkitekt.structures.serialization.actor import expand_inputs, shrink_outputs
-from koil.helpers import iterate_spawned, run_spawned
-from pydantic import Field
+
 
 logger = logging.getLogger(__name__)
 
@@ -20,8 +20,12 @@ class FunctionalActor(Actor):
     provide: Optional[Callable[[Provision], Awaitable[Any]]]
     unprovide: Optional[Callable[[], Awaitable[Any]]]
 
+    class Config:
+        arbitrary_types_allowed = True
+
 
 class FunctionalFuncActor(FunctionalActor):
+
     async def progress(self, value, percentage):
         await self._progress(value, percentage)
 
@@ -29,7 +33,7 @@ class FunctionalFuncActor(FunctionalActor):
         try:
             args, kwargs = (
                 await expand_inputs(
-                    self.template.node,
+                    self.provision.template.node,
                     assignation.args,
                     assignation.kwargs,
                     structure_registry=self.structure_registry,
@@ -55,7 +59,7 @@ class FunctionalFuncActor(FunctionalActor):
 
             returns = (
                 await shrink_outputs(
-                    self.template.node,
+                    self.provision.template.node,
                     returns,
                     structure_registry=self.structure_registry,
                 )
@@ -69,7 +73,7 @@ class FunctionalFuncActor(FunctionalActor):
                 returns=returns,
             )
 
-        except asyncio.CancelledError as e:
+        except asyncio.CancelledError:
 
             await self.transport.change_assignation(
                 assignation.assignation, status=AssignationStatus.CANCELLED
@@ -82,33 +86,36 @@ class FunctionalFuncActor(FunctionalActor):
                 status=AssignationStatus.CRITICAL,
                 message=repr(e),
             )
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class FunctionalGenActor(FunctionalActor):
+
     async def progress(self, value, percentage):
         await self._progress(value, percentage)
 
-    async def on_assign(self, message: Assignation):
+    async def on_assign(self, assignation: Assignation):
         try:
             args, kwargs = (
                 await expand_inputs(
-                    self.template.node,
-                    message.args,
-                    message.kwargs,
+                    self.provision.template.node,
+                    assignation.args,
+                    assignation.kwargs,
                     structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
-                else (message.args, message.kwargs)
+                else (assignation.args, assignation.kwargs)
             )
 
             current_assignation_helper.set(
                 AsyncAssignationHelper(
-                    actor=self, assignation=message, provision=self.provision
+                    actor=self, assignation=assignation, provision=self.provision
                 )
             )
 
             await self.transport.change_assignation(
-                message.assignation,
+                assignation.assignation,
                 status=AssignationStatus.ASSIGNED,
             )
 
@@ -116,7 +123,7 @@ class FunctionalGenActor(FunctionalActor):
 
                 returns = (
                     await shrink_outputs(
-                        self.template.node,
+                        self.provision.template.node,
                         returns,
                         structure_registry=self.structure_registry,
                     )
@@ -125,28 +132,31 @@ class FunctionalGenActor(FunctionalActor):
                 )
 
                 await self.transport.change_assignation(
-                    message.assignation, status=AssignationStatus.YIELD, returns=returns
+                    assignation.assignation, status=AssignationStatus.YIELD, returns=returns
                 )
 
             current_assignation_helper.set(None)
 
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.DONE
+                assignation.assignation, status=AssignationStatus.DONE
             )
 
-        except asyncio.CancelledError as e:
+        except asyncio.CancelledError:
 
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.CANCELLED, message=str(e)
+                assignation.assignation, status=AssignationStatus.CANCELLED
             )
 
-        except Exception as e:
+        except Exception as ex:
             logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.CRITICAL, message=str(e)
+                assignation.assignation, status=AssignationStatus.CRITICAL, message=str(ex)
             )
 
-            raise e
+            raise ex
+    
+    class Config:
+        arbitrary_types_allowed = True
 
 
 class FunctionalThreadedFuncActor(FunctionalActor):
@@ -154,29 +164,29 @@ class FunctionalThreadedFuncActor(FunctionalActor):
         default_factory=lambda: ThreadPoolExecutor(4)
     )
 
-    async def on_assign(self, message: Assignation):
+    async def on_assign(self, assignation: Assignation):
 
         try:
             logger.info("Assigning Number two")
             args, kwargs = (
                 await expand_inputs(
-                    self.template.node,
-                    message.args,
-                    message.kwargs,
+                    self.provision.template.node,
+                    assignation.args,
+                    assignation.kwargs,
                     structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
-                else (message.args, message.kwargs)
+                else (assignation.args, assignation.kwargs)
             )
 
             await self.transport.change_assignation(
-                message.assignation,
+                assignation.assignation,
                 status=AssignationStatus.ASSIGNED,
             )
 
             current_assignation_helper.set(
                 ThreadedAssignationHelper(
-                    actor=self, assignation=message, provision=self.provision
+                    actor=self, assignation=assignation, provision=self.provision
                 )
             )
             returns = await run_spawned(self.assign, *args, **kwargs, pass_context=True)
@@ -184,16 +194,16 @@ class FunctionalThreadedFuncActor(FunctionalActor):
             current_assignation_helper.set(None)
             shrinked_returns = (
                 await shrink_outputs(
-                    self.template.node,
+                    self.provision.template.node,
                     returns,
                     structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
-                else (message.args, message.kwargs)
+                else (assignation.args, assignation.kwargs)
             )
 
             await self.transport.change_assignation(
-                message.assignation,
+                assignation.assignation,
                 status=AssignationStatus.RETURNED,
                 returns=shrinked_returns,
             )
@@ -202,13 +212,13 @@ class FunctionalThreadedFuncActor(FunctionalActor):
             logger.info("Actor Cancelled")
 
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.CANCELLED, message=str(e)
+                assignation.assignation, status=AssignationStatus.CANCELLED, message=str(e)
             )
 
         except Exception as e:
             logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.CRITICAL, message=str(e)
+                assignation.assignation, status=AssignationStatus.CRITICAL, message=str(e)
             )
 
 
@@ -217,27 +227,27 @@ class FunctionalThreadedGenActor(FunctionalActor):
         default_factory=lambda: ThreadPoolExecutor(4)
     )
 
-    async def on_assign(self, message: Assignation):
+    async def on_assign(self, assignation: Assignation):
         try:
             args, kwargs = (
                 await expand_inputs(
-                    self.template.node,
-                    message.args,
-                    message.kwargs,
+                    self.provision.template.node,
+                    assignation.args,
+                    assignation.kwargs,
                     structure_registry=self.structure_registry,
                 )
                 if self.expand_inputs
-                else (message.args, message.kwargs)
+                else (assignation.args, assignation.kwargs)
             )
 
             current_assignation_helper.set(
                 ThreadedAssignationHelper(
-                    actor=self, assignation=message, provision=self.provision
+                    actor=self, assignation=assignation, provision=self.provision
                 )
             )
 
             await self.transport.change_assignation(
-                message.assignation,
+                assignation.assignation,
                 status=AssignationStatus.ASSIGNED,
             )
 
@@ -247,7 +257,7 @@ class FunctionalThreadedGenActor(FunctionalActor):
 
                 returns = (
                     await shrink_outputs(
-                        self.template.node,
+                        self.provision.template.node,
                         returns,
                         structure_registry=self.structure_registry,
                     )
@@ -256,25 +266,25 @@ class FunctionalThreadedGenActor(FunctionalActor):
                 )
 
                 await self.transport.change_assignation(
-                    message.assignation, status=AssignationStatus.YIELD, returns=returns
+                    assignation.assignation, status=AssignationStatus.YIELD, returns=returns
                 )
 
             current_assignation_helper.set(None)
 
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.DONE
+                assignation.assignation, status=AssignationStatus.DONE
             )
 
         except asyncio.CancelledError as e:
 
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.CANCELLED, message=str(e)
+                assignation.assignation, status=AssignationStatus.CANCELLED, message=str(e)
             )
 
         except Exception as e:
             logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
-                message.assignation, status=AssignationStatus.CRITICAL, message=str(e)
+                assignation.assignation, status=AssignationStatus.CRITICAL, message=str(e)
             )
 
             raise e

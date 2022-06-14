@@ -3,6 +3,9 @@ from rich.table import Table
 
 
 class Reserve(BaseModel):
+    def get_node_type(self):
+        return getattr(self, "type")
+
     async def call_async_func(self, *args, reserve_params={}, **kwargs):
         async with self.reserve(**reserve_params) as res:
             return await res.assign_async(*args, **kwargs)

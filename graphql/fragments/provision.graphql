@@ -1,0 +1,11 @@
+fragment Provision on Provision {
+  id
+  status
+  template {
+    id
+    node {
+      ...Node
+    }
+    params
+  }
+}

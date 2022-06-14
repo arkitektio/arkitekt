@@ -37,11 +37,13 @@ class DefiniteConnectionFail(PostmanTransportException):
 
 
 class WebsocketPostmanTransport(PostmanTransport):
-    ws_url: str
+    endpoint_url: str
     token_loader: Callable[[], Awaitable[str]] = Field(exclude=True)
     max_retries = 5
     time_between_retries = 5
     allow_reconnect = True
+
+    auto_connect = True
 
     _futures: Dict[str, asyncio.Future] = {}
     _connected = False
@@ -49,7 +51,7 @@ class WebsocketPostmanTransport(PostmanTransport):
     _send_queue: Optional[asyncio.Queue] = None
     _connection_task: Optional[asyncio.Task] = None
 
-    async def __aenter__(self):
+    async def aconnect(self):
         assert (
             self._abroadcast is not None
         ), "Broadcast must be defined (either overwrite abroadcast or pass this in constructor of transport)"
@@ -67,7 +69,7 @@ class WebsocketPostmanTransport(PostmanTransport):
                 token = await self.token_loader(force_refresh=reload_token)
 
                 async with websockets.connect(
-                    f"{self.ws_url}?token={token}&instance_id={self.instance_id}"
+                    f"{self.endpoint_url}?token={token}&instance_id={self.instance_id}"
                 ) as client:
 
                     logger.info("Postman on Websockets connected")
@@ -90,7 +92,7 @@ class WebsocketPostmanTransport(PostmanTransport):
 
             except InvalidStatusCode as e:
                 logger.warning(
-                    "Websocket Connect was denied. Trying to reload token",
+                    f"Websocket Connect was denied. Trying to reload token {token}",
                     exc_info=True,
                 )
                 reload_token = True
@@ -199,7 +201,12 @@ class WebsocketPostmanTransport(PostmanTransport):
             logger.error(f"Error {json_dict}")
 
     async def awaitaction(self, action: JSONMessage):
-        assert self._connected, "Websocket not connected"
+        if not self._connected:
+            assert (
+                self.auto_connect
+            ), "Websocket not connected, and autoconnect to false"
+            await self.aconnect()
+
         if action.id in self._futures:
             raise ValueError("Action already has a future")
 
@@ -259,13 +266,17 @@ class WebsocketPostmanTransport(PostmanTransport):
         ass_list_reply: AssingListReply = await self.awaitaction(action)
         return ass_list_reply.assignations
 
-    async def __aexit__(self, *args, **kwargs):
+    async def adisconnect(self):
         self._connection_task.cancel()
 
         try:
             await self._connection_task
         except asyncio.CancelledError:
             pass
+
+    async def __aexit__(self, *args, **kwargs):
+        if self._connection_task:
+            await self.adisconnect()
 
     class Config:
         arbitrary_types_allowed = True

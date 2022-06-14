@@ -1,0 +1,108 @@
+activation_days: 7
+token_expire_seconds: 604800
+loks:
+  - email: jhnnsr@gmail.com
+    password: oisnosinosin
+    username: johannes
+port: 8000
+postgres:
+  db_name: herre_db
+  host: daten
+  password: 6398045f7711b517ac0aa3c7e6b77a63
+  port: 5432
+  user: arkitekt
+
+private_key: "-----BEGIN PRIVATE KEY-----
+
+  MIIEvgIBADANBgkqhkiG9w0BAQEFAASCBKgwggSkAgEAAoIBAQC3zKYtsPl/wsTt
+
+  X4XQRtBnaTYYXGzqF8uhAourwqvWYPMnQlVbSJGZquVkmljFnRKg1FjOmoEsjIvb
+
+  9tBtyZuW+oWL06aqArLm2kcCbPofYN8mJnoQdtAxssnJz02gkIYfbFUy/ImBWWq3
+
+  xQjbleNtN8qGPGaYbo3BIzZv1zwZIddta0MJhBGlGhUO1LsookU6k0OaZcFg1xjU
+
+  FZgkgTm7DNWUkuEBJwtGvI6W6IF0e2KAXkgp/c77p+5/ZqXwa694+Uoz36Dqsffj
+
+  ho2FtfLwFUfsFvIkB40Pwzd/2Uie9b5W8ocXou3S71+6jgeQZqsB+STnBX/X4Uh7
+
+  d5uiPSoHAgMBAAECggEAMAkkRTzDeEiG/yK/7jcTsHMm2CcPr/6YEXSA3Fr8XgLo
+
+  iZIkjL7ijq7DVQ+hs8PhYncc3qIysFnrE4nl30uZhlPjIzAllrkt2Hejp1aj6B+B
+
+  Mo9Lx5HFx7daVYwAVb5vzzaY7cJijZO4+F5eekUqMxkprPuMNLpwAdIaIBC4fDiS
+
+  c+Lgbur9qX7HHT8eIMdUsdHQKlkw3nfnLxvoTquWtMdRAX83lDHtKUB0MH9agyDa
+
+  r+WaXzE6Zy1eG0huYaQEEOK71jOUdN9C1+9uw12E5d3RBrE5BI/O22XPHElcKwmk
+
+  EifQCEUJjS5TyWWaKsMiyivWrbqejSIzD65NR3hvgQKBgQDN+cln2DexjlMgEMdm
+
+  PcBxOFI8HNB0zEos+vBFLegoQLCmC4/oW0K2VwoHwfOt1Qjs8N4H5cr25sYYNBT0
+
+  jgseWwe3e9rMhPB3FA9fGVNMftpvkZ02BWoz6BdfM/YbdPKrYRqKnmu7rBQ7x/m7
+
+  ooOAKgrkukuKmIdNq8aoStvJ7wKBgQDkcBXGXErfPqW1FOqbG1iZZvRa42/TV1Gm
+
+  ReiXUab6Rp2frhM3fbGdG/lZvVkZ5KDD/MitPiqR40ORDaSHvive4kvHMjp6HXrX
+
+  ZC1ObSiI+jeDgryy04McfCNCFbcMVgvvgsJPsXUbKT/N3HAiEv6V5i4WqQ9jBEXE
+
+  +f+sWZEZaQKBgQDMWp+NDMKswXUNYjhC4s9URTmpdDkJOEn7eHf7WsFzdkMMano7
+
+  YJe+inpkGfRmqe6yDYNruHv3HBy7lKiZvXeghVYRn6sDsH1W1ystAdZYFZ8ohALC
+
+  vvqQRxsxFD9/HDdK+ws3Llfama51ZUEK/QCUnqGyLnaWKiBLWjq9a4/GNwKBgQDb
+
+  swjeK6k+qAvK6oDwCA7gCmp8dzz3b4Vxes7FqZwEHKJADrUgq1yFE4BvVHI7Ou17
+
+  UMTYCW/7uy0idpKEktuyksX6oE4pX+zi9s+0G7vecXeunbBJ9K6mWKW4SxYvYRo9
+
+  ke67oppUMwnQPXAC9W2wUR6GYLYRruxDE4VYBxRL8QKBgEoDWortUYFouo2SP0KI
+
+  Tner70AiMunzFXhBRZQfNLJTLFET5zxwne1e6DFijWfJj4ry+QpEt9BXacciMAAb
+
+  LL4JqAdzc99hg3DqwZjbgrlFWHUxut5qApiTCwbuM7U+/c9UVfIaQAw9D+TmCgUe
+
+  An+V5HJ8HZOxwegvIu4sjMMe
+
+  -----END PRIVATE KEY-----
+
+  "
+
+public_key: ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC3zKYtsPl/wsTtX4XQRtBnaTYYXGzqF8uhAourwqvWYPMnQlVbSJGZquVkmljFnRKg1FjOmoEsjIvb9tBtyZuW+oWL06aqArLm2kcCbPofYN8mJnoQdtAxssnJz02gkIYfbFUy/ImBWWq3xQjbleNtN8qGPGaYbo3BIzZv1zwZIddta0MJhBGlGhUO1LsookU6k0OaZcFg1xjUFZgkgTm7DNWUkuEBJwtGvI6W6IF0e2KAXkgp/c77p+5/ZqXwa694+Uoz36Dqsffjho2FtfLwFUfsFvIkB40Pwzd/2Uie9b5W8ocXou3S71+6jgeQZqsB+STnBX/X4Uh7d5uiPSoH
+redis:
+  host: redis
+  port: 6379
+scopes:
+  can_assign: Can Assign Nodes
+  can_create: Can Create Nodes
+  can_create_identifier: Can create new identifier for the platform
+  can_forward_bounce:
+    Can reserve and assign to Nodes mimicking other Users (only
+    backend and admin)
+  can_provide: Can Provide Nodes
+  can_template: Can Template Nodes
+  introspection: Introspect the Token scope
+  provider: Can act as a provider
+  read: Reading all of your Data
+  read_starred: Reading all of your shared Data
+
+server:
+  admin:
+    email: demo@demo.demo
+    password: none_of_your_buisness
+    username: test_user
+  debug: true
+  hosts:
+    - "*"
+  secret_key: i7aunx1(8--9141j&s+#ru)*_#bnd*ihb+ei3xdmndrj%^u$*f
+
+apps:
+  - name: Tests
+    client_id: DSNwVKbSmvKuIUln36FmpWNVE2KrbS2oRX0ke8PJ
+    client_secret: Gp3VldiWUmHgKkIxZjL2aEjVmNwnSyIGHWbQJo6bWMDoIUlBqvUyoGWUWAe6jI3KRXDOsD13gkYVCZR0po1BLFO9QT4lktKODHDs0GyyJEzmIjkpEOItfdCC4zIa3Qzu
+    client_type: confidential
+    grant_type: client-credentials
+    redirect_uris: []
+    tenant: johannes

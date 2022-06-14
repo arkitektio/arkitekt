@@ -3,8 +3,19 @@ from typing import Callable, Dict, List, Optional, Tuple, Union
 from pydantic import Field
 import inspect
 from arkitekt.actors.base import Actor
+from arkitekt.actors.transport import ActorTransport, SharedTransport
 from arkitekt.actors.types import ActorBuilder
-from arkitekt.api.schema import TemplateFragment, acreate_template, adefine, afind
+from arkitekt.agents.transport.fakts import FaktsWebsocketAgentTransport
+from arkitekt.agents.transport.mock import MockAgentTransport
+from arkitekt.agents.transport.websocket import WebsocketAgentTransport
+from arkitekt.api.schema import (
+    ProvisionFragment,
+    TemplateFragment,
+    acreate_template,
+    adefine,
+    afind,
+    aget_provision,
+)
 from arkitekt.definition.registry import (
     DefinitionRegistry,
     get_current_definition_registry,
@@ -15,6 +26,10 @@ from arkitekt.agents.transport.base import AgentTransport, Contextual
 from arkitekt.messages import Assignation, Unassignation, Unprovision, Provision
 from koil import unkoil
 from koil.composition import KoiledModel
+import logging
+
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAgent(KoiledModel):
@@ -26,9 +41,14 @@ class BaseAgent(KoiledModel):
 
     """
 
-    transport: Optional[AgentTransport] = None
+    transport: Optional[AgentTransport] = Field(
+        default_factory=FaktsWebsocketAgentTransport
+    )
     definition_registry: Optional[DefinitionRegistry] = None
+
+    provisionProvisionMap: Dict[str, ProvisionFragment] = Field(default_factory=dict)
     provisionActorMap: Dict[str, Actor] = Field(default_factory=dict)
+
     rath: Optional[ArkitektRath] = None
 
     _hooks = {}
@@ -111,19 +131,21 @@ class BaseAgent(KoiledModel):
         for hook in self._hooks.get(hook_name, []):
             await hook(self, *args, **kwargs)
 
-    async def aspawn_actor(self, provision: Provision) -> Actor:
+    async def aspawn_actor(self, message: Provision) -> Actor:
         """Spawns an Actor from a Provision"""
 
-        await self.run_hook("before_spawn", provision)
-        actor_builder = self._templateActorBuilderMap[provision.template]
+        await self.run_hook("before_spawn", message)
+        prov = await aget_provision(message.provision)
 
+        actor_builder = self._templateActorBuilderMap[prov.template.id]
         actor = actor_builder(
-            provision=provision,
-            transport=self.transport,
+            provision=prov,
+            transport=self.transport
         )
         await actor.arun()
         await self.run_hook("after_spawn", actor)
-        self.provisionActorMap[provision.provision] = actor
+        self.provisionActorMap[prov.id] = actor
+        self.provisionProvisionMap[prov.id] = prov
         return actor
 
     async def astep(self):
@@ -152,6 +174,9 @@ class BaseAgent(KoiledModel):
         return unkoil(self.aprovide, *args, **kwargs)
 
     async def aprovide(self):
+        logger.info(
+            f"Launching provisioning task. We are running {self.transport.instance_id}"
+        )
         await self.astart()
         while True:
             await self.astep()

@@ -109,9 +109,6 @@ class StructureRegistry(BaseModel):
                 )
             identifier = cls.get_identifier()
 
-        if default_widget:
-            pass
-
         if identifier in self.identifier_structure_map and not self.allow_overwrites:
             raise StructureOverwriteError(
                 f"{identifier} is already registered. Previously registered {self.identifier_structure_map[identifier]}"
