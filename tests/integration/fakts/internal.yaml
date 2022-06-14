@@ -1,0 +1,32 @@
+info:
+  host: herre
+  name: internal
+services:
+  arkitekt:
+    agent:
+      endpoint_url: ws://arkitekt:8090/agi/
+    endpoint_url: http://arkitekt:8090/graphql
+    healthz: http://arkitekt:8090/ht
+    postman:
+      endpoint_url: ws://arkitekt:8090/watchi/
+    secure: false
+    ws_endpoint_url: ws://arkitekt:8090/graphql
+  herre:
+    base_url: http://herre:8000/o
+    endpoint_url: http://herre:8000/graphql
+    healthz: http://herre:8000/ht
+    secure: false
+    ws_endpoint_url: ws://herre:8000/graphql
+  mikro:
+    datalayer:
+      endpoint_url: http://minio:9000
+      secure: false
+    endpoint_url: http://mikro:8080/graphql
+    healthz: http://mikro:8080/ht
+    secure: false
+    ws_endpoint_url: ws://mikro:8080/graphql
+  port:
+    endpoint_url: http://port:8050/graphql
+    healthz: http://port:8050/ht
+    secure: false
+    ws_endpoint_url: ws://port:8050/graphql

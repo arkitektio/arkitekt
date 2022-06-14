@@ -1,12 +1,17 @@
 from typing import Optional
 
+from pydantic import Field
+
 from arkitekt.postmans.transport.base import PostmanTransport
+from arkitekt.postmans.transport.fakts import FaktsWebsocketPostmanTransport
 from arkitekt.postmans.vars import current_postman
 from koil.composition import KoiledModel
 
 
 class BasePostman(KoiledModel):
-    transport: Optional[PostmanTransport] = None
+    transport: Optional[PostmanTransport] = Field(
+        default_factory=FaktsWebsocketPostmanTransport
+    )
 
     """Postman
 

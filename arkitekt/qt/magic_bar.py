@@ -9,22 +9,29 @@ class MagicBar(QtWidgets.QWidget):
     def __init__(self, app: ArkitektApp, dark_mode: bool = False) -> None:
         super().__init__()
         self.app = app
-        assert isinstance(self.app.koil, QtPedanticKoil), "Koil should be Qt Koil"
+        assert isinstance(
+            self.app.koil, QtPedanticKoil
+        ), f"Koil should be Qt Koil but is {type(self.app.koil)}"
         self.dark_mode = dark_mode
 
-        self.connect_task = QtRunner(self.app.aconnect)
-        self.connect_task.errored.connect(print)
-        self.connect_task.returned.connect(self.on_connected)
+        self.configure_task = QtRunner(self.app.fakts.aload)
+        self.configure_task.errored.connect(print)
+        self.configure_task.returned.connect(self.on_configured)
 
-        self.provide_task: QtRunner = QtRunner(self.app.arkitekt.arun)
+        self.login_task = QtRunner(self.app.herre.alogin)
+        self.login_task.errored.connect(print)
+        self.login_task.returned.connect(self.on_login)
+
+        self.provide_task: QtRunner = QtRunner(self.app.arkitekt.agent.aprovide)
         self.provide_task.errored.connect(print)
-        self.provide_task.returned.connect(self.on_providing_ended)
+        self.provide_task.returned.connect(self.on_provided)
 
         self.magicb = QtWidgets.QPushButton("Connect")
         self.magicb.setMinimumHeight(30)
         self.magicb.setMaximumHeight(30)
 
-        self.connect_future = None
+        self.configure_future = None
+        self.login_future = None
         self.provide_future = None
 
         self.layout = QtWidgets.QHBoxLayout()
@@ -48,8 +55,14 @@ class MagicBar(QtWidgets.QWidget):
         else:
             self.set_unconnected()
 
-    def on_connected(self):
+    def on_configured(self):
+        self.magicb.setText("Login")
+
+    def on_login(self):
         self.magicb.setText("Provide")
+
+    def on_provided(self):
+        self.magicb.setText("Provide ended")
 
     def on_providing_ended(self):
         pass
@@ -79,12 +92,21 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setText("Connect")
 
     def magic_button_clicked(self):
-        if not self.connect_future:
-            self.connect_future = self.connect_task.run()
+        if not self.configure_future:
+            self.configure_future = self.configure_task.run()
+            self.magicb.setText("Cancel Configuration")
+            return
+        if not self.configure_future.done():
+            self.configure_future.cancel()
+            self.magicb.setText("Configure")
+            return
+
+        if not self.login_future:
+            self.login_future = self.login_task.run()
             self.magicb.setText("Cancel Login")
             return
-        if not self.connect_future.done():
-            self.connect_future.cancel()
+        if not self.login_future.done():
+            self.login_future.cancel()
             self.magicb.setText("Login")
             return
 

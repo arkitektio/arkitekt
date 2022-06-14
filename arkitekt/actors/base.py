@@ -1,6 +1,7 @@
-from typing import Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, PrivateAttr
+from arkitekt.actors.transport import ActorTransport
 from arkitekt.agents.transport.base import AgentTransport
 from arkitekt.structures.registry import (
     StructureRegistry,
@@ -11,6 +12,8 @@ import asyncio
 import logging
 from arkitekt.api.schema import (
     AssignationStatus,
+    ProvisionFragment,
+    ProvisionFragmentTemplate,
     ProvisionMode,
     ProvisionStatus,
     aget_template,
@@ -24,7 +27,7 @@ logger = logging.getLogger(__name__)
 
 
 class Actor(BaseModel):
-    provision: Provision
+    provision: ProvisionFragment
     transport: AgentTransport
 
     strict: bool = False
@@ -33,25 +36,22 @@ class Actor(BaseModel):
     structure_registry: StructureRegistry = Field(
         default_factory=get_current_structure_registry
     )
-    rath: Optional[ArkitektRath] = Field(default=None)
-
-    template: Contextual[TemplateFragment] = None
     debug: bool = False
 
     runningAssignments: Dict[str, Assignation] = Field(default_factory=dict)
 
-    _in_queue: Contextual[asyncio.Queue] = None
-    _runningTasks: Dict[str, asyncio.Task] = {}
-    _provision_task: asyncio.Task = None
+    _in_queue: Contextual[asyncio.Queue] = PrivateAttr(default=None)
+    _runningTasks: Dict[str, asyncio.Task] =  PrivateAttr(default_factory=dict)
+    _provision_task: asyncio.Task = PrivateAttr(default=None)
 
-    async def on_provide(self, provision: Provision, template: TemplateFragment):
+    async def on_provide(self, provision: ProvisionFragment):
         return None
 
     async def on_unprovide(self):
         return None
 
     async def on_assign(self, assignation: Assignation):
-        raise (
+        raise NotImplementedError(
             "Needs to be owerwritten in Actor Subclass. Never use this class directly"
         )
 
@@ -69,23 +69,18 @@ class Actor(BaseModel):
         try:
             await self._provision_task
         except asyncio.CancelledError:
-            print("Provision was cancelled")
+            logger.info("Provision was cancelled")
 
     async def alisten(self):
-        self.template = await aget_template(id=self.provision.template, rath=self.rath)
         try:
-            self.template = await aget_template(
-                id=self.provision.template, rath=self.rath
+            await self.transport.change_provision(
+                self.provision.id, status=ProvisionStatus.PROVIDING
             )
 
-            await self.transport.change_provision(
-                self.provision.provision, status=ProvisionStatus.PROVIDING
-            )
-
-            prov_context = await self.on_provide(self.provision, self.template)
+            await self.on_provide(self.provision)
 
             await self.transport.change_provision(
-                self.provision.provision,
+                self.provision.id,
                 status=ProvisionStatus.ACTIVE,
                 mode=ProvisionMode.DEBUG if self.debug else ProvisionMode.PRODUCTION,
             )
@@ -116,20 +111,17 @@ class Actor(BaseModel):
                     raise UnknownMessageError(f"{message}")
 
         except Exception as e:
-            print(e)
             logger.exception("Actor failed", exc_info=True)
             await self.transport.change_provision(
-                self.provision.provision,
+                self.provision.id,
                 status=ProvisionStatus.CRITICAL,
                 message=repr(e),
             )
 
-            current_provision_context.set(None)
-
         except asyncio.CancelledError as e:
-            print("We are getting cancelled here?")
+            logger.info("We are getting cancelled here?")
             await self.transport.change_provision(
-                self.provision.provision,
+                self.provision.id,
                 status=ProvisionStatus.CANCELING,
                 message=repr(e),
             )
@@ -147,7 +139,7 @@ class Actor(BaseModel):
                     pass
 
             await self.transport.change_provision(
-                self.provision.provision,
+                self.provision.id,
                 status=ProvisionStatus.CANCELLED,
                 message=str(e),
             )
@@ -163,3 +155,4 @@ class Actor(BaseModel):
     class Config:
         arbitrary_types_allowed = True
         underscore_attrs_are_private = True
+        copy_on_model_validation = False

@@ -1,10 +1,8 @@
 from typing import Any, Awaitable, Callable, Dict, List
 from pydantic import Field
-from rich import get_console
+from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.api.schema import TemplateFragment, WidgetInput
-from arkitekt.fakts.agent import FaktsAgent
-from arkitekt.fakts.postman import FaktsPostman
-from arkitekt.fakts.rath import FaktsArkitektRath
+from arkitekt.postmans.stateful import StatefulPostman
 from arkitekt.rath import ArkitektRath
 from arkitekt.messages import Provision
 from arkitekt.structures.default import get_default_structure_registry
@@ -25,15 +23,15 @@ from koil.decorators import koilable
 
 @koilable(fieldname="koil", add_connectors=True)
 class Arkitekt(Composition):
-    rath: ArkitektRath = Field(default_factory=FaktsArkitektRath)
+    rath: ArkitektRath = Field(default_factory=ArkitektRath)
     structure_registry: StructureRegistry = Field(
         default_factory=get_default_structure_registry
     )
     definition_registry: DefinitionRegistry = Field(
         default_factory=get_current_definition_registry
     )
-    agent: BaseAgent = Field(default_factory=FaktsAgent)
-    postman: BasePostman = Field(default_factory=FaktsPostman)
+    agent: BaseAgent = Field(default_factory=StatefulAgent)
+    postman: BasePostman = Field(default_factory=StatefulPostman)
 
     def register(
         self,
@@ -79,8 +77,7 @@ class Arkitekt(Composition):
         Run the application.
         """
         assert self.agent.transport.connected, "Transport is not connected"
-        with get_console().status("Running"):
-            await self.agent.aprovide()
+        await self.agent.aprovide()
 
     class Config:
         arbitrary_types_allowed = True

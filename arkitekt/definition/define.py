@@ -60,7 +60,6 @@ def convert_arg_to_argport(
             return ArgPortInput(typename="StringArgPort", widget=widget, key=key)
 
     identifier = registry.get_identifier_for_structure(cls)
-
     return ArgPortInput(
         typename="StructureArgPort",
         identifier=identifier,
@@ -349,5 +348,6 @@ def prepare_definition(
             "interfaces": interfaces,
         }
     )
+
 
     return x

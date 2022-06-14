@@ -1,8 +1,10 @@
 from pydantic import BaseModel
-from rich.table import Table
 
 
 class Reserve(BaseModel):
+    def get_node_type(self):
+        return getattr(self, "type")
+
     async def call_async_func(self, *args, reserve_params={}, **kwargs):
         async with self.reserve(**reserve_params) as res:
             return await res.assign_async(*args, **kwargs)
@@ -19,6 +21,8 @@ class Reserve(BaseModel):
         yield "returns", self.returns
 
     def __rich__(self):
+
+        from rich.table import Table
         my_table = Table(title=f"Node: {self.name}", show_header=False)
 
         my_table.add_row("ID", str(self.id))

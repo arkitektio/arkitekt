@@ -4,6 +4,7 @@ from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.agents.transport.mock import MockAgentTransport
 from arkitekt.api.schema import (
     NodeType,
+    ProvisionStatus,
 )
 from rath.links.base import TerminatingLink
 from rath.links.testing.mock import AsyncMockResolver, AsyncMockLink
@@ -116,6 +117,16 @@ class ArkitektMockResolver(AsyncMockResolver):
 
         self.template_map[new_template["id"]] = new_template
         return new_template
+
+    async def resolve_provision(self, operation: Operation) -> str:
+        provision = {
+            "id": operation.variables["id"],
+            "template": self.template_map[operation.variables["id"]],
+            "status": ProvisionStatus.PENDING
+        }
+
+        return provision
+
 
 
 class MockArkitektRath(ArkitektRath):

@@ -1,4 +1,5 @@
 from arkitekt.agents.base import BaseAgent
+from arkitekt.agents.errors import AgentException, ProvisionException
 from arkitekt.api.schema import AssignationStatus, ProvisionStatus
 from arkitekt.messages import Assignation, Provision, Unassignation, Unprovision
 from typing import Union
@@ -38,7 +39,7 @@ class StatefulAgent(BaseAgent):
         elif isinstance(message, Provision):
             try:
                 await self.aspawn_actor(message)
-            except Exception as e:
+            except ProvisionException as e:
                 logger.error("Spawning error", exc_info=True)
                 await self.transport.change_provision(
                     message.provision, status=ProvisionStatus.DENIED, message=str(e)
@@ -57,7 +58,7 @@ class StatefulAgent(BaseAgent):
                 )
 
         else:
-            raise Exception(f"Unknown message type {type(message)}")
+            raise AgentException(f"Unknown message type {type(message)}")
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
 
