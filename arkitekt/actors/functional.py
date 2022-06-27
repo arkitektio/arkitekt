@@ -3,7 +3,7 @@ import logging
 from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Awaitable, Callable, Optional
 from koil.helpers import iterate_spawned, run_spawned
-from pydantic import Field
+from pydantic import BaseModel, Field
 from arkitekt.actors.base import Actor
 from arkitekt.actors.helper import AsyncAssignationHelper, ThreadedAssignationHelper
 from arkitekt.actors.vars import current_assignation_helper
@@ -15,7 +15,7 @@ from arkitekt.structures.serialization.actor import expand_inputs, shrink_output
 logger = logging.getLogger(__name__)
 
 
-class FunctionalActor(Actor):
+class FunctionalActor(BaseModel):
     assign: Callable[..., Any]
     provide: Optional[Callable[[Provision], Awaitable[Any]]]
     unprovide: Optional[Callable[[], Awaitable[Any]]]
@@ -24,11 +24,7 @@ class FunctionalActor(Actor):
         arbitrary_types_allowed = True
 
 
-class FunctionalFuncActor(FunctionalActor):
-
-    async def progress(self, value, percentage):
-        await self._progress(value, percentage)
-
+class AsyncFuncActor(Actor):
     async def on_assign(self, assignation: Assignation):
         try:
             args, kwargs = (
@@ -86,15 +82,9 @@ class FunctionalFuncActor(FunctionalActor):
                 status=AssignationStatus.CRITICAL,
                 message=repr(e),
             )
-    class Config:
-        arbitrary_types_allowed = True
 
 
-class FunctionalGenActor(FunctionalActor):
-
-    async def progress(self, value, percentage):
-        await self._progress(value, percentage)
-
+class AsyncGenActor(Actor):
     async def on_assign(self, assignation: Assignation):
         try:
             args, kwargs = (
@@ -132,7 +122,9 @@ class FunctionalGenActor(FunctionalActor):
                 )
 
                 await self.transport.change_assignation(
-                    assignation.assignation, status=AssignationStatus.YIELD, returns=returns
+                    assignation.assignation,
+                    status=AssignationStatus.YIELD,
+                    returns=returns,
                 )
 
             current_assignation_helper.set(None)
@@ -150,16 +142,31 @@ class FunctionalGenActor(FunctionalActor):
         except Exception as ex:
             logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
-                assignation.assignation, status=AssignationStatus.CRITICAL, message=str(ex)
+                assignation.assignation,
+                status=AssignationStatus.CRITICAL,
+                message=str(ex),
             )
 
             raise ex
-    
+
+
+class FunctionalFuncActor(FunctionalActor, AsyncFuncActor):
+    async def progress(self, value, percentage):
+        await self._progress(value, percentage)
+
     class Config:
         arbitrary_types_allowed = True
 
 
-class FunctionalThreadedFuncActor(FunctionalActor):
+class FunctionalGenActor(FunctionalActor, AsyncGenActor):
+    async def progress(self, value, percentage):
+        await self._progress(value, percentage)
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class ThreadedFuncActor(Actor):
     threadpool: ThreadPoolExecutor = Field(
         default_factory=lambda: ThreadPoolExecutor(4)
     )
@@ -189,6 +196,7 @@ class FunctionalThreadedFuncActor(FunctionalActor):
                     actor=self, assignation=assignation, provision=self.provision
                 )
             )
+            print("OINOINOINO")
             returns = await run_spawned(self.assign, *args, **kwargs, pass_context=True)
 
             current_assignation_helper.set(None)
@@ -212,17 +220,21 @@ class FunctionalThreadedFuncActor(FunctionalActor):
             logger.info("Actor Cancelled")
 
             await self.transport.change_assignation(
-                assignation.assignation, status=AssignationStatus.CANCELLED, message=str(e)
+                assignation.assignation,
+                status=AssignationStatus.CANCELLED,
+                message=str(e),
             )
 
         except Exception as e:
             logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
-                assignation.assignation, status=AssignationStatus.CRITICAL, message=str(e)
+                assignation.assignation,
+                status=AssignationStatus.CRITICAL,
+                message=str(e),
             )
 
 
-class FunctionalThreadedGenActor(FunctionalActor):
+class ThreadedGenActor(Actor):
     threadpool: ThreadPoolExecutor = Field(
         default_factory=lambda: ThreadPoolExecutor(4)
     )
@@ -266,7 +278,9 @@ class FunctionalThreadedGenActor(FunctionalActor):
                 )
 
                 await self.transport.change_assignation(
-                    assignation.assignation, status=AssignationStatus.YIELD, returns=returns
+                    assignation.assignation,
+                    status=AssignationStatus.YIELD,
+                    returns=returns,
                 )
 
             current_assignation_helper.set(None)
@@ -278,13 +292,33 @@ class FunctionalThreadedGenActor(FunctionalActor):
         except asyncio.CancelledError as e:
 
             await self.transport.change_assignation(
-                assignation.assignation, status=AssignationStatus.CANCELLED, message=str(e)
+                assignation.assignation,
+                status=AssignationStatus.CANCELLED,
+                message=str(e),
             )
 
         except Exception as e:
             logger.error("Error in actor", exc_info=True)
             await self.transport.change_assignation(
-                assignation.assignation, status=AssignationStatus.CRITICAL, message=str(e)
+                assignation.assignation,
+                status=AssignationStatus.CRITICAL,
+                message=str(e),
             )
 
             raise e
+
+
+class FunctionalThreadedFuncActor(FunctionalActor, ThreadedFuncActor):
+    async def progress(self, value, percentage):
+        await self._progress(value, percentage)
+
+    class Config:
+        arbitrary_types_allowed = True
+
+
+class FunctionalThreadedGenActor(FunctionalActor, ThreadedGenActor):
+    async def progress(self, value, percentage):
+        await self._progress(value, percentage)
+
+    class Config:
+        arbitrary_types_allowed = True

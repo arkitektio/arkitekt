@@ -4,6 +4,7 @@ from arkitekt.agents.stateful import StatefulAgent
 from arkitekt.agents.transport.mock import MockAgentTransport
 from arkitekt.api.schema import (
     NodeType,
+    PortType,
     ProvisionStatus,
 )
 from rath.links.base import TerminatingLink
@@ -66,12 +67,14 @@ class ArkitektMockResolver(AsyncMockResolver):
             "args": [],
             "kwargs": [
                 {
-                    "__typename": "IntKwargPort",
+                    "__typename": "KwargPort",
+                    "type": PortType.INT,
                     "key": "a",
                     "default": 0,
                 },
                 {
-                    "__typename": "IntKwargPort",
+                    "__typename": "KwargPort",
+                    "type": PortType.INT,
                     "key": "b",
                     "default": 1,
                 },
@@ -87,7 +90,7 @@ class ArkitektMockResolver(AsyncMockResolver):
             "id": str(len(self.nodeMap.keys()) + 1),
             "name": operation.variables["definition"]["name"],
             "interface": operation.variables["definition"]["interface"],
-            "package": operation.variables["definition"]["package"],
+            "package": operation.variables["definition"]["package"] or "@mock",
             "description": operation.variables["definition"]["description"],
             "type": operation.variables["definition"]["type"],
             "args": replace_keys(
@@ -122,11 +125,10 @@ class ArkitektMockResolver(AsyncMockResolver):
         provision = {
             "id": operation.variables["id"],
             "template": self.template_map[operation.variables["id"]],
-            "status": ProvisionStatus.PENDING
+            "status": ProvisionStatus.PENDING,
         }
 
         return provision
-
 
 
 class MockArkitektRath(ArkitektRath):

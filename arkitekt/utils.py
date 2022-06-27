@@ -1,6 +1,6 @@
 from typing import Any
 from arkitekt.traits.node import Reserve
-from arkitekt.api.schema import NodeType
+from arkitekt.api.schema import ArgPortFragment, KwargPortFragment, NodeType, PortType
 from arkitekt.postmans.utils import use
 
 

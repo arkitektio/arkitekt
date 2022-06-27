@@ -13,7 +13,6 @@ class AssignationHelper(BaseModel):
 
     class Config:
         arbitrary_types_allowed = True
-        
 
 
 class ProvisionHelper(BaseModel):
@@ -29,6 +28,7 @@ class ThreadedAssignationHelper(AssignationHelper):
 
 class AsyncAssignationHelper(AssignationHelper):
     async def alog(self, message: str, level: LogLevelInput = LogLevelInput.DEBUG):
+        print("LOOOOOOOOOOOOOOOOOOOOOOOGGGGGGGGGGGGING")
         await self.actor.transport.log_to_assignation(
             id=self.assignation.assignation, level=level, message=message
         )

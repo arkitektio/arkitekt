@@ -1,20 +1,12 @@
-from arkitekt.funcs import asubscribe, subscribe, aexecute, execute
-from arkitekt.traits.ports import (
-    StringExpander,
-    ListExpander,
-    IntExpander,
-    BoolExpander,
-    StructureExpander,
-    DictExpander,
-)
-from typing_extensions import Literal
-from typing import Iterator, Any, AsyncIterator, List, Optional, Union, Dict
-from pydantic import Field, BaseModel
+from arkitekt.funcs import aexecute, asubscribe, execute, subscribe
 from arkitekt.scalars import QString
-from enum import Enum
-from rath.scalars import ID
+from pydantic import BaseModel, Field
+from typing_extensions import Literal
+from typing import Optional, AsyncIterator, List, Dict, Any, Iterator
 from arkitekt.traits.node import Reserve
 from arkitekt.rath import ArkitektRath
+from enum import Enum
+from rath.scalars import ID
 
 
 class AgentStatus(str, Enum):
@@ -50,6 +42,16 @@ class NodeType(str, Enum):
     "Generator"
     FUNCTION = "FUNCTION"
     "Function"
+
+
+class PortType(str, Enum):
+    INT = "INT"
+    STRING = "STRING"
+    STRUCTURE = "STRUCTURE"
+    LIST = "LIST"
+    BOOL = "BOOL"
+    ENUM = "ENUM"
+    DICT = "DICT"
 
 
 class ProvisionMode(str, Enum):
@@ -396,25 +398,44 @@ class ReservationStatusInput(str, Enum):
     "Critical (Reservation failed with an Critical Error)"
 
 
+class PortTypeInput(str, Enum):
+    INT = "INT"
+    STRING = "STRING"
+    STRUCTURE = "STRUCTURE"
+    LIST = "LIST"
+    BOOL = "BOOL"
+    ENUM = "ENUM"
+    DICT = "DICT"
+
+
 class ArgPortInput(BaseModel):
-    key: Optional[str]
-    "The Key"
-    type: Optional[str]
-    "the type of input"
-    typename: Optional[str]
-    "the type of input"
-    description: Optional[str]
-    "A description for this Port"
     identifier: Optional[str]
-    "The corresponding Model"
-    widget: Optional["WidgetInput"]
-    "Which Widget to use to render Port in User Interfaces"
+    "The identifier"
+    key: str
+    "The key of the arg"
+    name: Optional[str]
+    "The name of this argument"
     label: Optional[str]
-    "The corresponding label"
-    child: Optional["ArgPortInput"]
-    "The Child of this"
-    options: Optional[Dict]
-    "Options for an Enum"
+    "The name of this argument"
+    type: PortTypeInput
+    "The type of this argument"
+    description: Optional[str]
+    "The description of this argument"
+    child: Optional["ChildPortInput"]
+    "The child of this argument"
+    widget: Optional["WidgetInput"]
+    "The child of this argument"
+
+
+class ChildPortInput(BaseModel):
+    identifier: Optional[str]
+    "The identifier"
+    name: Optional[str]
+    "The name of this port"
+    type: Optional[str]
+    "The type of this port"
+    description: Optional[str]
+    "The description of this port"
 
 
 class WidgetInput(BaseModel):
@@ -433,57 +454,43 @@ class WidgetInput(BaseModel):
 
 
 class KwargPortInput(BaseModel):
-    key: Optional[str]
-    "The Key"
-    type: Optional[str]
-    "the type of input"
-    typename: Optional[str]
-    "the type of input"
-    description: Optional[str]
-    "A description for this Port"
-    label: Optional[str]
-    "The corresponding label"
-    default_dict: Optional[Dict] = Field(alias="defaultDict")
-    "Does this field have a specific value"
-    default_option: Optional[Dict] = Field(alias="defaultOption")
-    "Does this field have a specific value"
-    default_int: Optional[int] = Field(alias="defaultInt")
-    "Does this field have a specific value"
-    default_bool: Optional[bool] = Field(alias="defaultBool")
-    "Does this field have a specific value"
-    default_float: Optional[float] = Field(alias="defaultFloat")
-    "Does this field have a specific value"
-    default_id: Optional[ID] = Field(alias="defaultID")
-    "Does this field have a specific value"
-    default_string: Optional[str] = Field(alias="defaultString")
-    "Does this field have a specific value"
-    default_list: Optional[List[Optional[Dict]]] = Field(alias="defaultList")
-    "Does this field have a specific value"
     identifier: Optional[str]
-    "The corresponding Model"
+    "The identifier"
+    key: str
+    "The key of the arg"
+    default: Any
+    "The key of the arg"
+    label: Optional[str]
+    "The name of this argument"
+    name: Optional[str]
+    "The name of this argument"
+    type: PortTypeInput
+    "The type of this argument"
+    description: Optional[str]
+    "The description of this argument"
+    child: Optional[ChildPortInput]
+    "The child of this argument"
     widget: Optional[WidgetInput]
-    "Which Widget to use to render Port in User Interfaces"
-    child: Optional["KwargPortInput"]
-    "The Child of this"
-    options: Optional[Dict]
-    "Options for an Enum"
+    "The child of this argument"
 
 
 class ReturnPortInput(BaseModel):
-    key: Optional[str]
-    "The Key"
-    type: Optional[str]
-    "the type of input"
-    typename: Optional[str]
-    "the type of input"
-    description: Optional[str]
-    "A description for this Port"
-    label: Optional[str]
-    "The corresponding label"
     identifier: Optional[str]
-    "The corresponding Model"
-    child: Optional["ReturnPortInput"]
-    "The Child of this"
+    "The identifier"
+    key: str
+    "The key of the arg"
+    name: Optional[str]
+    "The name of this argument"
+    label: Optional[str]
+    "The name of this argument"
+    type: PortTypeInput
+    "The type of this argument"
+    description: Optional[str]
+    "The description of this argument"
+    child: Optional[ChildPortInput]
+    "The child of this argument"
+    widget: Optional[WidgetInput]
+    "The child of this argument"
 
 
 class DefinitionInput(BaseModel):
@@ -530,9 +537,6 @@ class AssignationFragmentParent(BaseModel):
     typename: Optional[Literal["Assignation"]] = Field(alias="__typename")
     id: ID
 
-    class Config:
-        frozen = True
-
 
 class AssignationFragment(BaseModel):
     typename: Optional[Literal["Assignation"]] = Field(alias="__typename")
@@ -547,9 +551,6 @@ class AssignationFragment(BaseModel):
     statusmessage: str
     "Clear Text status of the Assignation as for now"
 
-    class Config:
-        frozen = True
-
 
 class ProvisionFragmentTemplate(BaseModel):
     typename: Optional[Literal["Template"]] = Field(alias="__typename")
@@ -557,9 +558,6 @@ class ProvisionFragmentTemplate(BaseModel):
     node: "NodeFragment"
     "The node this template is implementatig"
     params: Optional[Dict]
-
-    class Config:
-        frozen = True
 
 
 class ProvisionFragment(BaseModel):
@@ -570,585 +568,75 @@ class ProvisionFragment(BaseModel):
     template: Optional[ProvisionFragmentTemplate]
     "The Template for this Provision"
 
-    class Config:
-        frozen = True
+
+class ChildPortNestedFragmentChild(BaseModel):
+    typename: Optional[Literal["ChildPort"]] = Field(alias="__typename")
+    type: Optional[PortType]
+    "the type of input"
 
 
-class StringArgPortFragment(StringExpander, BaseModel):
-    typename: Optional[Literal["StringArgPort"]] = Field(alias="__typename")
-    key: Optional[str]
-
-    class Config:
-        frozen = True
-
-
-class IntArgPortFragment(IntExpander, BaseModel):
-    typename: Optional[Literal["IntArgPort"]] = Field(alias="__typename")
-    key: Optional[str]
-
-    class Config:
-        frozen = True
-
-
-class StructureArgPortFragment(StructureExpander, BaseModel):
-    typename: Optional[Literal["StructureArgPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    identifier: Optional[str]
-    "The identifier of this Model"
-
-    class Config:
-        frozen = True
-
-
-class ListArgPortFragmentChildBase(BaseModel):
-    pass
-
-    class Config:
-        frozen = True
-
-
-class ListArgPortFragmentChildStructureArgPortInlineFragment(
-    StructureExpander, ListArgPortFragmentChildBase
-):
-    typename: Optional[Literal["StructureArgPort"]] = Field(alias="__typename")
-    identifier: Optional[str]
-    "The identifier of this Model"
-
-    class Config:
-        frozen = True
-
-
-class ListArgPortFragmentChildIntArgPortInlineFragment(
-    IntExpander, ListArgPortFragmentChildBase
-):
-    typename: Optional[Literal["IntArgPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListArgPortFragmentChildBoolArgPortInlineFragment(
-    BoolExpander, ListArgPortFragmentChildBase
-):
-    typename: Optional[Literal["BoolArgPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListArgPortFragmentChildStringArgPortInlineFragment(
-    StringExpander, ListArgPortFragmentChildBase
-):
-    typename: Optional[Literal["StringArgPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListArgPortFragment(ListExpander, BaseModel):
-    typename: Optional[Literal["ListArgPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    child: Optional[
-        Union[
-            ListArgPortFragmentChildStructureArgPortInlineFragment,
-            ListArgPortFragmentChildIntArgPortInlineFragment,
-            ListArgPortFragmentChildBoolArgPortInlineFragment,
-            ListArgPortFragmentChildStringArgPortInlineFragment,
-        ]
-    ]
+class ChildPortNestedFragment(BaseModel):
+    typename: Optional[Literal["ChildPort"]] = Field(alias="__typename")
+    type: Optional[PortType]
+    "the type of input"
+    child: Optional[ChildPortNestedFragmentChild]
     "The child"
 
-    class Config:
-        frozen = True
 
-
-class DictArgPortFragmentChildBase(BaseModel):
-    pass
-
-    class Config:
-        frozen = True
-
-
-class DictArgPortFragmentChildStructureArgPortInlineFragment(
-    StructureExpander, DictArgPortFragmentChildBase
-):
-    typename: Optional[Literal["StructureArgPort"]] = Field(alias="__typename")
+class ChildPortFragment(BaseModel):
+    typename: Optional[Literal["ChildPort"]] = Field(alias="__typename")
+    type: Optional[PortType]
+    "the type of input"
     identifier: Optional[str]
-    "The identifier of this Model"
-
-    class Config:
-        frozen = True
-
-
-class DictArgPortFragmentChildIntArgPortInlineFragment(
-    IntExpander, DictArgPortFragmentChildBase
-):
-    typename: Optional[Literal["IntArgPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictArgPortFragmentChildBoolArgPortInlineFragment(
-    BoolExpander, DictArgPortFragmentChildBase
-):
-    typename: Optional[Literal["BoolArgPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictArgPortFragmentChildStringArgPortInlineFragment(
-    StringExpander, DictArgPortFragmentChildBase
-):
-    typename: Optional[Literal["StringArgPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictArgPortFragment(DictExpander, BaseModel):
-    typename: Optional[Literal["DictArgPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    child: Optional[
-        Union[
-            DictArgPortFragmentChildStructureArgPortInlineFragment,
-            DictArgPortFragmentChildIntArgPortInlineFragment,
-            DictArgPortFragmentChildBoolArgPortInlineFragment,
-            DictArgPortFragmentChildStringArgPortInlineFragment,
-        ]
-    ]
+    "The corresponding Model"
+    child: Optional[ChildPortNestedFragment]
     "The child"
 
-    class Config:
-        frozen = True
 
-
-class DictKwargPortFragmentChildBase(BaseModel):
-    pass
-
-    class Config:
-        frozen = True
-
-
-class DictKwargPortFragmentChildStructureKwargPortInlineFragment(
-    StructureExpander, DictKwargPortFragmentChildBase
-):
-    typename: Optional[Literal["StructureKwargPort"]] = Field(alias="__typename")
-    identifier: Optional[str]
-    "The identifier of this Model"
-
-    class Config:
-        frozen = True
-
-
-class DictKwargPortFragmentChildIntKwargPortInlineFragment(
-    IntExpander, DictKwargPortFragmentChildBase
-):
-    typename: Optional[Literal["IntKwargPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictKwargPortFragmentChildBoolKwargPortInlineFragment(
-    BoolExpander, DictKwargPortFragmentChildBase
-):
-    typename: Optional[Literal["BoolKwargPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictKwargPortFragmentChildStringKwargPortInlineFragment(
-    StringExpander, DictKwargPortFragmentChildBase
-):
-    typename: Optional[Literal["StringKwargPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictKwargPortFragment(DictExpander, BaseModel):
-    typename: Optional[Literal["DictKwargPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    default_dict: Optional[Dict] = Field(alias="defaultDict")
-    "TheList"
-    child: Optional[
-        Union[
-            DictKwargPortFragmentChildStructureKwargPortInlineFragment,
-            DictKwargPortFragmentChildIntKwargPortInlineFragment,
-            DictKwargPortFragmentChildBoolKwargPortInlineFragment,
-            DictKwargPortFragmentChildStringKwargPortInlineFragment,
-        ]
-    ]
-    "The child"
-
-    class Config:
-        frozen = True
-
-
-class BoolKwargPortFragment(BoolExpander, BaseModel):
-    typename: Optional[Literal["BoolKwargPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    default_bool: Optional[bool] = Field(alias="defaultBool")
-    "Default value"
-
-    class Config:
-        frozen = True
-
-
-class IntKwargPortFragment(IntExpander, BaseModel):
-    typename: Optional[Literal["IntKwargPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    default_int: Optional[int] = Field(alias="defaultInt")
-    "Default value"
-
-    class Config:
-        frozen = True
-
-
-class StringKwargPortFragment(StringExpander, BaseModel):
-    typename: Optional[Literal["StringKwargPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    default_string: Optional[str] = Field(alias="defaultString")
-    "Default value"
-
-    class Config:
-        frozen = True
-
-
-class ListKwargPortFragmentChildBase(BaseModel):
-    pass
-
-    class Config:
-        frozen = True
-
-
-class ListKwargPortFragmentChildStructureKwargPortInlineFragment(
-    StructureExpander, ListKwargPortFragmentChildBase
-):
-    typename: Optional[Literal["StructureKwargPort"]] = Field(alias="__typename")
-    identifier: Optional[str]
-    "The identifier of this Model"
-
-    class Config:
-        frozen = True
-
-
-class ListKwargPortFragmentChildIntKwargPortInlineFragment(
-    IntExpander, ListKwargPortFragmentChildBase
-):
-    typename: Optional[Literal["IntKwargPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListKwargPortFragmentChildBoolKwargPortInlineFragment(
-    BoolExpander, ListKwargPortFragmentChildBase
-):
-    typename: Optional[Literal["BoolKwargPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListKwargPortFragmentChildStringKwargPortInlineFragment(
-    StringExpander, ListKwargPortFragmentChildBase
-):
-    typename: Optional[Literal["StringKwargPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListKwargPortFragment(ListExpander, BaseModel):
-    typename: Optional[Literal["ListKwargPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    child: Optional[
-        Union[
-            ListKwargPortFragmentChildStructureKwargPortInlineFragment,
-            ListKwargPortFragmentChildIntKwargPortInlineFragment,
-            ListKwargPortFragmentChildBoolKwargPortInlineFragment,
-            ListKwargPortFragmentChildStringKwargPortInlineFragment,
-        ]
-    ]
-    "The child"
-    default_list: Optional[List[Optional[Dict]]] = Field(alias="defaultList")
-    "TheList"
-
-    class Config:
-        frozen = True
-
-
-class ListReturnPortFragmentChildBase(BaseModel):
-    pass
-
-    class Config:
-        frozen = True
-
-
-class ListReturnPortFragmentChildStructureReturnPortInlineFragment(
-    StructureExpander, ListReturnPortFragmentChildBase
-):
-    typename: Optional[Literal["StructureReturnPort"]] = Field(alias="__typename")
-    identifier: Optional[str]
-    "The identifier of this Model"
-
-    class Config:
-        frozen = True
-
-
-class ListReturnPortFragmentChildStringReturnPortInlineFragment(
-    StringExpander, ListReturnPortFragmentChildBase
-):
-    typename: Optional[Literal["StringReturnPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListReturnPortFragmentChildIntReturnPortInlineFragment(
-    IntExpander, ListReturnPortFragmentChildBase
-):
-    typename: Optional[Literal["IntReturnPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListReturnPortFragmentChildBoolReturnPortInlineFragment(
-    BoolExpander, ListReturnPortFragmentChildBase
-):
-    typename: Optional[Literal["BoolReturnPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class ListReturnPortFragment(ListExpander, BaseModel):
-    typename: Optional[Literal["ListReturnPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    child: Optional[
-        Union[
-            ListReturnPortFragmentChildStructureReturnPortInlineFragment,
-            ListReturnPortFragmentChildStringReturnPortInlineFragment,
-            ListReturnPortFragmentChildIntReturnPortInlineFragment,
-            ListReturnPortFragmentChildBoolReturnPortInlineFragment,
-        ]
-    ]
-    "The child"
-
-    class Config:
-        frozen = True
-
-
-class DictReturnPortFragmentChildBase(BaseModel):
-    pass
-
-    class Config:
-        frozen = True
-
-
-class DictReturnPortFragmentChildStructureReturnPortInlineFragment(
-    StructureExpander, DictReturnPortFragmentChildBase
-):
-    typename: Optional[Literal["StructureReturnPort"]] = Field(alias="__typename")
-    identifier: Optional[str]
-    "The identifier of this Model"
-
-    class Config:
-        frozen = True
-
-
-class DictReturnPortFragmentChildStringReturnPortInlineFragment(
-    StringExpander, DictReturnPortFragmentChildBase
-):
-    typename: Optional[Literal["StringReturnPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictReturnPortFragmentChildIntReturnPortInlineFragment(
-    IntExpander, DictReturnPortFragmentChildBase
-):
-    typename: Optional[Literal["IntReturnPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictReturnPortFragmentChildBoolReturnPortInlineFragment(
-    BoolExpander, DictReturnPortFragmentChildBase
-):
-    typename: Optional[Literal["BoolReturnPort"]] = Field(alias="__typename")
-
-    class Config:
-        frozen = True
-
-
-class DictReturnPortFragment(DictExpander, BaseModel):
-    typename: Optional[Literal["DictReturnPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    child: Optional[
-        Union[
-            DictReturnPortFragmentChildStructureReturnPortInlineFragment,
-            DictReturnPortFragmentChildStringReturnPortInlineFragment,
-            DictReturnPortFragmentChildIntReturnPortInlineFragment,
-            DictReturnPortFragmentChildBoolReturnPortInlineFragment,
-        ]
-    ]
-    "The child"
-
-    class Config:
-        frozen = True
-
-
-class StructureReturnPortFragment(StructureExpander, BaseModel):
-    typename: Optional[Literal["StructureReturnPort"]] = Field(alias="__typename")
-    key: Optional[str]
-    identifier: Optional[str]
-    "The identifier of this Model"
-
-    class Config:
-        frozen = True
-
-
-class StringReturnPortFragment(StringExpander, BaseModel):
-    typename: Optional[Literal["StringReturnPort"]] = Field(alias="__typename")
-    key: Optional[str]
-
-    class Config:
-        frozen = True
-
-
-class IntReturnPortFragment(IntExpander, BaseModel):
-    typename: Optional[Literal["IntReturnPort"]] = Field(alias="__typename")
-    key: Optional[str]
-
-    class Config:
-        frozen = True
-
-
-class ReturnPortFragmentBase(BaseModel):
-    key: Optional[str]
+class ArgPortFragment(BaseModel):
+    typename: Optional[Literal["ArgPort"]] = Field(alias="__typename")
+    key: str
+    label: Optional[str]
+    nullable: Optional[bool]
     description: Optional[str]
+    "A description for this Port"
+    type: Optional[PortType]
+    "the type of input"
+    identifier: Optional[str]
+    "The corresponding Model"
+    child: Optional[ChildPortFragment]
+    "The child"
 
 
-class ReturnPortFragmentBaseListReturnPort(
-    ListReturnPortFragment, ReturnPortFragmentBase
-):
-    pass
-
-
-class ReturnPortFragmentBaseStructureReturnPort(
-    StructureReturnPortFragment, ReturnPortFragmentBase
-):
-    pass
-
-
-class ReturnPortFragmentBaseStringReturnPort(
-    StringReturnPortFragment, ReturnPortFragmentBase
-):
-    pass
-
-
-class ReturnPortFragmentBaseIntReturnPort(
-    IntReturnPortFragment, ReturnPortFragmentBase
-):
-    pass
-
-
-class ReturnPortFragmentBaseDictReturnPort(
-    DictReturnPortFragment, ReturnPortFragmentBase
-):
-    pass
-
-
-ReturnPortFragment = Union[
-    ReturnPortFragmentBaseListReturnPort,
-    ReturnPortFragmentBaseStructureReturnPort,
-    ReturnPortFragmentBaseStringReturnPort,
-    ReturnPortFragmentBaseIntReturnPort,
-    ReturnPortFragmentBaseDictReturnPort,
-    ReturnPortFragmentBase,
-]
-
-
-class KwargPortFragmentBase(BaseModel):
-    key: Optional[str]
+class KwargPortFragment(BaseModel):
+    typename: Optional[Literal["KwargPort"]] = Field(alias="__typename")
+    key: str
+    label: Optional[str]
+    type: Optional[PortType]
+    "the type of input"
     description: Optional[str]
+    "A description for this Port"
+    nullable: Optional[bool]
+    default: Optional[Any]
+    identifier: Optional[str]
+    "The corresponding Model"
+    child: Optional[ChildPortFragment]
+    "The child"
 
 
-class KwargPortFragmentBaseDictKwargPort(DictKwargPortFragment, KwargPortFragmentBase):
-    pass
-
-
-class KwargPortFragmentBaseBoolKwargPort(BoolKwargPortFragment, KwargPortFragmentBase):
-    pass
-
-
-class KwargPortFragmentBaseIntKwargPort(IntKwargPortFragment, KwargPortFragmentBase):
-    pass
-
-
-class KwargPortFragmentBaseListKwargPort(ListKwargPortFragment, KwargPortFragmentBase):
-    pass
-
-
-class KwargPortFragmentBaseStringKwargPort(
-    StringKwargPortFragment, KwargPortFragmentBase
-):
-    pass
-
-
-KwargPortFragment = Union[
-    KwargPortFragmentBaseDictKwargPort,
-    KwargPortFragmentBaseBoolKwargPort,
-    KwargPortFragmentBaseIntKwargPort,
-    KwargPortFragmentBaseListKwargPort,
-    KwargPortFragmentBaseStringKwargPort,
-    KwargPortFragmentBase,
-]
-
-
-class ArgPortFragmentBase(BaseModel):
-    key: Optional[str]
+class ReturnPortFragment(BaseModel):
+    typename: Optional[Literal["ReturnPort"]] = Field(alias="__typename")
+    label: Optional[str]
+    key: str
+    nullable: Optional[bool]
     description: Optional[str]
-
-
-class ArgPortFragmentBaseStringArgPort(StringArgPortFragment, ArgPortFragmentBase):
-    pass
-
-
-class ArgPortFragmentBaseStructureArgPort(
-    StructureArgPortFragment, ArgPortFragmentBase
-):
-    pass
-
-
-class ArgPortFragmentBaseListArgPort(ListArgPortFragment, ArgPortFragmentBase):
-    pass
-
-
-class ArgPortFragmentBaseIntArgPort(IntArgPortFragment, ArgPortFragmentBase):
-    pass
-
-
-class ArgPortFragmentBaseDictArgPort(DictArgPortFragment, ArgPortFragmentBase):
-    pass
-
-
-ArgPortFragment = Union[
-    ArgPortFragmentBaseStringArgPort,
-    ArgPortFragmentBaseStructureArgPort,
-    ArgPortFragmentBaseListArgPort,
-    ArgPortFragmentBaseIntArgPort,
-    ArgPortFragmentBaseDictArgPort,
-    ArgPortFragmentBase,
-]
+    "A description for this Port"
+    identifier: Optional[str]
+    "The corresponding Model"
+    type: Optional[PortType]
+    "the type of input"
+    child: Optional[ChildPortFragment]
+    "The child"
 
 
 class ReserveParamsFragment(BaseModel):
@@ -1160,18 +648,12 @@ class ReserveParamsFragment(BaseModel):
     desired_instances: Optional[int] = Field(alias="desiredInstances")
     "The desired amount of Instances"
 
-    class Config:
-        frozen = True
-
 
 class ReservationFragmentNode(Reserve, BaseModel):
     typename: Optional[Literal["Node"]] = Field(alias="__typename")
     id: ID
     pure: bool
     "Is this function pure. e.g can we cache the result?"
-
-    class Config:
-        frozen = True
 
 
 class ReservationFragment(BaseModel):
@@ -1184,9 +666,6 @@ class ReservationFragment(BaseModel):
     node: Optional[ReservationFragmentNode]
     "The node this reservation connects"
     params: Optional[ReserveParamsFragment]
-
-    class Config:
-        frozen = True
 
 
 class NodeFragment(Reserve, BaseModel):
@@ -1206,25 +685,16 @@ class NodeFragment(Reserve, BaseModel):
     kwargs: Optional[List[Optional[KwargPortFragment]]]
     returns: Optional[List[Optional[ReturnPortFragment]]]
 
-    class Config:
-        frozen = True
-
 
 class TemplateFragmentRegistryApp(BaseModel):
     typename: Optional[Literal["LokApp"]] = Field(alias="__typename")
     name: str
-
-    class Config:
-        frozen = True
 
 
 class TemplateFragmentRegistryUser(BaseModel):
     typename: Optional[Literal["LokUser"]] = Field(alias="__typename")
     username: str
     "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
-
-    class Config:
-        frozen = True
 
 
 class TemplateFragmentRegistry(BaseModel):
@@ -1236,9 +706,6 @@ class TemplateFragmentRegistry(BaseModel):
     user: Optional[TemplateFragmentRegistryUser]
     "The Associated App"
 
-    class Config:
-        frozen = True
-
 
 class TemplateFragment(BaseModel):
     typename: Optional[Literal["Template"]] = Field(alias="__typename")
@@ -1249,18 +716,12 @@ class TemplateFragment(BaseModel):
     "The node this template is implementatig"
     params: Optional[Dict]
 
-    class Config:
-        frozen = True
-
 
 class TodosSubscriptionTodos(BaseModel):
     typename: Optional[Literal["TodoEvent"]] = Field(alias="__typename")
     create: Optional[AssignationFragment]
     update: Optional[AssignationFragment]
     delete: Optional[ID]
-
-    class Config:
-        frozen = True
 
 
 class TodosSubscription(BaseModel):
@@ -1272,18 +733,12 @@ class TodosSubscription(BaseModel):
     class Meta:
         document = "fragment Assignation on Assignation {\n  args\n  kwargs\n  id\n  parent {\n    id\n  }\n  id\n  status\n  statusmessage\n}\n\nsubscription todos($identifier: ID!) {\n  todos(identifier: $identifier) {\n    create {\n      ...Assignation\n    }\n    update {\n      ...Assignation\n    }\n    delete\n  }\n}"
 
-    class Config:
-        frozen = True
-
 
 class WaiterSubscriptionReservations(BaseModel):
     typename: Optional[Literal["ReservationsEvent"]] = Field(alias="__typename")
     create: Optional[ReservationFragment]
     update: Optional[ReservationFragment]
     delete: Optional[ID]
-
-    class Config:
-        frozen = True
 
 
 class WaiterSubscription(BaseModel):
@@ -1295,9 +750,6 @@ class WaiterSubscription(BaseModel):
     class Meta:
         document = "fragment ReserveParams on ReserveParams {\n  registries\n  minimalInstances\n  desiredInstances\n}\n\nfragment Reservation on Reservation {\n  id\n  statusmessage\n  status\n  node {\n    id\n    pure\n  }\n  params {\n    ...ReserveParams\n  }\n}\n\nsubscription waiter($identifier: ID!) {\n  reservations(identifier: $identifier) {\n    create {\n      ...Reservation\n    }\n    update {\n      ...Reservation\n    }\n    delete\n  }\n}"
 
-    class Config:
-        frozen = True
-
 
 class TodolistQuery(BaseModel):
     todolist: Optional[List[Optional[AssignationFragment]]]
@@ -1308,9 +760,6 @@ class TodolistQuery(BaseModel):
     class Meta:
         document = "fragment Assignation on Assignation {\n  args\n  kwargs\n  id\n  parent {\n    id\n  }\n  id\n  status\n  statusmessage\n}\n\nquery todolist($appGroup: ID) {\n  todolist(appGroup: $appGroup) {\n    ...Assignation\n  }\n}"
 
-    class Config:
-        frozen = True
-
 
 class Get_provisionQuery(BaseModel):
     provision: Optional[ProvisionFragment]
@@ -1319,10 +768,7 @@ class Get_provisionQuery(BaseModel):
         id: ID
 
     class Meta:
-        document = "fragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n  defaultList\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictReturnPort on DictReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n  ...DictReturnPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Provision on Provision {\n  id\n  status\n  template {\n    id\n    node {\n      ...Node\n    }\n    params\n  }\n}\n\nquery get_provision($id: ID!) {\n  provision(id: $id) {\n    ...Provision\n  }\n}"
-
-    class Config:
-        frozen = True
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Provision on Provision {\n  id\n  status\n  template {\n    id\n    node {\n      ...Node\n    }\n    params\n  }\n}\n\nquery get_provision($id: ID!) {\n  provision(id: $id) {\n    ...Provision\n  }\n}"
 
 
 class Get_reservationQueryReservationTemplateRegistryApp(BaseModel):
@@ -1330,17 +776,11 @@ class Get_reservationQueryReservationTemplateRegistryApp(BaseModel):
     id: ID
     name: str
 
-    class Config:
-        frozen = True
-
 
 class Get_reservationQueryReservationTemplateRegistryUser(BaseModel):
     typename: Optional[Literal["LokUser"]] = Field(alias="__typename")
     id: ID
     email: str
-
-    class Config:
-        frozen = True
 
 
 class Get_reservationQueryReservationTemplateRegistry(BaseModel):
@@ -1350,9 +790,6 @@ class Get_reservationQueryReservationTemplateRegistry(BaseModel):
     user: Optional[Get_reservationQueryReservationTemplateRegistryUser]
     "The Associated App"
 
-    class Config:
-        frozen = True
-
 
 class Get_reservationQueryReservationTemplate(BaseModel):
     typename: Optional[Literal["Template"]] = Field(alias="__typename")
@@ -1360,18 +797,12 @@ class Get_reservationQueryReservationTemplate(BaseModel):
     registry: Get_reservationQueryReservationTemplateRegistry
     "The associated registry for this Template"
 
-    class Config:
-        frozen = True
-
 
 class Get_reservationQueryReservationProvisions(BaseModel):
     typename: Optional[Literal["Provision"]] = Field(alias="__typename")
     id: ID
     status: ProvisionStatus
     "Current lifecycle of Provision"
-
-    class Config:
-        frozen = True
 
 
 class Get_reservationQueryReservationNode(Reserve, BaseModel):
@@ -1381,9 +812,6 @@ class Get_reservationQueryReservationNode(Reserve, BaseModel):
     "Function, generator? Check async Programming Textbook"
     name: str
     "The cleartext name of this Node"
-
-    class Config:
-        frozen = True
 
 
 class Get_reservationQueryReservation(BaseModel):
@@ -1403,9 +831,6 @@ class Get_reservationQueryReservation(BaseModel):
     node: Optional[Get_reservationQueryReservationNode]
     "The node this reservation connects"
 
-    class Config:
-        frozen = True
-
 
 class Get_reservationQuery(BaseModel):
     reservation: Optional[Get_reservationQueryReservation]
@@ -1416,9 +841,6 @@ class Get_reservationQuery(BaseModel):
     class Meta:
         document = "query get_reservation($id: ID!) {\n  reservation(id: $id) {\n    id\n    template {\n      id\n      registry {\n        app {\n          id\n          name\n        }\n        user {\n          id\n          email\n        }\n      }\n    }\n    provisions {\n      id\n      status\n    }\n    title\n    status\n    id\n    reference\n    node {\n      id\n      type\n      name\n    }\n  }\n}"
 
-    class Config:
-        frozen = True
-
 
 class WaitlistQuery(BaseModel):
     waitlist: Optional[List[Optional[ReservationFragment]]]
@@ -1428,9 +850,6 @@ class WaitlistQuery(BaseModel):
 
     class Meta:
         document = "fragment ReserveParams on ReserveParams {\n  registries\n  minimalInstances\n  desiredInstances\n}\n\nfragment Reservation on Reservation {\n  id\n  statusmessage\n  status\n  node {\n    id\n    pure\n  }\n  params {\n    ...ReserveParams\n  }\n}\n\nquery waitlist($appGroup: ID) {\n  waitlist(appGroup: $appGroup) {\n    ...Reservation\n  }\n}"
-
-    class Config:
-        frozen = True
 
 
 class FindQuery(BaseModel):
@@ -1445,10 +864,7 @@ class FindQuery(BaseModel):
         q: Optional[QString] = None
 
     class Meta:
-        document = "fragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n  defaultList\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictReturnPort on DictReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n  ...DictReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nquery find($id: ID, $package: String, $interface: String, $template: ID, $q: QString) {\n  node(\n    id: $id\n    package: $package\n    interface: $interface\n    template: $template\n    q: $q\n  ) {\n    ...Node\n  }\n}"
-
-    class Config:
-        frozen = True
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nquery find($id: ID, $package: String, $interface: String, $template: ID, $q: QString) {\n  node(\n    id: $id\n    package: $package\n    interface: $interface\n    template: $template\n    q: $q\n  ) {\n    ...Node\n  }\n}"
 
 
 class Get_templateQuery(BaseModel):
@@ -1458,10 +874,7 @@ class Get_templateQuery(BaseModel):
         id: ID
 
     class Meta:
-        document = "fragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n  defaultList\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictReturnPort on DictReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n  ...DictReturnPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    name\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n  params\n}\n\nquery get_template($id: ID!) {\n  template(id: $id) {\n    ...Template\n  }\n}"
-
-    class Config:
-        frozen = True
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    name\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n  params\n}\n\nquery get_template($id: ID!) {\n  template(id: $id) {\n    ...Template\n  }\n}"
 
 
 class Get_agentQueryAgentRegistry(BaseModel):
@@ -1469,9 +882,6 @@ class Get_agentQueryAgentRegistry(BaseModel):
     id: ID
     name: Optional[str]
     "DEPRECATED Will be replaced in the future: : None "
-
-    class Config:
-        frozen = True
 
 
 class Get_agentQueryAgent(BaseModel):
@@ -1482,9 +892,6 @@ class Get_agentQueryAgent(BaseModel):
     "This providers Name"
     identifier: str
 
-    class Config:
-        frozen = True
-
 
 class Get_agentQuery(BaseModel):
     agent: Optional[Get_agentQueryAgent]
@@ -1494,9 +901,6 @@ class Get_agentQuery(BaseModel):
 
     class Meta:
         document = "query get_agent($id: ID!) {\n  agent(id: $id) {\n    registry {\n      id\n      name\n    }\n    name\n    identifier\n  }\n}"
-
-    class Config:
-        frozen = True
 
 
 class AssignMutation(BaseModel):
@@ -1510,9 +914,6 @@ class AssignMutation(BaseModel):
     class Meta:
         document = "fragment Assignation on Assignation {\n  args\n  kwargs\n  id\n  parent {\n    id\n  }\n  id\n  status\n  statusmessage\n}\n\nmutation assign($reservation: ID!, $args: [GenericScalar]!, $kwargs: GenericScalar) {\n  assign(reservation: $reservation, args: $args, kwargs: $kwargs) {\n    ...Assignation\n  }\n}"
 
-    class Config:
-        frozen = True
-
 
 class UnassignMutation(BaseModel):
     unassign: Optional[AssignationFragment]
@@ -1522,9 +923,6 @@ class UnassignMutation(BaseModel):
 
     class Meta:
         document = "fragment Assignation on Assignation {\n  args\n  kwargs\n  id\n  parent {\n    id\n  }\n  id\n  status\n  statusmessage\n}\n\nmutation unassign($assignation: ID!) {\n  unassign(assignation: $assignation) {\n    ...Assignation\n  }\n}"
-
-    class Config:
-        frozen = True
 
 
 class ReserveMutation(BaseModel):
@@ -1541,9 +939,6 @@ class ReserveMutation(BaseModel):
     class Meta:
         document = "fragment ReserveParams on ReserveParams {\n  registries\n  minimalInstances\n  desiredInstances\n}\n\nfragment Reservation on Reservation {\n  id\n  statusmessage\n  status\n  node {\n    id\n    pure\n  }\n  params {\n    ...ReserveParams\n  }\n}\n\nmutation reserve($node: ID, $template: ID, $params: ReserveParamsInput, $title: String, $creator: ID, $appGroup: ID) {\n  reserve(\n    node: $node\n    template: $template\n    params: $params\n    title: $title\n    creator: $creator\n    appGroup: $appGroup\n  ) {\n    ...Reservation\n  }\n}"
 
-    class Config:
-        frozen = True
-
 
 class UnreserveMutation(BaseModel):
     unreserve: Optional[ReservationFragment]
@@ -1553,9 +948,6 @@ class UnreserveMutation(BaseModel):
 
     class Meta:
         document = "fragment ReserveParams on ReserveParams {\n  registries\n  minimalInstances\n  desiredInstances\n}\n\nfragment Reservation on Reservation {\n  id\n  statusmessage\n  status\n  node {\n    id\n    pure\n  }\n  params {\n    ...ReserveParams\n  }\n}\n\nmutation unreserve($id: ID!) {\n  unreserve(id: $id) {\n    ...Reservation\n  }\n}"
-
-    class Config:
-        frozen = True
 
 
 class Create_nodeMutation(BaseModel):
@@ -1568,10 +960,7 @@ class Create_nodeMutation(BaseModel):
         args: Optional[List[Optional[ArgPortInput]]] = None
 
     class Meta:
-        document = "fragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n  defaultList\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictReturnPort on DictReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n  ...DictReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation create_node($name: String!, $interface: String!, $args: [ArgPortInput]) {\n  createNode(name: $name, interface: $interface, args: $args) {\n    ...Node\n  }\n}"
-
-    class Config:
-        frozen = True
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation create_node($name: String!, $interface: String!, $args: [ArgPortInput]) {\n  createNode(name: $name, interface: $interface, args: $args) {\n    ...Node\n  }\n}"
 
 
 class DefineMutation(BaseModel):
@@ -1582,18 +971,12 @@ class DefineMutation(BaseModel):
         definition: DefinitionInput
 
     class Meta:
-        document = "fragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n  defaultList\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictReturnPort on DictReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n  ...DictReturnPort\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation define($definition: DefinitionInput!) {\n  define(definition: $definition) {\n    ...Node\n  }\n}"
-
-    class Config:
-        frozen = True
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation define($definition: DefinitionInput!) {\n  define(definition: $definition) {\n    ...Node\n  }\n}"
 
 
 class Reset_repositoryMutationResetrepository(BaseModel):
     typename: Optional[Literal["ResetRepositoryReturn"]] = Field(alias="__typename")
     ok: Optional[bool]
-
-    class Config:
-        frozen = True
 
 
 class Reset_repositoryMutation(BaseModel):
@@ -1608,9 +991,6 @@ class Reset_repositoryMutation(BaseModel):
     class Meta:
         document = "mutation reset_repository {\n  resetRepository {\n    ok\n  }\n}"
 
-    class Config:
-        frozen = True
-
 
 class Create_templateMutation(BaseModel):
     create_template: Optional[TemplateFragment] = Field(alias="createTemplate")
@@ -1622,10 +1002,7 @@ class Create_templateMutation(BaseModel):
         version: Optional[str] = None
 
     class Meta:
-        document = "fragment BoolKwargPort on BoolKwargPort {\n  key\n  defaultBool\n}\n\nfragment ListKwargPort on ListKwargPort {\n  key\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n  defaultList\n}\n\nfragment ListReturnPort on ListReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment StringReturnPort on StringReturnPort {\n  __typename\n  key\n}\n\nfragment StructureReturnPort on StructureReturnPort {\n  __typename\n  key\n  identifier\n}\n\nfragment DictArgPort on DictArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment IntKwargPort on IntKwargPort {\n  key\n  defaultInt\n}\n\nfragment StructureArgPort on StructureArgPort {\n  key\n  identifier\n}\n\nfragment StringArgPort on StringArgPort {\n  key\n}\n\nfragment DictReturnPort on DictReturnPort {\n  key\n  child {\n    __typename\n    ... on StructureReturnPort {\n      __typename\n      identifier\n    }\n    ... on StringReturnPort {\n      __typename\n    }\n    ... on IntReturnPort {\n      __typename\n    }\n    ... on BoolReturnPort {\n      __typename\n    }\n  }\n}\n\nfragment IntArgPort on IntArgPort {\n  key\n}\n\nfragment ListArgPort on ListArgPort {\n  key\n  child {\n    __typename\n    ... on StructureArgPort {\n      __typename\n      identifier\n    }\n    ... on IntArgPort {\n      __typename\n    }\n    ... on BoolArgPort {\n      __typename\n    }\n    ... on StringArgPort {\n      __typename\n    }\n  }\n}\n\nfragment DictKwargPort on DictKwargPort {\n  key\n  defaultDict\n  child {\n    __typename\n    ... on StructureKwargPort {\n      __typename\n      identifier\n    }\n    ... on IntKwargPort {\n      __typename\n    }\n    ... on BoolKwargPort {\n      __typename\n    }\n    ... on StringKwargPort {\n      __typename\n    }\n  }\n}\n\nfragment StringKwargPort on StringKwargPort {\n  key\n  defaultString\n}\n\nfragment IntReturnPort on IntReturnPort {\n  __typename\n  key\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  description\n  ...StringArgPort\n  ...StructureArgPort\n  ...ListArgPort\n  ...IntArgPort\n  ...DictArgPort\n}\n\nfragment KwargPort on KwargPort {\n  __typename\n  key\n  description\n  ...DictKwargPort\n  ...BoolKwargPort\n  ...IntKwargPort\n  ...ListKwargPort\n  ...StringKwargPort\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  key\n  description\n  ...ListReturnPort\n  ...StructureReturnPort\n  ...StringReturnPort\n  ...IntReturnPort\n  ...DictReturnPort\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    name\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n  params\n}\n\nmutation create_template($node: ID!, $params: GenericScalar, $extensions: [String], $version: String) {\n  createTemplate(\n    node: $node\n    params: $params\n    extensions: $extensions\n    version: $version\n  ) {\n    ...Template\n  }\n}"
-
-    class Config:
-        frozen = True
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    name\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n  params\n}\n\nmutation create_template($node: ID!, $params: GenericScalar, $extensions: [String], $version: String) {\n  createTemplate(\n    node: $node\n    params: $params\n    extensions: $extensions\n    version: $version\n  ) {\n    ...Template\n  }\n}"
 
 
 class SlateMutation(BaseModel):
@@ -1636,9 +1013,6 @@ class SlateMutation(BaseModel):
 
     class Meta:
         document = "mutation slate($identifier: String!) {\n  slate(identifier: $identifier)\n}"
-
-    class Config:
-        frozen = True
 
 
 async def atodos(
@@ -2376,7 +1750,5 @@ def slate(identifier: str, rath: ArkitektRath = None) -> Optional[List[Optional[
     return execute(SlateMutation, {"identifier": identifier}, rath=rath).slate
 
 
-ReturnPortInput.update_forward_refs()
-KwargPortInput.update_forward_refs()
-ArgPortInput.update_forward_refs()
 ProvisionFragmentTemplate.update_forward_refs()
+ArgPortInput.update_forward_refs()

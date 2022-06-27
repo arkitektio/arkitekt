@@ -71,6 +71,8 @@ class DefinitionRegistry(KoiledModel):
         self,
         function,
         builder=None,
+        package=None,
+        interface=None,
         widgets: Dict[str, WidgetInput] = {},
         interfaces: List[str] = [],
         on_provide=None,
@@ -97,6 +99,8 @@ class DefinitionRegistry(KoiledModel):
         definition = prepare_definition(
             function=function,
             widgets=widgets,
+            package=package,
+            interface=interface,
             interfaces=interfaces,
             structure_registry=structure_registry,
         )

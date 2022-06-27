@@ -1,3 +1,4 @@
+from textwrap import wrap
 from typing import Any, Awaitable, Callable, Dict, List
 from pydantic import Field
 from arkitekt.agents.stateful import StatefulAgent
@@ -37,6 +38,8 @@ class Arkitekt(Composition):
         self,
         builder=None,
         widgets: Dict[str, WidgetInput] = {},
+        package=None,
+        interface=None,
         interfaces: List[str] = [],
         on_provide: Callable[[Provision, TemplateFragment], Awaitable[Any]] = None,
         on_unprovide: Callable[[], Awaitable[Any]] = None,
@@ -56,6 +59,8 @@ class Arkitekt(Composition):
             self.definition_registry.register(
                 function,
                 builder=builder,
+                package=package,
+                interface=interface,
                 widgets=widgets,
                 interfaces=interfaces,
                 structure_registry=structure_registry,
@@ -63,6 +68,8 @@ class Arkitekt(Composition):
                 on_unprovide=on_unprovide,
                 **actorparams,
             )
+
+            wrapped_function.__arkitekt__ = self
 
         return real_decorator
 

@@ -3,6 +3,7 @@ from arkitekt.api.schema import NodeFragment
 import asyncio
 from arkitekt.structures.errors import ExpandingError, ShrinkingError
 from arkitekt.structures.registry import StructureRegistry
+from arkitekt.structures.serialization.utils import aexpand, ashrink
 
 
 async def shrink_inputs(
@@ -25,12 +26,28 @@ async def shrink_inputs(
     Returns:
         Tuple[List[Any], Dict[str, Any]]: Parsed Args as a List, Parsed Kwargs as a dict
     """
-    if len(node.args) != len(args):
-        raise ShrinkingError(f"Missmatch in Arg Length {node.args} vs {args}")
+    try:
+        if len(node.args) > len(args) + len(kwargs):
+            raise ShrinkingError(f"More parameters needed {node.args} vs {args}")
+    except TypeError as e:
+        raise ShrinkingError() from e
 
-    shrinked_args_futures = [
-        port.cause_shrink(arg, structure_registry) for port, arg in zip(node.args, args)
-    ]
+    shrinked_args_futures = []
+
+    args_iterator = iter(args)
+
+    try:
+        for port in node.args:
+            if port.key in kwargs:
+                shrinked_args_futures.append(
+                    ashrink(port, kwargs.get(port.key, None), structure_registry)
+                )
+            else:
+                shrinked_args_futures.append(
+                    ashrink(port, next(args_iterator), structure_registry)
+                )
+    except StopIteration:
+        raise ShrinkingError(f"More parameters needed {node.args} vs {args}")
 
     try:
         shrinked_args = await asyncio.gather(
@@ -43,8 +60,8 @@ async def shrink_inputs(
 
     try:
         shrinked_kwargs = {
-            port.key: await port.cause_shrink(
-                kwargs.get(port.key, None), structure_registry
+            port.key: await ashrink(
+                port, kwargs.get(port.key, None), structure_registry
             )
             for port in node.kwargs
         }
@@ -87,7 +104,7 @@ async def expand_outputs(
 
         returns = await asyncio.gather(
             *[
-                port.cause_expand(val, structure_registry)
+                aexpand(port, val, structure_registry)
                 for port, val in zip(node.returns, returns)
             ]
         )

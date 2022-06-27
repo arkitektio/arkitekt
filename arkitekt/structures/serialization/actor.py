@@ -3,6 +3,7 @@ from async_timeout import asyncio
 from arkitekt.api.schema import NodeFragment
 from arkitekt.structures.errors import ShrinkingError, ExpandingError
 from arkitekt.structures.registry import StructureRegistry
+from arkitekt.structures.serialization.utils import aexpand, ashrink
 
 
 async def expand_inputs(
@@ -25,7 +26,7 @@ async def expand_inputs(
     try:
         expanded_args = await asyncio.gather(
             *[
-                port.cause_expand(arg, structure_registry)
+                aexpand(port, arg, structure_registry)
                 for port, arg in zip(node.args, args)
             ]
         )
@@ -36,8 +37,8 @@ async def expand_inputs(
 
     try:
         expanded_kwargs = {
-            port.key: await port.cause_expand(
-                kwargs.get(port.key, None), structure_registry
+            port.key: await aexpand(
+                port, kwargs.get(port.key, None), structure_registry
             )
             for port in node.kwargs
         }
@@ -71,7 +72,7 @@ async def shrink_outputs(
     ), "Missmatch in Return Length"  # We are dealing with a single output, convert it to a proper port like structure
 
     shrinked_returns_future = [
-        port.cause_shrink(val, structure_registry)
+        ashrink(port, val, structure_registry)
         for port, val in zip(node.returns, returns)
     ]
     try:

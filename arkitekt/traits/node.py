@@ -23,6 +23,7 @@ class Reserve(BaseModel):
     def __rich__(self):
 
         from rich.table import Table
+
         my_table = Table(title=f"Node: {self.name}", show_header=False)
 
         my_table.add_row("ID", str(self.id))

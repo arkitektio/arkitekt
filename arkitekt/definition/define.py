@@ -6,6 +6,8 @@ from arkitekt.api.schema import (
     DefinitionInput,
     KwargPortInput,
     NodeTypeInput,
+    PortType,
+    PortTypeInput,
     ReturnPortInput,
 )
 import inspect
@@ -18,7 +20,7 @@ from arkitekt.structures.registry import (
 
 
 def convert_arg_to_argport(
-    cls, registry: StructureRegistry, widget=None, key=None
+    cls, key, registry: StructureRegistry, widget=None
 ) -> ArgPortInput:
     """
     Convert a class to an ArgPort
@@ -29,15 +31,21 @@ def convert_arg_to_argport(
     if hasattr(cls, "_name"):
         # We are dealing with a Typing Var?
         if cls._name == "List":
-            child = convert_arg_to_argport(cls.__args__[0], registry)
+            child = convert_arg_to_argport(cls.__args__[0], "omit", registry)
             return ArgPortInput(
-                typename="ListArgPort", widget=widget, key=key, child=child
+                type=PortType.LIST,
+                widget=widget,
+                key=key,
+                child=child.dict(exclude={"key"}),
             )
 
         if cls._name == "Dict":
-            child = convert_arg_to_argport(cls.__args__[1], registry)
+            child = convert_arg_to_argport(cls.__args__[1], "omit", registry)
             return ArgPortInput(
-                typename="DictArgPort", widget=widget, key=key, child=child
+                type=PortType.DICT,
+                widget=widget,
+                key=key,
+                child=child.dict(exclude={"key"}),
             )
 
     if inspect.isclass(cls):
@@ -45,23 +53,23 @@ def convert_arg_to_argport(
 
         if issubclass(cls, bool):
             return ArgPortInput(
-                typename="BoolArgPort", widget=widget, key=key
+                type=PortType.BOOL, widget=widget, key=key
             )  # catch bool is subclass of int
         if issubclass(cls, Enum):
             return ArgPortInput(
-                typename="EnumArgPort",
+                type=PortType.ENUM,
                 widget=widget,
                 key=key,
                 options={key: value._value_ for key, value in cls.__members__.items()},
             )
         if issubclass(cls, int):
-            return ArgPortInput(typename="IntArgPort", widget=widget, key=key)
+            return ArgPortInput(type=PortType.INT, widget=widget, key=key)
         if issubclass(cls, str):
-            return ArgPortInput(typename="StringArgPort", widget=widget, key=key)
+            return ArgPortInput(type=PortType.STRING, widget=widget, key=key)
 
     identifier = registry.get_identifier_for_structure(cls)
     return ArgPortInput(
-        typename="StructureArgPort",
+        type=PortType.STRUCTURE,
         identifier=identifier,
         widget=widget,
         key=key,
@@ -69,7 +77,7 @@ def convert_arg_to_argport(
 
 
 def convert_kwarg_to_kwargport(
-    cls, registry: StructureRegistry, widget=None, key=None, default=None
+    cls, key, registry: StructureRegistry, widget=None, default=None
 ) -> ArgPortInput:
     """
     Convert a class to an ArgPort
@@ -79,23 +87,23 @@ def convert_kwarg_to_kwargport(
     if hasattr(cls, "_name"):
         # We are dealing with a Typing Var?
         if cls._name == "List":
-            child = convert_kwarg_to_kwargport(cls.__args__[0], registry)
+            child = convert_kwarg_to_kwargport(cls.__args__[0], "omit", registry)
             return KwargPortInput(
-                typename="ListKwargPort",
+                type=PortTypeInput.LIST,
                 widget=widget,
                 key=key,
-                child=child,
-                defaultList=default,
+                child=child.dict(exclude={"key"}),
+                default=default,
             )
 
         if cls._name == "Dict":
-            child = convert_kwarg_to_kwargport(cls.__args__[1], registry)
+            child = convert_kwarg_to_kwargport(cls.__args__[1], "omit", registry)
             return KwargPortInput(
-                typename="DictKwargPort",
+                type=PortTypeInput.DICT,
                 widget=widget,
                 key=key,
-                child=child,
-                defaultDict=default,
+                child=child.dict(exclude={"key"}),
+                default=default,
             )
 
     if inspect.isclass(cls):
@@ -103,43 +111,43 @@ def convert_kwarg_to_kwargport(
 
         if issubclass(cls, bool) or isinstance(default, bool):
             t = KwargPortInput(
-                typename="BoolKwargPort", widget=widget, key=key, defaultBool=default
+                type=PortType.BOOL, widget=widget, key=key, default=default
             )  # catch bool is subclass of int
             return t
 
         if issubclass(cls, Enum) or isinstance(default, Enum):
             return KwargPortInput(
-                typename="EnumKwargPort",
+                type=PortType.ENUM,
                 widget=widget,
                 key=key,
                 options={key: value._value_ for key, value in cls.__members__.items()},
-                defaultEnum=default,
+                default=default,
             )
         if issubclass(cls, int) or isinstance(default, int):
             return KwargPortInput(
-                typename="IntKwargPort", widget=widget, key=key, defaultInt=default
+                type=PortType.INT, widget=widget, key=key, default=default
             )
         if issubclass(cls, str) or isinstance(default, str):
             return KwargPortInput(
-                typename="StringKwargPort",
+                type=PortType.STRING,
                 widget=widget,
                 key=key,
-                defaultString=default,
+                default=default,
             )
 
     identifier = registry.get_identifier_for_structure(cls)
 
     return KwargPortInput(
-        typename="StructureKwargPort",
+        type=PortType.STRUCTURE,
         identifier=identifier,
         widget=widget,
         key=key,
-        defaultID=default,
+        default=default,
     )
 
 
 def convert_return_to_returnport(
-    cls, registry: StructureRegistry, key=None
+    cls, key: str, registry: StructureRegistry
 ) -> ReturnPortInput:
     """
     Convert a class to an ArgPort
@@ -148,19 +156,19 @@ def convert_return_to_returnport(
     if hasattr(cls, "_name"):
         # We are dealing with a Typing Var?
         if cls._name == "List":
-            child = convert_return_to_returnport(cls.__args__[0], registry)
+            child = convert_return_to_returnport(cls.__args__[0], "omit", registry)
             return ReturnPortInput(
-                typename="ListReturnPort",
+                type=PortType.LIST,
                 key=key,
-                child=child,
+                child=child.dict(exclude={"key"}),
             )
 
         if cls._name == "Dict":
-            child = convert_return_to_returnport(cls.__args__[1], registry)
+            child = convert_return_to_returnport(cls.__args__[1], "omit", registry)
             return ReturnPortInput(
-                typename="DictReturnPort",
+                type=PortType.DICT,
                 key=key,
-                child=child,
+                child=child.dict(exclude={"key"}),
             )
 
     if inspect.isclass(cls):
@@ -168,29 +176,29 @@ def convert_return_to_returnport(
 
         if issubclass(cls, bool):
             return ReturnPortInput(
-                typename="BoolReturnPort", key=key
+                type=PortType.BOOL, key=key
             )  # catch bool is subclass of int
         if issubclass(cls, Enum):
             return ReturnPortInput(
-                typename="EnumReturnPort",
+                type=PortType.ENUM,
                 key=key,
                 options={key: value._value_ for key, value in cls.__members__.items()},
             )
         if issubclass(cls, int):
             return ReturnPortInput(
-                typename="IntReturnPort",
+                type=PortType.INT,
                 key=key,
             )
         if issubclass(cls, str):
             return ReturnPortInput(
-                typename="StringReturnPort",
+                type=PortType.STRING,
                 key=key,
             )
 
     identifier = registry.get_identifier_for_structure(cls)
 
     return ReturnPortInput(
-        typename="StructureReturnPort",
+        type=PortType.STRUCTURE,
         identifier=identifier,
         key=key,
     )
@@ -198,6 +206,8 @@ def convert_return_to_returnport(
 
 def prepare_definition(
     function: Callable,
+    package=None,
+    interface=None,
     widgets={},
     allow_empty_doc=False,
     interfaces=[],
@@ -237,17 +247,15 @@ def prepare_definition(
             if value.default == inspect.Parameter.empty:
                 # This Parameter is an Argument
                 args.append(
-                    convert_arg_to_argport(
-                        cls, structure_registry, widget=widget, key=key
-                    )
+                    convert_arg_to_argport(cls, key, structure_registry, widget=widget)
                 )
             else:
                 kwargs.append(
                     convert_kwarg_to_kwargport(
                         cls,
+                        key,
                         structure_registry,
                         widget=widget,
-                        key=key,
                         default=value.default,
                     )
                 )
@@ -262,9 +270,11 @@ def prepare_definition(
 
         if function_outs_annotation._name == "Tuple":
             try:
-                for cls in function_outs_annotation.__args__:
+                for index, cls in enumerate(function_outs_annotation.__args__):
                     returns.append(
-                        convert_return_to_returnport(cls, structure_registry)
+                        convert_return_to_returnport(
+                            cls, f"return{index}", structure_registry
+                        )
                     )
             except Exception as e:
                 raise DefinitionError(
@@ -274,7 +284,7 @@ def prepare_definition(
             try:
                 returns.append(
                     convert_return_to_returnport(
-                        function_outs_annotation, structure_registry
+                        function_outs_annotation, f"return0", structure_registry
                     )
                 )  # Other types will be converted to normal lists and shit
             except Exception as e:
@@ -289,7 +299,7 @@ def prepare_definition(
         elif function_outs_annotation.__name__ != "_empty":  # Is it not empty
             returns.append(
                 convert_return_to_returnport(
-                    function_outs_annotation, structure_registry
+                    function_outs_annotation, "return0", structure_registry
                 )
             )
 
@@ -303,7 +313,9 @@ def prepare_definition(
         ), f"We don't allow empty documentation for function {function.__name__}. Please Provide"
 
     name = docstring.short_description or function.__name__
-    interface = inflection.underscore(function.__name__)  # convert this to camelcase
+    interface = interface or inflection.underscore(
+        function.__name__
+    )  # convert this to camelcase
     description = docstring.long_description or "No Description"
 
     doc_param_map = {
@@ -339,7 +351,7 @@ def prepare_definition(
         **{
             "name": name,
             "interface": interface,
-            "package": "test",  # TODO: IMplement correctly
+            "package": package,
             "description": description,
             "args": args,
             "kwargs": kwargs,
@@ -349,5 +361,6 @@ def prepare_definition(
         }
     )
 
+    print(x)
 
     return x

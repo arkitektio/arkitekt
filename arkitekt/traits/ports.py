@@ -11,6 +11,8 @@ class Port:
 
     @abstractmethod
     async def cause_expand(self, value, registry):
+        pass
+
         raise NotImplementedError()
 
     @abstractmethod

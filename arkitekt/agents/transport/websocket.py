@@ -160,6 +160,9 @@ class WebsocketAgentTransport(AgentTransport):
                 await self._abroadcast(UnprovideSubMessage(**json_dict))
 
             if type == AgentSubMessageTypes.PROVIDE:
+                logger.error(
+                    "OINSADOFNSÜAOEDIFNÜASIENFAPOINFPAOWINFPOWINFOIWANFPOIWNFPOIWN"
+                )
                 await self._abroadcast(ProvideSubMessage(**json_dict))
 
             if type == AgentMessageTypes.LIST_ASSIGNATIONS_REPLY:

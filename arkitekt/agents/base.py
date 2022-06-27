@@ -5,6 +5,7 @@ import inspect
 from arkitekt.actors.base import Actor
 from arkitekt.actors.transport import ActorTransport, SharedTransport
 from arkitekt.actors.types import ActorBuilder
+from arkitekt.agents.errors import ProvisionException
 from arkitekt.agents.transport.fakts import FaktsWebsocketAgentTransport
 from arkitekt.agents.transport.mock import MockAgentTransport
 from arkitekt.agents.transport.websocket import WebsocketAgentTransport
@@ -58,6 +59,9 @@ class BaseAgent(KoiledModel):
     _templateTemplatesMap: Dict[str, TemplateFragment] = {}
     _provisionTaskMap: Dict[str, asyncio.Task] = Field(default_factory=dict)
     _inqueue: Contextual[asyncio.Queue] = None
+
+    started = False
+    running = False
 
     async def abroadcast(
         self, message: Union[Assignation, Provision, Unassignation, Unprovision]
@@ -119,6 +123,8 @@ class BaseAgent(KoiledModel):
                 self._templateActorBuilderMap[arkitekt_template.id] = defined_actor
                 self._templateTemplatesMap[arkitekt_template.id] = arkitekt_template
 
+        print(self._templateTemplatesMap)
+
     def hook(self, on: str):
         def decorator(func):
             assert inspect.iscoroutinefunction(func), "needs to be a coroutine"
@@ -136,12 +142,12 @@ class BaseAgent(KoiledModel):
 
         await self.run_hook("before_spawn", message)
         prov = await aget_provision(message.provision)
-
-        actor_builder = self._templateActorBuilderMap[prov.template.id]
-        actor = actor_builder(
-            provision=prov,
-            transport=self.transport
-        )
+        try:
+            actor_builder = self._templateActorBuilderMap[prov.template.id]
+        except KeyError as e:
+            raise ProvisionException("No Actor Builder found for template") from e
+        actor = actor_builder(provision=prov, transport=self.transport)
+        print(actor.__class__.__name__)
         await actor.arun()
         await self.run_hook("after_spawn", actor)
         self.provisionActorMap[prov.id] = actor
@@ -164,6 +170,8 @@ class BaseAgent(KoiledModel):
         for ass in data:
             await self.abroadcast(ass)
 
+        self.started = True
+
     def step(self, *args, **kwargs):
         return unkoil(self.astep, *args, **kwargs)
 
@@ -173,13 +181,24 @@ class BaseAgent(KoiledModel):
     def provide(self, *args, **kwargs):
         return unkoil(self.aprovide, *args, **kwargs)
 
+    async def aloop(self):
+        try:
+            while True:
+                self.running = True
+                await self.astep()
+        except asyncio.CancelledError:
+            logger.info(
+                f"Provisioning task cancelled. We are running {self.transport.instance_id}"
+            )
+            self.running = False
+            raise
+
     async def aprovide(self):
         logger.info(
             f"Launching provisioning task. We are running {self.transport.instance_id}"
         )
         await self.astart()
-        while True:
-            await self.astep()
+        await self.aloop()
 
     async def __aenter__(self):
         self.definition_registry = (

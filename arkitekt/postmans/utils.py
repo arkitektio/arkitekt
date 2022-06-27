@@ -1,13 +1,21 @@
-from typing import Optional
+from ast import Assign
+from random import Random, random
+from typing import Awaitable, Callable, Optional
+import uuid
 
 from pydantic import Field
-from arkitekt.messages import Reservation
+from arkitekt.messages import Assignation, Reservation
 from arkitekt.postmans.vars import current_postman
 from arkitekt.structures.registry import get_current_structure_registry
 from koil.composition import KoiledModel
 from koil.types import ContextBool
 from .stateful import StatefulPostman
-from arkitekt.api.schema import AssignationStatus, ReservationStatus, ReserveParamsInput
+from arkitekt.api.schema import (
+    AssignationLogLevel,
+    AssignationStatus,
+    ReservationStatus,
+    ReserveParamsInput,
+)
 import asyncio
 from arkitekt.traits.node import Reserve
 from koil import unkoil
@@ -21,14 +29,46 @@ logger = logging.getLogger(__name__)
 class ReservationContract(KoiledModel):
     # TODO:Assert that we can actually assign to this? validating that all of the nodes inputs are
     # registered in the structure registry?
-
     node: Reserve
     params: ReserveParamsInput = Field(default_factory=ReserveParamsInput)
     auto_unreserve: bool = False
     shrink_inputs: bool = True
     expand_outputs: bool = True
+    res_log: Optional[
+        Callable[[Reservation, AssignationLogLevel, str], Awaitable[None]]
+    ] = Field(default=None, exclude=True)
 
     active: ContextBool = False
+    _reservation: Reservation = None
+
+    async def aassign(
+        self,
+        *args,
+        structure_registry=None,
+        alog: Callable[[Assignation, AssignationLogLevel, str], Awaitable[None]] = None,
+        **kwargs,
+    ):
+        raise NotImplementedError("Should be implemented by subclass")
+
+    async def _alog(self, assignation, level, msg):
+        if self.ass_log:  # pragma: no branch
+            await self.ass_log(assignation, level, msg)
+
+    async def _rlog(self, level, msg):
+        if self.res_log:  # pragma: no branch
+            await self.res_log(self._reservation, level, msg)
+
+    def assign(self, *args, **kwargs):
+        return unkoil(self.aassign, *args, **kwargs)
+
+    class Config:
+        arbitrary_types_allowed = True
+        json_encoders = {
+            callable: lambda q: repr(q),
+        }
+
+
+class use(ReservationContract):
     postman: Optional[StatefulPostman] = None
     _reservation: Reservation = None
     _enter_future: asyncio.Future = None
@@ -36,7 +76,13 @@ class ReservationContract(KoiledModel):
     _updates_queue: asyncio.Queue = None
     _updates_watcher: asyncio.Task = None
 
-    async def aassign(self, *args, structure_registry=None, **kwargs):
+    async def aassign(
+        self,
+        *args,
+        structure_registry=None,
+        alog: Callable[[Assignation, AssignationLogLevel, str], Awaitable[None]] = None,
+        **kwargs,
+    ):
         assert self._reservation, "We never entered the context manager"
         assert (
             self._reservation.status == ReservationStatus.ACTIVE
@@ -87,9 +133,6 @@ class ReservationContract(KoiledModel):
                 raise e
 
             raise Exception(f"Critical error: {ass}")
-
-    def assign(self, *args, **kwargs):
-        return unkoil(self.aassign, *args, **kwargs)
 
     async def watch_updates(self):
         try:
@@ -145,5 +188,30 @@ class ReservationContract(KoiledModel):
         underscore_attrs_are_private = True
 
 
-class use(ReservationContract):
-    pass
+class mockuse(ReservationContract):
+    random_sleep: float = Field(default_factory=random)
+
+    async def __aenter__(self):
+        self.active = True
+        return self
+
+    async def __aexit__(self, exc_type, exc_val, exc_tb):
+        self.active = False
+
+    async def aassign(
+        self,
+        *args,
+        structure_registry=None,
+        alog: Callable[[Assignation, AssignationLogLevel, str], Awaitable[None]] = None,
+        **kwargs,
+    ):
+        assert self.active, "We never entered the context manager"
+        if alog:
+            await alog(
+                Assignation(assignation=str(uuid.uuid4())),
+                AssignationLogLevel.INFO,
+                "Mock assignation",
+            )
+        await asyncio.sleep(self.random_sleep)
+        print("Assignment Done")
+        return args

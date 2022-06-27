@@ -1,6 +1,6 @@
 from typing import Dict
 from arkitekt.structures.registry import StructureRegistry, register_structure
-from arkitekt.api.schema import DefinitionInput, NodeFragment, adefine
+from arkitekt.api.schema import DefinitionInput, NodeFragment, PortType, adefine
 import pytest
 from .funcs import karl, complex_karl, karl_structure, structured_gen
 from .structures import SecondSerializableObject, SerializableObject
@@ -43,23 +43,23 @@ async def test_define_complex(simple_registry):
     ), "Doesnt conform to standard Naming Scheme"
     assert len(functional_definition.args) == 2, "Wrong amount of Arguments"
     assert (
-        functional_definition.args[0].typename == "ListArgPort"
+        functional_definition.args[0].type == PortType.LIST
     ), "Wasn't defined as a List"
     assert (
-        functional_definition.args[1].typename == "DictArgPort"
+        functional_definition.args[1].type == PortType.DICT
     ), "Wasn't defined as a Dict"
     assert (
-        functional_definition.args[1].child.typename == "IntArgPort"
+        functional_definition.args[1].child.type == PortType.INT
     ), "Child of List is not of type IntArgPort"
     assert (
-        functional_definition.args[0].child.typename == "StringArgPort"
+        functional_definition.args[0].child.type == PortType.STRING
     ), "Child of Dict is not of type StringArgPort"
     assert (
-        functional_definition.kwargs[0].typename == "StringKwargPort"
+        functional_definition.kwargs[0].type == PortType.STRING
     ), "Kwarg wasn't defined as a StringKwargPort"
     assert len(functional_definition.returns) == 2, "Wrong amount of Returns"
     assert (
-        functional_definition.returns[0].typename == "ListReturnPort"
+        functional_definition.returns[0].type == PortType.LIST
     ), "Needs to Return List"
 
 
@@ -112,10 +112,8 @@ async def test_define_to_node_gen(simple_registry, arkitekt_rath):
         assert len(node.args) == 1, "Wrong amount of Arguments"
         assert len(node.kwargs) == 1, "Wrong amount of Kwargs"
         assert len(node.returns) == 2, "Wrong amount of Returns"
-        assert node.args[0].typename == "ListArgPort", "Wasn't defined as a List"
-        assert (
-            node.args[0].child.typename == "StructureArgPort"
-        ), "Wasn't defined as a List"
+        assert node.args[0].type == PortType.LIST, "Wasn't defined as a List"
+        assert node.args[0].child.type == PortType.STRUCTURE, "Wasn't defined as a List"
         assert node.args[0].child.identifier == "test", "Wasn't indtifier on test"
 
 
@@ -132,19 +130,19 @@ async def test_define_to_node_complex(simple_registry, arkitekt_rath):
         assert isinstance(node, NodeFragment), "Node is not Node"
         assert node.name == "Complex Karl", "Doesnt conform to standard Naming Scheme"
         assert len(node.args) == 2, "Wrong amount of Arguments"
-        assert node.args[0].typename == "ListArgPort", "Wasn't defined as a List"
-        assert node.args[1].typename == "DictArgPort", "Wasn't defined as a Dict"
+        assert node.args[0].type == PortType.LIST, "Wasn't defined as a List"
+        assert node.args[1].type == PortType.DICT, "Wasn't defined as a Dict"
         assert (
-            node.args[1].child.typename == "IntArgPort"
+            node.args[1].child.type == PortType.INT
         ), "Child of List is not of type IntArgPort"
         assert (
-            node.args[0].child.typename == "StringArgPort"
+            node.args[0].child.type == PortType.STRING
         ), "Child of Dict is not of type StringArgPort"
         assert (
-            node.kwargs[0].typename == "StringKwargPort"
+            node.kwargs[0].type == PortType.STRING
         ), "Kwarg wasn't defined as a StringKwargPort"
         assert len(functional_definition.returns) == 2, "Wrong amount of Returns"
-        assert node.returns[0].typename == "ListReturnPort", "Needs to Return List"
+        assert node.returns[0].type == PortType.LIST, "Needs to Return List"
 
 
 async def test_define_node_has_nested_type(simple_registry, arkitekt_rath):
