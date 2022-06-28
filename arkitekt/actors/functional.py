@@ -26,6 +26,7 @@ class FunctionalActor(BaseModel):
 
 class AsyncFuncActor(Actor):
     async def on_assign(self, assignation: Assignation):
+        logging.info("Assigning %s", assignation)
         try:
             args, kwargs = (
                 await expand_inputs(

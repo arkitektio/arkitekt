@@ -11,6 +11,7 @@ from arkitekt.rath import ArkitektRath
 import asyncio
 import logging
 from arkitekt.api.schema import (
+    AssignationLogLevel,
     AssignationStatus,
     ProvisionFragment,
     ProvisionFragmentTemplate,
@@ -41,7 +42,7 @@ class Actor(BaseModel):
     runningAssignments: Dict[str, Assignation] = Field(default_factory=dict)
 
     _in_queue: Contextual[asyncio.Queue] = PrivateAttr(default=None)
-    _runningTasks: Dict[str, asyncio.Task] =  PrivateAttr(default_factory=dict)
+    _runningTasks: Dict[str, asyncio.Task] = PrivateAttr(default_factory=dict)
     _provision_task: asyncio.Task = PrivateAttr(default=None)
 
     async def on_provide(self, provision: ProvisionFragment):
@@ -70,6 +71,17 @@ class Actor(BaseModel):
             await self._provision_task
         except asyncio.CancelledError:
             logger.info("Provision was cancelled")
+
+    async def aass_log(self, id: str, message: str, level=AssignationLogLevel.INFO):
+        logging.critical(f"ASS {id} {message}")
+        await self.transport.log_to_assignation(id=id, level=level, message=message)
+        logging.critical(f"ASS SEND {message}")
+
+    async def aprov_log(self, message: str, level=AssignationLogLevel.INFO):
+        logging.critical(f"PROV {self.provision.id} {message}")
+        await self.transport.log_to_provision(
+            id=self.provision.id, level=level, message=message
+        )
 
     async def alisten(self):
         try:
