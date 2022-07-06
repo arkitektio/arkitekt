@@ -41,6 +41,12 @@ async def aexpand(port: KwargPortFragment, value: Any, structure_registry=None) 
 
         return str(value)
 
+    if port.type == PortType.BOOL:
+        if value == None:
+            value = port.default
+
+        return bool(value)
+
     if port.type == PortType.STRING:
         if value == None:
             value = port.default

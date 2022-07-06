@@ -1,4 +1,4 @@
-from arkitekt.api.schema import WidgetInput
+from arkitekt.api.schema import WidgetInput, ReturnWidgetInput
 
 
 def SliderWidget(min=0, max=0):
@@ -7,3 +7,7 @@ def SliderWidget(min=0, max=0):
 
 def SearchWidget(query=""):
     return WidgetInput(typename="SearchWidget", query=query)
+
+
+def ImageReturnWidget(query=""):
+    return ReturnWidgetInput(typename="ImageReturnWidget", query=query)

@@ -147,11 +147,12 @@ def convert_kwarg_to_kwargport(
 
 
 def convert_return_to_returnport(
-    cls, key: str, registry: StructureRegistry
+    cls, key: str, registry: StructureRegistry, widget=None
 ) -> ReturnPortInput:
     """
     Convert a class to an ArgPort
     """
+    widget = widget or registry.get_returnwidget_input(cls)
 
     if hasattr(cls, "_name"):
         # We are dealing with a Typing Var?
@@ -201,6 +202,7 @@ def convert_return_to_returnport(
         type=PortType.STRUCTURE,
         identifier=identifier,
         key=key,
+        widget=widget,
     )
 
 
@@ -271,6 +273,7 @@ def prepare_definition(
         if function_outs_annotation._name == "Tuple":
             try:
                 for index, cls in enumerate(function_outs_annotation.__args__):
+                    widget = widgets.get(f"return{index}", None)
                     returns.append(
                         convert_return_to_returnport(
                             cls, f"return{index}", structure_registry
@@ -282,9 +285,13 @@ def prepare_definition(
                 ) from e
         else:
             try:
+                widget = widgets.get(f"return0", None)
                 returns.append(
                     convert_return_to_returnport(
-                        function_outs_annotation, f"return0", structure_registry
+                        function_outs_annotation,
+                        f"return0",
+                        structure_registry,
+                        widget=widget,
                     )
                 )  # Other types will be converted to normal lists and shit
             except Exception as e:
@@ -297,9 +304,13 @@ def prepare_definition(
             pass
 
         elif function_outs_annotation.__name__ != "_empty":  # Is it not empty
+            widget = widgets.get(f"return0", None)
             returns.append(
                 convert_return_to_returnport(
-                    function_outs_annotation, "return0", structure_registry
+                    function_outs_annotation,
+                    "return0",
+                    structure_registry,
+                    widget=widget,
                 )
             )
 

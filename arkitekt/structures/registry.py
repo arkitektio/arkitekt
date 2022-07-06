@@ -1,7 +1,7 @@
 import contextvars
 from typing import Any, Awaitable, Callable, Dict, Optional, Type
 
-from arkitekt.api.schema import WidgetInput
+from arkitekt.api.schema import ReturnWidgetInput, WidgetInput
 from .errors import (
     StructureDefinitionError,
     StructureOverwriteError,
@@ -33,6 +33,7 @@ class StructureRegistry(BaseModel):
     _identifier_shrinker_map: Dict[str, Callable[[Any], Awaitable[str]]] = {}
     _structure_identifier_map: Dict[Type, str] = {}
     _structure_default_widget_map: Dict[Type, WidgetInput] = {}
+    _structure_default_returnwidget_map: Dict[Type, ReturnWidgetInput] = {}
 
     _token: contextvars.Token = None
 
@@ -53,6 +54,9 @@ class StructureRegistry(BaseModel):
 
     def get_widget_input(self, cls) -> Optional[WidgetInput]:
         return self._structure_default_widget_map.get(cls, None)
+
+    def get_returnwidget_input(self, cls) -> Optional[ReturnWidgetInput]:
+        return self._structure_default_returnwidget_map.get(cls, None)
 
     def get_identifier_for_structure(self, cls):
         try:
@@ -78,6 +82,7 @@ class StructureRegistry(BaseModel):
         expand=None,
         shrink=None,
         default_widget=None,
+        default_returnwidget=None,
     ):
         if expand is None:
             if not hasattr(cls, "aexpand"):
@@ -119,6 +124,7 @@ class StructureRegistry(BaseModel):
         self.identifier_structure_map[identifier] = cls
         self._structure_identifier_map[cls] = identifier
         self._structure_default_widget_map[cls] = default_widget
+        self._structure_default_returnwidget_map[cls] = default_returnwidget
 
     async def __aenter__(self):
         current_structure_registry.set(self)
