@@ -31,27 +31,29 @@ async def aexpand(port: KwargPortFragment, value: Any, structure_registry=None) 
         return int(value) if value else int(port.default)
 
     if port.type == PortType.STRUCTURE:
-        return await structure_registry.get_expander_for_identifier(port.identifier)(
-            value
+        return (
+            await structure_registry.get_expander_for_identifier(port.identifier)(value)
+            if value
+            else None
         )
 
     if port.type == PortType.ENUM:
         if value == None:
             value = port.default
 
-        return str(value)
+        return str(value) if value else None
 
     if port.type == PortType.BOOL:
         if value == None:
             value = port.default
 
-        return bool(value)
+        return bool(value) if value else None
 
     if port.type == PortType.STRING:
         if value == None:
             value = port.default
 
-        return str(value)
+        return str(value) if value else None
 
     raise NotImplementedError("Should be implemented by subclass")
 

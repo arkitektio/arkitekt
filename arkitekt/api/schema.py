@@ -1,11 +1,11 @@
-from arkitekt.traits.node import Reserve
+from enum import Enum
 from typing_extensions import Literal
-from typing import AsyncIterator, Optional, Any, Iterator, List, Dict
+from typing import Optional, Dict, Any, Iterator, AsyncIterator, List
+from arkitekt.funcs import execute, aexecute, asubscribe, subscribe
+from arkitekt.traits.node import Reserve
 from pydantic import Field, BaseModel
 from arkitekt.scalars import QString
-from arkitekt.funcs import aexecute, execute, asubscribe, subscribe
 from rath.scalars import ID
-from enum import Enum
 from arkitekt.rath import ArkitektRath
 
 
@@ -398,6 +398,24 @@ class ReservationStatusInput(str, Enum):
     "Critical (Reservation failed with an Critical Error)"
 
 
+class AvailableModels(str, Enum):
+    FACADE_AGENT = "FACADE_AGENT"
+    FACADE_ASSIGNATION = "FACADE_ASSIGNATION"
+    FACADE_NODE = "FACADE_NODE"
+    FACADE_PROVISION = "FACADE_PROVISION"
+    FACADE_REGISTRY = "FACADE_REGISTRY"
+    FACADE_REPOSITORY = "FACADE_REPOSITORY"
+    FACADE_RESERVATION = "FACADE_RESERVATION"
+    FACADE_APPREPOSITORY = "FACADE_APPREPOSITORY"
+    FACADE_MIRRORREPOSITORY = "FACADE_MIRRORREPOSITORY"
+    FACADE_WAITER = "FACADE_WAITER"
+    FACADE_TEMPLATE = "FACADE_TEMPLATE"
+    FACADE_STRUCTURE = "FACADE_STRUCTURE"
+    FACADE_RESERVATIONLOG = "FACADE_RESERVATIONLOG"
+    FACADE_PROVISIONLOG = "FACADE_PROVISIONLOG"
+    FACADE_ASSIGNATIONLOG = "FACADE_ASSIGNATIONLOG"
+
+
 class PortTypeInput(str, Enum):
     INT = "INT"
     STRING = "STRING"
@@ -481,7 +499,7 @@ class KwargPortInput(BaseModel):
     "The identifier"
     key: str
     "The key of the arg"
-    default: Any
+    default: Optional[Any]
     "The key of the arg"
     label: Optional[str]
     "The name of this argument"
@@ -538,6 +556,17 @@ class ReserveParamsInput(BaseModel):
     "The desired amount of Instances"
     minimal_instances: Optional[int] = Field(alias="minimalInstances")
     "The minimal amount of Instances"
+
+
+class GroupAssignmentInput(BaseModel):
+    permissions: List[Optional[str]]
+    group: ID
+
+
+class UserAssignmentInput(BaseModel):
+    permissions: List[Optional[str]]
+    user: str
+    "The user email"
 
 
 class AssignationFragmentParent(BaseModel):
@@ -699,7 +728,9 @@ class TemplateFragmentRegistryApp(BaseModel):
 
 
 class TemplateFragmentRegistryUser(BaseModel):
-    typename: Optional[Literal["LokUser"]] = Field(alias="__typename")
+    """A reflection on the real User"""
+
+    typename: Optional[Literal["User"]] = Field(alias="__typename")
     username: str
     "Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."
 
@@ -775,7 +806,7 @@ class Get_provisionQuery(BaseModel):
         id: ID
 
     class Meta:
-        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Provision on Provision {\n  id\n  status\n  template {\n    id\n    node {\n      ...Node\n    }\n    params\n  }\n}\n\nquery get_provision($id: ID!) {\n  provision(id: $id) {\n    ...Provision\n  }\n}"
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Provision on Provision {\n  id\n  status\n  template {\n    id\n    node {\n      ...Node\n    }\n    params\n  }\n}\n\nquery get_provision($id: ID!) {\n  provision(id: $id) {\n    ...Provision\n  }\n}"
 
 
 class Get_reservationQueryReservationTemplateRegistryApp(BaseModel):
@@ -785,7 +816,9 @@ class Get_reservationQueryReservationTemplateRegistryApp(BaseModel):
 
 
 class Get_reservationQueryReservationTemplateRegistryUser(BaseModel):
-    typename: Optional[Literal["LokUser"]] = Field(alias="__typename")
+    """A reflection on the real User"""
+
+    typename: Optional[Literal["User"]] = Field(alias="__typename")
     id: ID
     email: str
 
@@ -871,7 +904,7 @@ class FindQuery(BaseModel):
         q: Optional[QString] = None
 
     class Meta:
-        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nquery find($id: ID, $package: String, $interface: String, $template: ID, $q: QString) {\n  node(\n    id: $id\n    package: $package\n    interface: $interface\n    template: $template\n    q: $q\n  ) {\n    ...Node\n  }\n}"
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nquery find($id: ID, $package: String, $interface: String, $template: ID, $q: QString) {\n  node(\n    id: $id\n    package: $package\n    interface: $interface\n    template: $template\n    q: $q\n  ) {\n    ...Node\n  }\n}"
 
 
 class Get_templateQuery(BaseModel):
@@ -881,7 +914,7 @@ class Get_templateQuery(BaseModel):
         id: ID
 
     class Meta:
-        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    name\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n  params\n}\n\nquery get_template($id: ID!) {\n  template(id: $id) {\n    ...Template\n  }\n}"
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    name\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n  params\n}\n\nquery get_template($id: ID!) {\n  template(id: $id) {\n    ...Template\n  }\n}"
 
 
 class Get_agentQueryAgentRegistry(BaseModel):
@@ -965,7 +998,7 @@ class DefineMutation(BaseModel):
         definition: DefinitionInput
 
     class Meta:
-        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation define($definition: DefinitionInput!) {\n  define(definition: $definition) {\n    ...Node\n  }\n}"
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nmutation define($definition: DefinitionInput!) {\n  define(definition: $definition) {\n    ...Node\n  }\n}"
 
 
 class Reset_repositoryMutationResetrepository(BaseModel):
@@ -996,7 +1029,7 @@ class Create_templateMutation(BaseModel):
         version: Optional[str] = None
 
     class Meta:
-        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    name\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n  params\n}\n\nmutation create_template($node: ID!, $params: GenericScalar, $extensions: [String], $version: String) {\n  createTemplate(\n    node: $node\n    params: $params\n    extensions: $extensions\n    version: $version\n  ) {\n    ...Template\n  }\n}"
+        document = "fragment ChildPortNested on ChildPort {\n  type\n  child {\n    type\n  }\n}\n\nfragment ChildPort on ChildPort {\n  type\n  identifier\n  child {\n    ...ChildPortNested\n  }\n}\n\nfragment ArgPort on ArgPort {\n  __typename\n  key\n  label\n  nullable\n  description\n  type\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment ReturnPort on ReturnPort {\n  __typename\n  label\n  key\n  nullable\n  description\n  identifier\n  type\n  child {\n    ...ChildPort\n  }\n}\n\nfragment KwargPort on KwargPort {\n  key\n  label\n  type\n  description\n  nullable\n  default\n  identifier\n  child {\n    ...ChildPort\n  }\n}\n\nfragment Node on Node {\n  name\n  interface\n  package\n  description\n  type\n  id\n  args {\n    ...ArgPort\n  }\n  kwargs {\n    ...KwargPort\n  }\n  returns {\n    ...ReturnPort\n  }\n}\n\nfragment Template on Template {\n  id\n  registry {\n    name\n    app {\n      name\n    }\n    user {\n      username\n    }\n  }\n  node {\n    ...Node\n  }\n  params\n}\n\nmutation create_template($node: ID!, $params: GenericScalar, $extensions: [String], $version: String) {\n  createTemplate(\n    node: $node\n    params: $params\n    extensions: $extensions\n    version: $version\n  ) {\n    ...Template\n  }\n}"
 
 
 class SlateMutation(BaseModel):
@@ -1692,7 +1725,7 @@ def slate(identifier: str, rath: ArkitektRath = None) -> Optional[List[Optional[
     return execute(SlateMutation, {"identifier": identifier}, rath=rath).slate
 
 
-ArgPortInput.update_forward_refs()
 ProvisionFragmentTemplate.update_forward_refs()
+ArgPortInput.update_forward_refs()
 DefinitionInput.update_forward_refs()
 ReturnPortInput.update_forward_refs()

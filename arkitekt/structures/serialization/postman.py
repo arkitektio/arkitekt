@@ -37,23 +37,35 @@ async def shrink_inputs(
     args_iterator = iter(args)
 
     try:
-        for port in node.args:
-            if port.key in kwargs:
-                shrinked_args_futures.append(
-                    ashrink(port, kwargs.get(port.key, None), structure_registry)
-                )
-            else:
-                shrinked_args_futures.append(
-                    ashrink(port, next(args_iterator), structure_registry)
-                )
-    except StopIteration:
-        raise ShrinkingError(f"More parameters needed {node.args} vs {args}")
+        try:
+            for port in node.args:
+                if port.key in kwargs:
+                    shrinked_args_futures.append(
+                        asyncio.create_task(
+                            ashrink(
+                                port, kwargs.get(port.key, None), structure_registry
+                            )
+                        )
+                    )
+                else:
+                    shrinked_args_futures.append(
+                        asyncio.create_task(
+                            ashrink(port, next(args_iterator), structure_registry)
+                        )
+                    )
+        except StopIteration:
+            raise ShrinkingError(f"More parameters needed {node.args} vs {args}")
 
-    try:
         shrinked_args = await asyncio.gather(
             *shrinked_args_futures
         )  # Worrysome because others won't be cancelled on Exception
     except Exception as e:
+
+        for future in shrinked_args_futures:
+            future.cancel()
+
+        await asyncio.gather(*shrinked_args_futures, return_exceptions=True)
+
         raise ShrinkingError(
             f"Couldn't shrink Arguments {args} with {node.args}"
         ) from e
