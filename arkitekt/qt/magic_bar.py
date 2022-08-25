@@ -1,15 +1,16 @@
 from enum import Enum
 from qtpy import QtWidgets, QtGui, QtCore
-from arkitekt.app import ArkitektApp
+from arkitekt.app import Arkitekt
 from koil.qt import QtRunner
 from koil.composition.qt import QtPedanticKoil
+from arkitekt.apps.rekuest import RekuestApp
 from .utils import get_image_path
 
 
 class Profile(QtWidgets.QWidget):
     def __init__(
         self,
-        app: ArkitektApp,
+        app: RekuestApp,
         bar: "MagicBar",
         *args,
         dark_mode: bool = False,
@@ -53,7 +54,7 @@ class MagicBar(QtWidgets.QWidget):
     state = AppState.DOWN
     process_state = ProcessState.UNKONFIGURED
 
-    def __init__(self, app: ArkitektApp, dark_mode: bool = False) -> None:
+    def __init__(self, app: RekuestApp, dark_mode: bool = False) -> None:
         super().__init__()
         self.app = app
         assert isinstance(
@@ -75,7 +76,7 @@ class MagicBar(QtWidgets.QWidget):
         self.login_task.errored.connect(self.task_errored)
         self.login_task.returned.connect(self.set_unprovided)
 
-        self.provide_task: QtRunner = QtRunner(self.app.arkitekt.agent.aprovide)
+        self.provide_task: QtRunner = QtRunner(self.app.rekuest.agent.aprovide)
         self.provide_task.errored.connect(self.task_errored)
         self.provide_task.returned.connect(self.set_unprovided)
 

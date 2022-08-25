@@ -1,18 +1,22 @@
 mutation reserve(
-  $node: ID
+  $node: ID!
   $template: ID
   $params: ReserveParamsInput
   $title: String
-  $creator: ID
+  $imitate: String
   $appGroup: ID
+  $reference: String
+  $provision: ID
 ) {
   reserve(
     node: $node
     template: $template
     params: $params
     title: $title
-    creator: $creator
+    imitate: $imitate
+    provision: $provision
     appGroup: $appGroup
+    reference: $reference
   ) {
     ...Reservation
   }

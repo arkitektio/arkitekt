@@ -14,8 +14,8 @@ import janus
 import threading
 import os
 
-from arkitekt.agents.base import BaseAgent
-from arkitekt.definition.registry import get_current_definition_registry
+from rekuest.agents.base import BaseAgent
+from rekuest.definition.registry import get_current_definition_registry
 
 
 class QueueHandler(FileSystemEventHandler):

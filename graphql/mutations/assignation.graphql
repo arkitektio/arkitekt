@@ -1,9 +1,5 @@
-mutation assign(
-  $reservation: ID!
-  $args: [GenericScalar]!
-  $kwargs: GenericScalar
-) {
-  assign(reservation: $reservation, args: $args, kwargs: $kwargs) {
+mutation assign($reservation: ID!, $args: [AnyInput]!, $reference: String) {
+  assign(reservation: $reservation, args: $args, reference: $reference) {
     ...Assignation
   }
 }

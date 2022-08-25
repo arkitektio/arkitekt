@@ -1,0 +1,11 @@
+subscription watch_provision($identifier: String!) {
+  provisions(identifier: $identifier) {
+    create {
+      ...Provision
+    }
+    delete
+    update {
+      ...Provision
+    }
+  }
+}

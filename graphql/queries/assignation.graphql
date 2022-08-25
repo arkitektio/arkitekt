@@ -1,5 +1,5 @@
-query todolist($appGroup: ID) {
-  todolist(appGroup: $appGroup) {
+query requests($identifier: String!) {
+  requests(identifier: $identifier) {
     ...Assignation
   }
 }

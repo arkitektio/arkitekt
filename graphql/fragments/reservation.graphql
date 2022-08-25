@@ -15,4 +15,9 @@ fragment Reservation on Reservation {
   params {
     ...ReserveParams
   }
+  waiter {
+    unique
+  }
+  reference
+  updatedAt
 }

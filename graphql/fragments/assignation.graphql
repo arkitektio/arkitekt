@@ -8,4 +8,7 @@ fragment Assignation on Assignation {
   id
   status
   statusmessage
+  returns
+  reference
+  updatedAt
 }

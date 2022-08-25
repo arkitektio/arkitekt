@@ -6,8 +6,8 @@ import time
 from importlib import import_module, reload
 
 import janus
-from arkitekt.api.schema import adefine
-from arkitekt.definition.registry import get_current_definition_registry
+from rekuest.api.schema import adefine
+from rekuest.definition.registry import get_current_definition_registry
 from rich.console import Console
 from watchdog.events import FileModifiedEvent, FileSystemEventHandler
 from watchdog.observers import Observer

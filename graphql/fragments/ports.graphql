@@ -1,12 +1,12 @@
 fragment ChildPortNested on ChildPort {
-  type
+  kind
   child {
-    type
+    kind
   }
 }
 
 fragment ChildPort on ChildPort {
-  type
+  kind
   identifier
   child {
     ...ChildPortNested
@@ -19,20 +19,8 @@ fragment ArgPort on ArgPort {
   label
   nullable
   description
-  type
-  identifier
-  child {
-    ...ChildPort
-  }
-}
-
-fragment KwargPort on KwargPort {
-  key
-  label
-  type
-  description
-  nullable
   default
+  kind
   identifier
   child {
     ...ChildPort
@@ -46,7 +34,7 @@ fragment ReturnPort on ReturnPort {
   nullable
   description
   identifier
-  type
+  kind
   child {
     ...ChildPort
   }

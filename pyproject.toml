@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.2.7"
+version = "0.2.8"
 description = "rpc and node backbone"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
@@ -12,9 +12,9 @@ docstring-parser = ">=0.11"
 inflection = "^0.5.1"
 websockets = "^10.0"
 watchdog = "^2.1.6"
-herre = "^0.2.4"
-rath = "^0.2.4"
-fakts = "^0.2.4"
+herre = "^0.2.5"
+rath = "^0.2.5"
+fakts = "^0.2.5"
 pytest-qt = "^4.0.2"
 pydantic = "1.9.0"
 

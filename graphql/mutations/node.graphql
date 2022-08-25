@@ -3,3 +3,9 @@ mutation define($definition: DefinitionInput!) {
     ...Node
   }
 }
+
+mutation delete_node($id: ID!) {
+  deleteNode(id: $id) {
+    id
+  }
+}

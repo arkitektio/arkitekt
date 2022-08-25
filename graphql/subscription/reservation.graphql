@@ -1,4 +1,4 @@
-subscription waiter($identifier: ID!) {
+subscription watch_reservations($identifier: String!) {
   reservations(identifier: $identifier) {
     create {
       ...Reservation

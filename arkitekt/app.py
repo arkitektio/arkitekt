@@ -3,10 +3,10 @@ from herre import Herre
 from fakts import Fakts
 from herre.fakts.herre import FaktsHerre
 from koil.composition import Composition
-from arkitekt.compositions.base import Arkitekt
+from rekuest.compositions.base import Rekuest
 
 
-class ArkitektApp(Composition):
+class Arkitekt(Composition):
     fakts: Fakts = Field(default_factory=Fakts)
     herre: Herre = Field(default_factory=FaktsHerre)
-    arkitekt: Arkitekt = Field(default_factory=Arkitekt)
+    rekuest: Rekuest = Field(default_factory=Rekuest)
