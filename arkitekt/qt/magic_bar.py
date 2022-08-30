@@ -1,6 +1,5 @@
 from enum import Enum
 from qtpy import QtWidgets, QtGui, QtCore
-from arkitekt.app import Arkitekt
 from koil.qt import QtRunner
 from koil.composition.qt import QtPedanticKoil
 from arkitekt.apps.rekuest import RekuestApp

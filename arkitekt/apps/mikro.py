@@ -40,7 +40,40 @@ Example:
 
 from arkitekt.apps.herre import HerreApp
 from pydantic import Field
+from mikro.datalayer import DataLayer
 from mikro.mikro import Mikro
+from mikro.rath import MikroLinkComposition, MikroRath
+from rath.links.compose import compose
+from rath.links.compose import compose
+from rath.links.dictinglink import DictingLink
+from rath.links.shrink import ShrinkingLink
+from rath.links.split import SplitLink
+from rath.contrib.fakts.links.aiohttp import FaktsAIOHttpLink
+from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
+from rath.links.subscription_retry import SubscriptionRetry
+from rath.links.file import FileExtraction
+from rath.contrib.herre.links.auth import HerreAuthLink
+from mikro.links.datalayer import DataLayerUploadLink
+from mikro.contrib.fakts.datalayer import FaktsDataLayer
+from graphql import OperationType
+
+
+class ArkitektMikro(Mikro):
+    rath: MikroRath = Field(
+        default_factory=lambda: MikroRath(
+            link=MikroLinkComposition(
+                auth=HerreAuthLink(),
+                split=SplitLink(
+                    left=FaktsAIOHttpLink(fakts_group="mikro"),
+                    right=FaktsWebsocketLink(fakts_group="mikro"),
+                    split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
+                ),
+            )
+        )
+    )
+    datalayer: DataLayer = Field(
+        default_factory=lambda: FaktsDataLayer(fakts_group="mikro.datalayer")
+    )
 
 
 class MikroApp(HerreApp):
@@ -60,7 +93,4 @@ class MikroApp(HerreApp):
 
     """
 
-    mikro: Mikro = Field(default_factory=Mikro)
-    """The mikro layer that is used for the datalayer and
-    api client
-    """
+    mikro: ArkitektMikro = Field(default_factory=ArkitektMikro)

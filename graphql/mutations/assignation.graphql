@@ -1,5 +1,15 @@
-mutation assign($reservation: ID!, $args: [AnyInput]!, $reference: String) {
-  assign(reservation: $reservation, args: $args, reference: $reference) {
+mutation assign(
+  $reservation: ID!
+  $args: [AnyInput]!
+  $reference: String
+  $parent: ID
+) {
+  assign(
+    reservation: $reservation
+    args: $args
+    reference: $reference
+    parent: $parent
+  ) {
     ...Assignation
   }
 }

@@ -1,46 +1,27 @@
-"""
-This modules provides the main app. It is responsible for setting up the connection to the mikro-server and
-handling authentification and setting up the configuration. Mikro handles the creation of the datalayer and
-the graphql client.
-
-You can compose this app together with other apps to create a full fledged app. (Like combining with
-arkitekt to enable to call functions that you define on the app)
-
-Example:
-
-    A simple app that takes it configuraiton from basic.fakts and connects to the mikro-server.
-    You can define all of the logic within the context manager
-
-    ```python
-    from mikro.app import MikroApp
-
-    app = MikroApp(fakts=Fakts(subapp="basic"))
-
-    with app:
-        # do stuff
-
-    ```
-
-    Async Usage:
-
-
-    ```python
-    from mikro.app import MikroApp
-
-    app = MikroApp(fakts=Fakts(subapp="basic"))
-
-    async with app:
-        # do stuff
-
-    ```
-
- 
-"""
-
-
 from arkitekt.apps.herre import HerreApp
 from pydantic import Field
 from fluss.fluss import Fluss
+from fluss.rath import FlussLinkComposition, FlussRath
+from rath.links.split import SplitLink
+from rath.contrib.fakts.links.aiohttp import FaktsAIOHttpLink
+from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
+from rath.contrib.herre.links.auth import HerreAuthLink
+from graphql import OperationType
+
+
+class ArkitektFluss(Fluss):
+    rath: FlussRath = Field(
+        default_factory=lambda: FlussRath(
+            link=FlussLinkComposition(
+                auth=HerreAuthLink(),
+                split=SplitLink(
+                    left=FaktsAIOHttpLink(fakts_group="fluss"),
+                    right=FaktsWebsocketLink(fakts_group="fluss"),
+                    split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
+                ),
+            )
+        )
+    )
 
 
 class FlussApp(HerreApp):
@@ -60,7 +41,4 @@ class FlussApp(HerreApp):
 
     """
 
-    fluss: Fluss = Field(default_factory=Fluss)
-    """The mikro layer that is used for the datalayer and
-    api client
-    """
+    mikro: ArkitektFluss = Field(default_factory=ArkitektFluss)
