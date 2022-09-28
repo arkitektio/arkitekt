@@ -58,7 +58,7 @@ const config = {
           },
           {to: '/blog', label: 'Blog', position: 'left'},
           {
-            href: 'https://github.com/jhnnsrs/rath',
+            href: 'https://github.com/jhnnsrs/arkitekt',
             label: 'GitHub',
             position: 'right',
           },
