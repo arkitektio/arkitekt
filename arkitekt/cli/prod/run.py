@@ -3,7 +3,7 @@ import logging
 import sys
 import os
 from rich.console import Console
-from arkitekt.actors.registry import get_current_actor_registry
+from rekuest.definition.registry import get_current_definition_registry
 
 logger = logging.getLogger(__name__)
 
@@ -28,19 +28,7 @@ class Run:
 
     async def run(self):
 
-        registry = get_current_actor_registry()
-
-        if registry.has_actors():
-            self.console.print(
-                "We found functions that ought to be provide. Starting an Agent"
-            )
-            agent = ScriptAgent(registry=registry)
-            await agent.aprovide()
-
-        else:
-            self.console.print(
-                f"[red] No Functions in {self.module_path} that we can provide found. Exiting!"
-            )
+        registry = get_current_definition_registry()
 
 
 async def import_directory_and_start(path="watch", entrypoint="run"):

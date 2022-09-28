@@ -3,13 +3,10 @@ fragment Node on Node {
   interface
   package
   description
-  type
+  kind
   id
   args {
     ...ArgPort
-  }
-  kwargs {
-    ...KwargPort
   }
   returns {
     ...ReturnPort

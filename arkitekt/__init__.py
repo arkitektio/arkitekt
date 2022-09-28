@@ -1,1 +1,3 @@
-from .utils import assign
+from arkitekt.apps import Arkitekt
+
+__all__ = ["Arkitekt"]

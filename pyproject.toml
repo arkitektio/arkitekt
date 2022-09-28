@@ -1,35 +1,27 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.1.120"
+version = "0.3.5"
 description = "rpc and node backbone"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
 packages = [{include = "arkitekt"}]
 
 [tool.poetry.dependencies]
-python = "^3.7"
-docstring-parser = ">=0.11"
-inflection = "^0.5.1"
-websockets = "^10.0"
-watchdog = "^2.1.6"
-herre = "^0.2.4"
-rath = "^0.2.4"
-fakts = "^0.2.4"
-pytest-qt = "^4.0.2"
-pydantic = "^1.9.1"
+python = "^3.8"
+herre = "^0.2.6"
+fakts = "0.2.8"
+rekuest = "0.0.14"
+mikro = "0.2.22"
+rath = "0.2.9"
 
 [tool.poetry.dev-dependencies]
-pytest = "^6.2.5"
-pytest-aiohttp = "^0.3.0"
-pytest-cov = "^3.0.0"
-black = "^21.12b0"
-pydoc-markdown = "^4.5.0"
-mypy = "^0.931"
+black = "22.8.0"
 turms = {version = "^0.2.3", python = "^3.9"}
-autoflake = "^1.4"
-pylint = "^2.12.2"
-PyQt5 = "^5.15.6"
-testcontainers = "^3.5.3"
+PyQt5 = "^5.15.7"
+autoflake = "^1.6.1"
+pydoc-markdown = "4.5.1"
+testcontainers = "^3.7.0"
+pytest-cov = "^3.0.0"
 
 [tool.poetry.scripts]
 arkitekt = "arkitekt.cli.main:entrypoint"

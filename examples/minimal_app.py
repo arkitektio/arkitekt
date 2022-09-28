@@ -1,13 +1,12 @@
 import asyncio
-from enum import Enum
 
-from arkitekt.app import ArkitektApp
-
-
-app = ArkitektApp()
+from arkitekt import Arkitekt
 
 
-@app.arkitekt.register()
+app = Arkitekt()
+
+
+@app.rekuest.register()
 async def basic_yield(
     interval: int = 2,
     nana: bool = True,
@@ -37,4 +36,4 @@ async def basic_yield(
 
 
 with app:
-    app.arkitekt.run()
+    app.rekuest.run()

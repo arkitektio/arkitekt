@@ -1,15 +1,11 @@
-mutation create_node(
-  $name: String!
-  $interface: String!
-  $args: [ArgPortInput]
-) {
-  createNode(name: $name, interface: $interface, args: $args) {
+mutation define($definition: DefinitionInput!) {
+  define(definition: $definition) {
     ...Node
   }
 }
 
-mutation define($definition: DefinitionInput!) {
-  define(definition: $definition) {
-    ...Node
+mutation delete_node($id: ID!) {
+  deleteNode(id: $id) {
+    id
   }
 }

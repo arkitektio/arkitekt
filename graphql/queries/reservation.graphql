@@ -24,14 +24,14 @@ query get_reservation($id: ID!) {
     reference
     node {
       id
-      type
+      kind
       name
     }
   }
 }
 
-query waitlist($appGroup: ID) {
-  waitlist(appGroup: $appGroup) {
+query reservations($identifier: String!) {
+  reservations(identifier: $identifier) {
     ...Reservation
   }
 }
