@@ -29,7 +29,7 @@ function HomepageHeader() {
 export default function Home(): JSX.Element {
   const { siteConfig } = useDocusaurusContext();
   return (
-    <Layout title={`Rath}`} description="Apollo for python">
+    <Layout title={`Home`} description="Real-time streaming for microscopy">
       <HomepageHeader />
       <main>
         <HomepageFeatures />
