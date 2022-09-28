@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunkwebsite=self.webpackChunkwebsite||[]).push([[298],{393:t=>{t.exports=JSON.parse('{"/arkitekt/blog/tags/rath":{"allTagsPath":"/arkitekt/blog/tags","slug":"/arkitekt/blog/tags/rath","name":"rath","count":1,"permalink":"/arkitekt/blog/tags/rath"}}')}}]);
