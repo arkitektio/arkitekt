@@ -196,6 +196,20 @@ python-versions = "*"
 test = ["hypothesis (==3.55.3)", "flake8 (==3.7.8)"]
 
 [[package]]
+name = "coverage"
+version = "6.4.4"
+description = "Code coverage measurement for Python"
+category = "dev"
+optional = false
+python-versions = ">=3.7"
+
+[package.dependencies]
+tomli = {version = "*", optional = true, markers = "python_full_version <= \"3.11.0a6\" and extra == \"toml\""}
+
+[package.extras]
+toml = ["tomli"]
+
+[[package]]
 name = "dask"
 version = "2022.9.1"
 description = "Parallel PyData with Task Scheduling"
@@ -827,6 +841,21 @@ tomli = ">=1.0.0"
 testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
 
 [[package]]
+name = "pytest-cov"
+version = "3.0.0"
+description = "Pytest plugin for measuring coverage."
+category = "dev"
+optional = false
+python-versions = ">=3.6"
+
+[package.dependencies]
+coverage = {version = ">=5.2.1", extras = ["toml"]}
+pytest = ">=4.6"
+
+[package.extras]
+testing = ["virtualenv", "pytest-xdist", "six", "process-tests", "hunter", "fields"]
+
+[[package]]
 name = "pytest-qt"
 version = "4.1.0"
 description = "pytest support for PyQt and PySide applications"
@@ -1171,7 +1200,7 @@ jupyter = ["notebook", "ipytree"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.8"
-content-hash = "1ca43761b25bd21212c0cc7f1a9a0ff6347cdcd3d436565d0b9efe02e6322624"
+content-hash = "59efefacc7e3061f851182691253bfc55f40b02c2a2c41825eb40743f522a61e"
 
 [metadata.files]
 aiobotocore = []
@@ -1190,6 +1219,7 @@ click = []
 cloudpickle = []
 colorama = []
 commonmark = []
+coverage = []
 dask = []
 databind = []
 "databind.core" = []
@@ -1241,6 +1271,7 @@ pyqt5 = []
 pyqt5-qt5 = []
 pyqt5-sip = []
 pytest = []
+pytest-cov = []
 pytest-qt = []
 python-dateutil = []
 pytz = []
