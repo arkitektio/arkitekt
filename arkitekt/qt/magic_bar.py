@@ -56,9 +56,9 @@ class MagicBar(QtWidgets.QWidget):
     def __init__(self, app: RekuestApp, dark_mode: bool = False) -> None:
         super().__init__()
         self.app = app
-        assert isinstance(
-            self.app.koil, QtPedanticKoil
-        ), f"Koil should be Qt Koil but is {type(self.app.koil)}"
+        # assert isinstance(
+        #     self.app.koil, QtPedanticKoil
+        # ), f"Koil should be Qt Koil but is {type(self.app.koil)}"
         self.dark_mode = dark_mode
 
         self.profile = Profile(app, self, dark_mode=dark_mode)

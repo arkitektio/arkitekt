@@ -1,1 +1,1 @@
-
+from .apps import Arkitekt
