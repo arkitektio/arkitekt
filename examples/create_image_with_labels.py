@@ -6,13 +6,13 @@ from mikro.api.schema import (
     create_label,
     create_size_feature,
 )
-from arkitekt.apps.connected import ConnectedApp
+from arkitekt import Arkitekt
 import xarray as xr
 import numpy as np
 from skimage.draw import random_shapes
 import matplotlib.pyplot as plt
 
-app = ConnectedApp(fakts=Fakts(subapp="basic"))
+app = Arkitekt()
 
 random_shape_data, labels = random_shapes(
     (300, 300),

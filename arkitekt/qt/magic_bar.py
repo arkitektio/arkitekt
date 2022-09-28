@@ -1,7 +1,6 @@
 from enum import Enum
 from qtpy import QtWidgets, QtGui, QtCore
 from koil.qt import QtRunner
-from koil.composition.qt import QtPedanticKoil
 from arkitekt.apps.rekuest import RekuestApp
 from .utils import get_image_path
 

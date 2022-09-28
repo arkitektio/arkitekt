@@ -43,17 +43,10 @@ from pydantic import Field
 from mikro.datalayer import DataLayer
 from mikro.mikro import Mikro
 from mikro.rath import MikroLinkComposition, MikroRath
-from rath.links.compose import compose
-from rath.links.compose import compose
-from rath.links.dictinglink import DictingLink
-from rath.links.shrink import ShrinkingLink
 from rath.links.split import SplitLink
 from rath.contrib.fakts.links.aiohttp import FaktsAIOHttpLink
 from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
-from rath.links.subscription_retry import SubscriptionRetry
-from rath.links.file import FileExtraction
 from rath.contrib.herre.links.auth import HerreAuthLink
-from mikro.links.datalayer import DataLayerUploadLink
 from mikro.contrib.fakts.datalayer import FaktsDataLayer
 from graphql import OperationType
 

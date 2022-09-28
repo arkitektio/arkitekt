@@ -31,7 +31,7 @@ from mikro.api.schema import (
     get_representation,
 )
 from rekuest.actors.base import Actor
-from arkitekt.apps.connected import ConnectedApp
+from arkitekt.apps.connected import Arkitekt
 from rekuest.actors.functional import (
     CompletlyThreadedActor,
     FunctionalFuncActor,
@@ -45,7 +45,7 @@ logging.basicConfig(level="INFO", handlers=[RichHandler()])
 logger = logging.getLogger(__name__)
 
 
-app = ConnectedApp(
+app = Arkitekt(
     fakts=Fakts(subapp="state", grant=DeviceCodeGrant(name="Thumpi", scopes=["openid"]))
 )
 

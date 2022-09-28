@@ -1,8 +1,6 @@
 from arkitekt.apps.fakts import FaktsApp
-from fakts.fakts import Fakts
 from herre.fakts.herre import FaktsHerre
 from herre.herre import Herre
-from koil.composition.base import Composition
 from pydantic import Field
 
 

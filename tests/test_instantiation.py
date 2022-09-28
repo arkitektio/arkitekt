@@ -1,6 +1,5 @@
-import pytest
-from arkitekt.apps.connected import ConnectedApp
+from arkitekt import Arkitekt
 
 
 def test_connect_app():
-    app = ConnectedApp()
+    app = Arkitekt()

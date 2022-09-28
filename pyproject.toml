@@ -9,15 +9,18 @@ packages = [{include = "arkitekt"}]
 [tool.poetry.dependencies]
 python = "^3.8"
 herre = "^0.2.6"
-fakts = "^0.2.6"
-rekuest = "^0.0.8"
-mikro = "^0.2.8"
-requests = "^2.28.1"
+fakts = "0.2.8"
+rekuest = "0.0.14"
+mikro = "0.2.22"
+rath = "0.2.9"
 
 [tool.poetry.dev-dependencies]
-black = "^21.12b0"
+black = "22.8.0"
 turms = {version = "^0.2.3", python = "^3.9"}
 PyQt5 = "^5.15.7"
+autoflake = "^1.6.1"
+pydoc-markdown = "4.5.1"
+testcontainers = "^3.7.0"
 
 [tool.poetry.scripts]
 arkitekt = "arkitekt.cli.main:entrypoint"

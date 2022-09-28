@@ -1,1 +1,3 @@
-from .apps import Arkitekt
+from arkitekt.apps import Arkitekt
+
+__all__ = ["Arkitekt"]

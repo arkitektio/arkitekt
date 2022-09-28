@@ -6,10 +6,10 @@ from mikro.api.schema import (
     PhysicalSizeInput,
     create_sample,
 )
-from arkitekt.apps.connected import ConnectedApp
+from arkitekt import Arkitekt
 
 
-with ConnectedApp() as c:
+with Arkitekt():
 
     x = xr.DataArray(np.zeros((1000, 100, 2, 4, 1)), dims=list("xyzct"))
 

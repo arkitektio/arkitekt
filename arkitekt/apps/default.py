@@ -25,4 +25,3 @@ class Arkitekt(ConnectedApp):
 
     """
 
-    pass
