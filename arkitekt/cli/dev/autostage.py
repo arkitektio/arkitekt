@@ -1,21 +1,36 @@
+from datetime import datetime
 from importlib import reload, import_module
 import asyncio
 import asyncio
 import sys
 import time
+from arkitekt import Arkitekt
 from rich.console import Console
-from watchdog.observers import Observer
-from watchdog.events import (
-    FileModifiedEvent,
-    FileSystemEventHandler,
-)
-import os
-import janus
-import threading
-import os
 
-from rekuest.agents.base import BaseAgent
-from rekuest.definition.registry import get_current_definition_registry
+
+try:
+    from watchdog.observers import Observer
+    from watchdog.events import (
+        FileModifiedEvent,
+        FileSystemEventHandler,
+    )
+except ImportError:
+    print("Please install watchdog to use this feature")
+    sys.exit(1)
+
+try:
+
+    import janus
+except ImportError:
+    print("Please install janus to use this feature")
+    sys.exit(1)
+
+import os
+import threading
+
+from rekuest.definition.registry import (
+    get_default_definition_registry,
+)
 
 
 class QueueHandler(FileSystemEventHandler):
@@ -79,37 +94,42 @@ class Host:
         os.environ["ARKITEKT_AGENT_DEBUG"] = "True"
 
     async def reprovide(self):
-        registry = get_current_definition_registry()
+        registry = get_default_definition_registry()
         registry.reset()
         reload(self.module)
 
         try:
             if registry.has_definitions():
-                self.console.print(
-                    "We found functions that ought to be provide. Starting an Agent"
-                )
-                agent = BaseAgent(defintion_registry=registry)
+                app = Arkitekt()
 
-                with self.console.status("Providing....") as status:
-                    await agent.aprovide()
+                async with app:
+                    self.console.print(
+                        f"[bold green] --------------- Providing {datetime.now()} ------------- [/bold green]"
+                    )
+                    await app.rekuest.run()
 
         except Exception as e:
+            self.console.print(
+                f"[bold red] --------------- Error in App {datetime.now()} ------------- [/bold red]"
+            )
             self.console.print_exception()
 
-        self.console.print("Updated :)")
+        except asyncio.CancelledError as e:
+            self.console.print(
+                f"[bold yellow] --------------- App Cancelled {datetime.now()} ------------- [/bold yellow]"
+            )
+            raise e
 
     async def restart(self):
         loop = asyncio.get_event_loop()
 
         if self.provide_task:
-            self.console.print("Cancelling old Agent")
             self.provide_task.cancel()
             try:
                 await self.provide_task
             except asyncio.CancelledError as e:
-                self.console.print("Cancelled")
+                pass
 
-        self.console.print("Running anew..")
         self.provide_task = loop.create_task(self.reprovide())
 
     async def run(self):
@@ -126,6 +146,9 @@ class Host:
         try:
             async for event in buffered_queue(jqueue.async_q, timeout=1):
                 if event:
+                    self.console.print(
+                        f"[bold yellow] --------------- File Changed {datetime.now()} ------------- [/bold yellow]"
+                    )
                     await self.restart()
         except asyncio.CancelledError as e:
             cancel_event.set()

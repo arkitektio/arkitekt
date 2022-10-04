@@ -1,11 +1,8 @@
 import argparse
 from enum import Enum
-from arkitekt.cli.dev.automirror import watch_directory_and_mirror
-from arkitekt.cli.dev.autostage import watch_directory_and_stage
 from arkitekt.cli.prod.run import import_directory_and_start
-from arkitekt.cli.prod.waitfor import wait_for_connection
 from fakts import Fakts
-from fakts.grants.cli.clibeacon import CLIBeaconGrant
+from fakts.discovery.static import StaticDiscovery
 from herre import Herre
 from rich.console import Console
 from rich.prompt import Prompt, Confirm
@@ -25,7 +22,6 @@ directory = os.getcwd()
 class ArkitektOptions(str, Enum):
     INIT = "init"
     DEV = "dev"
-    MIRROR = "mirror"
     LOGOUT = "logout"
     LOGIN = "login"
     RUN = "run"
@@ -53,17 +49,22 @@ def test_show(name: str)-> str:
 
 '''
 
-mikro_script = """
-from mikro import gql
+mikro_script = f"""
+from arkitekt import Arkitekt
 
-x = gql('''
-query {
-    myrepresentations {
-        id
-    }
-}
-''')
+app = Arkitekt()
 
+with app:
+    # Implement your logig here
+"""
+
+HEADER = """
+                __    _  __         __    __ 
+  ____ _ _____ / /__ (_)/ /_ ___   / /__ / /_
+ / __ `// ___// //_// // __// _ \ / //_// __/
+/ /_/ // /   / ,<  / // /_ /  __// ,<  / /_  
+\__,_//_/   /_/|_|/_/ \__/ \___//_/|_| \__/  
+                                             
 """
 
 
@@ -82,6 +83,7 @@ def main(
 ):
 
     console = Console()
+    console.print(HEADER)
 
     if path == ".":
         app_directory = os.getcwd()
@@ -95,6 +97,8 @@ def main(
 
     if script == ArkitektOptions.DEV:
 
+        from arkitekt.cli.dev.autostage import watch_directory_and_stage
+
         if not os.path.isfile(run_script_path):
             console.print(f"Could't find a run.py in {app_directory} {run_script_path}")
             return
@@ -102,20 +106,7 @@ def main(
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
 
-        fakts = Fakts(grants=[], fakts_path=fakts_path)
         asyncio.run(watch_directory_and_stage(path, entrypoint="run"))
-
-    if script == ArkitektOptions.MIRROR:
-
-        if not os.path.isfile(run_script_path):
-            console.print(f"Could't find a run.py in {app_directory} {run_script_path}")
-            return
-        if not os.path.isfile(fakts_path):
-            console.print(f"{app_directory} does not have a valid fakts.yaml")
-            return
-
-        fakts = Fakts(grants=[], fakts_path=fakts_path)
-        asyncio.run(watch_directory_and_mirror(path, entrypoint="run"))
 
     if script == ArkitektOptions.RUN:
 
@@ -126,7 +117,6 @@ def main(
             console.print(f"{app_directory} does not have a valid fakts.yaml")
             return
 
-        fakts = Fakts(grants=[], fakts_path=fakts_path)
         asyncio.run(import_directory_and_start(path, entrypoint="run"))
 
     if script == ArkitektOptions.LOGIN:
@@ -147,46 +137,10 @@ def main(
         console.print("Loggin in")
         herre.login()
 
-    if script == ArkitektOptions.WAIT:
-
-        if not os.path.isfile(fakts_path):
-            console.print(
-                f"Directory does not contain a valid fakts.yaml. If you want to login again please reinitiliaze."
-            )
-            return
-
-        fakts = Fakts(grants=[], fakts_path=fakts_path)
-        if not fakts.loaded:
-            console.print(
-                f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'"
-            )
-
-        asyncio.run(wait_for_connection(services))
-
-    if script == ArkitektOptions.LOGOUT:
-
-        if not os.path.isfile(fakts_path):
-            console.print(
-                f"Directory does not contain a valid fakts.yaml. If you want to login again please reinitiliaze."
-            )
-            return
-
-        fakts = Fakts(grants=[], fakts_path=fakts_path)
-        if not fakts.loaded:
-            console.print(
-                f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'"
-            )
-
-        herre = Herre(fakts=fakts)
-        console.print("Logging out!")
-        herre.logout()
-
     if script == ArkitektOptions.INIT:
 
-        console.print("Initializing Arkitekt Started. Lets do this!")
-
         if os.path.exists(app_directory):
-            console.print(f"App Directory already existed. No need for creation!")
+            console.print(f"App director already existed")
         else:
             os.mkdir(app_directory)
             console.print(f"Created a new App Directory at {app_directory}")
@@ -194,55 +148,52 @@ def main(
         initialize_fakts = True
         if os.path.isfile(fakts_path):
             console.print(
-                f"There seems to have been a previous App initialized at {app_directory}"
+                f"There seems to have been a previous app initialized at {app_directory}"
             )
             if refresh is None:
                 initialize_fakts = Confirm.ask(
-                    "Do you want to refresh the Apps configuration? :smiley: "
+                    "Do you want to refresh the Apps configuration? "
                 )
+                if not initialize_fakts:
+                    console.print(f"Nothing done. Bye :smiley: ")
+                    return
             else:
                 initialize_fakts = refresh
 
         if initialize_fakts:
 
-            hard_fakts = {"herre": {"name": name}}
-
-            fakt_grants = []
-
-            console.print("---------------------------------------------")
             console.print(f"Initializing a new Configuration for {name}")
 
             if scan_network is None:
                 scan_network = Confirm.ask(
                     "Do you want to automatically scan the network for local instances?"
                 )
+                from fakts.grants.remote.device_code import DeviceCodeGrant
+                from fakts.discovery.advertised import AdvertisedDiscovery
+
                 if scan_network:
-                    fakt_grants.append(CLIBeaconGrant())
-
-            if scan_network is False and beacon is None:
-                beacon = Prompt.ask(
-                    "Give us your local beacon",
-                    default="localhost",
-                )
-                fakt_grants.append(
-                    EndpointGrant(
-                        FaktsEndpoint(
-                            url=f"http://{beacon}:3000/setupapp", name="local_beacon"
-                        )
+                    discovery = AdvertisedDiscovery()
+                else:
+                    url = Prompt.ask(
+                        "Give us the path to your fakts instance",
+                        default="http://localhost:8000/f/",
                     )
+                    discovery = StaticDiscovery(base_url=url)
+
+                has_webrowser = Confirm.ask(
+                    "Do you have a webbrowser installed? Otherwise we will generate a code that you need to enter manually"
                 )
 
-            fakts = Fakts(
-                grants=fakt_grants,
-                fakts_path=fakts_path,
-                force_reload=initialize_fakts,
-                hard_fakts=hard_fakts,
-            )
+                fakts = Fakts(
+                    grant=DeviceCodeGrant(
+                        discovery=discovery, open_browser=has_webrowser
+                    ),
+                    fakts_path=fakts_path,
+                    force_refresh=True,
+                )
 
-            if not fakts.loaded:
-                fakts.load()
-
-            console.print("--------------------------------------------")
+                with fakts as f:
+                    f.load()
 
         save_run = True
         if os.path.isfile(run_script_path):

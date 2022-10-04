@@ -3,7 +3,7 @@ import logging
 import sys
 import os
 from rich.console import Console
-from rekuest.definition.registry import get_current_definition_registry
+from arkitekt import Arkitekt
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +28,10 @@ class Run:
 
     async def run(self):
 
-        registry = get_current_definition_registry()
+        app = Arkitekt()
+
+        async with app:
+            await app.rekuest.run()
 
 
 async def import_directory_and_start(path="watch", entrypoint="run"):
