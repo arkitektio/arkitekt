@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.3.5"
+version = "0.3.6"
 description = "rpc and node backbone"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
@@ -8,10 +8,10 @@ packages = [{include = "arkitekt"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-herre = "^0.2.6"
-fakts = "0.2.8"
-rekuest = "0.0.14"
-mikro = "0.2.22"
+herre = "^0.2.7"
+fakts = "0.2.10"
+rekuest = "0.0.16"
+mikro = "0.2.23"
 rath = "0.2.9"
 
 [tool.poetry.dev-dependencies]
