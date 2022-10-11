@@ -5,7 +5,7 @@ from arkitekt.apps.rekuest import RekuestApp
 from .utils import get_image_path
 
 
-class Profile(QtWidgets.QWidget):
+class Profile(QtWidgets.QDialog):
     def __init__(
         self,
         app: RekuestApp,
@@ -14,7 +14,7 @@ class Profile(QtWidgets.QWidget):
         dark_mode: bool = False,
         **kwargs,
     ):
-        super(Profile, self).__init__(*args, **kwargs)
+        super(Profile, self).__init__(*args, parent=bar, **kwargs)
         self.app = app
         self.bar = bar
 
