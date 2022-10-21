@@ -1,13 +1,19 @@
 import argparse
 from enum import Enum
+from arkitekt.apps.connected import App
+from arkitekt.cli.prod.check import check_app
 from arkitekt.cli.prod.run import import_directory_and_start
 from fakts import Fakts
 from fakts.discovery.static import StaticDiscovery
 from herre import Herre
 from rich.console import Console
 from rich.prompt import Prompt, Confirm
+from rich.table import Table
 import os
 import asyncio
+from fakts.grants.remote.device_code import DeviceCodeGrant
+from fakts.discovery.advertised import AdvertisedDiscovery
+from fakts.grants.remote.claim import ClaimGrant
 
 try:
     from rich.traceback import install
@@ -25,7 +31,18 @@ class ArkitektOptions(str, Enum):
     LOGOUT = "logout"
     LOGIN = "login"
     RUN = "run"
-    WAIT = "wait"
+    CHECK = "check"
+    CLAIM = "claim"
+
+
+class TemplateOptions(str, Enum):
+    AGENT = "agent"
+    CLIENT = "client"
+
+
+class GrantOptions(str, Enum):
+    CLAIM = "claim"
+    DEVICE = "device"
 
 
 agent_script = f'''
@@ -80,6 +97,13 @@ def main(
     beacon=None,
     template=None,
     services=[],
+    claim=False,
+    silent=False,
+    overwrite=False,
+    client_id=None,
+    client_secret=None,
+    endpoint_url=None,
+    grant=GrantOptions.DEVICE,
 ):
 
     console = Console()
@@ -119,7 +143,7 @@ def main(
 
         asyncio.run(import_directory_and_start(path, entrypoint="run"))
 
-    if script == ArkitektOptions.LOGIN:
+    if script == ArkitektOptions.CHECK:
 
         if not os.path.isfile(fakts_path):
             console.print(
@@ -127,15 +151,26 @@ def main(
             )
             return
 
-        fakts = Fakts(grants=[], fakts_path=fakts_path)
-        if not fakts.loaded:
+        fakts = Fakts(fakts_path=fakts_path)
+        if not fakts.loaded_fakts:
             console.print(
                 f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'"
             )
 
-        herre = Herre(fakts=fakts)
-        console.print("Loggin in")
-        herre.login()
+        app = App(fakts=fakts)
+        state = asyncio.run(check_app(app))
+
+        table = Table(title="App State")
+
+        table.add_column("Service")
+        table.add_column("Subservice")
+        table.add_column("Message")
+
+        for service, subservices in state.items():
+            for subservice, status in subservices.items():
+                table.add_row(service, subservice, status)
+
+        console.print(table)
 
     if script == ArkitektOptions.INIT:
 
@@ -151,8 +186,10 @@ def main(
                 f"There seems to have been a previous app initialized at {app_directory}"
             )
             if refresh is None:
-                initialize_fakts = Confirm.ask(
-                    "Do you want to refresh the Apps configuration? "
+                initialize_fakts = (
+                    Confirm.ask("Do you want to refresh the Apps configuration? ")
+                    if not silent
+                    else False
                 )
                 if not initialize_fakts:
                     console.print(f"Nothing done. Bye :smiley: ")
@@ -165,49 +202,94 @@ def main(
             console.print(f"Initializing a new Configuration for {name}")
 
             if scan_network is None:
-                scan_network = Confirm.ask(
-                    "Do you want to automatically scan the network for local instances?"
+                scan_network = (
+                    Confirm.ask(
+                        "Do you want to automatically scan the network for local instances?"
+                    )
+                    if not silent
+                    else False
                 )
-                from fakts.grants.remote.device_code import DeviceCodeGrant
-                from fakts.discovery.advertised import AdvertisedDiscovery
 
                 if scan_network:
                     discovery = AdvertisedDiscovery()
                 else:
-                    url = Prompt.ask(
-                        "Give us the path to your fakts instance",
-                        default="http://localhost:8000/f/",
+                    url = endpoint_url or (
+                        Prompt.ask(
+                            "Give us the path to your fakts instance",
+                            default=os.getenv(
+                                "FAKTS_ENDPOINT_URL", "http://localhost:8000/f/"
+                            ),
+                        )
+                        if not silent
+                        else os.getenv("FAKTS_ENDPOINT_URL", "http://localhost:8000/f/")
                     )
                     discovery = StaticDiscovery(base_url=url)
 
-                has_webrowser = Confirm.ask(
-                    "Do you have a webbrowser installed? Otherwise we will generate a code that you need to enter manually"
-                )
+                if grant == GrantOptions.CLAIM:
+                    console.print(f"Initializing through claiming process")
+                    client_id = client_id or os.getenv("FAKTS_CLIENT_ID", None)
+                    client_secret = client_secret or os.getenv(
+                        "FAKTS_CLIENT_SECRET", None
+                    )
 
-                fakts = Fakts(
-                    grant=DeviceCodeGrant(
-                        discovery=discovery, open_browser=has_webrowser
-                    ),
-                    fakts_path=fakts_path,
-                    force_refresh=True,
-                )
+                    assert (
+                        client_id and client_secret
+                    ), "Please provide a client id and secret or set FAKTS_CLIENT_ID and FAKTS_CLIENT_SECRET as env variables"
+
+                    fakts = Fakts(
+                        grant=ClaimGrant(
+                            discovery=discovery,
+                            client_id=client_id,
+                            client_secret=client_secret,
+                        ),
+                    )
+
+                elif grant == GrantOptions.DEVICE:
+                    console.print(f"Initializing through device code")
+                    has_webrowser = (
+                        Confirm.ask(
+                            "Do you have a webbrowser installed? Otherwise we will generate a code that you need to enter manually"
+                        )
+                        if not silent
+                        else False
+                    )
+
+                    fakts = Fakts(
+                        grant=DeviceCodeGrant(
+                            discovery=discovery, open_browser=has_webrowser
+                        ),
+                        fakts_path=fakts_path,
+                        force_refresh=True,
+                    )
+
+                else:
+                    raise NotImplementedError("Grant type not implemented")
 
                 with fakts as f:
                     f.load()
 
         save_run = True
         if os.path.isfile(run_script_path):
-            console.print("Initializing Templates for the App")
-            save_run = Confirm.ask(
-                "run.py already exists? Do you want to overwrite the run.py file? :smiley: "
+
+            save_run = refresh or (
+                Confirm.ask(
+                    "run.py already exists? Do you want to overwrite the run.py file? :smiley: "
+                )
+                if not silent
+                else False
             )
 
         if save_run:
+            console.print("Initializing Templates for the App")
             if not template:
-                template = Prompt.ask(
-                    "Which Template do you want to use?",
-                    choices=list(template_map.keys()),
-                    default="agent",
+                template = (
+                    Prompt.ask(
+                        "Which Template do you want to use?",
+                        choices=list(template_map.keys()),
+                        default="agent",
+                    )
+                    if not silent
+                    else "agent"
                 )
 
             with open(run_script_path, "w") as f:
@@ -220,16 +302,42 @@ def entrypoint():
     parser.add_argument("script", type=ArkitektOptions, help="The Script Type")
     parser.add_argument("path", type=str, help="The Path", nargs="?", default=".")
     parser.add_argument("--name", type=str, help="The Name of this script")
-    parser.add_argument("--refresh", type=bool, help="Do you want to refresh")
     parser.add_argument("--scan-network", type=bool, help="Do you want to refresh")
     parser.add_argument("--beacon", type=str, help="The adress of the beacon")
-    parser.add_argument("--template", type=str, help="The run script template")
+    parser.add_argument(
+        "--template", type=TemplateOptions, help="The run script template"
+    )
+    parser.add_argument(
+        "--client_id",
+        type=str,
+        help="The client id (only to be used together with claim grant",
+    )
+    parser.add_argument(
+        "--endpoint_url",
+        type=str,
+        help="The endpoint url for the fakts instance",
+    )
+    parser.add_argument(
+        "--client_secret",
+        type=str,
+        help="The client secret (only to be used together with claim grant",
+    )
+    parser.add_argument(
+        "--grant", type=GrantOptions, help="The grant to use", default="device_code"
+    )
+    parser.add_argument("--silent", dest="silent", action="store_true")
+    parser.add_argument("--refresh", dest="refresh", action="store_true")
     parser.add_argument(
         "--services",
         type=str,
         help="The services you want to connect to (seperated by ,)",
     )
+    parser.set_defaults(silent=False)
+    parser.set_defaults(refresh=False)
+    parser.set_defaults(claim=False)
+
     args = parser.parse_args()
+    print(args.silent)
 
     main(
         script=args.script,
@@ -239,6 +347,11 @@ def entrypoint():
         scan_network=args.scan_network,
         template=args.template,
         services=args.services.split(",") if args.services else [],
+        silent=args.silent,
+        client_id=args.client_id,
+        client_secret=args.client_secret,
+        endpoint_url=args.endpoint_url,
+        grant=args.grant,
     )
 
 

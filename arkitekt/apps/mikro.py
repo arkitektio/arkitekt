@@ -40,6 +40,7 @@ Example:
 
 from arkitekt.apps.herre import HerreApp
 from pydantic import Field
+from arkitekt.healthz import FaktsHealthz
 from mikro.datalayer import DataLayer
 from mikro.mikro import Mikro
 from mikro.rath import MikroLinkComposition, MikroRath
@@ -66,6 +67,9 @@ class ArkitektMikro(Mikro):
     )
     datalayer: DataLayer = Field(
         default_factory=lambda: FaktsDataLayer(fakts_group="mikro.datalayer")
+    )
+    healthz: FaktsHealthz = Field(
+        default_factory=lambda: FaktsHealthz(fakts_group="mikro")
     )
 
 

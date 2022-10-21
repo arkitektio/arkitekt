@@ -1,5 +1,6 @@
 from arkitekt.apps.herre import HerreApp
 from pydantic import Field
+from arkitekt.healthz import FaktsHealthz
 from rath.links.split import SplitLink
 from rath.contrib.fakts.links.aiohttp import FaktsAIOHttpLink
 from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
@@ -17,8 +18,8 @@ class ArkitektRekuest(Rekuest):
             link=RekuestLinkComposition(
                 auth=HerreAuthLink(),
                 split=SplitLink(
-                    left=FaktsAIOHttpLink(fakts_group="arkitekt"),
-                    right=FaktsWebsocketLink(fakts_group="arkitekt"),
+                    left=FaktsAIOHttpLink(fakts_group="rekuest"),
+                    right=FaktsWebsocketLink(fakts_group="rekuest"),
                     split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
                 ),
             )
@@ -26,8 +27,11 @@ class ArkitektRekuest(Rekuest):
     )
     agent: StatefulAgent = Field(
         default_factory=lambda: StatefulAgent(
-            transport=FaktsWebsocketAgentTransport(fakts_group="arkitekt.agent")
+            transport=FaktsWebsocketAgentTransport(fakts_group="rekuest.agent")
         )
+    )
+    healthz: FaktsHealthz = Field(
+        default_factory=lambda: FaktsHealthz(fakts_group="rekuest")
     )
 
 

@@ -8,6 +8,7 @@ from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
 from rath.contrib.herre.links.auth import HerreAuthLink
 from graphql import OperationType
 
+from arkitekt.healthz import FaktsHealthz
 
 class ArkitektFluss(Fluss):
     rath: FlussRath = Field(
@@ -22,6 +23,7 @@ class ArkitektFluss(Fluss):
             )
         )
     )
+    healthz: FaktsHealthz = Field(default_factory= lambda: FaktsHealthz(fakts_group="fluss"))
 
 
 class FlussApp(HerreApp):

@@ -4,3 +4,7 @@ from arkitekt.apps.rekuest import RekuestApp
 
 class ConnectedApp(MikroApp, RekuestApp):
     pass
+
+
+class App(ConnectedApp):
+    pass
