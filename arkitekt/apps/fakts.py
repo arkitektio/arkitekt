@@ -7,7 +7,7 @@ from pydantic import Field
 
 
 class ArkitektFakts(Fakts):
-    grant: RemoteGrant = Field(default_factory=DeviceCodeGrant)
+    grant: FaktsGrant = Field(default_factory=DeviceCodeGrant)
 
 
 class FaktsApp(Composition):
