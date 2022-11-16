@@ -2,6 +2,7 @@ from arkitekt.apps.herre import HerreApp
 from pydantic import Field
 from fluss.fluss import Fluss
 from fluss.rath import FlussLinkComposition, FlussRath
+from rath.contrib.fakts.links.httpx import FaktsHttpXLink
 from rath.links.split import SplitLink
 from rath.contrib.fakts.links.aiohttp import FaktsAIOHttpLink
 from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
@@ -10,20 +11,23 @@ from graphql import OperationType
 
 from arkitekt.healthz import FaktsHealthz
 
+
 class ArkitektFluss(Fluss):
     rath: FlussRath = Field(
         default_factory=lambda: FlussRath(
             link=FlussLinkComposition(
                 auth=HerreAuthLink(),
                 split=SplitLink(
-                    left=FaktsAIOHttpLink(fakts_group="fluss"),
+                    left=FaktsHttpXLink(fakts_group="fluss"),
                     right=FaktsWebsocketLink(fakts_group="fluss"),
                     split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
                 ),
             )
         )
     )
-    healthz: FaktsHealthz = Field(default_factory= lambda: FaktsHealthz(fakts_group="fluss"))
+    healthz: FaktsHealthz = Field(
+        default_factory=lambda: FaktsHealthz(fakts_group="fluss")
+    )
 
 
 class FlussApp(HerreApp):

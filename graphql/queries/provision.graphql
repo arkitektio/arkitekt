@@ -1,5 +1,0 @@
-query get_provision($id: ID!) {
-  provision(id: $id) {
-    ...Provision
-  }
-}

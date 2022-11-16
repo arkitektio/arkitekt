@@ -1,8 +1,8 @@
 from arkitekt.apps.herre import HerreApp
 from pydantic import Field
 from arkitekt.healthz import FaktsHealthz
-from rath.links.split import SplitLink
 from rath.contrib.fakts.links.aiohttp import FaktsAIOHttpLink
+from rath.links.split import SplitLink
 from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
 from rath.contrib.herre.links.auth import HerreAuthLink
 from rekuest.rath import RekuestLinkComposition, RekuestRath

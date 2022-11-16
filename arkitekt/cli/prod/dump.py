@@ -4,15 +4,15 @@ import sys
 import os
 from arkitekt.apps.fakts import ArkitektFakts
 from fakts import Fakts
-from fakts.grants.remote.claimprivate import ClaimPrivateGrant
-from fakts.discovery.static import StaticDiscovery
 from rich.console import Console
 from arkitekt import Arkitekt
+import yaml
+import json
 
 logger = logging.getLogger(__name__)
 
 
-class Run:
+class Dump:
     def __init__(
         self,
         path=None,
@@ -34,20 +34,21 @@ class Run:
 
     async def run(self):
 
-        app = Arkitekt(
-            fakts=ArkitektFakts(
-                grant=ClaimPrivateGrant(
-                    discovery=StaticDiscovery(base_url=os.getenv("FAKTS_ENDPOINT_URL")),
-                    client_id=os.getenv("FAKTS_CLIENT_ID"),
-                    client_secret=os.getenv("FAKTS_CLIENT_SECRET"),
-                )
-            )
-        )
+        app = Arkitekt(fakts=ArkitektFakts(fakts_path=f"{self.watch_path}/fakts.yaml"))
+
+        if not os.path.exists(f"{self.watch_path}/.arkitekt"):
+            os.mkdir(f"{self.watch_path}/.arkitekt")
 
         async with app:
-            await app.rekuest.run()
+            x = json.loads(app.fakts.grant.json())
+            with open(f"{self.watch_path}/.arkitekt/config.yaml", "w") as file:
+                documents = yaml.dump(x, file)
+
+            x = app.rekuest.definition_registry.dump()
+            with open(f"{self.watch_path}/.arkitekt/definitions.yaml", "w") as file:
+                documents = yaml.dump(x, file)
 
 
-async def import_directory_and_start(path="watch", entrypoint="run"):
-    host = Run(path=path)
+async def import_directory_and_dump(path="watch", entrypoint="run"):
+    host = Dump(path=path)
     await host.run()

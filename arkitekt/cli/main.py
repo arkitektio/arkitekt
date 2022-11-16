@@ -4,6 +4,7 @@ import sys
 from arkitekt.apps.connected import App
 from arkitekt.cli.prod.check import check_app, check_app_loop, check_fakts_loop
 from arkitekt.cli.prod.run import import_directory_and_start
+from arkitekt.cli.prod.dump import import_directory_and_dump
 from fakts import Fakts
 from fakts.discovery.static import StaticDiscovery
 from herre import Herre
@@ -35,6 +36,7 @@ class ArkitektOptions(str, Enum):
     CHECK = "check"
     CLAIM = "claim"
     WAIT = "wait"
+    DUMP = "dump"
 
 
 class TemplateOptions(str, Enum):
@@ -173,6 +175,19 @@ def main(
                 return
 
             asyncio.run(import_directory_and_start(path, entrypoint="run"))
+
+        if script == ArkitektOptions.DUMP:
+
+            if not os.path.isfile(run_script_path):
+                console.print(
+                    f"Could't find a run.py in {app_directory} {run_script_path}"
+                )
+                return
+            if not os.path.isfile(fakts_path):
+                console.print(f"{app_directory} does not have a valid fakts.yaml")
+                return
+
+            asyncio.run(import_directory_and_dump(path, entrypoint="run"))
 
         if script == ArkitektOptions.CHECK:
 

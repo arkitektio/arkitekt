@@ -1,5 +1,0 @@
-query requests($identifier: String!) {
-  requests(identifier: $identifier) {
-    ...Assignation
-  }
-}
