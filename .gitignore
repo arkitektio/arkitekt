@@ -4,7 +4,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 *.pyc
-docs/reference
+
 # C extensions
 *.so
 
@@ -145,6 +145,4 @@ media
 export
 static_collected
 data
-*.temp
-*.fakts.yaml
-fakts.yaml
+token.temp

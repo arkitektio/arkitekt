@@ -1,26 +1,33 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.3.17"
-description = "rpc and node backbone"
+version = "0.4.5"
+description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
 packages = [{ include = "arkitekt" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-herre = "^0.2.9"
-fakts = "^0.2.13"
-rekuest = "^0.0.19"
-mikro = "^0.2.25"
+herre = ">=0.3.2"
+fakts = ">=0.3.3"
+rekuest = ">=0.1.6"
+mikro = ">=0.3.3"
+unlok = ">=0.1.4"
 
-[tool.poetry.dev-dependencies]
-black = "22.8.0"
-turms = { version = "^0.2.3", python = "^3.9" }
-PyQt5 = "^5.15.7"
-autoflake = "^1.6.1"
-pydoc-markdown = "4.5.1"
-testcontainers = "^3.7.0"
-pytest-cov = "^3.0.0"
+[tool.poetry.group.dev.dependencies]
+testcontainers = "3.7.0"
+autoflake = "^1.7.7"
+pytest = "^7.2.0"
+PyQtWebEngine = "^5.15.5"
+PyQt5 = "^5.15.6"
+pytest-qt = "^4.2.0"
+pytest-asyncio = "^0.20.2"
+turms = { version = ">=0.2.3", python = "^3.9" }
+aiohttp = "^3.8.3"
+websockets = "^10.4"
+black = "^22.10.0"
+pytest-cov = "^4.0.0"
+scikit-image = "^0.19.3"
 
 [tool.poetry.scripts]
 arkitekt = "arkitekt.cli.main:entrypoint"

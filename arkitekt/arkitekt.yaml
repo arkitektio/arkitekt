@@ -1,0 +1,6 @@
+description: Does whatever we want it to do
+identifier: com.johannes.test
+scopes:
+- arkitekt:mikro:read
+- arkitekt:mikro:imitate
+version: latest

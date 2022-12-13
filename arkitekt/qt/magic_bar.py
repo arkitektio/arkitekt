@@ -26,7 +26,9 @@ class Profile(QtWidgets.QDialog):
         self.logout_button.clicked.connect(lambda: self.bar.logout_task.run())
 
         self.unkonfigure_button = QtWidgets.QPushButton("Unkonfirug")
-        self.unkonfigure_button.clicked.connect(lambda: self.bar.unkonfigure_task.run())
+        self.unkonfigure_button.clicked.connect(
+            lambda: self.bar.configure_task.run(force_refresh=True)
+        )
 
         self.layout.addWidget(self.logout_button)
         self.layout.addWidget(self.unkonfigure_button)
@@ -63,24 +65,20 @@ class MagicBar(QtWidgets.QWidget):
         self.profile = Profile(app, self, dark_mode=dark_mode)
 
         self.configure_task = QtRunner(self.app.fakts.aload)
-        self.configure_task.errored.connect(self.task_errored)
+        self.configure_task.errored.connect(self.configure_errored)
         self.configure_task.returned.connect(self.set_unlogined)
+
+        self.login_task = QtRunner(self.app.herre.alogin)
+        self.login_task.errored.connect(self.login_errored)
+        self.login_task.returned.connect(self.set_unprovided)
 
         self.logout_task = QtRunner(self.app.herre.alogout)
         self.logout_task.errored.connect(self.task_errored)
         self.logout_task.returned.connect(self.set_unlogined)
 
-        self.login_task = QtRunner(self.app.herre.alogin)
-        self.login_task.errored.connect(self.task_errored)
-        self.login_task.returned.connect(self.set_unprovided)
-
         self.provide_task: QtRunner = QtRunner(self.app.rekuest.agent.aprovide)
-        self.provide_task.errored.connect(self.task_errored)
+        self.provide_task.errored.connect(self.provide_errored)
         self.provide_task.returned.connect(self.set_unprovided)
-
-        self.unkonfigure_task = QtRunner(self.app.fakts.adelete)
-        self.unkonfigure_task.errored.connect(self.task_errored)
-        self.unkonfigure_task.returned.connect(self.set_unkonfigured)
 
         self.magicb = QtWidgets.QPushButton("Connect")
         self.magicb.setMinimumHeight(30)
@@ -106,12 +104,21 @@ class MagicBar(QtWidgets.QWidget):
         self.layout.addWidget(self.gearb)
         self.setLayout(self.layout)
 
-        if not self.app.fakts.initial_healty:
-            self.set_unkonfigured()
-        else:
-            self.set_unlogined()
+        self.set_unkonfigured()
 
     def task_errored(self, ex: Exception):
+        raise ex
+
+    def configure_errored(self, ex: Exception):
+        self.set_unkonfigured()
+        raise ex
+
+    def login_errored(self, ex: Exception):
+        self.set_unlogined()
+        raise ex
+
+    def provide_errored(self, ex: Exception):
+        self.set_unprovided()
         raise ex
 
     def on_configured(self):

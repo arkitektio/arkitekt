@@ -6,7 +6,12 @@ import sys
 import time
 from arkitekt import Arkitekt
 from rich.console import Console
-
+from arkitekt.apps.fakts import ArkitektFakts
+from fakts import Fakts
+from fakts.grants.remote.static import StaticGrant
+from fakts.discovery.static import StaticDiscovery
+from rich.console import Console
+from arkitekt import Arkitekt
 
 try:
     from watchdog.observers import Observer
@@ -79,6 +84,8 @@ class Host:
         self,
         path=None,
         entrypoint="run",
+        token=None,
+        endpoint=None,
     ) -> None:
 
         if path == ".":
@@ -91,16 +98,28 @@ class Host:
         self.module = import_module(self.module_path)
         self.provide_task = None
         self.console = Console()
+        self.token = token
+        self.endpoint = endpoint
         os.environ["ARKITEKT_AGENT_DEBUG"] = "True"
 
-    async def reprovide(self):
+    async def reprovide(self, endpoint=None, token=None):
         registry = get_default_definition_registry()
         registry.reset()
         reload(self.module)
 
         try:
             if registry.has_definitions():
-                app = Arkitekt()
+                app = Arkitekt(
+                    fakts=ArkitektFakts(
+                        grant=StaticGrant(
+                            discovery=StaticDiscovery(
+                                base_url=self.endpoint
+                                or os.getenv("FAKTS_ENDPOINT_URL")
+                            ),
+                            token=self.token or os.getenv("FAKTS_TOKEN"),
+                        )
+                    )
+                )
 
                 async with app:
                     self.console.print(
@@ -158,6 +177,6 @@ class Host:
         await jqueue.wait_closed()
 
 
-async def watch_directory_and_stage(path="watch", entrypoint="run"):
-    host = Host(path=path)
+async def watch_directory_and_stage(path="watch", token=None, endpoint=None):
+    host = Host(path=path, token=token, endpoint=endpoint)
     await host.run()

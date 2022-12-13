@@ -8,7 +8,9 @@ from rath.contrib.fakts.links.aiohttp import FaktsAIOHttpLink
 from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
 from rath.contrib.herre.links.auth import HerreAuthLink
 from graphql import OperationType
-
+from .connected import ConnectedApp
+from .rekuest import RekuestApp
+from .unlok import UnlokApp
 from arkitekt.healthz import FaktsHealthz
 
 
@@ -47,4 +49,8 @@ class FlussApp(HerreApp):
 
     """
 
-    mikro: ArkitektFluss = Field(default_factory=ArkitektFluss)
+    fluss: ArkitektFluss = Field(default_factory=ArkitektFluss)
+
+
+class ConnectedFluss(RekuestApp, UnlokApp, FlussApp):
+    pass

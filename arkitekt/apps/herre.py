@@ -1,10 +1,14 @@
 from arkitekt.apps.fakts import FaktsApp
-from herre.fakts.herre import FaktsHerre
+from herre.grants.fakts import FaktsGrant
 from herre.herre import Herre
 from pydantic import Field
 
 
+class ArkitektHerre(Herre):
+    grant: FaktsGrant = Field(default_factory=lambda: FaktsGrant())
+
+
 class HerreApp(FaktsApp):
-    herre: Herre = Field(default_factory=FaktsHerre)
+    herre: ArkitektHerre = Field(default_factory=ArkitektHerre)
     """The fakts layer that is used for configuration
     """

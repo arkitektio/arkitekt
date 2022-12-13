@@ -1,21 +1,30 @@
 import argparse
-from enum import Enum
+import asyncio
+import os
 import sys
+from enum import Enum
+
+from rich.console import Console
+from rich.prompt import Confirm, Prompt
+from rich.table import Table
+
 from arkitekt.apps.connected import App
 from arkitekt.cli.prod.check import check_app, check_app_loop, check_fakts_loop
-from arkitekt.cli.prod.run import import_directory_and_start
 from arkitekt.cli.prod.dump import import_directory_and_dump
+from arkitekt.cli.prod.run import import_directory_and_start
 from fakts import Fakts
-from fakts.discovery.static import StaticDiscovery
-from herre import Herre
-from rich.console import Console
-from rich.prompt import Prompt, Confirm
-from rich.table import Table
-import os
-import asyncio
-from fakts.grants.remote.device_code import DeviceCodeGrant
 from fakts.discovery.advertised import AdvertisedDiscovery
-from fakts.grants.remote.claim import ClaimGrant
+from fakts.discovery.static import StaticDiscovery
+from fakts.grants.remote.device_code import DeviceCodeGrant
+from fakts.grants.remote.static import StaticGrant
+from herre import Herre
+from arkitekt.cli.logic.initialize import initialize_manifest
+from arkitekt.cli.logic.connect import connect
+from arkitekt.cli.logic.run import run
+from arkitekt.cli.logic.dev import dev
+from arkitekt.cli.logic.build import build
+import yaml
+
 
 try:
     from rich.traceback import install
@@ -29,14 +38,12 @@ directory = os.getcwd()
 
 class ArkitektOptions(str, Enum):
     INIT = "init"
-    DEV = "dev"
-    LOGOUT = "logout"
-    LOGIN = "login"
+    CONNECT = "connect"
     RUN = "run"
-    CHECK = "check"
-    CLAIM = "claim"
     WAIT = "wait"
+    DEV = "dev"
     DUMP = "dump"
+    BUILD = "build"
 
 
 class TemplateOptions(str, Enum):
@@ -104,11 +111,11 @@ def main(
     claim=False,
     silent=False,
     overwrite=False,
-    client_id=None,
-    client_secret=None,
+    token=None,
     endpoint_url=None,
     retries=3,
     interval=1,
+    tag=None,
     grant=GrantOptions.DEVICE,
 ):
 
@@ -124,10 +131,31 @@ def main(
             app_directory = os.path.join(os.getcwd(), path)
             name = name or path
 
-        fakts_path = os.path.join(app_directory, "fakts.yaml")
         run_script_path = os.path.join(app_directory, "run.py")
+        config_path = os.path.join(app_directory, ".arkitekt")
+
+        if script == ArkitektOptions.INIT:
+            initialize_manifest(app_directory=app_directory, silent=silent)
+            return
+
+        if script == ArkitektOptions.CONNECT:
+            connect(app_directory=app_directory, silent=silent)
+            return
+
+        if script == ArkitektOptions.RUN:
+            run(path=path, silent=silent, token=token, endpoint=endpoint_url)
+            return
+
+        if script == ArkitektOptions.DEV:
+            dev(path=path, silent=silent, token=token, endpoint=endpoint_url)
+            return
+
+        if script == ArkitektOptions.BUILD:
+            build(path=path, silent=silent, tag=tag)
+            return
 
         if script == ArkitektOptions.WAIT:
+
             url = endpoint_url or (
                 Prompt.ask(
                     "Give us the path to your fakts instance",
@@ -254,6 +282,36 @@ def main(
 
                 console.print(f"Initializing a new Configuration for {name}")
 
+                app_identifier = (
+                    name if silent else Prompt.ask("Give your app a unique identifier")
+                )
+                app_version = (
+                    "0.0.1" if silent else Prompt.ask("Give your app a version")
+                )
+                app_description = (
+                    "A new app" if silent else Prompt.ask("Give your app a description")
+                )
+
+                console.log("Which scopes do you want your app to have?")
+                scopes = []
+                for scope in available_scopes:
+                    if Confirm.ask(f"App should have {scope} scope?"):
+                        scopes.append(scope)
+
+                if not scopes:
+                    console.print("App needs at least one scope")
+                    return
+
+                manifest = {
+                    "identifier": app_identifier,
+                    "version": app_version,
+                    "description": app_description,
+                    "scopes": scopes,
+                }
+
+                with open(fakts_path, "w") as f:
+                    yaml.dump(manifest, f)
+
                 if scan_network is None:
                     scan_network = (
                         Confirm.ask(
@@ -364,6 +422,9 @@ def entrypoint():
         "--retries", type=int, help="The Name of this script", default=0
     )
     parser.add_argument(
+        "-t", type=str, help="The tag of the dockercontainer", default=None
+    )
+    parser.add_argument(
         "--interval", type=int, help="The Name of this script", default=5
     )
     parser.add_argument("--scan-network", type=bool, help="Do you want to refresh")
@@ -372,19 +433,14 @@ def entrypoint():
         "--template", type=TemplateOptions, help="The run script template"
     )
     parser.add_argument(
-        "--client_id",
+        "--token",
         type=str,
-        help="The client id (only to be used together with claim grant",
+        help="The token to negoatite the connection",
     )
     parser.add_argument(
         "--endpoint_url",
         type=str,
         help="The endpoint url for the fakts instance",
-    )
-    parser.add_argument(
-        "--client_secret",
-        type=str,
-        help="The client secret (only to be used together with claim grant",
     )
     parser.add_argument(
         "--grant", type=GrantOptions, help="The grant to use", default="device"
@@ -412,8 +468,8 @@ def entrypoint():
         template=args.template,
         services=args.services.split(",") if args.services else [],
         silent=args.silent,
-        client_id=args.client_id,
-        client_secret=args.client_secret,
+        token=args.token,
+        tag=args.t,
         endpoint_url=args.endpoint_url,
         grant=args.grant,
         retries=args.retries,

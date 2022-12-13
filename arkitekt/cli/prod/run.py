@@ -4,7 +4,7 @@ import sys
 import os
 from arkitekt.apps.fakts import ArkitektFakts
 from fakts import Fakts
-from fakts.grants.remote.claimprivate import ClaimPrivateGrant
+from fakts.grants.remote.static import StaticGrant
 from fakts.discovery.static import StaticDiscovery
 from rich.console import Console
 from arkitekt import Arkitekt
@@ -32,14 +32,15 @@ class Run:
         self.module = import_module(self.module_path)
         os.environ["ARKITEKT_AGENT_DEBUG"] = "False"
 
-    async def run(self):
+    async def run(self, token=None, endpoint=None):
 
         app = Arkitekt(
             fakts=ArkitektFakts(
-                grant=ClaimPrivateGrant(
-                    discovery=StaticDiscovery(base_url=os.getenv("FAKTS_ENDPOINT_URL")),
-                    client_id=os.getenv("FAKTS_CLIENT_ID"),
-                    client_secret=os.getenv("FAKTS_CLIENT_SECRET"),
+                grant=StaticGrant(
+                    discovery=StaticDiscovery(
+                        base_url=endpoint or os.getenv("FAKTS_ENDPOINT_URL")
+                    ),
+                    token=token or os.getenv("FAKTS_TOKEN"),
                 )
             )
         )
@@ -48,6 +49,6 @@ class Run:
             await app.rekuest.run()
 
 
-async def import_directory_and_start(path="watch", entrypoint="run"):
+async def import_directory_and_start(path, token=None, endpoint=None):
     host = Run(path=path)
-    await host.run()
+    await host.run(token=token, endpoint=endpoint)
