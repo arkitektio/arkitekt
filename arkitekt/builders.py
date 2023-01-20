@@ -8,27 +8,42 @@ from herre.grants.fakts import FaktsGrant
 from fakts.discovery import StaticDiscovery
 from herre import Herre
 import logging
+from koil.composition import PedanticKoil
 
-try:
-    from rich.logging import RichHandler
 
-    logging.basicConfig(level="INFO", handlers=[RichHandler()])
-except ImportError:
-    logging.basicConfig(level="INFO")
-
-logger = logging.getLogger(__name__)
 
 
 def easy(
-    identifier: str, version: str = "latest", url: str = "http://localhost:8000/f/"
+    identifier: str, version: str = "latest", url: str = "http://localhost:8000/f/", headless: bool = False, allow_sync_in_async: bool = True, log_level: str = "ERROR"
 ) -> Arkitekt:
-    """
+    """Easy app creation
+
     A simple way to create an Arkitekt app with a device code grant
     it will cache the configuration in a file called `identifier`_token.json
     and the cache in a file called `identifier`_cache.json
+
+    Args:
+        identifier (str): The apps identifier
+        version (str, optional): The apps verion. Defaults to "latest".
+        url (_type_, optional): The app configuration url. Defaults to "http://localhost:8000/f/".
+        headless (bool, optional): Do not open a browser window. Defaults to False.
+        allow_sync_in_async (bool, optional): Should we allow the creation of a sync interface in an async loop (necessary for a sync interface in jupyter). Defaults to True.
+
+    Returns:
+        Arkitekt: _description_
     """
 
+    try:
+        from rich.logging import RichHandler
+
+        logging.basicConfig(level=log_level, handlers=[RichHandler()])
+    except ImportError:
+        logging.basicConfig(level=log_level)
+
+
     return Arkitekt(
+        title=identifier,
+        koil=PedanticKoil(sync_in_async=allow_sync_in_async),
         fakts=Fakts(
             grant=CacheGrant(
                 cache_file=f"{identifier}-{version}_cache.json",
@@ -36,6 +51,7 @@ def easy(
                 grant=DeviceCodeGrant(
                     identifier=identifier,
                     version=version,
+                    open_browser=not headless,
                     discovery=StaticDiscovery(base_url=url),
                 ),
             )
@@ -67,6 +83,7 @@ def qt(version: str, identifier: str, parent) -> Arkitekt:
                 grant=DeviceCodeGrant(
                     identifier=identifier,
                     version=version,
+
                 ),
             )
         ),
@@ -80,35 +97,68 @@ def qt(version: str, identifier: str, parent) -> Arkitekt:
     )
 
 
-def publiqt(version: str, identifier: str, parent) -> Arkitekt:
-    """
-    A simple way to create an Arkitekt within a Qt application stilll
-    utilizing a device code grant to authenticate the user on an application
-    level
+def publicqt(identifier: str, version: str = "latest",  parent = None) -> Arkitekt:
+    """Public QtApp creation
+
+    A simple way to create an Arkitekt app with a public grant (allowing users to sign
+    in with the application ) utlizing a retrieve grant (necessating a previous configuration
+    of the application on the server side)
+
+    Args:
+        identifier (str): The apps identifier
+        version (str, optional): The apps verion. Defaults to "latest".
+        parent (QtWidget, optional): The QtParent (for the login and server select widget). Defaults to None.
+
+    Returns:
+        Arkitekt: The Arkitekt app
     """
 
     from koil.composition.qt import QtPedanticKoil
+    from herre.grants.fakts.fakts_login_screen import FaktsQtLoginScreen, LoginWidget
+    from fakts.grants.remote.retrieve import RetrieveGrant
+    from fakts.discovery.qt.selectable_beacon import SelectBeaconWidget, QtSelectableDiscovery
 
-    return Arkitekt(
-        koil=QtPedanticKoil(parent=parent),
+
+    x = SelectBeaconWidget(parent=parent)
+
+    loginWindow = LoginWidget(identifier, version, parent=parent)
+
+    app = Arkitekt(
         fakts=Fakts(
             grant=CacheGrant(
-                cache_file=f"{identifier}-{version}_cache.json",
-                grant=DeviceCodeGrant(
-                    identifier=identifier,
-                    version=version,
-                ),
-            )
+                skip_cache=True,
+                cache_file=f"{identifier}-{version}_fakts_cache.json",
+                grant=RetrieveGrant(
+                            identifier=identifier,
+                            version=version,
+                            redirect_uri="http://localhost:6767",
+                            discovery=QtSelectableDiscovery(
+                                    widget=x,
+                                ),
+                        ),
+            ),
+            assert_groups={"mikro", "rekuest"},
         ),
         herre=Herre(
-            grant=FaktsGrant(),
+            grant=HerreCacheGrant(
+                cache_file=f"{identifier}-{version}_herre_cache.json",
+                hash=f"{identifier}-{version}",
+                skip_cache=True,
+                grant=FaktsQtLoginScreen(
+                    widget=loginWindow,
+                    auto_login=True,
+                    grant=RefreshGrant(grant=FaktsGrant()),
+                ),
+            ),
         ),
     )
+
+    return app
 
 
 def flussi(
     identifier: str, version: str = "latest", url: str = "http://localhost:8000/f/"
-) -> "ConnectedFluss":
+):
     """
     A simple way to create an Arkitekt app with a device code grant
     it will cache the configuration in a file called `identifier`_token.json

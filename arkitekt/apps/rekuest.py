@@ -12,6 +12,11 @@ from rekuest.contrib.fakts.websocket_agent_transport import FaktsWebsocketAgentT
 from rekuest.agents.stateful import StatefulAgent
 
 
+class ArkitektAgent(StatefulAgent):
+    transport: FaktsWebsocketAgentTransport = Field(
+        default_factory=lambda: FaktsWebsocketAgentTransport(fakts_group="rekuest.agent")
+    )
+
 class ArkitektRekuest(Rekuest):
     rath: RekuestRath = Field(
         default_factory=lambda: RekuestRath(
@@ -26,9 +31,7 @@ class ArkitektRekuest(Rekuest):
         )
     )
     agent: StatefulAgent = Field(
-        default_factory=lambda: StatefulAgent(
-            transport=FaktsWebsocketAgentTransport(fakts_group="rekuest.agent")
-        )
+        default_factory=lambda: ArkitektAgent()
     )
     healthz: FaktsHealthz = Field(
         default_factory=lambda: FaktsHealthz(fakts_group="rekuest")
