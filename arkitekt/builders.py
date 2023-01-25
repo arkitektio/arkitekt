@@ -9,13 +9,13 @@ from fakts.discovery import StaticDiscovery
 from herre import Herre
 import logging
 from koil.composition import PedanticKoil
-
+import os
 
 
 
 def easy(
-    identifier: str, version: str = "latest", url: str = "http://localhost:8000/f/", headless: bool = False, allow_sync_in_async: bool = True, log_level: str = "ERROR"
-) -> Arkitekt:
+    identifier: str, version: str = "latest", url: str = "http://localhost:8000/f/", headless: bool = False, allow_sync_in_async: bool = True, log_level: str = "ERROR",
+token: str = None) -> Arkitekt:
     """Easy app creation
 
     A simple way to create an Arkitekt app with a device code grant
@@ -33,6 +33,9 @@ def easy(
         Arkitekt: _description_
     """
 
+    url = os.getenv("FAKTS_URL", url)
+    token = os.getenv("FAKTS_TOKEN", token)
+
     try:
         from rich.logging import RichHandler
 
@@ -46,7 +49,7 @@ def easy(
         koil=PedanticKoil(sync_in_async=allow_sync_in_async),
         fakts=Fakts(
             grant=CacheGrant(
-                cache_file=f"{identifier}-{version}_cache.json",
+                cache_file=f".arkitekt/{identifier}-{version}_cache.json",
                 hash=f"{identifier}-{version}-{url}",
                 grant=DeviceCodeGrant(
                     identifier=identifier,
@@ -58,7 +61,7 @@ def easy(
         ),
         herre=Herre(
             grant=HerreCacheGrant(
-                cache_file=f"{identifier}-{version}_herre_cache.json",
+                cache_file=f".arkitekt/{identifier}-{version}_herre_cache.json",
                 hash=f"{identifier}-{version}-{url}",
                 grant=RefreshGrant(grant=FaktsGrant()),
             ),
@@ -79,7 +82,7 @@ def qt(version: str, identifier: str, parent) -> Arkitekt:
         koil=QtPedanticKoil(parent=parent),
         fakts=Fakts(
             grant=CacheGrant(
-                cache_file=f"{identifier}-{version}_cache.json",
+                cache_file=f".arkitekt/{identifier}-{version}_cache.json",
                 grant=DeviceCodeGrant(
                     identifier=identifier,
                     version=version,
@@ -89,7 +92,7 @@ def qt(version: str, identifier: str, parent) -> Arkitekt:
         ),
         herre=Herre(
             grant=HerreCacheGrant(
-                cache_file=f"{identifier}-{version}_herre_cache.json",
+                cache_file=f".arkitekt/{identifier}-{version}_herre_cache.json",
                 hash=f"{identifier}-{version}",
                 grant=FaktsGrant(),
             ),
@@ -127,7 +130,7 @@ def publicqt(identifier: str, version: str = "latest",  parent = None) -> Arkite
         fakts=Fakts(
             grant=CacheGrant(
                 skip_cache=True,
-                cache_file=f"{identifier}-{version}_fakts_cache.json",
+                cache_file=f".arkitekt/{identifier}-{version}_fakts_cache.json",
                 grant=RetrieveGrant(
                             identifier=identifier,
                             version=version,
@@ -141,7 +144,7 @@ def publicqt(identifier: str, version: str = "latest",  parent = None) -> Arkite
         ),
         herre=Herre(
             grant=HerreCacheGrant(
-                cache_file=f"{identifier}-{version}_herre_cache.json",
+                cache_file=f".arkitekt/{identifier}-{version}_herre_cache.json",
                 hash=f"{identifier}-{version}",
                 skip_cache=True,
                 grant=FaktsQtLoginScreen(
@@ -170,7 +173,7 @@ def flussi(
     return ConnectedFluss(
         fakts=Fakts(
             grant=CacheGrant(
-                cache_file=f"{identifier}-{version}_cache.json",
+                cache_file=f".arkitekt/{identifier}-{version}_cache.json",
                 hash=f"{identifier}-{version}-{url}",
                 grant=DeviceCodeGrant(
                     identifier=identifier,
@@ -181,7 +184,7 @@ def flussi(
         ),
         herre=Herre(
             grant=HerreCacheGrant(
-                cache_file=f"{identifier}-{version}_herre_cache.json",
+                cache_file=f".arkitekt/{identifier}-{version}_herre_cache.json",
                 hash=f"{identifier}-{version}-{url}",
                 grant=RefreshGrant(grant=FaktsGrant()),
             ),
