@@ -11,5 +11,5 @@ class ArkitektHerre(Herre):
 
 class HerreApp(FaktsApp):
     herre: ArkitektHerre = Field(default_factory=ArkitektHerre)
-    """The fakts layer that is used for configuration
+    """The fakts layer thats is used for configuration
     """

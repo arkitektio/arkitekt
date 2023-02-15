@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.4.15"
+version = "0.4.36"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
@@ -8,12 +8,18 @@ packages = [{ include = "arkitekt" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-herre = ">=0.3.6"
-fakts = ">=0.3.8"
-rekuest = ">=0.1.19"
-mikro = ">=0.3.18"
-unlok = ">=0.1.5"
-fluss = ">=0.1.33"
+herre = ">=0.3.8"
+fakts = ">=0.3.9"
+rekuest = ">=0.1.21"
+mikro = ">=0.3.32"
+unlok = ">=0.1.7"
+fluss = ">=0.1.35"
+rich-click = { version = "^1.6.1", optional = true }
+watchfiles = { version = "^0.18.1", optional = true }
+
+
+[tool.poetry.extras]
+cli = ["rich-click", "watchfiles"]
 
 [tool.poetry.group.dev.dependencies]
 testcontainers = "3.7.0"
@@ -30,8 +36,10 @@ black = "^22.10.0"
 pytest-cov = "^4.0.0"
 scikit-image = "^0.19.3"
 
+
 [tool.poetry.scripts]
-arkitekt = "arkitekt.cli.main:entrypoint"
+arkitekt = "arkitekt.cli.main:cli"
+
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

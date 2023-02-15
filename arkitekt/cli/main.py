@@ -1,481 +1,321 @@
-import argparse
+import rich_click as click
 import asyncio
+from arkitekt.cli.init import Manifest, load_manifest, write_manifest
+import subprocess
+from rich.console import Console
+from rich.progress import Progress, TextColumn
+from rich.live import Live
+from rich.markdown import Markdown
+from rich.panel import Panel
 import os
 import sys
-from enum import Enum
-
-from rich.console import Console
-from rich.prompt import Confirm, Prompt
-from rich.table import Table
-
-from arkitekt.apps.connected import App
-from arkitekt.cli.prod.check import check_app, check_app_loop, check_fakts_loop
-from arkitekt.cli.prod.dump import import_directory_and_dump
-from arkitekt.cli.prod.run import import_directory_and_start
-from fakts import Fakts
-from fakts.discovery.advertised import AdvertisedDiscovery
-from fakts.discovery.static import StaticDiscovery
-from fakts.grants.remote.device_code import DeviceCodeGrant
-from fakts.grants.remote.static import StaticGrant
-from herre import Herre
-from arkitekt.cli.logic.initialize import initialize_manifest
-from arkitekt.cli.logic.connect import connect
-from arkitekt.cli.logic.run import run
-from arkitekt.cli.logic.dev import dev
-from arkitekt.cli.logic.build import build
-import yaml
 
 
-try:
-    from rich.traceback import install
 
-    install()
-except:
-    pass
+console = Console()
 
-directory = os.getcwd()
+logo = """
+            _    _ _       _    _   
+  __ _ _ __| | _(_) |_ ___| | _| |_ 
+ / _` | '__| |/ / | __/ _ \ |/ / __|
+| (_| | |  |   <| | ||  __/   <| |_ 
+ \__,_|_|  |_|\_\_|\__\___|_|\_\\__|
+                                                                   
+"""
 
-
-class ArkitektOptions(str, Enum):
-    INIT = "init"
-    CONNECT = "connect"
-    RUN = "run"
-    WAIT = "wait"
-    DEV = "dev"
-    DUMP = "dump"
-    BUILD = "build"
-
-
-class TemplateOptions(str, Enum):
-    AGENT = "agent"
-    CLIENT = "client"
+welcome = """
+Welcome to Arkitekt. Arkitekt is a framework for building beautiful and fast (serverless) APIs around
+your python code.
+To get started, we need some information about your app. You can always change this later.
+"""
 
 
-class GrantOptions(str, Enum):
-    CLAIM = "claim"
-    DEVICE = "device"
-
-
-agent_script = f'''
+template_app = '''
 from arkitekt import register
 
 @register()
-def test_show(name: str)-> str:
-    """Demo Node
+def test_func(a: int, b: int) -> int:
+    """Add two numbers
 
-    This demo node will just pass through
-    a name 
+    This function adds two numbers and returns the result.
 
     Args:
-        name (str): The name
+        a (int): The first number
+        b (int): The second number
 
     Returns:
-        str: The pass throughed Name
+        int: The returned number
     """
-    return name
-
+    return a + b
 
 '''
 
-mikro_script = f"""
-from arkitekt import Arkitekt
 
-app = Arkitekt()
-
-with app:
-    # Implement your logig here
-"""
-
-HEADER = """
-                __    _  __         __    __ 
-  ____ _ _____ / /__ (_)/ /_ ___   / /__ / /_
- / __ `// ___// //_// // __// _ \ / //_// __/
-/ /_/ // /   / ,<  / // /_ /  __// ,<  / /_  
-\__,_//_/   /_/|_|/_/ \__/ \___//_/|_| \__/  
-                                             
-"""
+default_docker_file = '''
+FROM python:3.8-slim-buster
 
 
-template_map = {"agent": agent_script, "client": mikro_script}
+RUN pip install arkitekt==0.4.23
 
 
-def main(
-    script=ArkitektOptions.INIT,
-    name=None,
-    path=".",
-    refresh=False,
-    scan_network=None,
-    beacon=None,
-    template=None,
-    services=[],
-    claim=False,
-    silent=False,
-    overwrite=False,
-    token=None,
-    endpoint_url=None,
-    retries=3,
-    interval=1,
-    tag=None,
-    grant=GrantOptions.DEVICE,
-):
+RUN mkdir /app
+COPY . /app
+WORKDIR /app
 
-    console = Console()
-    console.print(HEADER)
+'''
 
-    try:
 
-        if path == ".":
-            app_directory = os.getcwd()
-            name = name or os.path.basename(app_directory)
-        else:
-            app_directory = os.path.join(os.getcwd(), path)
-            name = name or path
 
-        run_script_path = os.path.join(app_directory, "run.py")
-        config_path = os.path.join(app_directory, ".arkitekt")
 
-        if script == ArkitektOptions.INIT:
-            initialize_manifest(app_directory=app_directory, silent=silent)
+click.rich_click.HEADER_TEXT = logo
+click.rich_click.ERRORS_EPILOGUE = "To find out more, visit [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]"
+click.rich_click.USE_RICH_MARKUP = True
+
+
+def compile_scopes():
+
+    return ["read", "write"]
+
+
+def compile_builders():
+
+    return ["arkitekt.builders.easy", "arkitekt.builders.port"]
+
+def compile_runtimes():
+
+    return ["nvidia", "standard"]
+
+@click.group()
+@click.pass_context
+def cli(ctx):
+    """Arkitekt is a framework for building beautiful and fast (serverless) APIs around
+    your python code. 
+    It is build on top of Rekuest and is designed to be easy to use."""
+
+    sys.path.append(os.getcwd())
+    pass
+
+
+
+@cli.group()
+def run():
+    """ Runs the arkitekt app (using a builder)"""
+    pass
+
+@run.command()
+@click.option('--url', help='The fakts url for connection', default="http://localhost:8000/f/")
+@click.option('--public_url', help='The fakts public_url for connection', default="http://localhost:8000/f/")
+@click.option('--instance_id',"-i", help='The fakts instance_id for connection', default="main")
+def easy(url, public_url, instance_id):
+    """Runs the arkitekt app using the easy builder, which is the default builder
+    
+    This builder is the default builder for all script based apps. It is designed to be easy to use and
+    to get started with. It is not recommended to use this builder for production apps.
+    """
+
+    from arkitekt.cli.run import run_costum, run_easy, run_port
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException("No manifest found. Please run `arkitekt init` first before deploying an arkitekt app.")
+
+    asyncio.run(run_easy(manifest.entrypoint, manifest.identifier, manifest.version, url, public_url, instance_id))
+
+@run.command()
+@click.option('--url', help='The fakts url for connection')
+@click.option('--token', help='The fakts token for connection')
+def port(url, token):
+    """Runs the arkitekt app"""
+
+    from arkitekt.cli.run import run_costum, run_easy, run_port
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException("No manifest found. Please run `arkitekt init` first before deploying an arkitekt app.")
+
+    asyncio.run(run_port(manifest.entrypoint, manifest.identifier, manifest.version, url, token ))
+
+@run.command()
+@click.option('--builder', help='The builder used to construct the app', type=click.Choice(compile_builders()), default="arkitekt.builders.easy")
+def custom(builder):
+    """Runs the arkitekt app"""
+
+
+    from arkitekt.cli.run import run_costum, run_easy, run_port
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException("No manifest found. Please run `arkitekt init` first before deploying an arkitekt app.")
+
+    asyncio.run(run_costum(manifest.entrypoint, manifest.identifier, manifest.version, manifest.entrypoint, builder=builder))
+
+
+
+@cli.command()
+@click.option('--builder', help='The builder used to construct the app', type=click.Choice(compile_builders()), default="arkitekt.builders.easy")
+def dev(builder):
+    """Runs the arkitekt app"""
+
+    from arkitekt.cli.dev import dev_module
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException("No manifest found. Please run `arkitekt init` first before deploying an arkitekt app.")
+
+    asyncio.run(dev_module(manifest.identifier, manifest.version, manifest.entrypoint, builder=builder))
+
+
+@cli.command()
+@click.option('--app', prompt='The module path', help='The module path', default="app")
+def scan(app):
+
+    from arkitekt.cli.scan import scan_module
+    """Scans your arkitekt app for leaking variables"""
+    variables = scan_module(app)
+
+    if not variables:
+        click.echo("No dangerous variables found. You are good to go!")
+        return
+
+    for key, value in variables.items():
+        click.echo(f"{key}: {value}")
+
+@cli.group()
+def deploy():
+    """ Deploys the arkitekt app to a specific platform (like port)"""
+    pass
+
+
+
+
+
+def search_username_in_docker_info(docker_info: str):
+    for line in docker_info.splitlines():
+        if "Username" in line:
+            return line.split(":")[1].strip()
+
+
+@deploy.command()
+@click.option('--version', help='The version of your app')
+@click.option('--dockerfile', help='The dockerfile to use')
+@click.option('--nopush', help='Skip push')
+@click.option('--tag', help='The tag to use')
+@click.option('--runtime', help='The runtime to use', type=click.Choice(compile_runtimes()))
+@click.option('--nodefs', help='Do not inspect definitions', is_flag=True)
+def port(version, dockerfile, nopush, tag, runtime, nodefs):
+    """Deploys the arkitekt app to port"""
+
+    from arkitekt.cli.deploy import generate_deployment
+
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException("No manifest found. Please run `arkitekt init` first before deploying an arkitekt app.")
+
+
+    entrypoint = manifest.entrypoint
+
+    if not os.path.exists(f"Dockerfile"):
+        if click.confirm('Dockerfile does not exists. Do you want to generate a template Dockerfile?'):
+            with open(f"Dockerfile", "w") as f:
+                f.write(default_docker_file)    
+                console.print("Dockerfile generated. Please edit it to your needs. And restart the deployment.")
+                return 
+
+
+    md = Panel("Deploying to Port", subtitle="This may take a while...", subtitle_align="right")
+    console.print(md)
+    version = version or manifest.version
+    identifier = manifest.identifier
+    entrypoint = manifest.entrypoint
+
+    if version == "dev":
+        raise click.ClickException("You cannot deploy a dev version. Please change the version in your manifest. Or use the --version flag.")
+
+    with console.status("Searching username"):
+        docker_info = subprocess.check_output(["docker", "info"]).decode("utf-8")
+        username = search_username_in_docker_info(docker_info)
+        if not username:
+            raise click.ClickException("Could not find username in docker info. Have you logged in? Try 'docker login'")
+
+
+    tag = tag or click.prompt("The tag to use", default=f"{username}/{manifest.identifier}:{version}")     
+    runtime = runtime or click.prompt("The runtime to use", type=click.Choice(compile_runtimes()), default="standard")
+
+
+    deployed = {
+        "runtime": runtime,
+    }
+
+    md = Panel("Building Docker Container")
+    console.print(md)
+
+    docker_run = subprocess.run(["docker", "build", "-t", tag, "-f", dockerfile or "Dockerfile", "."])
+    if docker_run.returncode != 0:
+        raise click.ClickException("Could not build docker container")
+
+    if not nopush:
+        md = Panel("Pushing Docker Container")
+        console.print(md)
+        docker_run = subprocess.run(["docker", "push", tag])
+        if docker_run.returncode != 0:
+            raise click.ClickException("Could not push docker container")
+
+
+
+    deployed["docker"] = tag
+
+    generate_deployment(identifier, version, entrypoint, deployed, "arkitekt.deployers.port.dockerbuild", manifest.scopes, with_definitions=not nodefs)
+
+
+def prompt_scopes():
+    used_scopes = []
+    scopes = compile_scopes()
+
+    while click.confirm("Do you want to add a scope?"):
+        scope = click.prompt("The scope to use", type=click.Choice(scopes), show_choices=True)
+        used_scopes.append(scope)
+
+    return used_scopes
+
+
+
+@cli.command()
+@click.option('--identifier', help='The identifier of your app')
+@click.option('--version', help='The version of your app')
+@click.option('--entrypoint', help='The version of your app')
+@click.option('--author', help='The author of your app')
+@click.option('--builder', help='The builder used to construct the app')
+@click.option('--scopes', "-s", help='The scope of the app', type=click.Choice(compile_scopes()), multiple=True)
+def init(identifier, version, author, entrypoint, builder, scopes):
+    """Initializes the arkitekt app"""
+
+    md = Panel(logo + welcome, title="Welcome to Arkitekt", title_align="center")
+    console.print(md)
+
+    oldmanifest = load_manifest()
+
+    if oldmanifest:
+        if not click.confirm('Do you want to overwrite your old configuration'):
             return
 
-        if script == ArkitektOptions.CONNECT:
-            connect(app_directory=app_directory, silent=silent)
-            return
-
-        if script == ArkitektOptions.RUN:
-            run(path=path, silent=silent, token=token, endpoint=endpoint_url)
-            return
-
-        if script == ArkitektOptions.DEV:
-            dev(path=path, silent=silent, token=token, endpoint=endpoint_url)
-            return
-
-        if script == ArkitektOptions.BUILD:
-            build(path=path, silent=silent, tag=tag)
-            return
-
-        if script == ArkitektOptions.WAIT:
-
-            url = endpoint_url or (
-                Prompt.ask(
-                    "Give us the path to your fakts instance",
-                    default=os.getenv("FAKTS_ENDPOINT_URL", "http://localhost:8000/f/"),
-                )
-                if not silent
-                else os.getenv("FAKTS_ENDPOINT_URL", "http://localhost:8000/f/")
-            )
-            answer = asyncio.run(
-                check_fakts_loop(
-                    console,
-                    endpoint_url=url,
-                    retries=retries,
-                    interval=interval,
-                )
-            )
-            if answer:
-                console.print("Fakts is up and running")
-            return
-
-        if script == ArkitektOptions.DEV:
-
-            from arkitekt.cli.dev.autostage import watch_directory_and_stage
-
-            if not os.path.isfile(run_script_path):
-                console.print(
-                    f"Could't find a run.py in {app_directory} {run_script_path}"
-                )
-                return
-            if not os.path.isfile(fakts_path):
-                console.print(f"{app_directory} does not have a valid fakts.yaml")
-                return
-
-            asyncio.run(watch_directory_and_stage(path, entrypoint="run"))
-
-        if script == ArkitektOptions.RUN:
-
-            if not os.path.isfile(run_script_path):
-                console.print(
-                    f"Could't find a run.py in {app_directory} {run_script_path}"
-                )
-                return
-            if not os.path.isfile(fakts_path):
-                console.print(f"{app_directory} does not have a valid fakts.yaml")
-                return
-
-            asyncio.run(import_directory_and_start(path, entrypoint="run"))
-
-        if script == ArkitektOptions.DUMP:
-
-            if not os.path.isfile(run_script_path):
-                console.print(
-                    f"Could't find a run.py in {app_directory} {run_script_path}"
-                )
-                return
-            if not os.path.isfile(fakts_path):
-                console.print(f"{app_directory} does not have a valid fakts.yaml")
-                return
-
-            asyncio.run(import_directory_and_dump(path, entrypoint="run"))
-
-        if script == ArkitektOptions.CHECK:
-
-            if not os.path.isfile(fakts_path):
-                console.print(
-                    f"Directory does not containt a valid fakts.yaml. Please initialize through 'arkitekt init {path}' first"
-                )
-                return
-
-            fakts = Fakts(fakts_path=fakts_path)
-            if not fakts.loaded_fakts:
-                console.print(
-                    f"Configuration in fakts.yaml is not sufficient please reinitilize through 'arkitekt init {path}'"
-                )
-
-            app = App(fakts=fakts)
-            state = asyncio.run(
-                check_app_loop(
-                    console,
-                    app,
-                    retries=retries,
-                    interval=interval,
-                )
-            )
-
-            table = Table(title="App State")
-
-            table.add_column("Service")
-            table.add_column("Subservice")
-            table.add_column("Message")
-
-            for service, subservices in state.items():
-                for subservice, status in subservices.items():
-                    table.add_row(service, subservice, status)
-
-            console.print(table)
-
-        if script == ArkitektOptions.INIT:
-
-            if os.path.exists(app_directory):
-                console.print(f"App director already existed")
-            else:
-                os.mkdir(app_directory)
-                console.print(f"Created a new App Directory at {app_directory}")
-
-            initialize_fakts = True
-            if os.path.isfile(fakts_path):
-                console.print(
-                    f"There seems to have been a previous app initialized at {app_directory}"
-                )
-                if refresh is None:
-                    initialize_fakts = (
-                        Confirm.ask("Do you want to refresh the Apps configuration? ")
-                        if not silent
-                        else False
-                    )
-                    if not initialize_fakts:
-                        console.print(f"Nothing done. Bye :smiley: ")
-                        return
-                else:
-                    initialize_fakts = refresh
-
-            if initialize_fakts:
-
-                console.print(f"Initializing a new Configuration for {name}")
-
-                app_identifier = (
-                    name if silent else Prompt.ask("Give your app a unique identifier")
-                )
-                app_version = (
-                    "0.0.1" if silent else Prompt.ask("Give your app a version")
-                )
-                app_description = (
-                    "A new app" if silent else Prompt.ask("Give your app a description")
-                )
-
-                console.log("Which scopes do you want your app to have?")
-                scopes = []
-                for scope in available_scopes:
-                    if Confirm.ask(f"App should have {scope} scope?"):
-                        scopes.append(scope)
-
-                if not scopes:
-                    console.print("App needs at least one scope")
-                    return
-
-                manifest = {
-                    "identifier": app_identifier,
-                    "version": app_version,
-                    "description": app_description,
-                    "scopes": scopes,
-                }
-
-                with open(fakts_path, "w") as f:
-                    yaml.dump(manifest, f)
-
-                if scan_network is None:
-                    scan_network = (
-                        Confirm.ask(
-                            "Do you want to automatically scan the network for local instances?"
-                        )
-                        if not silent
-                        else False
-                    )
-
-                    if scan_network:
-                        discovery = AdvertisedDiscovery()
-                    else:
-                        url = endpoint_url or (
-                            Prompt.ask(
-                                "Give us the path to your fakts instance",
-                                default=os.getenv(
-                                    "FAKTS_ENDPOINT_URL", "http://localhost:8000/f/"
-                                ),
-                            )
-                            if not silent
-                            else os.getenv(
-                                "FAKTS_ENDPOINT_URL", "http://localhost:8000/f/"
-                            )
-                        )
-                        discovery = StaticDiscovery(base_url=url)
-
-                    if grant == GrantOptions.CLAIM:
-                        console.print(f"Initializing through claiming process")
-                        client_id = client_id or os.getenv("FAKTS_CLIENT_ID", None)
-                        client_secret = client_secret or os.getenv(
-                            "FAKTS_CLIENT_SECRET", None
-                        )
-
-                        assert (
-                            client_id and client_secret
-                        ), "Please provide a client id and secret or set FAKTS_CLIENT_ID and FAKTS_CLIENT_SECRET as env variables"
-
-                        fakts = Fakts(
-                            grant=ClaimGrant(
-                                discovery=discovery,
-                                client_id=client_id,
-                                client_secret=client_secret,
-                            ),
-                        )
-
-                    elif grant == GrantOptions.DEVICE:
-                        console.print(f"Initializing through device code")
-                        has_webrowser = (
-                            Confirm.ask(
-                                "Do you have a webbrowser installed? Otherwise we will generate a code that you need to enter manually"
-                            )
-                            if not silent
-                            else False
-                        )
-
-                        fakts = Fakts(
-                            grant=DeviceCodeGrant(
-                                discovery=discovery, open_browser=has_webrowser
-                            ),
-                            fakts_path=fakts_path,
-                            force_refresh=True,
-                        )
-
-                    else:
-                        raise NotImplementedError("Grant type not implemented")
-
-                    with fakts as f:
-                        f.load()
-
-            save_run = True
-            if os.path.isfile(run_script_path):
-                save_run = refresh or (
-                    Confirm.ask(
-                        "run.py already exists? Do you want to overwrite the run.py file? :smiley: "
-                    )
-                    if not silent
-                    else False
-                )
-
-            if save_run:
-                console.print("Initializing Templates for the App")
-                if not template:
-                    template = (
-                        Prompt.ask(
-                            "Which Template do you want to use?",
-                            choices=list(template_map.keys()),
-                            default="agent",
-                        )
-                        if not silent
-                        else "agent"
-                    )
-
-                with open(run_script_path, "w") as f:
-                    f.write(template_map[template])
-                    console.print("Create new Entrypoint for this App")
-
-    except:
-        console.print_exception()
-        sys.exit(1)
 
 
-def entrypoint():
-    parser = argparse.ArgumentParser(description="Say hello")
-    parser.add_argument("script", type=ArkitektOptions, help="The Script Type")
-    parser.add_argument("path", type=str, help="The Path", nargs="?", default=".")
-    parser.add_argument("--name", type=str, help="The Name of this script")
-    parser.add_argument(
-        "--retries", type=int, help="The Name of this script", default=0
-    )
-    parser.add_argument(
-        "-t", type=str, help="The tag of the dockercontainer", default=None
-    )
-    parser.add_argument(
-        "--interval", type=int, help="The Name of this script", default=5
-    )
-    parser.add_argument("--scan-network", type=bool, help="Do you want to refresh")
-    parser.add_argument("--beacon", type=str, help="The adress of the beacon")
-    parser.add_argument(
-        "--template", type=TemplateOptions, help="The run script template"
-    )
-    parser.add_argument(
-        "--token",
-        type=str,
-        help="The token to negoatite the connection",
-    )
-    parser.add_argument(
-        "--endpoint_url",
-        type=str,
-        help="The endpoint url for the fakts instance",
-    )
-    parser.add_argument(
-        "--grant", type=GrantOptions, help="The grant to use", default="device"
-    )
-    parser.add_argument("--silent", dest="silent", action="store_true")
-    parser.add_argument("--refresh", dest="refresh", action="store_true")
-    parser.add_argument(
-        "--services",
-        type=str,
-        help="The services you want to connect to (seperated by ,)",
-    )
-    parser.set_defaults(silent=False)
-    parser.set_defaults(refresh=False)
-    parser.set_defaults(claim=False)
+    manifest = Manifest(
+            identifier=identifier or click.prompt("Your apps identifier", default=getattr(oldmanifest, "identifier", os.path.basename(os.getcwd()))),
+            version=version or click.prompt("The apps version", default=getattr(oldmanifest, "version", "dev")),
+            entrypoint=entrypoint or click.prompt("The module path", default=getattr(oldmanifest, "entrypoint", "app")),
+            author=author or click.prompt("The apps author", default=getattr(oldmanifest, "author", "john doe")),
+            builder=builder or click.prompt("The builder to use", default=getattr(oldmanifest, "builder", "arkitekt.builders.easy")),
+            scopes=scopes or prompt_scopes()
+        )
 
-    args = parser.parse_args()
-    print(args.silent)
+    entrypoint = manifest.entrypoint
 
-    main(
-        script=args.script,
-        path=args.path,
-        name=args.name,
-        refresh=args.refresh,
-        scan_network=args.scan_network,
-        template=args.template,
-        services=args.services.split(",") if args.services else [],
-        silent=args.silent,
-        token=args.token,
-        tag=args.t,
-        endpoint_url=args.endpoint_url,
-        grant=args.grant,
-        retries=args.retries,
-        interval=args.interval,
-    )
+    if not os.path.exists(f"{entrypoint}.py"):
+        if click.confirm('Entrypoint does not exists. Do you want to generate a python file?'):
+            with open(f"{entrypoint}.py", "w") as f:
+                f.write(template_app)
 
 
-if __name__ == "__main__":
-    entrypoint()
+    write_manifest(manifest)
+
+
+if __name__ == '__main__':
+    cli()
+   

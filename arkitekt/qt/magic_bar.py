@@ -1,14 +1,16 @@
 from enum import Enum
 from qtpy import QtWidgets, QtGui, QtCore
 from koil.qt import QtRunner
-from arkitekt.apps.rekuest import RekuestApp
+from arkitekt import Arkitekt
 from .utils import get_image_path
 
 
 class Profile(QtWidgets.QDialog):
+    updated = QtCore.Signal()
+
     def __init__(
         self,
-        app: RekuestApp,
+        app: Arkitekt,
         bar: "MagicBar",
         *args,
         dark_mode: bool = False,
@@ -17,6 +19,9 @@ class Profile(QtWidgets.QDialog):
         super(Profile, self).__init__(*args, parent=bar, **kwargs)
         self.app = app
         self.bar = bar
+
+
+        self.settings = QtCore.QSettings("arkitekt", f"{self.app.identifier}:{self.app.version}")
 
         self.setWindowTitle("Profile")
         self.layout = QtWidgets.QVBoxLayout()
@@ -30,8 +35,24 @@ class Profile(QtWidgets.QDialog):
             lambda: self.bar.configure_task.run(force_refresh=True)
         )
 
+        self.go_all_the_way_button = QtWidgets.QPushButton("One click provide")
+        self.go_all_the_way_button.setCheckable(True)
+        self.go_all_the_way_button.setChecked(self.go_all_the_way_down)
+        self.go_all_the_way_button.clicked.connect(self.on_go_all_the_way_clicked)
+
+
         self.layout.addWidget(self.logout_button)
         self.layout.addWidget(self.unkonfigure_button)
+        self.layout.addWidget(self.go_all_the_way_button)
+
+
+    def on_go_all_the_way_clicked(self, checked: bool) -> None:
+        self.settings.setValue("go_all_the_way_down", checked)
+        self.updated.emit()
+
+    @property
+    def go_all_the_way_down(self) -> bool:
+        return self.settings.value("go_all_the_way_down", False, bool)
 
 
 class AppState(str, Enum):
@@ -54,15 +75,21 @@ class MagicBar(QtWidgets.QWidget):
     state = AppState.DOWN
     process_state = ProcessState.UNKONFIGURED
 
-    def __init__(self, app: RekuestApp, dark_mode: bool = False) -> None:
+
+    def __init__(self, app: Arkitekt, dark_mode: bool = False) -> None:
         super().__init__()
         self.app = app
+
+
         # assert isinstance(
         #     self.app.koil, QtPedanticKoil
         # ), f"Koil should be Qt Koil but is {type(self.app.koil)}"
         self.dark_mode = dark_mode
 
+
+
         self.profile = Profile(app, self, dark_mode=dark_mode)
+        self.profile.updated.connect(self.on_profile_updated)
 
         self.configure_task = QtRunner(self.app.fakts.aload)
         self.configure_task.errored.connect(self.configure_errored)
@@ -105,6 +132,14 @@ class MagicBar(QtWidgets.QWidget):
         self.setLayout(self.layout)
 
         self.set_unkonfigured()
+        self.on_profile_updated()
+
+    def on_profile_updated(self):
+        if self.profile.go_all_the_way_down:
+            self.set_unprovided()
+        
+
+
 
     def task_errored(self, ex: Exception):
         raise ex
@@ -188,7 +223,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setText("Cancel Provide..")
 
     def magic_button_clicked(self):
-        if self.process_state == ProcessState.UNKONFIGURED:
+        if self.process_state == ProcessState.UNKONFIGURED and not self.profile.go_all_the_way_down:
             if not self.configure_future or self.configure_future.done():
                 self.configure_future = self.configure_task.run()
                 self.magicb.setText("Cancel Configuration")
@@ -198,7 +233,7 @@ class MagicBar(QtWidgets.QWidget):
                 self.set_unkonfigured()
                 return
 
-        if self.process_state == ProcessState.UNLOGGED:
+        if self.process_state == ProcessState.UNLOGGED and not self.profile.go_all_the_way_down:
             if not self.login_future or self.login_future.done():
                 self.login_future = self.login_task.run()
                 self.magicb.setText("Cancel Login")
@@ -209,14 +244,13 @@ class MagicBar(QtWidgets.QWidget):
                 self.set_unlogined()
                 return
 
-        if self.process_state == ProcessState.UNPROVIDED:
+        if self.process_state != ProcessState.PROVIDING or self.profile.go_all_the_way_down:
             if not self.provide_future or self.provide_future.done():
                 self.provide_future = self.provide_task.run()
                 self.set_providing()
                 return
 
-        if self.process_state == ProcessState.PROVIDING:
-            if not self.provide_future.done():
-                self.provide_future.cancel()
-                self.set_unprovided()
-                return
+        if not self.provide_future.done():
+            self.provide_future.cancel()
+            self.set_unprovided()
+            return

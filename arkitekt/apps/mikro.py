@@ -66,7 +66,7 @@ class ArkitektMikro(Mikro):
         )
     )
     datalayer: DataLayer = Field(
-        default_factory=lambda: FaktsDataLayer(fakts_group="mikro.datalayer")
+        default_factory=lambda: FaktsDataLayer(fakts_group="minio")
     )
     healthz: FaktsHealthz = Field(
         default_factory=lambda: FaktsHealthz(fakts_group="mikro")

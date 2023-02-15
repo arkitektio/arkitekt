@@ -4,17 +4,18 @@ from rekuest.definition.registry import ActorBuilder, get_default_definition_reg
 from rekuest.structures.registry import StructureRegistry
 from rekuest.structures.default import get_default_structure_registry
 from rekuest.actors.base import Actor
-
+from rekuest.actors.actify import Actifier
+import os
 
 def register(
-    builder: ActorBuilder = None,
-    package: str = None,
+    actifier: Actifier = None,
     interface: str = None,
     widgets: Dict[str, WidgetInput] = None,
     interfaces: List[str] = [],
-    on_provide: Callable[[ProvisionFragment], Awaitable[dict]] = None,
-    on_unprovide: Callable[[], Awaitable[dict]] = None,
+    on_provide=None,
+    on_unprovide=None,
     structure_registry: StructureRegistry = None,
+    **actifier_params,
 ):
     """Register a function or actor to the default definition registry.
 
@@ -33,21 +34,39 @@ def register(
         structure_registry (StructureRegistry, optional): The structure registry to use for this Actor (used to shrink and expand inputs). Defaults to None.
     """
 
-    def real_decorator(function):
+    def real_decorator(function_or_actor):
         # Simple bypass for now
         def wrapped_function(*args, **kwargs):
-            return function(*args, **kwargs)
+            return function_or_actor(*args, **kwargs)
 
         get_default_definition_registry().register(
-            function_or_actor=function,
-            builder=builder,
-            package=package,
+            function_or_actor,
+            structure_registry=structure_registry or get_default_structure_registry(),
+            actifier= actifier,
             interface=interface,
-            widgets=widgets or dict(),
+            widgets=widgets,
             interfaces=interfaces,
             on_provide=on_provide,
             on_unprovide=on_unprovide,
-            structure_registry=structure_registry or get_default_structure_registry(),
+            **actifier_params,
+            
         )
 
+        return wrapped_function
+
     return real_decorator
+
+
+
+def create_arkitekt_folder(with_cache: bool = True):
+    """Create the arkitekt folder"""
+    os.makedirs(".arkitekt", exist_ok=True)
+    if with_cache:
+        os.makedirs(".arkitekt/cache", exist_ok=True)
+
+    gitignore = os.path.join(".arkitekt", ".gitignore")
+    if not os.path.exists(gitignore):
+        with open(gitignore, "w") as f:
+            f.write("# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/")
+
+    return ".arkitekt"
