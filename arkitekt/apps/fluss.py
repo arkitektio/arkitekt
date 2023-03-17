@@ -2,13 +2,11 @@ from arkitekt.apps.herre import HerreApp
 from pydantic import Field
 from fluss.fluss import Fluss
 from fluss.rath import FlussLinkComposition, FlussRath
-from rath.contrib.fakts.links.httpx import FaktsHttpXLink
 from rath.links.split import SplitLink
 from rath.contrib.fakts.links.aiohttp import FaktsAIOHttpLink
 from rath.contrib.fakts.links.websocket import FaktsWebsocketLink
 from rath.contrib.herre.links.auth import HerreAuthLink
 from graphql import OperationType
-from .connected import ConnectedApp
 from .rekuest import RekuestApp
 from .unlok import UnlokApp
 from arkitekt.healthz import FaktsHealthz
@@ -20,7 +18,7 @@ class ArkitektFluss(Fluss):
             link=FlussLinkComposition(
                 auth=HerreAuthLink(),
                 split=SplitLink(
-                    left=FaktsHttpXLink(fakts_group="fluss"),
+                    left=FaktsAIOHttpLink(fakts_group="fluss"),
                     right=FaktsWebsocketLink(fakts_group="fluss"),
                     split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
                 ),

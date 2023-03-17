@@ -1,40 +1,74 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.4.36"
+version = "0.4.61"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
 packages = [{ include = "arkitekt" }]
 
 [tool.poetry.dependencies]
-python = "^3.8"
-herre = ">=0.3.8"
-fakts = ">=0.3.9"
-rekuest = ">=0.1.21"
-mikro = ">=0.3.32"
-unlok = ">=0.1.7"
-fluss = ">=0.1.35"
+python = "^3.8, <=3.12"
+herre = ">=0.3.14"
+fakts = ">=0.3.15"
+rekuest = ">=0.1.28"
+mikro = ">=0.3.40"
+unlok = ">=0.1.10"
+fluss = ">=0.1.38"
 rich-click = { version = "^1.6.1", optional = true }
 watchfiles = { version = "^0.18.1", optional = true }
+turms = { version = ">=0.3.1a0", python = "^3.9", optional = true }
 
 
 [tool.poetry.extras]
-cli = ["rich-click", "watchfiles"]
+cli = ["rich-click", "watchfiles", "turms"]
+
+[tool.mypy]
+exclude = ["venv/"]
+ignore_missing_imports = true
+
+
+[tool.ruff]
+extend-select = ["ANN", "D1"]
+
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "dist",
+    "node_modules",
+    "venv",
+]
+
+# Same as Black.
+line-length = 100
 
 [tool.poetry.group.dev.dependencies]
 testcontainers = "3.7.0"
 autoflake = "^1.7.7"
 pytest = "^7.2.0"
-PyQtWebEngine = "^5.15.5"
-PyQt5 = "^5.15.6"
-pytest-qt = "^4.2.0"
 pytest-asyncio = "^0.20.2"
-turms = { version = ">=0.2.3", python = "^3.9" }
 aiohttp = "^3.8.3"
 websockets = "^10.4"
-black = "^22.10.0"
+black = "^23.1.0"
 pytest-cov = "^4.0.0"
-scikit-image = "^0.19.3"
+pytest-aiohttp = "^1.0.4"
+ruff = "^0.0.254"
+mypy = "^1.0.1"
 
 
 [tool.poetry.scripts]

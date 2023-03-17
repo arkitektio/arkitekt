@@ -1,6 +1,6 @@
 from importlib import import_module
 import inspect
-module_path = f"hu"
+module_path = "hu"
 
 z = locals()
 y = locals()

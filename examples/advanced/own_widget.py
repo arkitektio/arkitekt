@@ -24,7 +24,7 @@ def acquire_2d(
     """Acquire hhhh
 
     Acquire a 2D snap of an image"""
-    omero = OmeroRepresentationInput(
+    OmeroRepresentationInput(
         position=position,
         acquisitionDate=datetime.datetime.now(),
         physicalSize=PhysicalSizeInput(x=1, y=1, z=1, c=1, t=1),

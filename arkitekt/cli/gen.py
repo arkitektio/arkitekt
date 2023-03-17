@@ -9,7 +9,6 @@ from rekuest.api.schema import (
 )
     
 
-from black import format_str, FileMode
 import ast
 import re
 import inflection
@@ -134,7 +133,7 @@ def generate_node_args(
     kw_values = []
 
     for arg in args:
-        annotation = get_arg_annotation(arg)
+        get_arg_annotation(arg)
         if arg.default:
             kw_values.append(ast.Constant(value=arg.default))
 

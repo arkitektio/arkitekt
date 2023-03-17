@@ -3,9 +3,10 @@ from rekuest.actors.vars import current_assignation_helper
 
 
 class tqdm(tqdm):
-    """Provides `update_to(n)` which uses `tqdm.update(delta_n)`."""
+    """A tqdm that reports progress to arkitekt through the
+    assignation contexst"""
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self._assignationhelper = current_assignation_helper.get(None)

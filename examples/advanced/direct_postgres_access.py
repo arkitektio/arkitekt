@@ -2,10 +2,9 @@ from datetime import datetime
 import json
 from typing import List, Optional
 from arkitekt import easy
-from fakts.fakts import Fakts
 import sqlalchemy
 from mikro.api.schema import TableFragment, RepresentationFragment, FeatureFragment
-from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, inspect
+from sqlalchemy import inspect
 from sqlalchemy.engine.base import Connection
 from sqlalchemy.sql import text
 from rekuest.widgets import SearchWidget
@@ -127,7 +126,7 @@ def table_to_features(
     if take_columns:
         assert all(
             [column in table_data.columns for column in take_columns]
-        ), f"Take columns not in table"
+        ), "Take columns not in table"
         table_data = table_data[take_columns + [label_column]]
 
     table_data.set_index(label_column, inplace=True)

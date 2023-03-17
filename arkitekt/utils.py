@@ -1,13 +1,14 @@
-from typing import Awaitable, Callable, Dict, List, Union
-from rekuest.api.schema import ProvisionFragment, WidgetInput
-from rekuest.definition.registry import ActorBuilder, get_default_definition_registry
+from typing import Dict, List
+from rekuest.api.schema import WidgetInput
+from rekuest.definition.registry import get_default_definition_registry
 from rekuest.structures.registry import StructureRegistry
 from rekuest.structures.default import get_default_structure_registry
-from rekuest.actors.base import Actor
-from rekuest.actors.actify import Actifier
+from rekuest.actors.types import Actifier
 import os
+from functools import wraps
 
 def register(
+    *func, 
     actifier: Actifier = None,
     interface: str = None,
     widgets: Dict[str, WidgetInput] = None,
@@ -19,9 +20,17 @@ def register(
 ):
     """Register a function or actor to the default definition registry.
 
-    This is a convenience function to register a function or actor to the default definition registry.
-    It is equivalent to calling the register method on the default definition registry.
+    You can use this decorator to register a function or actor to the default 
+    definition registry. There is also a function version of this decorator, 
+    which is more convenient to use.
 
+    Example:
+        >>> @register
+        >>> def hello_world(string: str):
+
+        >>> @register(interface="hello_world")
+        >>> def hello_world(string: str):
+        
     Args:
         function_or_actor (Union[Callable, Actor]): The function or Actor
         builder (ActorBuilder, optional): An actor builder (see ActorBuilder). Defaults to None.
@@ -33,11 +42,14 @@ def register(
         on_unprovide (Callable[[], Awaitable[dict]], optional): Function that shall be called on unprovide (in the async eventloop). Defaults to None.
         structure_registry (StructureRegistry, optional): The structure registry to use for this Actor (used to shrink and expand inputs). Defaults to None.
     """
+    if len(func) > 1:
+        raise ValueError("You can only register one function or actor at a time.")
+    if len(func) == 1:
+        function_or_actor = func[0]
 
-    def real_decorator(function_or_actor):
-        # Simple bypass for now
+        @wraps(function_or_actor)
         def wrapped_function(*args, **kwargs):
-            return function_or_actor(*args, **kwargs)
+                return function_or_actor(*args, **kwargs)
 
         get_default_definition_registry().register(
             function_or_actor,
@@ -54,7 +66,30 @@ def register(
 
         return wrapped_function
 
-    return real_decorator
+    else:
+
+
+        def real_decorator(function_or_actor):
+            # Simple bypass for now
+            def wrapped_function(*args, **kwargs):
+                return function_or_actor(*args, **kwargs)
+
+            get_default_definition_registry().register(
+                function_or_actor,
+                structure_registry=structure_registry or get_default_structure_registry(),
+                actifier= actifier,
+                interface=interface,
+                widgets=widgets,
+                interfaces=interfaces,
+                on_provide=on_provide,
+                on_unprovide=on_unprovide,
+                **actifier_params,
+                
+            )
+
+            return wrapped_function
+
+        return real_decorator
 
 
 

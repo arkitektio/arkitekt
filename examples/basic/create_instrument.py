@@ -5,9 +5,7 @@ from mikro.api.schema import (
     create_instrument,
     from_xarray,
     OmeroRepresentationInput,
-    PhysicalSizeInput,
 )
-import tifffile
 import glob
 from arkitekt import easy
 import re

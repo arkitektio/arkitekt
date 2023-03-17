@@ -1,0 +1,558 @@
+"""The root Query"""
+type Query {
+  hello: String
+  void: String
+  userapp(
+    """Unique app name for user"""
+    name: String
+
+    """Unique app name for user"""
+    clientId: ID
+  ): Application
+  applications: [Application]
+  myapplications: [Application]
+  application(
+    """The ID to search by"""
+    clientId: ID!
+  ): Application
+  scopes(
+    """Unique app name for user"""
+    search: String
+
+    """Unique app name for user"""
+    values: [ID]
+  ): [Scope]
+  scope(
+    """Unique app name for user"""
+    key: String!
+  ): Scope
+  user(
+    """The email of the user"""
+    email: String
+
+    """The email of the user"""
+    id: ID
+  ): HerreUser
+  me: HerreUser
+  users(
+    username: String
+    email: String
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of username"""
+    search: String
+  ): [HerreUser]
+
+  """Get a group"""
+  group(
+    """Unique app name fddor user"""
+    id: ID
+
+    """Unique app name fddor user"""
+    name: String
+  ): Group
+
+  """Get a list of users"""
+  groups(
+    name: String
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of username"""
+    search: String
+  ): [Group]
+
+  """Get a list of users"""
+  mygroups(
+    """Unique app name for user"""
+    name: String
+  ): [Group]
+  privatefaktapp(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    identifier: String
+
+    """Unique app name for user"""
+    version: String
+  ): FaktApplication
+  privatefaktapps: [FaktApplication]
+  publicfaktapp(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    identifier: String
+
+    """Unique app name for user"""
+    version: String
+  ): FaktApplication
+  publicfaktapps: [FaktApplication]
+  app(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    identifier: String
+
+    """Unique app name for user"""
+    version: String
+
+    """The client id of one associated oauth2 application"""
+    clientId: String
+  ): App
+  apps(
+    """Search for substring of identifier"""
+    search: String
+  ): [App]
+
+  """Get information on your Docker Template"""
+  member(
+    """The Whale ID"""
+    id: ID!
+  ): Member
+  graphs: [Graph]
+}
+
+type Application {
+  """"""
+  id: ID!
+
+  """"""
+  clientId: String!
+
+  """"""
+  user: HerreUser
+
+  """The associated Redirect Uris"""
+  redirectUris: [String]
+
+  """"""
+  clientType: ApplicationClientType!
+
+  """"""
+  authorizationGrantType: ApplicationAuthorizationGrantType!
+
+  """"""
+  name: String!
+
+  """"""
+  skipAuthorization: Boolean!
+
+  """"""
+  created: DateTime!
+
+  """"""
+  updated: DateTime!
+
+  """"""
+  algorithm: ApplicationAlgorithm
+  faktapplication: FaktApplication
+
+  """The Url of the Image"""
+  image: String
+}
+
+type HerreUser {
+  """"""
+  id: ID!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  groups: [Group!]!
+
+  """Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."""
+  username: String!
+
+  """"""
+  firstName: String!
+
+  """"""
+  lastName: String!
+
+  """"""
+  email: String!
+
+  """
+  Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+  """
+  isActive: Boolean!
+  profile: Profile
+
+  """The associated rules of this """
+  roles: [String]
+}
+
+type Group {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  userSet: [HerreUser!]!
+  profile: GroupProfile
+}
+
+type GroupProfile {
+  """"""
+  id: ID!
+
+  """"""
+  name: String
+
+  """"""
+  group: Group!
+  avatar: String
+}
+
+type Profile {
+  """"""
+  id: ID!
+
+  """"""
+  name: String
+
+  """"""
+  user: HerreUser!
+  avatar: String
+}
+
+"""An enumeration."""
+enum ApplicationClientType {
+  """Confidential"""
+  CONFIDENTIAL
+
+  """Public"""
+  PUBLIC
+}
+
+"""An enumeration."""
+enum ApplicationAuthorizationGrantType {
+  """Authorization code"""
+  AUTHORIZATION_CODE
+
+  """Implicit"""
+  IMPLICIT
+
+  """Resource owner password-based"""
+  PASSWORD
+
+  """Client credentials"""
+  CLIENT_CREDENTIALS
+
+  """OpenID connect hybrid"""
+  OPENID_HYBRID
+}
+
+"""
+The `DateTime` scalar type represents a DateTime
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar DateTime
+
+"""An enumeration."""
+enum ApplicationAlgorithm {
+  """No OIDC support"""
+  A_
+
+  """RSA with SHA-2 256"""
+  RS256
+
+  """HMAC with SHA-2 256"""
+  HS256
+}
+
+type FaktApplication {
+  """"""
+  id: ID!
+
+  """"""
+  app: App
+
+  """"""
+  application: Application!
+
+  """"""
+  kind: FaktApplicationKind
+
+  """"""
+  token: String!
+
+  """"""
+  clientId: String!
+
+  """"""
+  clientSecret: String!
+  scopes: [String]!
+
+  """"""
+  logo: String
+
+  """"""
+  creator: HerreUser!
+
+  """"""
+  user: HerreUser
+}
+
+type App {
+  """"""
+  id: ID!
+
+  """"""
+  identifier: String!
+
+  """"""
+  version: String!
+
+  """"""
+  name: String!
+  logo: String
+
+  """"""
+  faktApplications: [FaktApplication!]!
+}
+
+"""An enumeration."""
+enum FaktApplicationKind {
+  """Website"""
+  WEBSITE
+
+  """Dekstop"""
+  DESKTOP
+
+  """User"""
+  USER
+}
+
+type Scope {
+  value: String!
+  label: String!
+  description: String
+}
+
+type Member {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+}
+
+type Graph {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  version: String!
+
+  """Is this appearing on a selection of hosts?"""
+  host: String!
+
+  """"""
+  elements: [Element!]!
+
+  """"""
+  codes: [DeviceCode!]!
+}
+
+type Element {
+  """"""
+  id: ID!
+
+  """"""
+  graph: Graph!
+
+  """"""
+  name: String!
+  values: GenericScalar
+}
+
+"""
+The `GenericScalar` scalar type represents a generic
+GraphQL scalar value that could be:
+String, Boolean, Int, Float, List or Object.
+"""
+scalar GenericScalar
+
+type DeviceCode {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  code: String!
+
+  """"""
+  user: HerreUser
+
+  """"""
+  name: String
+
+  """"""
+  version: String
+
+  """"""
+  identifier: String
+  scopes: GenericScalar
+
+  """"""
+  graph: Graph
+}
+
+"""The root Mutation"""
+type Mutation {
+  deleteApplication(
+    """The ID of the application"""
+    clientId: ID!
+  ): DeleteApplicationResult
+  createApplication(
+    """The Grant Type"""
+    grantType: GrantType!
+
+    """The Name of this Application"""
+    name: String!
+
+    """Available Redirect Uris for this Grant (required for implicit)"""
+    redirectUris: [String]
+  ): Application
+  createUserLoginApp(
+    """The Name of this Application"""
+    name: String!
+
+    """Available Redirect Uris for this Grant (required for code)"""
+    redirectUris: [String]
+  ): Application
+  createUserApp(
+    """The Identifier of this Application"""
+    identifier: String!
+
+    """The Name of this Application"""
+    name: String!
+
+    """The Version of this Application"""
+    version: String!
+  ): CreatedBackendApp
+  changeMe(email: Email, firstName: String, lastName: String): HerreUser
+  updateUser(active: Boolean, avatar: Upload, email: Email, firstName: String, id: ID!, lastName: String): HerreUser
+  updateGroup(
+    avatar: Upload
+    id: ID!
+
+    """The name of the group (non unique)"""
+    name: String
+  ): Group
+  createPrivateFakt(
+    """The Name of this Elemet"""
+    identifier: String!
+
+    """The ID of the User to imitate (only managers can do this)"""
+    imitate: ID
+
+    """A list of potential scopes for this app"""
+    scopes: [String]!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    version: String!
+  ): FaktApplication
+  createPublicFakt(
+    """The Name of this Elemet"""
+    identifier: String!
+
+    """The kind of this app"""
+    kind: PublicFaktType!
+
+    """A list of potential redirects for this app"""
+    redirectUris: [String]!
+
+    """A list of potential scopes for this app"""
+    scopes: [String]!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    version: String!
+  ): FaktApplication
+  deletePrivateFakt(
+    """The ID of the application"""
+    id: ID!
+  ): DeletePrivateFaktResult
+  deletePublicFakt(
+    """The ID of the application"""
+    id: ID!
+  ): DeletePublicFaktResult
+  updateApp(
+    """The id of the app"""
+    id: ID!
+
+    """The Logo of this Apps"""
+    logo: Upload
+  ): App
+  createElement(
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    graph: ID!
+
+    """The Name of this Elemet"""
+    name: String!
+
+    """The configuraiton"""
+    values: Config!
+  ): Element
+  createGraph(
+    """The Name of this Elemet"""
+    name: String!
+  ): Graph
+}
+
+type DeleteApplicationResult {
+  clientId: ID
+}
+
+enum GrantType {
+  CLIENT_CREDENTIALS
+  IMPLICIT
+  PASSWORD
+  AUTHORIZATION_CODE
+}
+
+type CreatedBackendApp {
+  clientSecret: String
+  clientId: String
+}
+
+scalar Email
+
+"""
+Create scalar that ignores normal serialization/deserialization, since
+that will be handled by the multipart request spec
+"""
+scalar Upload
+
+enum PublicFaktType {
+  DEKSTOP
+  WEBSITE
+}
+
+type DeletePrivateFaktResult {
+  id: ID
+}
+
+type DeletePublicFaktResult {
+  id: ID
+}
+
+"""The configuration"""
+scalar Config

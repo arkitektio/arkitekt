@@ -15,7 +15,7 @@ class Profile(QtWidgets.QDialog):
         *args,
         dark_mode: bool = False,
         **kwargs,
-    ):
+    ) -> None:
         super(Profile, self).__init__(*args, parent=bar, **kwargs)
         self.app = app
         self.bar = bar
@@ -69,6 +69,10 @@ class ProcessState(str, Enum):
 
 
 class MagicBar(QtWidgets.QWidget):
+    CONNECT_LABEL = "Connect"
+
+
+    app_state_changed = QtCore.Signal()
     app_up = QtCore.Signal()
     app_down = QtCore.Signal()
     app_error = QtCore.Signal()
@@ -107,7 +111,7 @@ class MagicBar(QtWidgets.QWidget):
         self.provide_task.errored.connect(self.provide_errored)
         self.provide_task.returned.connect(self.set_unprovided)
 
-        self.magicb = QtWidgets.QPushButton("Connect")
+        self.magicb = QtWidgets.QPushButton(MagicBar.CONNECT_LABEL)
         self.magicb.setMinimumHeight(30)
         self.magicb.setMaximumHeight(30)
 
@@ -138,26 +142,35 @@ class MagicBar(QtWidgets.QWidget):
         if self.profile.go_all_the_way_down:
             self.set_unprovided()
         
-
-
+    def show_error(self, ex: Exception):
+        dialog = QtWidgets.QDialog()
+        dialog.setWindowTitle("Error")
+        layout = QtWidgets.QVBoxLayout()
+        dialog.setLayout(layout)
+        label = QtWidgets.QLabel(str(ex))
+        layout.addWidget(label)
+        dialog.exec_()
 
     def task_errored(self, ex: Exception):
         raise ex
 
     def configure_errored(self, ex: Exception):
         self.set_unkonfigured()
-        raise ex
+        self.show_error(ex)
+
 
     def login_errored(self, ex: Exception):
         self.set_unlogined()
         raise ex
+        self.show_error(ex)
 
     def provide_errored(self, ex: Exception):
         self.set_unprovided()
         raise ex
+        self.show_error(ex)
 
     def on_configured(self):
-        set.set
+        self.magicb.setText("Login")
 
     def on_login(self):
         self.magicb.setText("Provide")
@@ -186,6 +199,7 @@ class MagicBar(QtWidgets.QWidget):
         self.state = AppState.DOWN
         self.process_state = ProcessState.UNKONFIGURED
         self.app_down.emit()
+        self.app_state_changed.emit()
         self.set_button_movie("pink pulse.gif")
         self.profile.unkonfigure_button.setDisabled(True)
         self.profile.logout_button.setDisabled(True)
@@ -196,6 +210,8 @@ class MagicBar(QtWidgets.QWidget):
         self.state = AppState.DOWN
         self.process_state = ProcessState.UNLOGGED
         self.app_down.emit()
+
+        self.app_state_changed.emit()
         self.set_button_movie("orange pulse.gif")
         self.profile.unkonfigure_button.setDisabled(False)
         self.profile.logout_button.setDisabled(True)
@@ -206,6 +222,8 @@ class MagicBar(QtWidgets.QWidget):
         self.state = AppState.UP
         self.process_state = ProcessState.UNPROVIDED
         self.app_up.emit()
+
+        self.app_state_changed.emit()
         self.set_button_movie("green pulse.gif")
         self.profile.unkonfigure_button.setDisabled(False)
         self.profile.logout_button.setDisabled(False)
@@ -216,6 +234,8 @@ class MagicBar(QtWidgets.QWidget):
         self.state = AppState.UP
         self.process_state = ProcessState.PROVIDING
         self.app_up.emit()
+
+        self.app_state_changed.emit()
         self.set_button_movie("red pulse.gif")
         self.profile.unkonfigure_button.setDisabled(False)
         self.profile.logout_button.setDisabled(False)

@@ -1,0 +1,45 @@
+info:
+  host: jhnnsrs-server:8000
+  name: br-e7c145396c6b
+services:
+  fluss:
+    base_url: http://jhnnsrs-server:8070/o
+    endpoint_url: http://jhnnsrs-server:8070/graphql
+    healthz: http://jhnnsrs-server:8070/ht
+    secure: false
+    ws_endpoint_url: ws://jhnnsrs-server:8070/graphql
+  hub:
+    agent:
+      endpoint_url: ws://jhnnsrs-server:8040/agi
+    endpoint_url: http://jhnnsrs-server:8040/graphql
+    healthz: http://jhnnsrs-server:8040/ht
+    secure: false
+    ws_endpoint_url: ws://jhnnsrs-server:8040/graphql
+  lok:
+    base_url: http://jhnnsrs-server:8000/o
+    endpoint_url: http://jhnnsrs-server:8000/graphql
+    healthz: http://jhnnsrs-server:8000/ht
+    secure: false
+    ws_endpoint_url: ws://jhnnsrs-server:8000/graphql
+  mikro:
+    base_url: http://jhnnsrs-server:8080/o
+    endpoint_url: http://jhnnsrs-server:8080/graphql
+    healthz: http://jhnnsrs-server:8080/ht
+    secure: false
+    ws_endpoint_url: ws://jhnnsrs-server:8080/graphql
+  minio:
+    endpoint_url: http://jhnnsrs-server:9000
+    secure: false
+  port:
+    base_url: http://jhnnsrs-server:8050/o
+    endpoint_url: http://jhnnsrs-server:8050/graphql
+    healthz: http://jhnnsrs-server:8050/ht
+    secure: false
+    ws_endpoint_url: ws://jhnnsrs-server:8050/graphql
+  rekuest:
+    agent:
+      endpoint_url: ws://jhnnsrs-server:8090/agi
+    endpoint_url: http://jhnnsrs-server:8090/graphql
+    healthz: http://jhnnsrs-server:8090/ht
+    secure: false
+    ws_endpoint_url: ws://jhnnsrs-server:8090/graphql

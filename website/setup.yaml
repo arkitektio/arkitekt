@@ -1,0 +1,258 @@
+name: defaults
+admin_username: asdasd
+admin_password: sdfsef
+admin_email: asd@soaidna.de
+attention: true
+apps:
+  - name: MikroManager
+    identifier: github.io.jhnnsrs.mikromanager
+    version: latest
+    description: The mikroscope
+    long: Enables support for Micro manager, a microscope control software
+    image: https://cdn.sstatic.net/Img/teams/teams-illo-free-sidebar-promo.svg?v=47faa659a05e
+    requires:
+      - lok
+      - rekuest
+      - mikro
+    download: https://github.com/jhnnsrs/mikroj
+    client_id: soinfosienfoaswdasdasdisnefoisneofinsef
+    client_secret: soinfosiengeesegegfoisnefoisneofinsef
+    redirect_uris:
+      - http://localhost:8090
+    client_type: public
+    grant_type: authorization-code
+    scopes:
+      - read
+      - write
+  - name: MikroJ
+    identifier: github.io.jhnnsrs.mikroj
+    version: latest
+    description: The Workhorse
+    long: Enables support for ImageJ and its makros
+    image: https://cdn.sstatic.net/Img/teams/teams-illo-free-sidebar-promo.svg?v=47faa659a05e
+    requires:
+      - lok
+      - rekuest
+      - mikro
+    download: https://github.com/jhnnsrs/mikroj
+    client_id: soinfosienfoisnseghsggegefoisneofinsef
+    client_secret: soinfosienesfseffoisnefoisneofinsef
+    redirect_uris:
+      - http://localhost:8090
+    client_type: public
+    grant_type: authorization-code
+    scopes:
+      - read
+      - write
+  - name: napari
+    identifier: github.io.jhnnsrs.mikro-napari
+    version: latest
+    description: The viewer
+    long: Napari is a python based image viewer that is used by many bioimage
+      researchers
+    image: http://localhost:8090/static/images/arkitekt.png
+    requires:
+      - lok
+      - rekuest
+    download: https://github.com/jhnnsrs/mikro-napari
+    client_id: soinfosienfoissgsegsegtbsynefoisneofinsef
+    client_secret: soinfosienfoissdfsdfnefoisneofinsef
+    redirect_uris:
+      - http://localhost:8090
+    client_type: public
+    grant_type: authorization-code
+    scopes:
+      - read
+      - write
+bindings:
+  - bind: 172.22.0.1
+    broadcast: 172.22.255.255
+    host: 172.22.0.1
+    name: br-f51969b2cbe1-ip
+  - bind: 172.18.0.1
+    broadcast: 172.18.255.255
+    host: 172.18.0.1
+    name: br-b03a77cbc214-ip
+  - bind: 100.91.169.37
+    broadcast: 100.91.169.37
+    host: 100.91.169.37
+    name: tailscale0-ip
+  - bind: 10.144.196.141
+    broadcast: 10.144.196.255
+    host: 10.144.196.141
+    name: enp3s0-ip
+  - bind: 172.19.0.1
+    broadcast: 172.19.255.255
+    host: 172.19.0.1
+    name: br-76f3efef6d41-ip
+  - bind: 172.21.0.1
+    broadcast: 172.21.255.255
+    host: 172.21.0.1
+    name: br-4f0dd4fdbcf5-ip
+  - bind: 172.17.0.1
+    broadcast: 172.17.255.255
+    host: 172.17.0.1
+    name: docker0-ip
+  - bind: 192.168.49.1
+    broadcast: 192.168.49.255
+    host: jhnnsrs-server
+    name: br-e7c145396c6b
+  - bind: 100.91.169.37
+    broadcast: 100.91.169.37
+    host: jhnnsrs-server.jhnnsrs.gmail.com.beta.tailscale.net
+    name: tailscale0
+  - bind: 172.23.0.1
+    broadcast: 172.23.255.255
+    host: 172.23.0.1
+    name: br-8047b438ec7a-ip
+  - bind: 127.0.0.1
+    broadcast: 127.0.0.1
+    host: 127.0.0.1
+    name: lo-ip
+  - bind: 192.168.49.1
+    broadcast: 192.168.49.255
+    host: 192.168.49.1
+    name: br-e7c145396c6b-ip
+  - bind: 172.20.0.1
+    broadcast: 172.20.255.255
+    host: 172.20.0.1
+    name: br-d8f95bbc5a2c-ip
+  - bind: 127.0.0.1
+    broadcast: 127.0.0.1
+    host: localhost
+    name: lo
+  - bind: 172.27.0.1
+    broadcast: 172.27.255.255
+    host: 172.27.0.1
+    name: br-4a492c68c219-ip
+services:
+  - name: hub
+    interface: hub
+    description: The hub
+    long: Access this compuer resources from anywhere in nice juypter notebooks
+    image: jhnnsrs/hub:prod
+    requires:
+      - lok
+    extras: {}
+  - &a1
+    name: lok
+    interface: lok
+    description: The core
+    long: This includes authorization, authentificaiton, config management, and more
+    image: jhnnsrs/lok:prod
+    requires:
+      - redis
+      - db
+      - minio
+    extras: {}
+  - name: port
+    interface: port
+    description: The virtualizer
+    long: Enables one click install of github repos as internal apps
+    image: jhnnsrs/port:prod
+    requires:
+      - redis
+      - lok
+      - rekuest
+      - rabbitmq
+      - db
+    extras: {}
+  - &a2
+    name: redis
+    interface: redis
+    description: The pubsub
+    long: This allows services to publish and subscribe to events
+    image: redis:latest
+    requires: []
+    is_backend: true
+    extras: {}
+  - &a3
+    name: postgres
+    interface: db
+    description: The database
+    long: Storing your meta data
+    image: jhnnsrs/daten:prod
+    requires: []
+    is_backend: true
+    extras: {}
+  - &a5
+    name: rabbitmq
+    interface: rabbitmq
+    description: The backbone
+    long: Taking care of the reliable communication between the apps
+    image: jhnnsrs/mister:fancy
+    requires: []
+    is_backend: true
+    extras: {}
+  - *a1
+  - &a6
+    name: rekuest
+    interface: rekuest
+    description: The broker
+    long: Allows you to call enabled bioimage apps from the platform
+    image: jhnnsrs/rekuest:prod
+    requires:
+      - redis
+      - rabbitmq
+      - lok
+      - db
+    extras: {}
+  - name: mikro
+    interface: mikro
+    description: The datalayer
+    long: Enables you to store, organize and monitor microscopy data
+    image: jhnnsrs/mikro:prod
+    requires:
+      - redis
+      - lok
+      - db
+      - minio
+    extras: {}
+  - *a2
+  - *a3
+  - &a4
+    name: minio
+    interface: minio
+    description: The storage
+    long: Storing your images and files
+    image: minio/minio:RELEASE.2023-02-10T18-48-39Z
+    requires: []
+    is_backend: true
+    extras: {}
+  - *a1
+  - name: fluss
+    interface: fluss
+    description: The designer
+    long: Allows you to design universal workflows spanning multiple apps
+    image: jhnnsrs/fluss:prod
+    requires:
+      - redis
+      - lok
+      - rekuest
+      - rabbitmq
+      - db
+      - minio
+    extras: {}
+  - *a2
+  - *a3
+  - *a4
+  - *a5
+  - *a1
+  - *a6
+app_path: /home/jhnnsrs/Code/packages/arkitekt/website
+groups:
+  - name: myteam
+    description: My Perfect Team
+users:
+  - username: sdf
+    name: ""
+    first_time_password: ""
+    email: sdfsd@gmail.com
+    groups:
+      - myteam
+    password: sdf
+scale:
+  value: dev
+  label: Dev
+  icon: "👩‍🔧"
+  description: Arkitekt is in dev mode (you can't use this in production)

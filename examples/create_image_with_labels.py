@@ -1,5 +1,3 @@
-import enum
-from fakts.fakts import Fakts
 from mikro.api.schema import (
     RepresentationVarietyInput,
     from_xarray,
@@ -8,7 +6,6 @@ from mikro.api.schema import (
 )
 from arkitekt import easy
 import xarray as xr
-import numpy as np
 from skimage.draw import random_shapes
 
 app = easy("com.example.random_shapes", url="http://localhost:8000/f/")

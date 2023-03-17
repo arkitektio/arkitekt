@@ -44,7 +44,7 @@ def run_clahe(
         np.zeros(rep.data.shape, dtype=rep.data.dtype), dims=rep.data.dims
     )
 
-    x = rep.data.sel(c=0, t=0, z=0).data.compute()
+    rep.data.sel(c=0, t=0, z=0).data.compute()
 
     clahe = cv2.createCLAHE(
         clipLimit=clip_limit, tileGridSize=(tile_grid_size, tile_grid_size)
@@ -62,7 +62,7 @@ def run_clahe(
     return from_xarray(
         new_array,
         name="CLAHE of" + rep.name,
-        tags=[f"clahe"],
+        tags=["clahe"],
         origins=[rep],
         variety=RepresentationVariety.VOXEL,
     )

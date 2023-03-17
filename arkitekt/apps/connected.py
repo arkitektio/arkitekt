@@ -1,7 +1,6 @@
 from arkitekt.apps.mikro import MikroApp
 from arkitekt.apps.rekuest import RekuestApp
 from arkitekt.apps.unlok import UnlokApp
-from typing import Optional
 
 
 class ConnectedApp(MikroApp, RekuestApp, UnlokApp):

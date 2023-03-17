@@ -1,11 +1,10 @@
 from arkitekt.apps.fakts import FaktsApp
-from herre.grants.fakts import FaktsGrant
 from herre.herre import Herre
 from pydantic import Field
 
 
 class ArkitektHerre(Herre):
-    grant: FaktsGrant = Field(default_factory=lambda: FaktsGrant())
+    pass
 
 
 

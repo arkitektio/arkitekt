@@ -1,6 +1,5 @@
 from datetime import datetime
 from arkitekt import easy
-from fakts.fakts import Fakts
 from mikro.api.schema import (
     OmeroRepresentationInput,
     PlaneInput,
@@ -11,15 +10,11 @@ from mikro.api.schema import (
     create_metric,
     create_sample,
     from_xarray,
-    InputVector,
-    RoiTypeInput,
-    create_roi,
     create_stage,
     create_position,
 )
 import xarray as xr
 import numpy as np
-import time
 
 
 def main():
@@ -82,7 +77,7 @@ def main():
                 create_metric(key="Increasing", representation=g, value=i)
                 create_metric(key="Decreasing", representation=g, value=10 - i)
 
-                t = from_xarray(
+                from_xarray(
                     xr.DataArray(
                         np.random.randint(0, 3, size=(100, 100, 3)),
                         dims=("x", "y", "c"),

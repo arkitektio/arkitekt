@@ -1,0 +1,325 @@
+projects:
+  mikro:
+    schema: .arkitekt/schemas/mikro.schema.graphql
+    documents: graphql/mikro/*/**.graphql
+    extensions:
+      turms:
+        generated_name: mikro.py
+        exclude_typenames: true
+        freeze:
+          enabled: true
+        options:
+          enabled: true
+          use_enum_values: true
+          extra: "forbid"
+          types:
+            - "input"
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+            skip_unreferenced: true
+          - type: turms.plugins.inputs.InputsPlugin
+            skip_unreferenced: true
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: mikro.rath.MikroRath
+                key: rath
+                description: "The mikro rath client"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: mikro.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: mikro.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: mikro.funcs.aexecute
+              - type: subscription
+                use: mikro.funcs.subscribe
+              - type: query
+                use: mikro.funcs.execute
+              - type: mutation
+                use: mikro.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          XArrayInput: mikro.scalars.XArrayInput
+          BigFile: mikro.scalars.BigFile
+          File: mikro.scalars.File
+          ImageFile: mikro.scalars.File
+          Upload: mikro.scalars.Upload
+          ModelData: mikro.scalars.ModelData
+          ModelFile: mikro.scalars.ModelFile
+          ParquetInput: mikro.scalars.ParquetInput
+          Store: mikro.scalars.Store
+          Parquet: mikro.scalars.Parquet
+          ID: rath.scalars.ID
+          AffineMatrix: mikro.scalars.AffineMatrix
+          MetricValue: mikro.scalars.MetricValue
+          FeatureValue: mikro.scalars.FeatureValue
+        additional_bases:
+          Representation:
+            - mikro.traits.Representation
+          Table:
+            - mikro.traits.Table
+          Omero:
+            - mikro.traits.Omero
+          Objective:
+            - mikro.traits.Objective
+          Position:
+            - mikro.traits.Position
+          Stage:
+            - mikro.traits.Stage
+          ROI:
+            - mikro.traits.ROI
+          InputVector:
+            - mikro.traits.Vectorizable
+  rekuest:
+    schema: .arkitekt/schemas/rekuest.schema.graphql
+    documents: graphql/rekuest/*/**.graphql
+    extensions:
+      turms:
+        generated_name: rekuest.py
+        always_resolve_interfaces: True
+        exclude_typenames: true
+        freeze:
+          enabled: true
+        options:
+          enabled: true
+          use_enum_values: true
+          extra: "forbid"
+          types:
+            - "input"
+        parsers:
+          - type: turms.parsers.polyfill.PolyfillParser
+            python_version: 3.7
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: rekuest.rath.RekuestRath
+                key: rath
+                description: "The arkitekt rath client"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: rekuest.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: rekuest.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: rekuest.funcs.aexecute
+              - type: subscription
+                use: rekuest.funcs.subscribe
+              - type: query
+                use: rekuest.funcs.execute
+              - type: mutation
+                use: rekuest.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+          Callback: str
+          Any: typing.Any
+          AnyInput: typing.Any
+          QString: rekuest.scalars.QString
+          ID: rath.scalars.ID
+          Identifier: rekuest.scalars.Identifier
+          SearchQuery: rekuest.scalars.SearchQuery
+        additional_bases:
+          Node:
+            - rekuest.traits.node.Reserve
+          AnnotationInput:
+            - rekuest.traits.ports.AnnotationInputTrait
+          PortInput:
+            - rekuest.traits.ports.PortTrait
+          ChildPortInput:
+            - rekuest.traits.ports.PortTrait
+          Port:
+            - rekuest.traits.ports.PortTrait
+          ChildPort:
+            - rekuest.traits.ports.PortTrait
+
+          WidgetInput:
+            - rekuest.traits.ports.WidgetInputTrait
+          ReturnWidgetInput:
+            - rekuest.traits.ports.ReturnWidgetInputTrait
+  fluss:
+    schema: .arkitekt/schemas/fluss.schema.graphql
+    documents: graphql/fluss/*/**.graphql
+    extensions:
+      turms:
+        generated_name: fluss.py
+        exclude_typenames: true
+        freeze:
+          enabled: true
+        options:
+          enabled: true
+          use_enum_values: true
+          extra: "forbid"
+          types:
+            - "input"
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: fluss.rath.FlussRath
+                key: rath
+                description: "The client we want to use (defaults to the currently active client)"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: fluss.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: fluss.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: fluss.funcs.aexecute
+              - type: subscription
+                use: fluss.funcs.subscribe
+              - type: query
+                use: fluss.funcs.execute
+              - type: mutation
+                use: fluss.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+          Callback: str
+          Any: typing.Any
+          ID: rath.scalars.ID
+          EventValue: fluss.scalars.EventValue
+        additional_config:
+          EdgeInput:
+            allow_population_by_field_name: True
+        additional_bases:
+          FlowGraph:
+            - fluss.traits.Graph
+          StreamItem:
+            - fluss.traits.MockableTrait
+          StreamItemChild:
+            - fluss.traits.MockableTrait
+  kuay:
+    schema: .arkitekt/schemas/kuay.schema.graphql
+    documents: graphql/kuay/*/**.graphql
+    extensions:
+      turms:
+        generated_name: kuay.py
+        exclude_typenames: true
+        freeze:
+          enabled: true
+        options:
+          enabled: true
+          use_enum_values: true
+          extra: "forbid"
+          types:
+            - "input"
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: kuay.rath.KuayRath
+                key: rath
+                description: "The client we want to use (defaults to the currently active client)"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: kuay.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: kuay.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: kuay.funcs.aexecute
+              - type: subscription
+                use: kuay.funcs.subscribe
+              - type: query
+                use: kuay.funcs.execute
+              - type: mutation
+                use: kuay.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+          Any: typing.Any
+          ID: rath.scalars.ID
+  unlok:
+    schema: .arkitekt/schemas/unlok.schema.graphql
+    documents: graphql/unlok/*/**.graphql
+    extensions:
+      turms:
+        generated_name: unlok.py
+        exclude_typenames: true
+        freeze:
+          enabled: true
+        options:
+          enabled: true
+          use_enum_values: true
+          extra: "forbid"
+          types:
+            - "input"
+        stylers:
+          - type: turms.stylers.default.DefaultStyler
+          - type: turms.stylers.appender.AppenderStyler
+            append_fragment: "Fragment"
+        plugins:
+          - type: turms.plugins.enums.EnumsPlugin
+          - type: turms.plugins.inputs.InputsPlugin
+          - type: turms.plugins.fragments.FragmentsPlugin
+          - type: turms.plugins.operations.OperationsPlugin
+          - type: turms.plugins.funcs.FuncsPlugin
+            global_kwargs:
+              - type: unlok.rath.UnlokRath
+                key: rath
+                description: "The client we want to use (defaults to the currently active client)"
+            definitions:
+              - type: subscription
+                is_async: True
+                use: unlok.funcs.asubscribe
+              - type: query
+                is_async: True
+                use: unlok.funcs.aexecute
+              - type: mutation
+                is_async: True
+                use: unlok.funcs.aexecute
+              - type: subscription
+                use: unlok.funcs.subscribe
+              - type: query
+                use: unlok.funcs.execute
+              - type: mutation
+                use: unlok.funcs.execute
+        processors:
+          - type: turms.processors.black.BlackProcessor
+        scalar_definitions:
+          uuid: str
+          Any: typing.Any
+          ID: rath.scalars.ID

@@ -24,7 +24,7 @@ def import_deployer(builder):
 
 def generate_definitions(module_path) -> List[DefinitionInput]:
 
-    module = import_module(module_path)
+    import_module(module_path)
     reg = get_default_definition_registry()
     return list(reg.definitions.keys())
 
@@ -33,6 +33,7 @@ class Deployment(BaseModel):
     identifier: str
     version: str
     deployer: str = "arkitekt.deployers.port.dockerbuild"
+    builder: str
     definitions: List[DefinitionInput]
     scopes: List[str] = []
     deployed: dict
@@ -49,16 +50,16 @@ class ConfigFile(BaseModel):
 
 
 
-def generate_deployment(identifier: str, version: str, module_path: str, deployed: dict, deployer: str,  scopes: List[str], with_definitions = True) -> Deployment:
+def generate_deployment(identifier: str, version: str, module_path: str, deployed: dict, deployer: str,  scopes: List[str], with_definitions = True, builder: str = "arkitekt.builders.port") -> Deployment:
 
     path = create_arkitekt_folder()
 
 
-    config_file = os.path.join(path, f"deployments.yaml")
+    config_file = os.path.join(path, "deployments.yaml")
 
     definitions = generate_definitions(module_path) if with_definitions else []
 
-    deployment = Deployment(identifier=identifier, version=version, deployer=deployer, definitions=definitions, deployed=deployed, scopes=scopes)
+    deployment = Deployment(identifier=identifier, version=version, deployer=deployer, definitions=definitions, deployed=deployed, scopes=scopes, builder=builder)
 
 
 

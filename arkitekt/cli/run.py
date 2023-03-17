@@ -1,63 +1,85 @@
 from importlib import import_module
-from typing import Type
-from arkitekt import Arkitekt
+from rich.console import Console
+import asyncio
+from .ui import construct_run_panel
+from .utils import import_builder
 
-
-
-
-
-module_path = f"hu"
-
-z = locals()
-y = locals()
-
-
-def import_builder(module_path, function_name) -> Type[Arkitekt]:
-    module = import_module(module_path)
-    function = getattr(module, function_name)
-    return function
+console = Console()
 
 
 async def run_app(entrypoint, app):
+
     try:
-        import_module(entrypoint)
-    except ModuleNotFoundError as e:
-        print(f"Could not find entrypoint module {entrypoint}")
+        with console.status("Loading entrypoint module..."):
+            try:
+                import_module(entrypoint)
+            except ModuleNotFoundError as e:
+                console.print(f"Could not find entrypoint module {entrypoint}")
+                raise e
+
+        console.print("App is running...")
+    except asyncio.CancelledError as e:
+        console.print("Shutting down...")
         raise e
 
-    async with app:
-        await app.rekuest.run()
+
+
+
+def import_entrypoint(entrypoint):
+    with console.status("Loading entrypoint module..."):
+        try:
+            import_module(entrypoint)
+        except ModuleNotFoundError as e:
+            console.print(f"Could not find entrypoint module {entrypoint}")
+            raise e
+
+
+
 
 async def run_costum(entrypoint, identifier, version,   builder: str = "arkitekt.builders.easy"):
+    builder = import_builder(builder)
 
-    module_path, function_name = builder.rsplit(".", 1)
-    builder = import_builder(module_path, function_name)
-
-
+    import_entrypoint(entrypoint)
 
     app = builder(identifier, version)
 
-    await run_app(entrypoint, app)
+
+
+    panel = construct_run_panel(app)
+    console.print(panel)
+
+    async with app:
+        await app.rekuest.run()
 
 
 
 async def run_easy(entrypoint, identifier, version, url, public_url, instance_id):
     from arkitekt.builders import easy
 
+    import_entrypoint(entrypoint)
+
     app = easy(identifier, version, url, instance_id=instance_id)
 
-
-    await run_app(entrypoint, app)
-
+    panel = construct_run_panel(app)
+    console.print(panel)
+    
+    async with app:
+        await app.rekuest.run()
 
 
 async def run_port(entrypoint, identifier, version, url, token):
     from arkitekt.builders import port
 
+    import_entrypoint(entrypoint)
+
     app = port(identifier, version, url=url, token=token)
 
+    panel = construct_run_panel(app, )
+    console.print(panel)
 
-    await run_app(entrypoint, app)    
+    async with app:
+        await app.rekuest.run()
+
     
 
 

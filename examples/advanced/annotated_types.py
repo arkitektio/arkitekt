@@ -1,9 +1,5 @@
-from typing import Annotated, Dict, get_type_hints
+from typing import Annotated, Dict
 
-from pydantic import BaseModel
-from rekuest.definition.define import prepare_definition
-from rekuest.structures.default import get_default_structure_registry
-from rekuest.api.schema import AnnotationInput
 from annotated_types import Gt
 from arkitekt import easy
 
