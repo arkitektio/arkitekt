@@ -1,4 +1,4 @@
-from arkitekt.apps import Arkitekt
+from arkitekt.apps.connected import App
 from arkitekt.apps.rekuest import ArkitektRekuest, ArkitektAgent
 from fakts.grants.remote.device_code import DeviceCodeGrant
 from fakts.fakts import Fakts
@@ -15,6 +15,7 @@ import logging
 from koil.composition import PedanticKoil
 import os
 from .utils import create_arkitekt_folder
+from rekuest.contrib.fakts.websocket_agent_transport import FaktsWebsocketAgentTransport
 
 
 def easy(
@@ -28,7 +29,7 @@ def easy(
     log_level: str = "ERROR",
     token: str = None,
     instance_id: str = "main",
-) -> Arkitekt:
+) -> App:
     """Easy app creation
 
     A simple way to create an Arkitekt app with a device code grant
@@ -50,15 +51,12 @@ def easy(
 
     create_arkitekt_folder(with_cache=True)
 
-
     manifest = Manifest(
         version=version,
         identifier=identifier,
         scopes=scopes if scopes else ["openid"],
         logo=logo,
     )
-
-
 
     try:
         from rich.logging import RichHandler
@@ -67,7 +65,7 @@ def easy(
     except ImportError:
         logging.basicConfig(level=log_level)
 
-    return Arkitekt(
+    return App(
         identifier=identifier,
         version=version,
         koil=PedanticKoil(sync_in_async=allow_sync_in_async),
@@ -79,8 +77,8 @@ def easy(
                     manifest=manifest,
                     open_browser=not headless,
                     discovery=WellKnownDiscovery(
-                                url=url,
-                                auto_protocols=["https", "http"]),
+                        url=url, auto_protocols=["https", "http"]
+                    ),
                 ),
             )
         ),
@@ -104,10 +102,16 @@ def jupy(
     version: str = "latest",
     url: str = "http://localhost:8000/f/",
     headless: bool = False,
-) -> Arkitekt:
-
+    instance_id: str = "main",
+) -> App:
     app = easy(
-        identifier, version, url, headless, allow_sync_in_async=True, log_level="ERROR"
+        identifier,
+        version,
+        url=url,
+        headless=headless,
+        allow_sync_in_async=True,
+        log_level="ERROR",
+        instance_id=instance_id,
     )
     app.enter()
     return app
@@ -119,7 +123,8 @@ def port(
     url: str = "http://lok:8000",
     log_level: str = "ERROR",
     token: str = None,
-) -> Arkitekt:
+    instance_id: str = "main",
+) -> App:
     """Easy port creation
 
     A simple way to create an Arkitekt app with a device code grant
@@ -155,7 +160,7 @@ def port(
     except ImportError:
         logging.basicConfig(level=log_level)
 
-    return Arkitekt(
+    return App(
         identifier=identifier,
         version=version,
         fakts=Fakts(
@@ -172,10 +177,101 @@ def port(
                 grant=RefreshGrant(grant=FaktsGrant()),
             ),
         ),
+        rekuest=ArkitektRekuest(
+            agent=ArkitektAgent(
+                instance_id=instance_id,
+            )
+        ),
     )
 
 
-def qt(identifier: str, version: str, parent) -> Arkitekt:
+def scheduler(
+    identifier: str,
+    version: str = "latest",
+    logo: str = None,
+    scopes: List[str] = None,
+    url: str = "http://localhost:8000",
+    headless: bool = False,
+    allow_sync_in_async: bool = True,
+    log_level: str = "ERROR",
+    token: str = None,
+    instance_id: str = "main",
+) -> App:
+    """Scheduler app creation
+
+    A an arkitekt scheduler app with a device code grant and a reaktion agent
+    this app will be able to deploy graphs from fluss
+
+    Args:
+        identifier (str): The apps identifier
+        version (str, optional): The apps verion. Defaults to "latest".
+        url (_type_, optional): The app configuration url. Defaults to "http://localhost:8000/f/".
+        headless (bool, optional): Do not open a browser window. Defaults to False.
+        allow_sync_in_async (bool, optional): Should we allow the creation of a sync interface in an async loop (necessary for a sync interface in jupyter). Defaults to True.
+
+    Returns:
+        Arkitekt: _description_
+    """
+    try:
+        from reaktion.agent import ReaktionAgent
+    except ImportError:
+        raise ImportError(
+            "You need to install reaktion to use the scheduler function"
+        ) from None
+
+    url = os.getenv("FAKTS_URL", url)
+    token = os.getenv("FAKTS_TOKEN", token)
+
+    create_arkitekt_folder(with_cache=True)
+
+    manifest = Manifest(
+        version=version,
+        identifier=identifier,
+        scopes=scopes if scopes else ["openid"],
+        logo=logo,
+    )
+
+    try:
+        from rich.logging import RichHandler
+
+        logging.basicConfig(level=log_level, handlers=[RichHandler()])
+    except ImportError:
+        logging.basicConfig(level=log_level)
+
+    return App(
+        identifier=identifier,
+        version=version,
+        koil=PedanticKoil(sync_in_async=allow_sync_in_async),
+        fakts=Fakts(
+            grant=CacheGrant(
+                cache_file=f".arkitekt/cache/{identifier}-{version}_cache.json",
+                hash=f"{identifier}-{version}-{url}",
+                grant=DeviceCodeGrant(
+                    manifest=manifest,
+                    open_browser=not headless,
+                    discovery=WellKnownDiscovery(
+                        url=url, auto_protocols=["https", "http"]
+                    ),
+                ),
+            )
+        ),
+        herre=Herre(
+            grant=HerreCacheGrant(
+                cache_file=f".arkitekt/cache/{identifier}-{version}_herre_cache.json",
+                hash=f"{identifier}-{version}-{url}",
+                grant=RefreshGrant(grant=FaktsGrant()),
+            ),
+        ),
+        rekuest=ArkitektRekuest(
+            agent=ReaktionAgent(
+                instance_id=instance_id,
+                transport=FaktsWebsocketAgentTransport(fakts_group="rekuest.agent"),
+            )
+        ),
+    )
+
+
+def qt(identifier: str, version: str, parent, instance_id: str = "main") -> App:
     """
     A simple way to create an Arkitekt app within a Qt application stilll
     utilizing a device code grant to authenticate the user on an application
@@ -186,7 +282,7 @@ def qt(identifier: str, version: str, parent) -> Arkitekt:
 
     create_arkitekt_folder(with_cache=True)
 
-    return Arkitekt(
+    return App(
         identifier=identifier,
         version=version,
         koil=QtPedanticKoil(parent=parent),
@@ -206,6 +302,11 @@ def qt(identifier: str, version: str, parent) -> Arkitekt:
                 grant=FaktsGrant(),
             ),
         ),
+        rekuest=ArkitektRekuest(
+            agent=ArkitektAgent(
+                instance_id=instance_id,
+            )
+        ),
     )
 
 
@@ -217,8 +318,9 @@ def publicqt(
     scopes: Optional[List[str]] = None,
     beacon_widget=None,
     login_widget=None,
-    force_herre_grant = None
-) -> Arkitekt:
+    force_herre_grant=None,
+    instance_id: str = "main",
+) -> App:
     """Public QtApp creation
 
     A simple way to create an Arkitekt app with a public grant (allowing users to sign
@@ -256,7 +358,7 @@ def publicqt(
     login_widget = login_widget or LoginWidget(identifier, version, parent=parent)
     f = FaktsGrant(grant_class=force_herre_grant)
     print(f)
-    app = Arkitekt(
+    app = App(
         identifier=identifier,
         version=version,
         fakts=Fakts(
@@ -269,7 +371,6 @@ def publicqt(
                         widget=beacon_widget,
                         allow_appending_slash=True,
                         auto_protocols=["http", "https"],
-
                     ),
                 ),
             ),
@@ -287,49 +388,11 @@ def publicqt(
                 ),
             ),
         ),
+        rekuest=ArkitektRekuest(
+            agent=ArkitektAgent(
+                instance_id=instance_id,
+            )
+        ),
     )
 
     return app
-
-
-def flussi(
-    identifier: str, version: str = "latest", url: str = "http://localhost:8000"
-):
-    """
-    A simple way to create an Arkitekt app with a device code grant
-    it will cache the configuration in a file called `identifier`_token.json
-    and the cache in a file called `identifier`_cache.json
-    """
-
-    from arkitekt.apps.fluss import ConnectedFluss
-
-    create_arkitekt_folder(with_cache=True)
-
-
-    manifest = Manifest(
-        version=version,
-        identifier=identifier,
-    )
-
-
-    return ConnectedFluss(
-        identifier=identifier,
-        version=version,
-        fakts=Fakts(
-            grant=CacheGrant(
-                cache_file=f".arkitekt/cache/{identifier}-{version}_cache.json",
-                hash=f"{identifier}-{version}-{url}",
-                grant=DeviceCodeGrant(
-                    manifest,
-                    discovery=WellKnownDiscovery(url=url),
-                ),
-            )
-        ),
-        herre=Herre(
-            grant=HerreCacheGrant(
-                cache_file=f".arkitekt/cache/{identifier}-{version}_herre_cache.json",
-                hash=f"{identifier}-{version}-{url}",
-                grant=RefreshGrant(grant=FaktsGrant()),
-            ),
-        ),
-    )

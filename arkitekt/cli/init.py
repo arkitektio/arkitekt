@@ -1,4 +1,5 @@
 from importlib import import_module
+from arkitekt.cli.types import Manifest
 from arkitekt.utils import create_arkitekt_folder
 from pydantic import BaseModel, Field
 import os
@@ -7,11 +8,13 @@ import yaml
 import json
 import datetime
 
+
 def import_deployer(builder):
     module_path, function_name = builder.rsplit(".", 1)
     module = import_module(module_path)
     function = getattr(module, function_name)
     return function
+
 
 def generate_definitions(module_path: str = "hu"):
     from rekuest.definition.registry import get_default_definition_registry
@@ -23,15 +26,6 @@ def generate_definitions(module_path: str = "hu"):
     return list(reg.definitions.keys())
 
 
-
-class Manifest(BaseModel):
-    identifier: str
-    version: str
-    author: str
-    entrypoint: str
-    scopes: List[str]
-    created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
-
 def load_manifest() -> Optional[Manifest]:
     path = create_arkitekt_folder()
     config_file = os.path.join(path, "manifest.yaml")
@@ -41,14 +35,14 @@ def load_manifest() -> Optional[Manifest]:
         return Manifest(**manifest)
     return None
 
+
 def write_manifest(manifest: Manifest):
-   
     path = create_arkitekt_folder()
     config_file = os.path.join(path, "manifest.yaml")
 
     with open(config_file, "w") as file:
-        yaml.safe_dump(json.loads(manifest.json(exclude_none=True, exclude_unset=True)), file, sort_keys=True)
-
-
-
-
+        yaml.safe_dump(
+            json.loads(manifest.json(exclude_none=True, exclude_unset=True)),
+            file,
+            sort_keys=True,
+        )

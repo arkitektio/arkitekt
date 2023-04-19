@@ -14,11 +14,7 @@ class ArkitektUnlok(Unlok):
         default_factory=lambda: UnlokRath(
             link=UnlokLinkComposition(
                 auth=HerreAuthLink(),
-                split=SplitLink(
-                    left=FaktsAIOHttpLink(fakts_group="herre"),
-                    right=FaktsWebsocketLink(fakts_group="herre"),
-                    split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
-                ),
+                split=FaktsAIOHttpLink(fakts_group="lok"),
             )
         )
     )
