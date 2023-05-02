@@ -3,6 +3,7 @@ from rich.console import Console
 import asyncio
 from .ui import construct_run_panel
 from .utils import import_builder
+from .types import Manifest
 
 console = Console()
 
@@ -32,13 +33,17 @@ def import_entrypoint(entrypoint):
 
 
 async def run_costum(
-    entrypoint, identifier, version, builder: str = "arkitekt.builders.easy"
+    entrypoint,
+    identifier,
+    version,
+    builder: str = "arkitekt.builders.easy",
+    nocache=False,
 ):
     builder = import_builder(builder)
 
     import_entrypoint(entrypoint)
 
-    app = builder(identifier, version)
+    app = builder(identifier, version, no_cache=nocache)
 
     panel = construct_run_panel(app)
     console.print(panel)
@@ -47,12 +52,20 @@ async def run_costum(
         await app.rekuest.run()
 
 
-async def run_easy(entrypoint, identifier, version, url, instance_id):
+async def run_easy(manifest: Manifest, url, instance_id, headless=False, nocache=False):
     from arkitekt.builders import easy
 
-    import_entrypoint(entrypoint)
+    import_entrypoint(manifest.entrypoint)
 
-    app = easy(identifier, version, url=url, instance_id=instance_id)
+    app = easy(
+        manifest.identifier,
+        version=manifest.version,
+        logo=manifest.logo,
+        url=url,
+        instance_id=instance_id,
+        headless=headless,
+        no_cache=nocache,
+    )
 
     panel = construct_run_panel(app)
     console.print(panel)
@@ -61,12 +74,28 @@ async def run_easy(entrypoint, identifier, version, url, instance_id):
         await app.rekuest.run()
 
 
-async def run_port(entrypoint, identifier, version, url, token, instance_id):
+async def run_port(
+    manifest: Manifest,
+    url,
+    token,
+    instance_id,
+    headless=True,
+    nocache=False,
+):
     from arkitekt.builders import port
 
-    import_entrypoint(entrypoint)
+    import_entrypoint(manifest.entrypoint)
 
-    app = port(identifier, version, url=url, token=token,  instance_id=instance_id)
+    app = port(
+        identifier=manifest.identifier,
+        version=manifest.version,
+        logo=manifest.logo,
+        url=url,
+        token=token,
+        instance_id=instance_id,
+        headless=headless,
+        no_cache=nocache,
+    )
 
     panel = construct_run_panel(
         app,

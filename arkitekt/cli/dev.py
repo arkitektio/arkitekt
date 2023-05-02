@@ -12,6 +12,7 @@ from rekuest.definition.registry import get_default_definition_registry
 from typing import MutableSet, Tuple, Any
 from arkitekt.cli.ui import construct_changes_group, construct_app_group
 from arkitekt.cli.utils import import_builder
+from .types import Manifest
 
 
 async def build_and_run(app):
@@ -79,15 +80,19 @@ def is_entrypoint_change(
 
 
 async def dev_module(
-    identifier=None,
+    manifest: Manifest,
     version=None,
-    entrypoint=None,
-    instance_id=None,
     url=None,
     builder: str = "arkitekt.builders.easy",
     deep: bool = False,
+    headless: bool = False,
+    nocache: bool = False,
+    instance_id: str = None,
 ):
-    entrypoint_file = f"{entrypoint}.py"
+    entrypoint = manifest.entrypoint
+    identifier = manifest.identifier
+    version = version or "dev"
+    entrypoint_file = f"{manifest.entrypoint}.py"
     entypoint_real_path = os.path.realpath(entrypoint_file)
 
     builder_func = import_builder(builder)
@@ -110,7 +115,7 @@ async def dev_module(
     console.print(panel)
 
     try:
-        module = import_module(entrypoint)
+        module = import_module(manifest.entrypoint)
 
     except Exception:
         console.print_exception()
@@ -135,7 +140,12 @@ async def dev_module(
 
     try:
         app: Arkitekt = builder_func(
-            identifier, version=version, url=url, instance_id=instance_id
+            identifier,
+            version=version,
+            url=url,
+            instance_id=instance_id,
+            headless=headless,
+            no_cache=nocache,
         )
         group = construct_app_group(app)
         panel = Panel(group, style="bold green", border_style="green")
@@ -214,7 +224,12 @@ async def dev_module(
 
         try:
             app: Arkitekt = builder_func(
-                identifier, version=version, url=url, instance_id=instance_id
+                identifier,
+                version=version,
+                url=url,
+                instance_id=instance_id,
+                headless=headless,
+                no_cache=nocache,
             )
             group = construct_app_group(app)
             panel = Panel(group, style="bold green", border_style="green")

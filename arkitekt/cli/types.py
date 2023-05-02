@@ -22,6 +22,7 @@ class Manifest(BaseModel):
     identifier: str
     version: str
     author: str
+    logo: Optional[str]
     entrypoint: str
     scopes: List[str]
     requirements: List[Requirement] = Field(default_factory=list)

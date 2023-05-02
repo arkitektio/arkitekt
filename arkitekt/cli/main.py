@@ -100,6 +100,21 @@ with_token = click.option(
     envvar="FAKTS_TOKEN",
     required=True,
 )
+with_version = click.option(
+    "--version",
+    "-v",
+    help="Override the version of the app",
+    envvar="ARKITEKT_VERSION",
+)
+
+with_skip_cache = click.option(
+    "--nocache",
+    "-nc",
+    is_flag=True,
+    default=False,
+    help="Should we skip the cache",
+    envvar="ARKITEKT_NO_CACHE",
+)
 
 with_instance_id = click.option(
     "--instance",
@@ -107,6 +122,15 @@ with_instance_id = click.option(
     default="main",
     help="The token for the fakts instance",
     envvar="REKUEST_INSTANCE",
+)
+
+headless = click.option(
+    "--headless",
+    "-h",
+    is_flag=True,
+    default=False,
+    help="Should we start headless",
+    envvar="ARKITEKT_HEADLESS",
 )
 
 
@@ -140,7 +164,10 @@ def run():
     envvar="FAKTS_URL",
 )
 @with_instance_id
-def easy(url, instance):
+@headless
+@with_version
+@with_skip_cache
+def easy(url, instance, version=None, headless=False, nocache=False):
     """Runs the arkitekt app using the easy builder, which is the default builder
 
     \n
@@ -158,11 +185,11 @@ def easy(url, instance):
 
     asyncio.run(
         run_easy(
-            manifest.entrypoint,
-            manifest.identifier,
-            manifest.version,
-            url,
+            manifest=manifest,
+            url=url,
             instance_id=instance,
+            headless=headless,
+            nocache=nocache,
         )
     )
 
@@ -176,7 +203,9 @@ def easy(url, instance):
 )
 @with_token
 @with_instance_id
-def port(url, token, instance):
+@with_version
+@with_skip_cache
+def port(url, token, instance, version, nocache=False):
     """Runs the arkitekt app"""
 
     from arkitekt.cli.run import run_port
@@ -189,12 +218,13 @@ def port(url, token, instance):
 
     asyncio.run(
         run_port(
-            manifest.entrypoint,
-            manifest.identifier,
-            manifest.version,
-            url,
-            token,
+            entrypoint=manifest.entrypoint,
+            identifier=manifest.identifier,
+            version=version or manifest.version,
+            url=url,
+            token=token,
             instance_id=instance,
+            nocache=nocache,
         )
     )
 
@@ -206,7 +236,12 @@ def port(url, token, instance):
     type=str,
     default="arkitekt.builders.easy",
 )
-def custom(builder):
+@with_token
+@with_instance_id
+@headless
+@with_version
+@with_skip_cache
+def custom(builder, token, instance, version=None, headless=False, nocache=False):
     """Runs the arkitekt app using a custom builder (import string)"""
 
     from arkitekt.cli.run import run_costum
@@ -219,7 +254,12 @@ def custom(builder):
 
     asyncio.run(
         run_costum(
-            manifest.entrypoint, manifest.identifier, manifest.version, builder=builder
+            manifest.entrypoint,
+            manifest.identifier,
+            version or manifest.version,
+            builder=builder,
+            nocache=nocache,
+            headless=headless,
         )
     )
 
@@ -243,7 +283,10 @@ def custom(builder):
     help="Should we check the whole directory for changes and reload them for dependencie",
     is_flag=True,
 )
-def dev(url, instance, builder, deep):
+@headless
+@with_version
+@with_skip_cache
+def dev(url, instance, builder, deep, version=None, headless=False, nocache=False):
     """Runs the arkitekt app in dev mode (with hot reloading)"""
 
     from arkitekt.cli.dev import dev_module
@@ -256,13 +299,14 @@ def dev(url, instance, builder, deep):
 
     asyncio.run(
         dev_module(
-            identifier=manifest.identifier,
-            version="dev",
-            entrypoint=manifest.entrypoint,
+            manifest=manifest,
+            version=version,
             builder=builder,
             deep=deep,
             url=url,
             instance_id=instance,
+            headless=headless,
+            nocache=nocache,
         )
     )
 
@@ -529,6 +573,10 @@ def version():
     """Updates the version of the arkitekt app"""
 
     manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException(
+            "No manifest found. Please run `arkitekt init` first before versioning an arkitekt app."
+        )
 
     click.echo(f"Current Version: {manifest.version}")
     new_version = click.prompt("New Version", default=manifest.version, type=str)
@@ -536,6 +584,52 @@ def version():
     manifest.version = new_version
     write_manifest(manifest)
     click.echo("Manifest Updated")
+
+
+@cli.command()
+@click.option("--build", help="The build to use", type=str, default="latest")
+@with_version
+def stage(build, version=None):
+    """Stages the latest Build for testing"""
+    from arkitekt.cli.build import get_builds
+    import uuid
+
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException(
+            "No manifest found. Please run `arkitekt init` first before versioning an arkitekt app."
+        )
+
+    builds = get_builds()
+    assert (
+        build in builds
+    ), f"Build {build} not found. Please run `arkitekt build` first"
+    build = builds[build]
+    build_id = build.build_id
+
+    version = version or f"stage-{build_id}"
+
+    click.echo(f"Running inside docker: {manifest.identifier}:{version}")
+    docker_run = subprocess.run(
+        [
+            "docker",
+            "run",
+            "-it",
+            "--net",
+            "host",
+            "--gpus",
+            "all",
+            build_id,
+            "arkitekt",
+            "run",
+            "easy",
+            "--version",
+            version,
+            "--headless",
+        ],
+    )
+
+    raise click.ClickException("Not implemented yet")
 
 
 def prompt_scopes():

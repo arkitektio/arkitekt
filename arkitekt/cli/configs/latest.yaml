@@ -18,9 +18,18 @@ projects:
           - type: turms.stylers.default.DefaultStyler
           - type: turms.stylers.appender.AppenderStyler
             append_fragment: "Fragment"
+        turms_directives:
+          validator:
+            locations:
+              - "variable definition"
+            type: "turms.directive_resolvers.variable.validator.validator"
+            args:
+              path: string
         plugins:
           - type: turms.plugins.enums.EnumsPlugin
+            skip_unreferenced: true
           - type: turms.plugins.inputs.InputsPlugin
+            skip_unreferenced: true
           - type: turms.plugins.fragments.FragmentsPlugin
           - type: turms.plugins.operations.OperationsPlugin
           - type: turms.plugins.funcs.FuncsPlugin
@@ -60,7 +69,10 @@ projects:
           ID: rath.scalars.ID
           AffineMatrix: mikro.scalars.AffineMatrix
           MetricValue: mikro.scalars.MetricValue
+          AssignationID: mikro.scalars.AssignationID
           FeatureValue: mikro.scalars.FeatureValue
+        argument_validators:
+          AssignationID: mikro.scalars.get_current_id
         additional_bases:
           Representation:
             - mikro.traits.Representation
@@ -103,7 +115,9 @@ projects:
             append_fragment: "Fragment"
         plugins:
           - type: turms.plugins.enums.EnumsPlugin
+            skip_unreferenced: true
           - type: turms.plugins.inputs.InputsPlugin
+            skip_unreferenced: true
           - type: turms.plugins.fragments.FragmentsPlugin
           - type: turms.plugins.operations.OperationsPlugin
           - type: turms.plugins.funcs.FuncsPlugin
@@ -177,7 +191,9 @@ projects:
             append_fragment: "Fragment"
         plugins:
           - type: turms.plugins.enums.EnumsPlugin
+            skip_unreferenced: true
           - type: turms.plugins.inputs.InputsPlugin
+            skip_unreferenced: true
           - type: turms.plugins.fragments.FragmentsPlugin
           - type: turms.plugins.operations.OperationsPlugin
           - type: turms.plugins.funcs.FuncsPlugin
@@ -240,7 +256,9 @@ projects:
             append_fragment: "Fragment"
         plugins:
           - type: turms.plugins.enums.EnumsPlugin
+            skip_unreferenced: true
           - type: turms.plugins.inputs.InputsPlugin
+            skip_unreferenced: true
           - type: turms.plugins.fragments.FragmentsPlugin
           - type: turms.plugins.operations.OperationsPlugin
           - type: turms.plugins.funcs.FuncsPlugin

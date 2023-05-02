@@ -17,7 +17,9 @@ type Query {
   runs(
     """Filter by values"""
     ids: [ID]
-    flow: ID
+
+    """Search for substring of name"""
+    name: String
   ): [Run]
   runLogs(
     """Filter by values"""
@@ -393,6 +395,7 @@ type FlowGraph {
 interface FlowNode {
   id: String!
   position: Position!
+  parentNode: ID
   typename: String!
 }
 
@@ -425,6 +428,7 @@ type Port {
 
   """The key of the arg"""
   nullable: Boolean!
+  scope: Scope!
   default: Any
   identifier: String
   name: String
@@ -434,6 +438,12 @@ type Port {
   description: String
   assignWidget: Widget
   returnWidget: ReturnWidget
+}
+
+"""Scope of the Port"""
+enum Scope {
+  GLOBAL
+  LOCAL
 }
 
 """Any any field"""
@@ -453,6 +463,7 @@ enum StreamKind {
 type PortChild {
   nullable: Boolean
   kind: StreamKind!
+  scope: Scope!
   identifier: String
   child: PortChild
 }
@@ -546,6 +557,7 @@ type RunEvent {
 
   """"""
   t: Int!
+  causedBy: [Int]
   source: String!
   handle: String!
   value: EventValue
@@ -553,16 +565,16 @@ type RunEvent {
 
 """An enumeration."""
 enum RunEventType {
-  """NEXT (Value represent Labels)"""
+  """NEXT (Value represent Item)"""
   NEXT
 
-  """Error (Value represent Intensity)"""
+  """Error (Value represent Exception)"""
   ERROR
 
-  """COMPLETE (First three channel represent RGB)"""
+  """COMPLETE (Value is none)"""
   COMPLETE
 
-  """UNKNOWN (Value represent Intensity)"""
+  """UNKNOWN (Should never be used)"""
   UNKNOWN
 }
 
@@ -622,6 +634,9 @@ enum ReactiveImplementationModelInput {
   """OMIT (Omit the data)"""
   OMIT
 
+  """ENSURE (Ensure the data (discards None in the stream))"""
+  ENSURE
+
   """TO_LIST (Convert to list)"""
   TO_LIST
 
@@ -638,6 +653,7 @@ enum ReactiveImplementationModelInput {
 type StreamItem {
   key: String!
   kind: StreamKind!
+  scope: Scope!
   identifier: String
   nullable: Boolean!
   child: StreamItemChild
@@ -645,6 +661,7 @@ type StreamItem {
 
 type StreamItemChild {
   kind: StreamKind!
+  scope: Scope!
   identifier: String
   child: StreamItemChild
 }
@@ -734,7 +751,7 @@ type Mutation {
     """The Id of the Graph"""
     id: ID!
   ): DeleteSnapshotReturn
-  track(handle: String!, run: ID!, source: String!, t: Int!, type: EventTypeInput!, value: EventValue): RunEvent
+  track(causedBy: [Int]!, handle: String!, run: ID!, source: String!, t: Int!, type: EventTypeInput!, value: EventValue): RunEvent
 
   """Creates a Sample"""
   changePermissions(
@@ -852,10 +869,11 @@ input NodeInput {
   constream: [[StreamItemInput]]!
   mapStrategy: MapStrategy
   allowLocal: Boolean
-  reserveParams: ReserveParamsInput
+  binds: BindsInput
   assignTimeout: Float = 2000
   yieldTimeout: Float = 2000
   reserveTimeout: Float = 2000
+  parentNode: ID
 }
 
 input PositionInput {
@@ -866,6 +884,9 @@ input PositionInput {
 input StreamItemInput {
   key: String!
   kind: StreamKind!
+
+  """The scope of this argument"""
+  scope: Scope!
   identifier: String
   nullable: Boolean!
   child: StreamItemChildInput
@@ -873,20 +894,23 @@ input StreamItemInput {
 
 input StreamItemChildInput {
   kind: StreamKind!
+
+  """The scope of this argument"""
+  scope: Scope!
   identifier: String
   child: StreamItemChildInput
 }
 
-"""Variety expresses the Type of Representation we are dealing with"""
+"""Maping Strategy for the Map Operator"""
 enum MapStrategy {
   MAP
-  MERGEMAP
-  SWITCHMAP
-  CONCATMAP
+  AS_COMPLETED
+  ORDERED
 }
 
-input ReserveParamsInput {
-  agents: [String]
+input BindsInput {
+  templates: [String]
+  clients: [String]
 }
 
 input EdgeInput {
@@ -915,6 +939,9 @@ input PortInput {
   """The type of this argument"""
   kind: StreamKind!
 
+  """The scope of this argument"""
+  scope: Scope!
+
   """The description of this argument"""
   description: String
 
@@ -936,6 +963,9 @@ input PortInput {
 
 input ChildPortInput {
   nullable: Boolean
+
+  """The scope of this argument"""
+  scope: Scope!
 
   """The identifier"""
   identifier: String
@@ -1024,18 +1054,18 @@ type DeleteSnapshotReturn {
   id: ID!
 }
 
-"""Variety expresses the Type of Representation we are dealing with"""
+"""Event Type for the Event Operator"""
 enum EventTypeInput {
-  """NEXT (Value represent Labels)"""
+  """NEXT (Value represent Item)"""
   NEXT
 
-  """Error (Value represent Intensity)"""
+  """Error (Value represent Exception)"""
   ERROR
 
-  """COMPLETE (First three channel represent RGB)"""
+  """COMPLETE (Value is none)"""
   COMPLETE
 
-  """UNKNOWN (Value represent Intensity)"""
+  """UNKNOWN (Should never be used)"""
   UNKNOWN
 }
 
@@ -1104,6 +1134,7 @@ type MentionEvent {
 type ArkitektNode implements FlowNode & FlowNodeCommons {
   id: String!
   position: Position!
+  parentNode: ID
   typename: String!
   instream: [[StreamItem]]!
   outstream: [[StreamItem]]!
@@ -1120,7 +1151,7 @@ type ArkitektNode implements FlowNode & FlowNodeCommons {
   assignTimeout: Float!
   yieldTimeout: Float!
   reserveTimeout: Float!
-  reserveParams: ReserveParams!
+  binds: Binds
 }
 
 interface FlowNodeCommons {
@@ -1132,13 +1163,51 @@ interface FlowNodeCommons {
   defaults: GenericScalar
 }
 
-type ReserveParams {
-  agents: [String]
+type Binds {
+  templates: [String]
+  clients: [String]
+}
+
+type LocalNode implements FlowNode & FlowNodeCommons {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[StreamItem]]!
+  outstream: [[StreamItem]]!
+  constream: [[StreamItem]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+  hash: String!
+  name: String
+  description: String
+  kind: String!
+  mapStrategy: MapStrategy!
+  allowLocal: Boolean!
+  assignTimeout: Float!
+  yieldTimeout: Float!
+}
+
+type GraphNode implements FlowNode & FlowNodeCommons {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[StreamItem]]!
+  outstream: [[StreamItem]]!
+  constream: [[StreamItem]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+  hash: String!
+  name: String
 }
 
 type ArgNode implements FlowNode & FlowNodeCommons {
   id: String!
   position: Position!
+  parentNode: ID
   typename: String!
   instream: [[StreamItem]]!
   outstream: [[StreamItem]]!
@@ -1151,6 +1220,7 @@ type ArgNode implements FlowNode & FlowNodeCommons {
 type KwargNode implements FlowNode & FlowNodeCommons {
   id: String!
   position: Position!
+  parentNode: ID
   typename: String!
   instream: [[StreamItem]]!
   outstream: [[StreamItem]]!
@@ -1163,6 +1233,7 @@ type KwargNode implements FlowNode & FlowNodeCommons {
 type ReturnNode implements FlowNode & FlowNodeCommons {
   id: String!
   position: Position!
+  parentNode: ID
   typename: String!
   instream: [[StreamItem]]!
   outstream: [[StreamItem]]!
@@ -1175,6 +1246,7 @@ type ReturnNode implements FlowNode & FlowNodeCommons {
 type ReactiveNode implements FlowNode & FlowNodeCommons {
   id: String!
   position: Position!
+  parentNode: ID
   typename: String!
   instream: [[StreamItem]]!
   outstream: [[StreamItem]]!

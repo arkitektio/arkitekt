@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.4.82"
+version = "0.4.97"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
@@ -8,19 +8,22 @@ packages = [{ include = "arkitekt" }]
 
 [tool.poetry.dependencies]
 python = "^3.8, <=3.12"
-herre = ">=0.3.17"
-fakts = ">=0.3.17"
-rekuest = ">=0.1.29"
-mikro = ">=0.3.47"
-unlok = ">=0.1.11"
-fluss = ">=0.1.42"
+herre = ">=0.3.18"
+fakts = ">=0.3.20"
+rekuest = ">=0.1.30"
+mikro = ">=0.3.60"
+unlok = ">=0.1.12"
+fluss = ">=0.1.46"
 rich-click = { version = "^1.6.1", optional = true }
 watchfiles = { version = "^0.18.1", optional = true }
 turms = { version = ">=0.3.1a0", python = "^3.9", optional = true }
+reaktion = { version = ">=0.1.21", python = "^3.9", optional = true }
 
 
 [tool.poetry.extras]
 cli = ["rich-click", "watchfiles", "turms"]
+scheduler = ["reaktion"]
+all = ["cli", "scheduler"]
 
 [tool.mypy]
 exclude = ["venv/"]

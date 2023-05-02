@@ -28,6 +28,7 @@ def easy(
     allow_sync_in_async: bool = True,
     log_level: str = "ERROR",
     token: str = None,
+    no_cache: bool = False,
     instance_id: str = "main",
 ) -> App:
     """Easy app creation
@@ -73,6 +74,7 @@ def easy(
             grant=CacheGrant(
                 cache_file=f".arkitekt/cache/{identifier}-{version}_cache.json",
                 hash=f"{identifier}-{version}-{url}",
+                skip_cache=no_cache,
                 grant=DeviceCodeGrant(
                     manifest=manifest,
                     open_browser=not headless,
@@ -84,6 +86,7 @@ def easy(
         ),
         herre=Herre(
             grant=HerreCacheGrant(
+                skip_cache=no_cache,
                 cache_file=f".arkitekt/cache/{identifier}-{version}_herre_cache.json",
                 hash=f"{identifier}-{version}-{url}",
                 grant=RefreshGrant(grant=FaktsGrant()),
@@ -103,6 +106,7 @@ def jupy(
     url: str = "http://localhost:8000/f/",
     headless: bool = False,
     instance_id: str = "main",
+    no_cache: bool = False,
 ) -> App:
     app = easy(
         identifier,
@@ -112,6 +116,7 @@ def jupy(
         allow_sync_in_async=True,
         log_level="ERROR",
         instance_id=instance_id,
+        no_cache=no_cache,
     )
     app.enter()
     return app
@@ -123,7 +128,9 @@ def port(
     url: str = "http://lok:8000",
     log_level: str = "ERROR",
     token: str = None,
+    headless: bool = False,
     instance_id: str = "main",
+    no_cache: bool = False,
 ) -> App:
     """Easy port creation
 
@@ -166,6 +173,7 @@ def port(
         fakts=Fakts(
             grant=CacheGrant(
                 cache_file=f".arkitekt/cache/{identifier}-{version}_cache.json",
+                skip_cache=no_cache,
                 hash=f"{identifier}-{version}-{url}",
                 grant=StaticGrant(token=token, discovery=WellKnownDiscovery(url=url)),
             )
@@ -174,6 +182,7 @@ def port(
             grant=HerreCacheGrant(
                 cache_file=f".arkitekt/cache/{identifier}-{version}_herre_cache.json",
                 hash=f"{identifier}-{version}-{url}",
+                skip_cache=no_cache,
                 grant=RefreshGrant(grant=FaktsGrant()),
             ),
         ),
@@ -196,6 +205,7 @@ def scheduler(
     log_level: str = "ERROR",
     token: str = None,
     instance_id: str = "main",
+    no_cache: bool = False,
 ) -> App:
     """Scheduler app creation
 
@@ -244,6 +254,7 @@ def scheduler(
         koil=PedanticKoil(sync_in_async=allow_sync_in_async),
         fakts=Fakts(
             grant=CacheGrant(
+                skip_cache=no_cache,
                 cache_file=f".arkitekt/cache/{identifier}-{version}_cache.json",
                 hash=f"{identifier}-{version}-{url}",
                 grant=DeviceCodeGrant(
@@ -259,6 +270,7 @@ def scheduler(
             grant=HerreCacheGrant(
                 cache_file=f".arkitekt/cache/{identifier}-{version}_herre_cache.json",
                 hash=f"{identifier}-{version}-{url}",
+                skip_cache=no_cache,
                 grant=RefreshGrant(grant=FaktsGrant()),
             ),
         ),
@@ -266,45 +278,6 @@ def scheduler(
             agent=ReaktionAgent(
                 instance_id=instance_id,
                 transport=FaktsWebsocketAgentTransport(fakts_group="rekuest.agent"),
-            )
-        ),
-    )
-
-
-def qt(identifier: str, version: str, parent, instance_id: str = "main") -> App:
-    """
-    A simple way to create an Arkitekt app within a Qt application stilll
-    utilizing a device code grant to authenticate the user on an application
-    level
-    """
-
-    from koil.composition.qt import QtPedanticKoil
-
-    create_arkitekt_folder(with_cache=True)
-
-    return App(
-        identifier=identifier,
-        version=version,
-        koil=QtPedanticKoil(parent=parent),
-        fakts=Fakts(
-            grant=CacheGrant(
-                cache_file=f".arkitekt/cache/{identifier}-{version}_cache.json",
-                grant=DeviceCodeGrant(
-                    identifier=identifier,
-                    version=version,
-                ),
-            )
-        ),
-        herre=Herre(
-            grant=HerreCacheGrant(
-                cache_file=f".arkitekt/cache/{identifier}-{version}_herre_cache.json",
-                hash=f"{identifier}-{version}",
-                grant=FaktsGrant(),
-            ),
-        ),
-        rekuest=ArkitektRekuest(
-            agent=ArkitektAgent(
-                instance_id=instance_id,
             )
         ),
     )
@@ -320,6 +293,7 @@ def publicqt(
     login_widget=None,
     force_herre_grant=None,
     instance_id: str = "main",
+    no_cache: bool = False,
 ) -> App:
     """Public QtApp creation
 
@@ -357,13 +331,13 @@ def publicqt(
 
     login_widget = login_widget or LoginWidget(identifier, version, parent=parent)
     f = FaktsGrant(grant_class=force_herre_grant)
-    print(f)
     app = App(
         identifier=identifier,
         version=version,
         fakts=Fakts(
             grant=CacheGrant(
                 cache_file=f".arkitekt/cache/{identifier}-{version}_fakts_cache.json",
+                skip_cache=no_cache,
                 grant=RetrieveGrant(
                     manifest=manifest,
                     redirect_uri="http://localhost:6767",

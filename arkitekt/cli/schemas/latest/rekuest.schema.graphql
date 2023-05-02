@@ -104,6 +104,7 @@ type Query {
     """Search"""
     search: String
     type: NodeKindInput
+    scopes: [NodeScope]
 
     """Args"""
     argTypes: [String]
@@ -136,6 +137,7 @@ type Query {
     """The included values"""
     filter: [ReservationStatusInput]
     identifier: String = "default"
+    nodeInterfaces: [String]
   ): [Reservation]
   repository(
     """The query node"""
@@ -580,6 +582,9 @@ type Node {
   """Beautiful images for beautiful Nodes"""
   image: String
 
+  """The scope of this port"""
+  scope: NodeScope!
+
   """The hash of the Node (completely unique)"""
   hash: String!
   args: [Port]
@@ -614,6 +619,13 @@ String, Boolean, Int, Float, List or Object.
 """
 scalar GenericScalar
 
+enum NodeScope {
+  GLOBAL
+  LOCAL
+  BRIDGE_GLOBAL_TO_LOCAL
+  BRIDGE_LOCAL_TO_GLOBAL
+}
+
 """A Port"""
 type Port {
   key: String!
@@ -627,6 +639,9 @@ type Port {
 
   """The corresponding Model"""
   identifier: Identifier
+
+  """The scope of this port"""
+  scope: Scope!
   nullable: Boolean!
   default: Any
 
@@ -656,6 +671,11 @@ enum PortKind {
 """A unique Structure identifier"""
 scalar Identifier
 
+enum Scope {
+  GLOBAL
+  LOCAL
+}
+
 """Any any field"""
 scalar Any
 
@@ -665,6 +685,9 @@ type ChildPort {
 
   """The corresponding Model"""
   identifier: Identifier
+
+  """The scope of this port"""
+  scope: Scope!
 
   """The child"""
   child: ChildPort
@@ -770,6 +793,7 @@ type Agent {
 
   """Is this Provision bound to a certain Agent?"""
   provisions: [Provision!]!
+  clientId: String!
 }
 
 """An enumeration."""
@@ -902,7 +926,7 @@ type Reservation {
   """The Provisions this reservation connects"""
   provisions: [Provision!]!
   params: ReserveParams
-  binds: GenericScalar
+  binds: Binds
 
   """The hash of the Reservation"""
   hash: String!
@@ -974,6 +998,14 @@ type ReserveParams {
 
   """The minimal amount of Instances"""
   minimalInstances: Int
+}
+
+type Binds {
+  """The clients of this bind"""
+  clients: [LokClient]
+
+  """The templates of this bind"""
+  templates: [Template]
 }
 
 """An enumeration."""
@@ -1057,6 +1089,7 @@ type Waiter {
 
   """This Assignation app"""
   assignations: [Assignation!]!
+  clientId: String!
 }
 
 """An enumeration."""
@@ -2023,6 +2056,9 @@ input PortInput {
   """The key of the arg"""
   key: String!
 
+  """The scope of this port"""
+  scope: Scope!
+
   """The name of this argument"""
   name: String
 
@@ -2067,6 +2103,9 @@ enum PortKindInput {
 input ChildPortInput {
   """The identifier"""
   identifier: Identifier
+
+  """The scope of this port"""
+  scope: Scope!
 
   """The name of this port"""
   name: String

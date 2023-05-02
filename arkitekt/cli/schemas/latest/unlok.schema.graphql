@@ -15,6 +15,12 @@ type Query {
     """The ID to search by"""
     clientId: ID!
   ): Application
+  clients: [Application]
+  myclients: [Application]
+  client(
+    """The ID to search by"""
+    id: ID!
+  ): Application
   scopes(
     """Unique app name for user"""
     search: String
@@ -70,6 +76,26 @@ type Query {
     """Unique app name for user"""
     name: String
   ): [Group]
+
+  """Get a group"""
+  channel(
+    """Unique app name fddor user"""
+    id: ID
+  ): Channel
+
+  """Get a list of users"""
+  channels(
+    name: String
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of username"""
+    search: String
+
+    """Filter by user"""
+    user: ID
+  ): [Channel]
   privatefaktapp(
     """The FaktApp ID"""
     id: ID
@@ -341,6 +367,20 @@ type Scope {
   description: String
 }
 
+type Channel {
+  """"""
+  id: ID!
+
+  """"""
+  name: String
+
+  """"""
+  user: HerreUser!
+
+  """"""
+  token: String
+}
+
 type Member {
   """"""
   id: ID!
@@ -457,6 +497,19 @@ type Mutation {
     """The name of the group (non unique)"""
     name: String
   ): Group
+  deleteChannel(
+    """The ID of the application"""
+    token: String!
+  ): DeleteChannelResult
+  createChannel(
+    """The channel you want to create or update"""
+    name: String
+
+    """The expo token"""
+    token: String!
+  ): Channel
+  publishToChannel(channel: ID!, message: String!, title: String!): PublishResult
+  notifyUser(channels: [String], message: String!, title: String!, user: ID!): [PublishResult]
   createPrivateFakt(
     """The Name of this Elemet"""
     identifier: String!
@@ -540,6 +593,15 @@ Create scalar that ignores normal serialization/deserialization, since
 that will be handled by the multipart request spec
 """
 scalar Upload
+
+type DeleteChannelResult {
+  token: String
+}
+
+type PublishResult {
+  channel: Channel
+  status: String
+}
 
 enum PublicFaktType {
   DEKSTOP

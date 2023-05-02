@@ -7,8 +7,9 @@ from rekuest.actors.types import Actifier
 import os
 from functools import wraps
 
+
 def register(
-    *func, 
+    *func,
     actifier: Actifier = None,
     interface: str = None,
     widgets: Dict[str, WidgetInput] = None,
@@ -20,8 +21,8 @@ def register(
 ):
     """Register a function or actor to the default definition registry.
 
-    You can use this decorator to register a function or actor to the default 
-    definition registry. There is also a function version of this decorator, 
+    You can use this decorator to register a function or actor to the default
+    definition registry. There is also a function version of this decorator,
     which is more convenient to use.
 
     Example:
@@ -30,7 +31,7 @@ def register(
 
         >>> @register(interface="hello_world")
         >>> def hello_world(string: str):
-        
+
     Args:
         function_or_actor (Union[Callable, Actor]): The function or Actor
         builder (ActorBuilder, optional): An actor builder (see ActorBuilder). Defaults to None.
@@ -49,25 +50,23 @@ def register(
 
         @wraps(function_or_actor)
         def wrapped_function(*args, **kwargs):
-                return function_or_actor(*args, **kwargs)
+            return function_or_actor(*args, **kwargs)
 
         get_default_definition_registry().register(
             function_or_actor,
             structure_registry=structure_registry or get_default_structure_registry(),
-            actifier= actifier,
+            actifier=actifier,
             interface=interface,
             widgets=widgets,
             interfaces=interfaces,
             on_provide=on_provide,
             on_unprovide=on_unprovide,
             **actifier_params,
-            
         )
 
         return wrapped_function
 
     else:
-
 
         def real_decorator(function_or_actor):
             # Simple bypass for now
@@ -76,21 +75,31 @@ def register(
 
             get_default_definition_registry().register(
                 function_or_actor,
-                structure_registry=structure_registry or get_default_structure_registry(),
-                actifier= actifier,
+                structure_registry=structure_registry
+                or get_default_structure_registry(),
+                actifier=actifier,
                 interface=interface,
                 widgets=widgets,
                 interfaces=interfaces,
                 on_provide=on_provide,
                 on_unprovide=on_unprovide,
                 **actifier_params,
-                
             )
 
             return wrapped_function
 
         return real_decorator
 
+
+def register_structure(cls, **kwargs):
+    """Register a structure to the default structure registry.
+
+    Args:
+        cls (Structure): The structure class
+        name (str, optional): The name of the structure. Defaults to the class name.
+    """
+    get_default_structure_registry().register_as_structure(cls, **kwargs)
+    return cls
 
 
 def create_arkitekt_folder(with_cache: bool = True):
@@ -100,8 +109,16 @@ def create_arkitekt_folder(with_cache: bool = True):
         os.makedirs(".arkitekt/cache", exist_ok=True)
 
     gitignore = os.path.join(".arkitekt", ".gitignore")
+    dockerignore = os.path.join(".arkitekt", ".dockerignore")
     if not os.path.exists(gitignore):
         with open(gitignore, "w") as f:
-            f.write("# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/")
+            f.write(
+                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/"
+            )
+    if not os.path.exists(dockerignore):
+        with open(dockerignore, "w") as f:
+            f.write(
+                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/"
+            )
 
     return ".arkitekt"

@@ -1,13 +1,12 @@
 from arkitekt.apps import Arkitekt
-from arkitekt.utils import register
+from arkitekt.utils import register, register_structure
 from rekuest.actors.reactive.api import log, alog, progress, aprogress
-from .builders import easy, qt, publicqt, jupy, scheduler
+from .builders import easy, publicqt, jupy, scheduler
 
 __all__ = [
     "Arkitekt",
     "register",
     "easy",
-    "qt",
     "publicqt",
     "jupy",
     "log",
@@ -15,4 +14,5 @@ __all__ = [
     "progress",
     "aprogress",
     "scheduler",
+    "register_structure",
 ]
