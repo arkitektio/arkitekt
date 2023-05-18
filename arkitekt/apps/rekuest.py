@@ -9,13 +9,16 @@ from rekuest.rath import RekuestLinkComposition, RekuestRath
 from rekuest.rekuest import Rekuest
 from graphql import OperationType
 from rekuest.contrib.fakts.websocket_agent_transport import FaktsWebsocketAgentTransport
-from rekuest.agents.stateful import StatefulAgent
+from rekuest.agents.base import BaseAgent
 
 
-class ArkitektAgent(StatefulAgent):
+class ArkitektAgent(BaseAgent):
     transport: FaktsWebsocketAgentTransport = Field(
-        default_factory=lambda: FaktsWebsocketAgentTransport(fakts_group="rekuest.agent")
+        default_factory=lambda: FaktsWebsocketAgentTransport(
+            fakts_group="rekuest.agent"
+        )
     )
+
 
 class ArkitektRekuest(Rekuest):
     rath: RekuestRath = Field(
@@ -30,9 +33,7 @@ class ArkitektRekuest(Rekuest):
             )
         )
     )
-    agent: StatefulAgent = Field(
-        default_factory=lambda: ArkitektAgent()
-    )
+    agent: BaseAgent = Field(default_factory=lambda: ArkitektAgent())
     healthz: FaktsHealthz = Field(
         default_factory=lambda: FaktsHealthz(fakts_group="rekuest")
     )

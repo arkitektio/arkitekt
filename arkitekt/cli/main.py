@@ -203,9 +203,8 @@ def easy(url, instance, version=None, headless=False, nocache=False):
 )
 @with_token
 @with_instance_id
-@with_version
 @with_skip_cache
-def port(url, token, instance, version, nocache=False):
+def port(url, token, instance, nocache=False):
     """Runs the arkitekt app"""
 
     from arkitekt.cli.run import run_port
@@ -218,9 +217,7 @@ def port(url, token, instance, version, nocache=False):
 
     asyncio.run(
         run_port(
-            entrypoint=manifest.entrypoint,
-            identifier=manifest.identifier,
-            version=version or manifest.version,
+            manifest,
             url=url,
             token=token,
             instance_id=instance,
@@ -551,6 +548,7 @@ def build(dockerfile):
             "Dockerfile does not exists. Do you want to start the Dockerfile wizard?"
         ):
             docker_file_wizard(manifest)
+            click.confirm("Do you want to continue building?", abort=True)
 
     md = Panel(
         "Building for Port", subtitle="This may take a while...", subtitle_align="right"

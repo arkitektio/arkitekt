@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 import sys
 import rich_click as click
 from enum import Enum
+import subprocess
+from rich import get_console
 
 try:
     from rekuest.api.schema import DefinitionInput
@@ -20,6 +22,8 @@ import json
 import datetime
 
 from subprocess import check_call
+
+click.rich_click.USE_RICH_MARKUP = True
 
 
 def import_deployer(builder):
@@ -47,23 +51,72 @@ class ConfigFile(BaseModel):
     latest_build: Optional[Build]
 
 
-PIP_NO_GPU = """
-FROM jhnnsrs/vanilla_pip:latest
+def get_base_prefix_compat():
+    """Get base/real prefix, or sys.prefix if there is none."""
+    return (
+        getattr(sys, "base_prefix", None)
+        or getattr(sys, "real_prefix", None)
+        or sys.prefix
+    )
 
-# setup conda virtual environment
-COPY ./requirements.txt /tmp/requirements.txt
-RUN pip install /tmp/requirements.yml
 
-"""
+def in_virtualenv():
+    return get_base_prefix_compat() != sys.prefix
 
-PIP_GPU = """
-FROM jhnnsrs/vanilla_pip:latest
 
-# setup conda virtual environment
-COPY ./requirements.txt /tmp/requirements.txt
-RUN pip install /tmp/requirements.yml
+def pip_no_gpu(manifest: Manifest, python_version: str) -> str:
+    get_console().print("[blue]Setting up environment...[/blue]")
+    if not in_virtualenv():
+        click.confirm(
+            "You are not in a virtual environment. Consider using a virtual environment. Do you want to continue?",
+            abort=True,
+        )
 
-"""
+    if not os.path.exists(".requirements.txt") and click.confirm(
+        "Do you want to freeze the dependencies the current interpreter?"
+    ):
+        subprocess.check_call(f"pip freeze > requirements.txt", shell=True)
+
+    get_console().print("[blue]Generating Dockerfile...[/blue]")
+
+    BASE_IMAGE = f"FROM python:{python_version}\n"
+    PIP_APPENDIX = "# setup pip  environment\nCOPY ./requirements.txt /tmp/requirements.txt\nRUN pip install /tmp/requirements.yml"
+    WORKDIR_APPENDIX = "RUN mkdir /app \n WORKDIR /app"
+
+    dockerfile = BASE_IMAGE
+    if click.confirm("Do you want to install the dependencies with pip?"):
+        dockerfile += PIP_APPENDIX
+
+    if click.confirm("Do you want to use the current working directory as the app?"):
+        dockerfile += WORKDIR_APPENDIX
+
+    return dockerfile
+
+
+def poetry_no_gpu(manifest: Manifest, python_version: str) -> str:
+    get_console().print("[blue]Setting up environment...[/blue]")
+    if not in_virtualenv():
+        click.confirm(
+            "You are not in a virtual environment. Consider using a virtual environment. Do you want to continue?",
+            abort=True,
+        )
+
+    if click.confirm("Do you want to lock the current dependencies?"):
+        subprocess.check_call("poetry lock", shell=True)
+
+    get_console().print("[blue]Generating Dockerfile...[/blue]")
+
+    BASE_IMAGE = f"FROM python:{python_version}\n"
+    SETUP_POETRY = "# Install dependencies\nRUN pip install poetry rich\nENV PYTHONUNBUFFERED=1\nCOPY pyproject.toml /tmp \nCOPY poetry.lock /tmp\nRUN poetry config virtualenvs.create false\nWORKDIR /tmp\nRUN poetry install\n"
+    WORKDIR_APPENDIX = "RUN mkdir /app \n COPY . /app\nWORKDIR /app\n"
+
+    dockerfile = BASE_IMAGE
+    dockerfile += SETUP_POETRY
+
+    if click.confirm("Do you want to use the current working directory as the app?"):
+        dockerfile += WORKDIR_APPENDIX
+
+    return dockerfile
 
 
 CONDA_GPU = """
@@ -87,23 +140,29 @@ RUN conda env create --name camera-seg -f /tmp/requirements.yml
 RUN conda activate camera-seg
 """
 
+BUILDERS = {
+    "pip": {
+        "gpu": None,
+        "no-gpu": pip_no_gpu,
+    },
+    "conda": None,
+    "poetry": {
+        "gpu": None,
+        "no-gpu": poetry_no_gpu,
+    },
+}
 
-def build_dockerfile(packager: Packager, gpu: bool, python_version: str) -> str:
-    if packager == Packager.CONDA:
-        if gpu:
-            return CONDA_GPU
-        else:
-            return CONDA_NO_GPU
 
-    if packager == Packager.PIP:
-        if gpu:
-            return PIP_GPU
-        else:
-            return PIP_NO_GPU
-
-    raise click.ClickException(
-        f"Packager {packager} {gpu and 'with GPU Support'} is not supported. Please create a issue on github and create your own Dockerfile for now."
-    )
+def build_dockerfile(
+    manifest: Manifest, packager: Packager, gpu: bool, python_version: str
+) -> str:
+    packager = BUILDERS.get(packager, {}).get(gpu and "gpu" or "no-gpu", None)
+    if packager:
+        return packager(manifest, python_version)
+    else:
+        raise click.ClickException(
+            f"Packager {packager} {gpu and 'with GPU Support'} is not supported. Please create a issue on github and create your own Dockerfile for now."
+        )
 
 
 class DockerFile(BaseModel):
@@ -166,7 +225,9 @@ def docker_file_wizard(manifest: Manifest, auto: bool = True):
     if click.confirm(
         f"Would you like to generate Template Dockerfile: Using {packager} with Python {python_version} {'and' if gpu else 'without'} GPU support"
     ):
-        dockfile = build_dockerfile(packager, gpu=gpu, python_version=python_version)
+        dockfile = build_dockerfile(
+            manifest, packager, gpu=gpu, python_version=python_version
+        )
         with open("Dockerfile", "w") as file:
             file.write(dockfile)
 

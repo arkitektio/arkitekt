@@ -113,13 +113,9 @@ type Whale {
 type Deployment {
   """"""
   id: ID!
-
-  """"""
   version: String!
-
-  """"""
   identifier: String!
-  scopes: GenericScalar
+  scopes: [String]!
   requirements: GenericScalar
 
   """"""
@@ -162,9 +158,6 @@ type GithubRepo {
 
   """"""
   deployments: [Deployment!]!
-  version: String!
-  identifier: String!
-  scopes: [String]!
   readme: String
 }
 

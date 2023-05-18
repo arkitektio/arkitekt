@@ -15,12 +15,7 @@ type Query {
     """The ID to search by"""
     clientId: ID!
   ): Application
-  clients: [Application]
   myclients: [Application]
-  client(
-    """The ID to search by"""
-    id: ID!
-  ): Application
   scopes(
     """Unique app name for user"""
     search: String
@@ -96,28 +91,19 @@ type Query {
     """Filter by user"""
     user: ID
   ): [Channel]
-  privatefaktapp(
+  client(
     """The FaktApp ID"""
     id: ID
 
-    """Unique app name for user"""
-    identifier: String
+    """The client id of one associated oauth2 application"""
+    clientId: ID
 
-    """Unique app name for user"""
-    version: String
-  ): FaktApplication
-  privatefaktapps: [FaktApplication]
-  publicfaktapp(
     """The FaktApp ID"""
-    id: ID
-
-    """Unique app name for user"""
-    identifier: String
-
-    """Unique app name for user"""
-    version: String
-  ): FaktApplication
-  publicfaktapps: [FaktApplication]
+    token: ID
+  ): Client
+  myPrivateClients: [Client]
+  clients: [Client]
+  myPublicClients: [Client]
   app(
     """The FaktApp ID"""
     id: ID
@@ -129,12 +115,29 @@ type Query {
     version: String
 
     """The client id of one associated oauth2 application"""
-    clientId: String
+    clientId: ID
   ): App
   apps(
     """Search for substring of identifier"""
     search: String
   ): [App]
+  release(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    identifier: String
+
+    """Unique app name for user"""
+    version: String
+
+    """The client id of one associated oauth2 application"""
+    clientId: ID
+  ): Release
+  releases(
+    """Filter by app"""
+    app: ID
+  ): [Release]
 
   """Get information on your Docker Template"""
   member(
@@ -177,7 +180,7 @@ type Application {
 
   """"""
   algorithm: ApplicationAlgorithm
-  faktapplication: FaktApplication
+  client: Client
 
   """The Url of the Image"""
   image: String
@@ -298,18 +301,18 @@ enum ApplicationAlgorithm {
   HS256
 }
 
-type FaktApplication {
+type Client {
   """"""
   id: ID!
 
   """"""
-  app: App
+  release: Release
 
   """"""
-  application: Application!
+  oauth2Client: Application!
 
   """"""
-  kind: FaktApplicationKind
+  kind: ClientKind
 
   """"""
   token: String!
@@ -322,21 +325,18 @@ type FaktApplication {
   scopes: [String]!
 
   """"""
-  logo: String
-
-  """"""
   creator: HerreUser!
 
   """"""
   user: HerreUser
 }
 
-type App {
+type Release {
   """"""
   id: ID!
 
   """"""
-  identifier: String!
+  app: App!
 
   """"""
   version: String!
@@ -346,11 +346,26 @@ type App {
   logo: String
 
   """"""
-  faktApplications: [FaktApplication!]!
+  clients: [Client!]!
+}
+
+type App {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  identifier: String!
+  logo: String
+
+  """"""
+  releases: [Release!]!
 }
 
 """An enumeration."""
-enum FaktApplicationKind {
+enum ClientKind {
   """Website"""
   WEBSITE
 
@@ -453,6 +468,9 @@ type DeviceCode {
 
   """"""
   graph: Graph
+
+  """"""
+  logo: String
 }
 
 """The root Mutation"""
@@ -510,7 +528,7 @@ type Mutation {
   ): Channel
   publishToChannel(channel: ID!, message: String!, title: String!): PublishResult
   notifyUser(channels: [String], message: String!, title: String!, user: ID!): [PublishResult]
-  createPrivateFakt(
+  createPrivateClient(
     """The Name of this Elemet"""
     identifier: String!
 
@@ -522,8 +540,8 @@ type Mutation {
 
     """The Repo of the Docker (Repo on Dockerhub)"""
     version: String!
-  ): FaktApplication
-  createPublicFakt(
+  ): Client
+  createPublicClient(
     """The Name of this Elemet"""
     identifier: String!
 
@@ -538,15 +556,11 @@ type Mutation {
 
     """The Repo of the Docker (Repo on Dockerhub)"""
     version: String!
-  ): FaktApplication
-  deletePrivateFakt(
+  ): Client
+  deleteClient(
     """The ID of the application"""
     id: ID!
-  ): DeletePrivateFaktResult
-  deletePublicFakt(
-    """The ID of the application"""
-    id: ID!
-  ): DeletePublicFaktResult
+  ): DeleteClientResult
   updateApp(
     """The id of the app"""
     id: ID!
@@ -608,11 +622,7 @@ enum PublicFaktType {
   WEBSITE
 }
 
-type DeletePrivateFaktResult {
-  id: ID
-}
-
-type DeletePublicFaktResult {
+type DeleteClientResult {
   id: ID
 }
 

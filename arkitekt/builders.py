@@ -103,7 +103,7 @@ def easy(
 def jupy(
     identifier: str,
     version: str = "latest",
-    url: str = "http://localhost:8000/f/",
+    url: str = "http://localhost:8000",
     headless: bool = False,
     instance_id: str = "main",
     no_cache: bool = False,
@@ -202,7 +202,7 @@ def scheduler(
     url: str = "http://localhost:8000",
     headless: bool = False,
     allow_sync_in_async: bool = True,
-    log_level: str = "ERROR",
+    log_level: str = "INFO",
     token: str = None,
     instance_id: str = "main",
     no_cache: bool = False,
@@ -224,10 +224,10 @@ def scheduler(
     """
     try:
         from reaktion.agent import ReaktionAgent
-    except ImportError:
+    except ImportError as e:
         raise ImportError(
             "You need to install reaktion to use the scheduler function"
-        ) from None
+        ) from e
 
     url = os.getenv("FAKTS_URL", url)
     token = os.getenv("FAKTS_TOKEN", token)
@@ -287,7 +287,7 @@ def publicqt(
     identifier: str,
     version: str = "latest",
     parent=None,
-    image: Optional[str] = None,
+    logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     beacon_widget=None,
     login_widget=None,
@@ -322,7 +322,7 @@ def publicqt(
         version=version,
         identifier=identifier,
         scopes=scopes or ["openid", "read", "write"],
-        image=image,
+        logo=logo,
     )
 
     create_arkitekt_folder(with_cache=True)

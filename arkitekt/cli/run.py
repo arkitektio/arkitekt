@@ -89,7 +89,6 @@ async def run_port(
     app = port(
         identifier=manifest.identifier,
         version=manifest.version,
-        logo=manifest.logo,
         url=url,
         token=token,
         instance_id=instance_id,
