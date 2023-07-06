@@ -225,12 +225,18 @@ type Query {
     """The Experiment the Sample of this Representation belongs to"""
     experiments: [ID]
 
-    """The Stage this Representation belongs to"""
-    stages: [ID]
+    """The Dataset this image belongs to"""
+    datasets: [ID]
     samples: [ID]
 
     """Only show Representations without children"""
     noChildren: Boolean
+
+    """Only show Representations without parents"""
+    noParents: Boolean
+
+    """Only show Representations that are derived from ROIs"""
+    isRoiDerived: Boolean
 
     """Ordering"""
     ordering: String
@@ -246,6 +252,9 @@ type Query {
 
     """The tags you want to filter by"""
     derivedTags: [String]
+
+    """The Stage this Representation belongs to"""
+    stages: [ID]
 
     """Query limit"""
     limit: Int
@@ -305,12 +314,18 @@ type Query {
     """The Experiment the Sample of this Representation belongs to"""
     experiments: [ID]
 
-    """The Stage this Representation belongs to"""
-    stages: [ID]
+    """The Dataset this image belongs to"""
+    datasets: [ID]
     samples: [ID]
 
     """Only show Representations without children"""
     noChildren: Boolean
+
+    """Only show Representations without parents"""
+    noParents: Boolean
+
+    """Only show Representations that are derived from ROIs"""
+    isRoiDerived: Boolean
 
     """Ordering"""
     ordering: String
@@ -326,6 +341,9 @@ type Query {
 
     """The tags you want to filter by"""
     derivedTags: [String]
+
+    """The Stage this Representation belongs to"""
+    stages: [ID]
 
     """Query limit"""
     limit: Int
@@ -429,6 +447,9 @@ type Query {
 
     """Filter by values"""
     ids: [ID]
+
+    """The tags you want to filter by"""
+    values: [String]
 
     """Query limit"""
     limit: Int
@@ -1140,7 +1161,26 @@ type Query {
 
     """Search for substring of name"""
     name: String
-    z: Float
+    omero: ID
+    representation: ID
+
+    """The z you want to filter by either interger or slice string"""
+    z: String
+
+    """The z you want to filter by either interger or slice string"""
+    activeForZ: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForT: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForX: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForY: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForC: Float
 
     """Query limit"""
     limit: Int
@@ -1155,6 +1195,216 @@ type Query {
     id: ID!
   ): View
 
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  metas(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Order the omeros: options are -acquired or acquired"""
+    order: String
+    timepoints: [ID]
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Omero]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  meta(
+    """The ID to search by"""
+    id: ID!
+  ): Omero
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  mymetas(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Order the omeros: options are -acquired or acquired"""
+    order: String
+    timepoints: [ID]
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Omero]
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  timepoints(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Search for substring of name"""
+    name: String
+    deltaT: Float
+
+    """Ordering"""
+    order: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Timepoint]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  timepoint(
+    """The ID to search by"""
+    id: ID!
+  ): Timepoint
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  mytimepoints(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Search for substring of name"""
+    name: String
+    deltaT: Float
+
+    """Ordering"""
+    order: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Timepoint]
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  eras(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Era]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  era(
+    """The ID to search by"""
+    id: ID!
+  ): Era
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  myeras(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Era]
+
+  """
+  All Instruments
+      
+      This query returns all Instruments that are stored on the platform
+      depending on the user's permissions. Generally, this query will return
+      all Instruments that the user has access to. If the user is an amdin
+      or superuser, all Instruments will be returned.
+  """
+  cameras(
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Created through which app"""
+    app: String
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of name"""
+    name: String
+
+    """The substring you want to filter by"""
+    search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Camera]
+
+  """
+  Get a single instrumes by ID
+      
+      Returns a single instrument by ID. If the user does not have access
+      to the instrument, an error will be raised.
+  """
+  camera(
+    """The ID to search by"""
+    id: ID
+
+    """The name to search by"""
+    name: String
+  ): Camera
+
   """
   My samples return all of the users samples attached to the current user
   """
@@ -1167,6 +1417,9 @@ type Query {
 
     """The tags you want to filter by"""
     tags: [String]
+
+    """The Dataset this image belongs to"""
+    datasets: [ID]
     createdAfter: DateTime
     createdBefore: DateTime
     creator: ID
@@ -1194,6 +1447,9 @@ type Query {
 
     """The tags you want to filter by"""
     tags: [String]
+
+    """The Dataset this image belongs to"""
+    datasets: [ID]
     createdAfter: DateTime
     createdBefore: DateTime
     creator: ID
@@ -1216,14 +1472,77 @@ type Query {
   ): Table
   columnsof(
     """The ID to search by"""
-    id: ID!
+    table: ID!
 
     """Filter by dtype"""
     dtype: [PandasDType]
 
+    """Filter by the value of the column"""
+    values: [ID]
+
     """Filter by name"""
-    name: String
+    search: String
   ): [Column]
+
+  """
+  My samples return all of the users samples attached to the current user
+  """
+  graphs(
+    """Filter by values"""
+    ids: [ID]
+
+    """The tags you want to filter by"""
+    tags: [String]
+
+    """Search for substring of name"""
+    name: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """Filter by pinned"""
+    pinned: Boolean
+    createdDay: DateTime
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Graph]
+
+  """
+  My samples return all of the users samples attached to the current user
+  """
+  mygraphs(
+    """Filter by values"""
+    ids: [ID]
+
+    """The tags you want to filter by"""
+    tags: [String]
+
+    """Search for substring of name"""
+    name: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """Filter by pinned"""
+    pinned: Boolean
+    createdDay: DateTime
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Graph]
+
+  """Get a single representation by ID"""
+  graph(
+    """The ID to search by"""
+    id: ID!
+  ): Graph
   plot(
     """The id of the plot"""
     id: ID
@@ -1297,6 +1616,7 @@ enum CommentableModels {
   GRUNNLAG_USERMETA
   GRUNNLAG_ANTIBODY
   GRUNNLAG_OBJECTIVE
+  GRUNNLAG_CAMERA
   GRUNNLAG_INSTRUMENT
   GRUNNLAG_DATASET
   GRUNNLAG_EXPERIMENT
@@ -1311,6 +1631,8 @@ enum CommentableModels {
   GRUNNLAG_STAGE
   GRUNNLAG_CHANNEL
   GRUNNLAG_POSITION
+  GRUNNLAG_ERA
+  GRUNNLAG_TIMEPOINT
   GRUNNLAG_REPRESENTATION
   GRUNNLAG_OMERO
   GRUNNLAG_DIMENSIONMAP
@@ -1322,6 +1644,7 @@ enum CommentableModels {
   GRUNNLAG_LABEL
   GRUNNLAG_FEATURE
   BORD_TABLE
+  BORD_GRAPH
 }
 
 """
@@ -1442,6 +1765,7 @@ enum SharableModels {
   GRUNNLAG_USERMETA
   GRUNNLAG_ANTIBODY
   GRUNNLAG_OBJECTIVE
+  GRUNNLAG_CAMERA
   GRUNNLAG_INSTRUMENT
   GRUNNLAG_DATASET
   GRUNNLAG_EXPERIMENT
@@ -1456,6 +1780,8 @@ enum SharableModels {
   GRUNNLAG_STAGE
   GRUNNLAG_CHANNEL
   GRUNNLAG_POSITION
+  GRUNNLAG_ERA
+  GRUNNLAG_TIMEPOINT
   GRUNNLAG_REPRESENTATION
   GRUNNLAG_OMERO
   GRUNNLAG_DIMENSIONMAP
@@ -1467,6 +1793,7 @@ enum SharableModels {
   GRUNNLAG_LABEL
   GRUNNLAG_FEATURE
   BORD_TABLE
+  BORD_GRAPH
 }
 
 type PermissionsOfReturn {
@@ -1614,6 +1941,9 @@ type LokClient {
   objectiveCreatedThrough: [Objective!]!
 
   """"""
+  cameraCreatedThrough: [Camera!]!
+
+  """"""
   instrumentCreatedThrough: [Instrument!]!
 
   """"""
@@ -1650,6 +1980,12 @@ type LokClient {
   positionCreatedThrough: [Position!]!
 
   """"""
+  eraCreatedThrough: [Era!]!
+
+  """"""
+  timepointCreatedThrough: [Timepoint!]!
+
+  """"""
   representationCreatedThrough: [Representation!]!
 
   """"""
@@ -1681,6 +2017,9 @@ type LokClient {
 
   """"""
   tableCreatedThrough: [Table!]!
+
+  """"""
+  graphCreatedThrough: [Graph!]!
 }
 
 type LokApp {
@@ -1762,6 +2101,7 @@ type Objective {
 
     """Order the omeros: options are -acquired or acquired"""
     order: String
+    timepoints: [ID]
 
     """Query limit"""
     limit: Int
@@ -1828,6 +2168,7 @@ type Instrument {
 
     """Order the omeros: options are -acquired or acquired"""
     order: String
+    timepoints: [ID]
 
     """Query limit"""
     limit: Int
@@ -1848,7 +2189,7 @@ String, Boolean, Int, Float, List or Object.
 """
 scalar GenericScalar
 
-"An Stage is a set of positions that share a common space on a microscope and can\n    be use to translate.\n    \n    \n    "
+"An Stage is a set of positions that share a common space on a microscope and can\n    be use to translate.\n\n\n    "
 type Stage {
   """"""
   id: ID!
@@ -1969,12 +2310,18 @@ type Dataset {
     """The Experiment the Sample of this Representation belongs to"""
     experiments: [ID]
 
-    """The Stage this Representation belongs to"""
-    stages: [ID]
+    """The Dataset this image belongs to"""
+    datasets: [ID]
     samples: [ID]
 
     """Only show Representations without children"""
     noChildren: Boolean
+
+    """Only show Representations without parents"""
+    noParents: Boolean
+
+    """Only show Representations that are derived from ROIs"""
+    isRoiDerived: Boolean
 
     """Ordering"""
     ordering: String
@@ -1991,6 +2338,9 @@ type Dataset {
     """The tags you want to filter by"""
     derivedTags: [String]
 
+    """The Stage this Representation belongs to"""
+    stages: [ID]
+
     """Query limit"""
     limit: Int
 
@@ -2000,6 +2350,9 @@ type Dataset {
 
   """"""
   tables: [Table!]!
+
+  """"""
+  graphs: [Graph!]!
 
   """Is the table pinned by the active user"""
   pinned: Boolean
@@ -2155,6 +2508,7 @@ enum LinkableModels {
   GRUNNLAG_USERMETA
   GRUNNLAG_ANTIBODY
   GRUNNLAG_OBJECTIVE
+  GRUNNLAG_CAMERA
   GRUNNLAG_INSTRUMENT
   GRUNNLAG_DATASET
   GRUNNLAG_EXPERIMENT
@@ -2169,6 +2523,8 @@ enum LinkableModels {
   GRUNNLAG_STAGE
   GRUNNLAG_CHANNEL
   GRUNNLAG_POSITION
+  GRUNNLAG_ERA
+  GRUNNLAG_TIMEPOINT
   GRUNNLAG_REPRESENTATION
   GRUNNLAG_OMERO
   GRUNNLAG_DIMENSIONMAP
@@ -2180,6 +2536,7 @@ enum LinkableModels {
   GRUNNLAG_LABEL
   GRUNNLAG_FEATURE
   BORD_TABLE
+  BORD_GRAPH
   PLOTQL_PLOT
 }
 
@@ -2231,8 +2588,44 @@ type Representation {
   """"""
   tableOrigins: [Table!]!
 
-  """"""
-  roiOrigins: [ROI!]!
+  """Originating from rois"""
+  roiOrigins(
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Created through which app"""
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Filter by values"""
+    ids: [ID]
+    representation: ID
+    repname: String
+    creator: ID
+
+    """Ordering"""
+    ordering: String
+
+    """The tags you want to filter by"""
+    tags: [String]
+    type: [RoiTypeInput]
+
+    """How many levels to flatten the metrics"""
+    flatten: Int = 0
+
+    """Should the query be recursive. E.g. span all origins of this as well?"""
+    recursive: Boolean = false
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [ROI]
 
   """The Sample this representation belosngs to"""
   sample: Sample
@@ -2283,12 +2676,18 @@ type Representation {
     """The Experiment the Sample of this Representation belongs to"""
     experiments: [ID]
 
-    """The Stage this Representation belongs to"""
-    stages: [ID]
+    """The Dataset this image belongs to"""
+    datasets: [ID]
     samples: [ID]
 
     """Only show Representations without children"""
     noChildren: Boolean
+
+    """Only show Representations without parents"""
+    noParents: Boolean
+
+    """Only show Representations that are derived from ROIs"""
+    isRoiDerived: Boolean
 
     """Ordering"""
     ordering: String
@@ -2304,6 +2703,9 @@ type Representation {
 
     """The tags you want to filter by"""
     derivedTags: [String]
+
+    """The Stage this Representation belongs to"""
+    stages: [ID]
 
     """How many levels to flatten the metrics"""
     flatten: Int = 0
@@ -2401,6 +2803,9 @@ type Representation {
 
     """The tags you want to filter by"""
     tags: [String]
+
+    """The Dataset this image belongs to"""
+    datasets: [ID]
     createdAfter: DateTime
     createdBefore: DateTime
     creator: ID
@@ -2418,6 +2823,10 @@ type Representation {
 
   """The Arkitekt identifier"""
   identifier: String
+  table(
+    """Should we get the first item?"""
+    first: Boolean
+  ): Table
   metric(key: String!): Metric
   latestThumbnail: Thumbnail
   comments: [Comment]
@@ -2466,7 +2875,7 @@ type OmeroFile {
   """The experiment this file belongs to"""
   experiments: [Experiment!]!
 
-  """The file"""
+  """ the associaed file"""
   file: File
 
   """The name of the file"""
@@ -2526,8 +2935,74 @@ type Table {
   """"""
   datasets: [Dataset!]!
 
-  """The Representation this Table belongs to"""
-  repOrigins: [Representation!]!
+  """Images that were used to create this table"""
+  repOrigins(
+    """Search for substring of name"""
+    name: String
+
+    """Created through which app"""
+    app: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Filter by values"""
+    ids: [ID]
+
+    """The tags you want to filter by"""
+    tags: [String]
+
+    """The Experiment the Sample of this Representation belongs to"""
+    experiments: [ID]
+
+    """The Dataset this image belongs to"""
+    datasets: [ID]
+    samples: [ID]
+
+    """Only show Representations without children"""
+    noChildren: Boolean
+
+    """Only show Representations without parents"""
+    noParents: Boolean
+
+    """Only show Representations that are derived from ROIs"""
+    isRoiDerived: Boolean
+
+    """Ordering"""
+    ordering: String
+
+    """Filter by required Metric Keys (seperated by ,)"""
+    hasMetric: String
+
+    """Order by Keys"""
+    order: [String]
+    variety: RepresentationVarietyInput
+    forceThumbnail: Boolean
+    creator: ID
+
+    """The tags you want to filter by"""
+    derivedTags: [String]
+
+    """The Stage this Representation belongs to"""
+    stages: [ID]
+
+    """How many levels to flatten the metrics"""
+    flatten: Int = 0
+
+    """Should the query be recursive. E.g. span all origins of this as well?"""
+    recursive: Boolean = false
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Representation]
 
   """Sample this table belongs to"""
   sample: Sample
@@ -2562,6 +3037,9 @@ type Table {
   """"""
   derivedRepresentations: [Representation!]!
 
+  """"""
+  graphs: [Graph!]!
+
   """List of Records"""
   query(
     """Columns you want to select"""
@@ -2576,10 +3054,59 @@ type Table {
     """The Query for the query"""
     query: String
   ): [GenericScalar]
+
+  """Tables that were used to create this table"""
+  tableOrigins(
+    """Search for substring of name"""
+    name: String
+
+    """Filter by values"""
+    ids: [ID]
+
+    """The tags you want to filter by"""
+    tags: [String]
+
+    """The Dataset this image belongs to"""
+    datasets: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """Filter by pinned"""
+    pinned: Boolean
+    createdDay: DateTime
+
+    """How many levels to flatten the metrics"""
+    flatten: Int = 0
+
+    """Should the query be recursive. E.g. span all origins of this as well?"""
+    recursive: Boolean = false
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Table]
   comments: [Comment]
 
   """Is the table pinned by the active user"""
   pinned: Boolean
+}
+
+"""Variety expresses the Type of Representation we are dealing with"""
+enum RepresentationVarietyInput {
+  """Mask (Value represent Labels)"""
+  MASK
+
+  """Voxel (Value represent Intensity)"""
+  VOXEL
+
+  """RGB (First three channel represent RGB)"""
+  RGB
+
+  """Unknown"""
+  UNKNOWN
 }
 
 """
@@ -2645,12 +3172,18 @@ type Sample {
     """The Experiment the Sample of this Representation belongs to"""
     experiments: [ID]
 
-    """The Stage this Representation belongs to"""
-    stages: [ID]
+    """The Dataset this image belongs to"""
+    datasets: [ID]
     samples: [ID]
 
     """Only show Representations without children"""
     noChildren: Boolean
+
+    """Only show Representations without parents"""
+    noParents: Boolean
+
+    """Only show Representations that are derived from ROIs"""
+    isRoiDerived: Boolean
 
     """Ordering"""
     ordering: String
@@ -2667,6 +3200,9 @@ type Sample {
     """The tags you want to filter by"""
     derivedTags: [String]
 
+    """The Stage this Representation belongs to"""
+    stages: [ID]
+
     """Query limit"""
     limit: Int
 
@@ -2681,21 +3217,6 @@ type Sample {
   tables: [Table!]!
   pinned: Boolean
   comments: [Comment]
-}
-
-"""Variety expresses the Type of Representation we are dealing with"""
-enum RepresentationVarietyInput {
-  """Mask (Value represent Labels)"""
-  MASK
-
-  """Voxel (Value represent Intensity)"""
-  VOXEL
-
-  """RGB (First three channel represent RGB)"""
-  RGB
-
-  """Unknown"""
-  UNKNOWN
 }
 
 type Metric {
@@ -2799,6 +3320,43 @@ On the python side this will be converted from and to a pandas dataframe.
 """
 scalar Parquet
 
+"""
+Graph(id, created_by, created_through, created_while, name, used_columns, image)
+"""
+type Graph {
+  """"""
+  id: ID!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdThrough: LokClient
+
+  """"""
+  createdWhile: String
+
+  """"""
+  datasets: [Dataset!]!
+
+  """"""
+  tables: [Table!]!
+
+  """"""
+  name: String!
+  usedColumns: GenericScalar
+
+  """"""
+  image: String
+
+  """A comma-separated list of tags."""
+  tags: [String]
+
+  """"""
+  pinnedBy: [User!]!
+  comments: [Comment]
+}
+
 "A ROI is a region of interest in a representation.\n\n    This region is to be regarded as a view on the representation. Depending\n    on the implementatoin (type) of the ROI, the view can be constructed\n    differently. For example, a rectangular ROI can be constructed by cropping\n    the representation according to its 2 vectors. while a polygonal ROI can be constructed by masking the\n    representation with the polygon.\n\n    The ROI can also store a name and a description. This is used to display the ROI in the UI.\n\n    "
 type ROI {
   """"""
@@ -2841,7 +3399,13 @@ type ROI {
   tags: [String]
 
   """"""
+  derivedPositions: [Position!]!
+
+  """"""
   derivedRepresentations: [Representation!]!
+
+  """The dimensions of the ROI. Only valid for rectangular ROIs"""
+  dimensions: RoiDimensions
 
   """Is the ROI pinned by the active user"""
   pinned: Boolean
@@ -2895,19 +3459,72 @@ enum ROIType {
   POINT
 }
 
-"""An enumeration."""
-enum RepresentationVariety {
-  """Mask (Value represent Labels)"""
-  MASK
+"""The relative position of a sample on a microscope stage"""
+type Position {
+  """"""
+  id: ID!
 
-  """Voxel (Value represent Intensity)"""
-  VOXEL
+  """"""
+  createdBy: User
 
-  """RGB (First three channel represent RGB)"""
-  RGB
+  """"""
+  createdThrough: LokClient
 
-  """Unknown"""
-  UNKNOWN
+  """"""
+  createdWhile: String
+
+  """"""
+  roiOrigins: [ROI!]!
+
+  """"""
+  stage: Stage!
+
+  """The name of the possition"""
+  name: String!
+
+  """pixelSize for x in microns"""
+  x: Float!
+
+  """pixelSize for y in microns"""
+  y: Float!
+
+  """pixelSize for z in microns"""
+  z: Float!
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """A comma-separated list of tags."""
+  tags: [String]
+
+  """Associated images through Omero"""
+  omeros(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Order the omeros: options are -acquired or acquired"""
+    order: String
+    timepoints: [ID]
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Omero]
+
+  """"""
+  views: [View!]!
+
+  """Is the table pinned by the active user"""
+  pinned: Boolean
+  comments: [Comment]
 }
 
 "Omero is a through model that stores the real world context of an image\n\n    This means that it stores the position (corresponding to the relative displacement to\n    a stage (Both are models)), objective and other meta data of the image.\n\n    "
@@ -2928,7 +3545,34 @@ type Omero {
   representation: Representation!
 
   """"""
+  cameras: [Camera!]!
+
+  """"""
   positions: [Position!]!
+
+  """Associated Timepoints"""
+  timepoints(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Search for substring of name"""
+    name: String
+    deltaT: Float
+
+    """Ordering"""
+    order: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Timepoint]
 
   """"""
   objective: Objective
@@ -2968,7 +3612,26 @@ type Omero {
 
     """Search for substring of name"""
     name: String
-    z: Float
+    omero: ID
+    representation: ID
+
+    """The z you want to filter by either interger or slice string"""
+    z: String
+
+    """The z you want to filter by either interger or slice string"""
+    activeForZ: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForT: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForX: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForY: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForC: Float
 
     """Query limit"""
     limit: Int
@@ -2979,8 +3642,10 @@ type Omero {
   comments: [Comment]
 }
 
-"""The relative position of a sample on a microscope stage"""
-type Position {
+"""
+Camera(id, created_by, created_through, created_while, serial_number, name, model, bit_depth, sensor_size_x, sensor_size_y, physical_sensor_size_x, physical_sensor_size_y, physical_sensor_size_unit, manufacturer)
+"""
+type Camera {
   """"""
   id: ID!
 
@@ -2994,19 +3659,84 @@ type Position {
   createdWhile: String
 
   """"""
-  stage: Stage!
+  serialNumber: String!
 
-  """The name of the possition"""
+  """"""
   name: String!
 
-  """pixelSize for x in microns"""
-  x: Float!
+  """"""
+  model: String
 
-  """pixelSize for y in microns"""
-  y: Float!
+  """"""
+  bitDepth: Int
 
-  """pixelSize for z in microns"""
-  z: Float!
+  """"""
+  sensorSizeX: Float
+
+  """"""
+  sensorSizeY: Float
+
+  """"""
+  physicalSensorSizeX: Float
+
+  """"""
+  physicalSensorSizeY: Float
+
+  """"""
+  physicalSensorSizeUnit: String
+
+  """"""
+  manufacturer: String
+
+  """Associated images through Omero"""
+  omeros(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Order the omeros: options are -acquired or acquired"""
+    order: String
+    timepoints: [ID]
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Omero]
+  comments: [Comment]
+}
+
+"""The relative position of a sample on a microscope stage"""
+type Timepoint {
+  """"""
+  id: ID!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdThrough: LokClient
+
+  """"""
+  createdWhile: String
+
+  """"""
+  era: Era!
+
+  """The time the experiment was created"""
+  createdAt: DateTime!
+
+  """The name of the timepoint"""
+  name: String
+
+  """"""
+  deltaT: Float
 
   """The users that have pinned the position"""
   pinnedBy: [User!]!
@@ -3027,6 +3757,7 @@ type Position {
 
     """Order the omeros: options are -acquired or acquired"""
     order: String
+    timepoints: [ID]
 
     """Query limit"""
     limit: Int
@@ -3037,14 +3768,73 @@ type Position {
 
   """"""
   views: [View!]!
-
-  """Is the table pinned by the active user"""
-  pinned: Boolean
   comments: [Comment]
+  pinned: Boolean
 }
 
 """
-View(id, created_by, created_through, created_while, omero, z_min, z_max, x_min, x_max, y_min, y_max, t_min, t_max, c_min, c_max, channel, position, objective, instrument)
+Era(id, created_by, created_through, created_while, name, start, end, created_at)
+"""
+type Era {
+  """"""
+  id: ID!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdThrough: LokClient
+
+  """"""
+  createdWhile: String
+
+  """The name of the era"""
+  name: String!
+
+  """The start of the era"""
+  start: DateTime
+
+  """The end of the era"""
+  end: DateTime
+
+  """The time the experiment was created"""
+  createdAt: DateTime!
+
+  """The users that have pinned the era"""
+  pinnedBy: [User!]!
+
+  """A comma-separated list of tags."""
+  tags: [String]
+
+  """Associated Timepoints"""
+  timepoints(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Search for substring of name"""
+    name: String
+    deltaT: Float
+
+    """Ordering"""
+    order: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Timepoint]
+  comments: [Comment]
+  pinned: Boolean
+}
+
+"""
+View(id, created_by, created_through, created_while, omero, z_min, z_max, x_min, x_max, y_min, y_max, t_min, t_max, c_min, c_max, channel, position, objective, instrument, timepoint)
 """
 type View {
   """"""
@@ -3103,11 +3893,15 @@ type View {
 
   """"""
   instrument: Instrument
+
+  """"""
+  timepoint: Timepoint
   z: Slice
   t: Slice
   c: Slice
   x: Slice
   y: Slice
+  accessors: [String]
 }
 
 """
@@ -3358,6 +4152,59 @@ type ImagingEnvironment {
   map: GenericScalar
 }
 
+type RoiDimensions {
+  """The dimensions of the image"""
+  width: Float
+
+  """Height of the image"""
+  height: Float
+}
+
+"""An enumeration."""
+enum RoiTypeInput {
+  """Ellipse"""
+  ELLIPSIS
+
+  """POLYGON"""
+  POLYGON
+
+  """Line"""
+  LINE
+
+  """Rectangle"""
+  RECTANGLE
+
+  """Path"""
+  PATH
+
+  """Unknown"""
+  UNKNOWN
+
+  """Frame"""
+  FRAME
+
+  """Slice"""
+  SLICE
+
+  """Point"""
+  POINT
+}
+
+"""An enumeration."""
+enum RepresentationVariety {
+  """Mask (Value represent Labels)"""
+  MASK
+
+  """Voxel (Value represent Intensity)"""
+  VOXEL
+
+  """RGB (First three channel represent RGB)"""
+  RGB
+
+  """Unknown"""
+  UNKNOWN
+}
+
 "A Thumbnail is a render of a representation that is used to display the representation in the UI.\n\n    Thumbnails can also store the major color of the representation. This is used to color the representation in the UI.\n    "
 type Thumbnail {
   """"""
@@ -3406,36 +4253,6 @@ type Video {
 
   """"""
   frontImage: String
-}
-
-"""An enumeration."""
-enum RoiTypeInput {
-  """Ellipse"""
-  ELLIPSIS
-
-  """POLYGON"""
-  POLYGON
-
-  """Line"""
-  LINE
-
-  """Rectangle"""
-  RECTANGLE
-
-  """Path"""
-  PATH
-
-  """Unknown"""
-  UNKNOWN
-
-  """Frame"""
-  FRAME
-
-  """Slice"""
-  SLICE
-
-  """Point"""
-  POINT
 }
 
 "A Label is a trough model for image and features.\n\n    Its map an instance value of a representation\n    (e.g. a pixel value of a segmentation mask) to a set of corresponding features of the segmented\n    class instance.\n\n    There can only be one label per representation and class instance. You can then attach\n    features to the label.\n\n\n    "
@@ -3551,11 +4368,7 @@ scalar FeatureValue
 
 union Render = Video | Thumbnail
 
-"""
-A
-
-    Mikro uses the omero-meta data to create representations of the file. See Representation for more information.
-"""
+"A\n\n    Mikro uses the omero-meta data to create representations of the file. See Representation for more information.\n    "
 type Model {
   """"""
   id: ID!
@@ -3896,6 +4709,12 @@ type Mutation {
     """The ID of the two deletet Representation"""
     id: ID!
   ): DeleteRepresentationResult
+
+  """Create an experiment (only signed in users)"""
+  freeRepresentation(
+    """The ID of the two deletet Representation"""
+    id: ID!
+  ): Representation
 
   """Creates a Representation"""
   fromXArray(
@@ -4244,6 +5063,9 @@ type Mutation {
     """The name of the position"""
     name: String
 
+    """The Rois that were used to define this position"""
+    roiOrigins: [ID]
+
     """The stage this position belongs to"""
     stage: ID!
 
@@ -4285,6 +5107,32 @@ type Mutation {
     """The pin state"""
     pin: Boolean!
   ): Position
+
+  """
+  Add Posistion
+      
+      This mutation adds a position to an experiment and returns the experiment.
+  """
+  addPosition(
+    """The ID of the omero"""
+    omero: ID!
+
+    """The ID of the position to add to the representation"""
+    position: ID!
+  ): Omero
+
+  """
+  Remove Posistion
+      
+      This mutation adds a position to an experiment and returns the experiment.
+  """
+  removePosition(
+    """The ID of the omero"""
+    omero: ID!
+
+    """The ID of the position to remove from representation"""
+    position: ID!
+  ): Omero
 
   "Creates an Instrument\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    "
   createObjective(
@@ -4607,6 +5455,150 @@ type Mutation {
   ): DeleteViewReturn
 
   """
+  Creates a Timepoint
+      
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+      
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createTimepoint(
+    """The assignation id"""
+    createdWhile: AssignationID
+
+    """The x coord of the position (relative to origin)"""
+    deltaT: Float!
+
+    """The stage this position belongs to"""
+    era: ID!
+
+    """The name of the position"""
+    name: String
+
+    """Tags for the experiment"""
+    tags: [String]
+
+    """The tolerance offset before we create a new timepoint"""
+    tolerance: Float
+  ): Timepoint
+
+  """
+  Delete Experiment
+      
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteTimepoint(
+    """The ID of the experiment to delete"""
+    id: ID!
+  ): DeleteTimepointResult
+
+  """
+  Pin Acquisition
+      
+      This mutation pins an Experiment and returns the pinned Experiment.
+  """
+  pinTimepoint(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Timepoint
+
+  """
+  Add Timepoint
+      
+      This mutation adds a position to an experiment and returns the experiment.
+  """
+  addTimepoint(
+    """The ID of the omero"""
+    omero: ID!
+
+    """The ID of the position to remove from representation"""
+    timepoint: ID!
+  ): Omero
+
+  """
+  Add Posistion
+      
+      This mutation adds a position to an experiment and returns the experiment.
+  """
+  removeTimepoint(
+    """The ID of the omero"""
+    omero: ID!
+
+    """The ID of the position to add to the representation"""
+    timepoint: ID!
+  ): Omero
+
+  """
+  Creates a Stage
+      
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+      
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createEra(
+    """The assignation id"""
+    createdWhile: AssignationID
+
+    """The end of this era"""
+    end: DateTime
+
+    """The name of the era"""
+    name: String
+
+    """The start of this era"""
+    start: DateTime
+
+    """Tags for the experiment"""
+    tags: [String]
+  ): Era
+
+  """
+  Delete Experiment
+      
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteEra(
+    """The ID of the experiment to delete"""
+    id: ID!
+  ): DeleteEraResult
+
+  """
+  Pin Stage
+      
+      This mutation pins an Experiment and returns the pinned Experiment.
+  """
+  pinEra(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Era
+
+  "Creates an Camera\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    "
+  createCamera(
+    bitDepth: Int
+
+    """The assignation id"""
+    createdWhile: AssignationID
+    model: String
+    name: String!
+    physicalSensorSizeX: Float!
+    physicalSensorSizeY: Float!
+    sensorSizeX: Int!
+    sensorSizeY: Int!
+    serialNumber: String!
+  ): Camera
+
+  """
   Updates an Representation (also retriggers meta-data retrieval from data stored in)
   """
   updateTable(
@@ -4675,6 +5667,33 @@ type Mutation {
     """The ID of the two deletet Representation"""
     id: ID!
   ): DeleteTableResult
+
+  """Creates a Representation"""
+  createGraph(
+    """The colums of the table that make up the graph"""
+    columns: [String]
+
+    """The assignation id"""
+    createdWhile: AssignationID
+
+    """The image of the graph"""
+    image: ImageFile!
+
+    """A cleartext description what this representation represents as data"""
+    name: String
+
+    """The tables that make up the graph"""
+    tables: [ID]
+
+    """Do you want to tag the representation?"""
+    tags: [String]
+  ): Graph
+
+  """Create an experiment (only signed in users)"""
+  deleteGraph(
+    """The ID of the two deletet Representation"""
+    id: ID!
+  ): DeleteGraphResult
 
   """Create an experiment (only signed in users)"""
   createPlot(
@@ -4769,11 +5788,13 @@ part of the mikro datamodel and are not accessed here.
 input OmeroRepresentationInput {
   planes: [PlaneInput]
   maps: [ID]
+  timepoints: [ID]
   channels: [ChannelInput]
   physicalSize: PhysicalSizeInput
   affineTransformation: AffineMatrix
   scale: [Float]
   positions: [ID]
+  cameras: [ID]
   acquisitionDate: DateTime
   objectiveSettings: ObjectiveSettingsInput
   imagingEnvironment: ImagingEnvironmentInput
@@ -4954,6 +5975,9 @@ input RepresentationViewInput {
   """The position you want to associate with this map"""
   position: ID
 
+  """The position you want to associate with this map"""
+  timepoint: ID
+
   """The assignation id"""
   createdWhile: AssignationID
 }
@@ -5098,6 +6122,9 @@ input ViewInput {
   """The position you want to associate with this map"""
   position: ID
 
+  """The position you want to associate with this map"""
+  timepoint: ID
+
   """The assignation id"""
   createdWhile: AssignationID
 }
@@ -5106,10 +6133,22 @@ type DeleteViewReturn {
   id: ID
 }
 
+type DeleteTimepointResult {
+  id: String
+}
+
+type DeleteEraResult {
+  id: String
+}
+
 "A scalar to represent a parquet file\n    "
 scalar ParquetInput
 
 type DeleteTableResult {
+  id: String
+}
+
+type DeleteGraphResult {
   id: String
 }
 

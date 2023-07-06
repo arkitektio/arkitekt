@@ -17,9 +17,50 @@ type Query {
   runs(
     """Filter by values"""
     ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
 
     """Search for substring of name"""
     name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Run]
+  myruns(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
   ): [Run]
   runLogs(
     """Filter by values"""
@@ -38,26 +79,111 @@ type Query {
   workspaces(
     """Filter by values"""
     ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
 
     """Search for substring of name"""
     name: String
 
     """Search for substring of name"""
     search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
   ): [Workspace]
   flows(
     """Filter by values"""
     ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
 
     """Search for substring of name"""
     name: String
     workspace: ID
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Flow]
+  myflows(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+    workspace: ID
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
   ): [Flow]
   flow(
     """A unique ID for this Graph"""
     id: ID
   ): Flow
-  myworkspaces: [Workspace]
+  myworkspaces(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Search for substring of name"""
+    search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Workspace]
   reactivetemplate(
     """The Id of the Graph"""
     id: ID
@@ -70,6 +196,71 @@ type Query {
     """Search for substring of name"""
     name: String
   ): [ReactiveTemplate]
+  condition(
+    """The Id of the Graph"""
+    id: ID
+
+    """The assignation of the Graph"""
+    provision: ID
+  ): Condition
+  conditionEventsBetween(condition: ID!, min: DateTime, max: DateTime): [ConditionEvent]
+  conditionSnapshot(
+    """The Id of the Graph"""
+    id: ID!
+  ): ConditionSnapshot
+  conditions(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Condition]
+  myconditions(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Condition]
+  conditionSnapshots(
+    """Filter by values"""
+    ids: [ID]
+    condition: ID
+  ): [ConditionSnapshot]
   permissionsFor(model: SharableModels!, name: String): [Permission]
   permissionsOf(model: SharableModels!, id: ID!): PermissionsOfReturn
   me: User
@@ -107,6 +298,12 @@ type Run {
   createdAt: DateTime!
 
   """"""
+  createdBy: User
+
+  """"""
+  createdWhile: String
+
+  """"""
   flow: Flow
 
   """"""
@@ -116,6 +313,12 @@ type Run {
   status: String
 
   """"""
+  snapshotInterval: Int
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """"""
   snapshots: [Snapshot!]!
 
   """"""
@@ -123,6 +326,7 @@ type Run {
 
   """"""
   events: [RunEvent!]!
+  pinned: Boolean
   latestSnapshot: Snapshot
 }
 
@@ -132,63 +336,6 @@ value as specified by
 [iso8601](https://en.wikipedia.org/wiki/ISO_8601).
 """
 scalar DateTime
-
-type Flow {
-  """"""
-  id: ID!
-
-  """"""
-  workspace: Workspace
-
-  """"""
-  creator: User
-  restrict: GenericScalar
-
-  """"""
-  version: String!
-  name: String!
-  nodes: GenericScalar
-  edges: GenericScalar
-  graph: FlowGraph!
-
-  """"""
-  hash: String!
-
-  """"""
-  createdAt: DateTime!
-
-  """"""
-  screenshot: String
-
-  """"""
-  description: String
-
-  """Is this a brittle flow? aka. should the flow fail on any exception?"""
-  brittle: Boolean!
-
-  """"""
-  runs: [Run!]!
-  zoom: Float
-  position: [Int]
-}
-
-type Workspace {
-  """"""
-  id: ID!
-  restrict: [String]!
-
-  """"""
-  name: String
-
-  """"""
-  creator: User
-
-  """"""
-  flows: [Flow!]!
-
-  """The latest flow"""
-  latestFlow: Flow
-}
 
 """A reflection on the real User"""
 type User {
@@ -246,8 +393,32 @@ type User {
   """"""
   workspaceSet: [Workspace!]!
 
+  """The users that have pinned the position"""
+  pinnedWorkspaces: [Workspace!]!
+
+  """"""
+  workspaceCreatedBy: [Workspace!]!
+
   """"""
   flowSet: [Flow!]!
+
+  """The users that have pinned the position"""
+  pinnedFlows: [Flow!]!
+
+  """"""
+  flowCreatedBy: [Flow!]!
+
+  """The users that have pinned the position"""
+  pinnedRuns: [Run!]!
+
+  """"""
+  runCreatedBy: [Run!]!
+
+  """The users that have pinned the position"""
+  pinnedConditions: [Condition!]!
+
+  """"""
+  conditionCreatedBy: [Condition!]!
 
   """"""
   comments: [Comment!]!
@@ -310,6 +481,311 @@ type Permission {
   unique: String!
 }
 
+type Workspace {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdWhile: String
+  restrict: [String]!
+
+  """"""
+  name: String
+
+  """"""
+  creator: User
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """"""
+  flows: [Flow!]!
+  pinned: Boolean
+
+  """The latest flow"""
+  latestFlow: Flow
+}
+
+type Flow {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdWhile: String
+
+  """"""
+  workspace: Workspace
+
+  """"""
+  creator: User
+  restrict: GenericScalar
+
+  """"""
+  version: String!
+  name: String!
+  nodes: GenericScalar
+  edges: GenericScalar
+  graph: FlowGraph!
+
+  """"""
+  hash: String!
+
+  """"""
+  screenshot: String
+
+  """"""
+  description: String
+
+  """Is this a brittle flow? aka. should the flow fail on any exception?"""
+  brittle: Boolean!
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """"""
+  runs: [Run!]!
+
+  """"""
+  conditions: [Condition!]!
+  pinned: Boolean
+  zoom: Float
+  position: [Int]
+}
+
+"""
+The `GenericScalar` scalar type represents a generic
+GraphQL scalar value that could be:
+String, Boolean, Int, Float, List or Object.
+"""
+scalar GenericScalar
+
+type FlowGraph {
+  zoom: Float
+  position: [Int]
+  nodes: [FlowNode]!
+  edges: [FlowEdge]!
+  globals: [Global]!
+  args: [Port]!
+  returns: [Port]!
+}
+
+interface FlowNode {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+}
+
+type Position {
+  x: Int!
+  y: Int!
+}
+
+interface FlowEdge {
+  id: String!
+  source: String!
+  target: String!
+  sourceHandle: String!
+  targetHandle: String!
+  typename: String!
+}
+
+type Global {
+  toKeys: [String]!
+  port: Port!
+}
+
+type Port {
+  key: String!
+
+  """The key of the arg"""
+  nullable: Boolean!
+  scope: Scope!
+  default: Any
+  identifier: String
+  variants: [PortChild]
+  kind: StreamKind!
+  child: PortChild
+  label: String
+  description: String
+  assignWidget: Widget
+  returnWidget: ReturnWidget
+}
+
+"""Scope of the Port"""
+enum Scope {
+  GLOBAL
+  LOCAL
+}
+
+"""Any any field"""
+scalar Any
+
+type PortChild {
+  nullable: Boolean!
+  kind: StreamKind!
+  scope: Scope!
+  identifier: String
+  variants: [PortChild]
+  child: PortChild
+
+  """Description of the Widget"""
+  assignWidget: Widget
+
+  """A return widget"""
+  returnWidget: ReturnWidget
+}
+
+enum StreamKind {
+  INT
+  STRING
+  STRUCTURE
+  FLOAT
+  LIST
+  BOOL
+  ENUM
+  DICT
+  UNION
+  UNSET
+}
+
+type Widget {
+  """type"""
+  kind: String!
+
+  """Do we have a possible"""
+  query: String
+
+  """The dependencies of this port"""
+  dependencies: [String]
+
+  """The dependencies of this port"""
+  choices: [Choice]
+
+  """Max value for int widget"""
+  max: Int
+
+  """Max value for int widget"""
+  min: Int
+
+  """Placeholder for any widget"""
+  placeholder: String
+
+  """Is this a paragraph"""
+  asParagraph: Boolean
+
+  """A hook for the app to call"""
+  hook: String
+
+  """A hook for the app to call"""
+  ward: String
+}
+
+type Choice {
+  value: Any!
+  label: String!
+}
+
+type ReturnWidget {
+  """type"""
+  kind: String!
+
+  """Do we have a possible"""
+  query: String
+
+  """The dependencies of this port"""
+  dependencies: [String]
+
+  """The dependencies of this port"""
+  choices: [Choice]
+}
+
+type Condition {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdWhile: String
+
+  """"""
+  flow: Flow
+
+  """"""
+  provision: String
+
+  """"""
+  snapshotInterval: Int
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """"""
+  snapshots: [ConditionSnapshot!]!
+
+  """"""
+  events: [ConditionEvent!]!
+  pinned: Boolean
+  latestSnapshot: ConditionSnapshot
+}
+
+type ConditionSnapshot {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  condition: Condition
+
+  """"""
+  status: String
+
+  """"""
+  events: [ConditionEvent!]!
+}
+
+type ConditionEvent {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  condition: Condition
+
+  """"""
+  snapshot: [ConditionSnapshot!]!
+  source: String
+  value: String!
+  state: ContractStatus!
+}
+
+"""Scope of the Port"""
+enum ContractStatus {
+  ACTIVE
+  INACTIVE
+}
+
 """
 A comment
 
@@ -368,155 +844,14 @@ enum CommentableModels {
   FLOW_RUNLOG
   FLOW_RUNEVENT
   FLOW_REACTIVETEMPLATE
+  FLOW_CONDITION
+  FLOW_CONDITIONSNAPSHOT
+  FLOW_CONDITIONEVENT
 }
 
 """A descendent of a node in the comment tree"""
 interface Descendent {
   typename: String
-}
-
-"""
-The `GenericScalar` scalar type represents a generic
-GraphQL scalar value that could be:
-String, Boolean, Int, Float, List or Object.
-"""
-scalar GenericScalar
-
-type FlowGraph {
-  zoom: Float
-  position: [Int]
-  nodes: [FlowNode]!
-  edges: [FlowEdge]!
-  globals: [Global]!
-  args: [Port]!
-  returns: [Port]!
-}
-
-interface FlowNode {
-  id: String!
-  position: Position!
-  parentNode: ID
-  typename: String!
-}
-
-type Position {
-  x: Int!
-  y: Int!
-}
-
-interface FlowEdge {
-  id: String!
-  source: String!
-  target: String!
-  sourceHandle: String!
-  targetHandle: String!
-  typename: String!
-}
-
-type Global {
-  locked: Boolean
-  key: String!
-  typename: String!
-  identifier: String
-  value: GenericScalar
-  widget: GenericScalar
-  mapped: [String]
-}
-
-type Port {
-  key: String!
-
-  """The key of the arg"""
-  nullable: Boolean!
-  scope: Scope!
-  default: Any
-  identifier: String
-  name: String
-  kind: StreamKind!
-  child: PortChild
-  label: String
-  description: String
-  assignWidget: Widget
-  returnWidget: ReturnWidget
-}
-
-"""Scope of the Port"""
-enum Scope {
-  GLOBAL
-  LOCAL
-}
-
-"""Any any field"""
-scalar Any
-
-enum StreamKind {
-  INT
-  STRING
-  STRUCTURE
-  LIST
-  BOOL
-  ENUM
-  DICT
-  UNSET
-}
-
-type PortChild {
-  nullable: Boolean
-  kind: StreamKind!
-  scope: Scope!
-  identifier: String
-  child: PortChild
-}
-
-type Widget {
-  """type"""
-  kind: String!
-
-  """Do we have a possible"""
-  query: String
-
-  """The dependencies of this port"""
-  dependencies: [String]
-
-  """The dependencies of this port"""
-  choices: [Choice]
-
-  """Max value for int widget"""
-  max: Int
-
-  """Max value for int widget"""
-  min: Int
-
-  """Placeholder for any widget"""
-  placeholder: String
-
-  """Is this a paragraph"""
-  asParagraph: Boolean
-
-  """A hook for the app to call"""
-  hook: String
-
-  """A hook for the app to call"""
-  ward: String
-}
-
-type Choice {
-  value: Any!
-  label: String!
-}
-
-type ReturnWidget {
-  """type"""
-  kind: String!
-
-  """Do we have a possible"""
-  query: String
-
-  """The dependencies of this port"""
-  dependencies: [String]
-
-  """The dependencies of this port"""
-  choices: [Choice]
 }
 
 type Snapshot {
@@ -601,11 +936,11 @@ type ReactiveTemplate {
   """"""
   description: String
   implementation: ReactiveImplementationModelInput!
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   defaults: GenericScalar
-  constants: [Constant]
+  constants: [Port]
 }
 
 """An enumeration."""
@@ -637,6 +972,36 @@ enum ReactiveImplementationModelInput {
   """ENSURE (Ensure the data (discards None in the stream))"""
   ENSURE
 
+  """ADD (Add a number to the data)"""
+  ADD
+
+  """SUBTRACT (Subtract a number from the data)"""
+  SUBTRACT
+
+  """MULTIPLY (Multiply the data with a number)"""
+  MULTIPLY
+
+  """DIVIDE (Divide the data with a number)"""
+  DIVIDE
+
+  """MODULO (Modulo the data with a number)"""
+  MODULO
+
+  """POWER (Power the data with a number)"""
+  POWER
+
+  """PREFIX (Prefix the data with a string)"""
+  PREFIX
+
+  """SUFFIX (Suffix the data with a string)"""
+  SUFFIX
+
+  """FILTER (Filter the data of a union)"""
+  FILTER
+
+  """GATE (Gate the data, first value is gated, second is gate)"""
+  GATE
+
   """TO_LIST (Convert to list)"""
   TO_LIST
 
@@ -648,40 +1013,9 @@ enum ReactiveImplementationModelInput {
 
   """AND (AND condition)"""
   AND
-}
 
-type StreamItem {
-  key: String!
-  kind: StreamKind!
-  scope: Scope!
-  identifier: String
-  nullable: Boolean!
-  child: StreamItemChild
-}
-
-type StreamItemChild {
-  kind: StreamKind!
-  scope: Scope!
-  identifier: String
-  child: StreamItemChild
-}
-
-type Constant {
-  key: String!
-
-  """The key of the arg"""
-  nullable: Boolean!
-  default: Any
-  label: String
-  kind: ConstantKind!
-  description: String
-}
-
-enum ConstantKind {
-  STRING
-  INT
-  BOOL
-  FLOAT
+  """ALL (establish if all values are Trueish)"""
+  ALL
 }
 
 """
@@ -695,6 +1029,9 @@ enum SharableModels {
   FLOW_RUNLOG
   FLOW_RUNEVENT
   FLOW_REACTIVETEMPLATE
+  FLOW_CONDITION
+  FLOW_CONDITIONSNAPSHOT
+  FLOW_CONDITIONEVENT
 }
 
 type PermissionsOfReturn {
@@ -720,6 +1057,7 @@ type GroupAssignment {
 """The root Mutation"""
 type Mutation {
   updateworkspace(brittle: Boolean = false, graph: GraphInput, id: ID!, screenshot: ImageFile): Workspace
+  importflow(graph: GraphInput, name: String): Workspace
   drawvanilla(
     brittle: Boolean = false
     name: String
@@ -735,7 +1073,33 @@ type Mutation {
     """The Id of the Graph"""
     id: ID!
   ): DeleteWorkspaceReturn
-  start(assignation: ID!, flow: ID!): Run
+
+  """
+  Pin Run
+      
+      This mutation pins an Runs and returns the pinned Run.
+  """
+  pinFlow(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Flow
+
+  """
+  Pin Run
+      
+      This mutation pins an Runs and returns the pinned Run.
+  """
+  pinWorkspace(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Workspace
+  start(assignation: ID!, flow: ID!, snapshotInterval: Int): Run
   deleteRun(
     """The Id of the Graph"""
     id: ID!
@@ -752,6 +1116,48 @@ type Mutation {
     id: ID!
   ): DeleteSnapshotReturn
   track(causedBy: [Int]!, handle: String!, run: ID!, source: String!, t: Int!, type: EventTypeInput!, value: EventValue): RunEvent
+
+  """
+  Pin Run
+      
+      This mutation pins an Runs and returns the pinned Run.
+  """
+  pinRun(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Run
+  createCondition(flow: ID!, provision: ID!, snapshotInterval: Int): Condition
+  deleteCondition(
+    """The Id of the Graph"""
+    id: ID!
+  ): DeleteConditionReturn
+  createConditionSnapshot(
+    condition: ID!
+
+    """The IDs of the events that make up the snapshot"""
+    events: [ID]!
+  ): ConditionSnapshot
+  deleteConditionSnapshot(
+    """The Id of the Graph"""
+    id: ID!
+  ): DeleteConditionSnapshotReturn
+  trace(condition: ID!, source: String!, state: ContractStatus!, value: String): ConditionEvent
+
+  """
+  Pin Condition
+      
+      This mutation pins an Runs and returns the pinned Run.
+  """
+  pinCondition(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Condition
 
   """Creates a Sample"""
   changePermissions(
@@ -864,63 +1270,23 @@ input NodeInput {
   position: PositionInput!
   defaults: GenericScalar
   extra: GenericScalar
-  instream: [[StreamItemInput]]!
-  outstream: [[StreamItemInput]]!
-  constream: [[StreamItemInput]]!
+  instream: [[PortInput]]!
+  outstream: [[PortInput]]!
+  constream: [[PortInput]]!
   mapStrategy: MapStrategy
   allowLocal: Boolean
   binds: BindsInput
-  assignTimeout: Float = 2000
-  yieldTimeout: Float = 2000
-  reserveTimeout: Float = 2000
+  assignTimeout: Float = 100000
+  yieldTimeout: Float = 100000
+  maxRetries: Int = 3
+  retryDelay: Int = 5000
+  reserveTimeout: Float = 100000
   parentNode: ID
 }
 
 input PositionInput {
   x: Float!
   y: Float!
-}
-
-input StreamItemInput {
-  key: String!
-  kind: StreamKind!
-
-  """The scope of this argument"""
-  scope: Scope!
-  identifier: String
-  nullable: Boolean!
-  child: StreamItemChildInput
-}
-
-input StreamItemChildInput {
-  kind: StreamKind!
-
-  """The scope of this argument"""
-  scope: Scope!
-  identifier: String
-  child: StreamItemChildInput
-}
-
-"""Maping Strategy for the Map Operator"""
-enum MapStrategy {
-  MAP
-  AS_COMPLETED
-  ORDERED
-}
-
-input BindsInput {
-  templates: [String]
-  clients: [String]
-}
-
-input EdgeInput {
-  id: String!
-  typename: String!
-  source: String!
-  target: String!
-  sourceHandle: String!
-  targetHandle: String!
-  stream: [StreamItemInput]
 }
 
 input PortInput {
@@ -947,6 +1313,7 @@ input PortInput {
 
   """The child of this argument"""
   child: ChildPortInput
+  variants: [ChildPortInput]
 
   """The child of this argument"""
   assignWidget: WidgetInput
@@ -973,6 +1340,13 @@ input ChildPortInput {
   """The type of this argument"""
   kind: StreamKind!
   child: ChildPortInput
+  variants: [ChildPortInput]
+
+  """Description of the Widget"""
+  assignWidget: WidgetInput
+
+  """A return widget"""
+  returnWidget: ReturnWidgetInput
 }
 
 input WidgetInput {
@@ -1026,9 +1400,54 @@ input ReturnWidgetInput {
   ward: String
 }
 
-input GlobalInput {
+"""Maping Strategy for the Map Operator"""
+enum MapStrategy {
+  MAP
+  AS_COMPLETED
+  ORDERED
+}
+
+input BindsInput {
+  templates: [String]
+  clients: [String]
+}
+
+input EdgeInput {
+  id: String!
+  typename: String!
+  source: String!
+  target: String!
+  sourceHandle: String!
+  targetHandle: String!
+  stream: [StreamItemInput]
+}
+
+input StreamItemInput {
   key: String!
-  value: GenericScalar
+  kind: StreamKind!
+
+  """The scope of this argument"""
+  scope: Scope!
+  identifier: String
+  nullable: Boolean!
+  variants: [StreamItemChildInput]
+  child: StreamItemChildInput
+}
+
+input StreamItemChildInput {
+  kind: StreamKind!
+
+  """The scope of this argument"""
+  scope: Scope!
+  identifier: String
+  nullable: Boolean!
+  variants: [StreamItemChildInput]
+  child: StreamItemChildInput
+}
+
+input GlobalInput {
+  toKeys: [String]!
+  port: PortInput!
 }
 
 """
@@ -1067,6 +1486,14 @@ enum EventTypeInput {
 
   """UNKNOWN (Should never be used)"""
   UNKNOWN
+}
+
+type DeleteConditionReturn {
+  id: ID!
+}
+
+type DeleteConditionSnapshotReturn {
+  id: ID!
 }
 
 type ChangePermissionsResult {
@@ -1114,6 +1541,10 @@ type Subscription {
     """The id of the run you want to listen to"""
     id: ID!
   ): Event
+  conditionevents(
+    """The id of the run you want to listen to"""
+    id: ID!
+  ): ConditionEvents
 
   "My Mentions\n\n    Returns an event of a new mention for the user if the user \n    was mentioned in a comment.\n    "
   mymentions: MentionEvent
@@ -1125,23 +1556,31 @@ type Event {
   create: RunEvent
 }
 
+type ConditionEvents {
+  deleted: ID
+  update: ConditionEvent
+  create: ConditionEvent
+}
+
 type MentionEvent {
   deleted: ID
   update: Comment
   create: Comment
 }
 
-type ArkitektNode implements FlowNode & FlowNodeCommons {
+type ArkitektNode implements FlowNode & FlowNodeCommons & RetriableNode {
   id: String!
   position: Position!
   parentNode: ID
   typename: String!
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   constants: GenericScalar
   documentation: String
   defaults: GenericScalar
+  maxRetries: Int!
+  retryDelay: Int!
   hash: String!
   name: String
   description: String
@@ -1155,12 +1594,17 @@ type ArkitektNode implements FlowNode & FlowNodeCommons {
 }
 
 interface FlowNodeCommons {
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   constants: GenericScalar
   documentation: String
   defaults: GenericScalar
+}
+
+interface RetriableNode {
+  maxRetries: Int!
+  retryDelay: Int!
 }
 
 type Binds {
@@ -1168,18 +1612,21 @@ type Binds {
   clients: [String]
 }
 
-type LocalNode implements FlowNode & FlowNodeCommons {
+type LocalNode implements FlowNode & FlowNodeCommons & RetriableNode {
   id: String!
   position: Position!
   parentNode: ID
   typename: String!
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   constants: GenericScalar
   documentation: String
   defaults: GenericScalar
+  maxRetries: Int!
+  retryDelay: Int!
   hash: String!
+  interface: String!
   name: String
   description: String
   kind: String!
@@ -1187,6 +1634,7 @@ type LocalNode implements FlowNode & FlowNodeCommons {
   allowLocal: Boolean!
   assignTimeout: Float!
   yieldTimeout: Float!
+  retrySleepMs: Int!
 }
 
 type GraphNode implements FlowNode & FlowNodeCommons {
@@ -1194,9 +1642,9 @@ type GraphNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   constants: GenericScalar
   documentation: String
   defaults: GenericScalar
@@ -1209,9 +1657,9 @@ type ArgNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   constants: GenericScalar
   documentation: String
   defaults: GenericScalar
@@ -1222,9 +1670,9 @@ type KwargNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   constants: GenericScalar
   documentation: String
   defaults: GenericScalar
@@ -1235,9 +1683,9 @@ type ReturnNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   constants: GenericScalar
   documentation: String
   defaults: GenericScalar
@@ -1248,9 +1696,9 @@ type ReactiveNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
-  instream: [[StreamItem]]!
-  outstream: [[StreamItem]]!
-  constream: [[StreamItem]]!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
   constants: GenericScalar
   documentation: String
   defaults: GenericScalar
@@ -1269,6 +1717,25 @@ type LabeledEdge implements FlowEdge & FlowEdgeCommons {
 
 interface FlowEdgeCommons {
   stream: [StreamItem]!
+}
+
+type StreamItem {
+  key: String!
+  kind: StreamKind!
+  scope: Scope!
+  identifier: String
+  nullable: Boolean!
+  child: StreamItemChild
+  variants: [StreamItemChild]
+}
+
+type StreamItemChild {
+  kind: StreamKind!
+  scope: Scope!
+  nullable: Boolean!
+  identifier: String
+  child: StreamItemChild
+  variants: [StreamItemChild]
 }
 
 type FancyEdge implements FlowEdge & FlowEdgeCommons {

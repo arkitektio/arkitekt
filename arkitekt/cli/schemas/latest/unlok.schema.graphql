@@ -138,6 +138,45 @@ type Query {
     """Filter by app"""
     app: ID
   ): [Release]
+  filter(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    name: String
+  ): Filter
+  filters(
+    """Filter by linker"""
+    linker: ID
+
+    """Search for methods of identifier"""
+    methods: [FilterMethod]
+  ): [Filter]
+  linker(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    name: String
+  ): Linker
+  linkers(
+    """Filter by template"""
+    template: ID
+
+    """Search for substring of identifier"""
+    search: String
+  ): [Linker]
+  configuration(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    name: String
+  ): Configuration
+  configurations(
+    """Search for substring of identifier"""
+    search: String
+  ): [Configuration]
 
   """Get information on your Docker Template"""
   member(
@@ -396,6 +435,65 @@ type Channel {
   token: String
 }
 
+type Filter {
+  """"""
+  id: ID!
+
+  """"""
+  linker: Linker!
+  method: FilterMethod!
+
+  """"""
+  value: String!
+}
+
+type Linker {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  template: Configuration!
+
+  """"""
+  priority: Int!
+
+  """"""
+  filters: [Filter!]!
+}
+
+type Configuration {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  body: String!
+
+  """"""
+  linkers: [Linker!]!
+}
+
+enum FilterMethod {
+  HOST_REGEX
+  HOST_IS
+  HOST_IS_NOT
+  PORT_IS
+  PORT_IS_NOT
+  VERSION_IS
+  VERSION_IS_NOT
+  VERSION_REGEX
+  IDENTIFIER_IS
+  IDENTIFIER_IS_NOT
+  IDENTIFIER_REGEX
+  USER_IS
+  USER_IS_DEVELOPER
+}
+
 type Member {
   """"""
   id: ID!
@@ -535,6 +633,9 @@ type Mutation {
     """The ID of the User to imitate (only managers can do this)"""
     imitate: ID
 
+    """The Logo of this Apps"""
+    logoUrl: String
+
     """A list of potential scopes for this app"""
     scopes: [String]!
 
@@ -547,6 +648,9 @@ type Mutation {
 
     """The kind of this app"""
     kind: PublicFaktType!
+
+    """The Logo of this Apps"""
+    logoUrl: String
 
     """A list of potential redirects for this app"""
     redirectUris: [String]!
@@ -568,6 +672,34 @@ type Mutation {
     """The Logo of this Apps"""
     logo: Upload
   ): App
+  createLinker(
+    """The Filters of this Elemet"""
+    filters: [FilterInput]!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    name: String!
+
+    """The Priority of this Elemet"""
+    priority: Int!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    template: ID!
+  ): Linker
+  deleteLinker(
+    """The ID of the application"""
+    id: ID!
+  ): DeleteLinkerResult
+  createConfiguration(
+    """The Name of this Elemet"""
+    body: String!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    name: String!
+  ): Configuration
+  deleteConfiguration(
+    """The ID of the application"""
+    id: ID!
+  ): DeleteConfigurationResult
   createElement(
     """The Repo of the Docker (Repo on Dockerhub)"""
     graph: ID!
@@ -623,6 +755,19 @@ enum PublicFaktType {
 }
 
 type DeleteClientResult {
+  id: ID
+}
+
+input FilterInput {
+  method: FilterMethod!
+  value: String!
+}
+
+type DeleteLinkerResult {
+  id: ID
+}
+
+type DeleteConfigurationResult {
   id: ID
 }
 

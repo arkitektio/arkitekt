@@ -30,7 +30,7 @@ type Query {
     """Search"""
     search: String
   ): [Agent]
-  myAgents(
+  myagents(
     """Filter by values"""
     ids: [ID]
     app: String
@@ -53,6 +53,24 @@ type Query {
 
     """The excluded values"""
     limit: Int
+  ): [Assignation]
+  assignations(
+    """Filter by values"""
+    ids: [ID]
+    status: [AssignationStatusInput]
+    reference: String
+    reservation: ID
+    reservationReference: String
+    parent: ID
+
+    """Ordering"""
+    o: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
   ): [Assignation]
   requests(
     """The excluded values"""
@@ -99,6 +117,7 @@ type Query {
     """Filter by values"""
     ids: [ID]
     repository: ID
+    collections: [ID]
     name: String
 
     """Search"""
@@ -117,10 +136,22 @@ type Query {
 
     """Currently Templated"""
     templated: Boolean
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
   ): [Node]
   reservation(
     """The query reservation"""
-    id: ID!
+    id: ID
+
+    """The parent provision"""
+    provision: ID
+
+    """The reference"""
+    reference: String
   ): Reservation
   allreservations: [Reservation]
   myreservations(
@@ -145,18 +176,49 @@ type Query {
   ): Repository
   allrepositories: [Repository]
   myrepositories: [Repository]
+  collection(
+    """The query node"""
+    id: ID
+  ): Collection
+  collections(
+    """Filter by values"""
+    ids: [ID]
+
+    """Search"""
+    search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Collection]
   template(
     """The query pod"""
     id: ID
   ): Template
   templates(
-    node: ID
+    """Filter by values"""
+    ids: [ID]
     package: String
     name: String
     interface: String
+    scopes: [NodeScope]
 
     """Get active pods?"""
     providable: Boolean
+    nodeName: String
+    nodeDescription: String
+    node: ID
+
+    """Search"""
+    search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
   ): [Template]
   reservableTemplates(
     """The node provisions"""
@@ -215,6 +277,45 @@ type Query {
     ids: [ID]
     unique: String
   ): [Registry]
+  testcase(
+    """The query pod"""
+    id: ID
+  ): TestCase
+  testcases(
+    """Filter by values"""
+    ids: [ID]
+
+    """Search"""
+    search: String
+    node: ID
+    key: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [TestCase]
+  testresult(
+    """The query pod"""
+    id: ID
+  ): TestResult
+  testresults(
+    """Filter by values"""
+    ids: [ID]
+
+    """Search"""
+    search: String
+    case: ID
+    template: ID
+    key: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [TestResult]
   permissionsFor(model: SharableModels!, name: String): [Permission]
   permissionsOf(model: SharableModels!, id: ID!): PermissionsOfReturn
   me: User
@@ -296,6 +397,7 @@ enum CommentableModels {
   FACADE_MIRRORREPOSITORY
   FACADE_APPREPOSITORY
   FACADE_AGENT
+  FACADE_COLLECTION
   FACADE_WAITER
   FACADE_NODE
   FACADE_TEMPLATE
@@ -305,6 +407,8 @@ enum CommentableModels {
   FACADE_RESERVATION
   FACADE_ASSIGNATION
   FACADE_ASSIGNATIONLOG
+  FACADE_TESTCASE
+  FACADE_TESTRESULT
 }
 
 """A reflection on the real User"""
@@ -562,6 +666,9 @@ type Node {
   """"""
   id: ID!
 
+  """The collections this Node belongs to"""
+  collections: [Collection!]!
+
   """Is this function pure. e.g can we cache the result?"""
   pure: Boolean!
 
@@ -571,6 +678,9 @@ type Node {
   """Function, generator? Check async Programming Textbook"""
   kind: NodeKind!
   interfaces: [String]
+
+  """The port groups"""
+  portGroups: [PortGroup]
 
   """The cleartext name of this Node"""
   name: String!
@@ -585,22 +695,68 @@ type Node {
   """The scope of this port"""
   scope: NodeScope!
 
+  """The nodes this node tests"""
+  isTestFor(
+    """Filter by values"""
+    ids: [ID]
+    package: String
+  ): [Node]
+
   """The hash of the Node (completely unique)"""
   hash: String!
   args: [Port]
   returns: [Port]
+
+  """The tests of its node"""
+  tests(
+    """Filter by values"""
+    ids: [ID]
+    package: String
+  ): [Node]
   templates(
-    node: ID
+    """Filter by values"""
+    ids: [ID]
     package: String
     name: String
     interface: String
+    scopes: [NodeScope]
 
     """Get active pods?"""
     providable: Boolean
+    nodeName: String
+    nodeDescription: String
+    node: ID
+
+    """Search"""
+    search: String
   ): [Template]
 
   """The node this reservation connects"""
   reservations: [Reservation!]!
+
+  """The node this test belongs to"""
+  testcases: [TestCase!]!
+}
+
+type Collection {
+  """"""
+  id: ID!
+
+  """"""
+  definedAt: DateTime!
+
+  """The name of this Collection"""
+  name: String!
+
+  """A description for the Collection"""
+  description: String!
+
+  """The nodes this collection has"""
+  nodes(
+    """Filter by values"""
+    ids: [ID]
+    package: String
+  ): [Node]
 }
 
 """An enumeration."""
@@ -610,6 +766,11 @@ enum NodeKind {
 
   """Function"""
   FUNCTION
+}
+
+type PortGroup {
+  key: String!
+  hidden: Boolean
 }
 
 """
@@ -637,12 +798,18 @@ type Port {
   """A description for this Port"""
   description: String
 
+  """The effects of this port"""
+  effects: [Effect]
+
   """The corresponding Model"""
   identifier: Identifier
 
   """The scope of this port"""
   scope: Scope!
   nullable: Boolean!
+
+  """The varients of this port (only for unions)"""
+  variants: [ChildPort]
   default: Any
 
   """The child"""
@@ -656,6 +823,9 @@ type Port {
 
   """A return widget"""
   returnWidget: ReturnWidget
+
+  """The port groups"""
+  groups: [String]
 }
 
 enum PortKind {
@@ -666,6 +836,38 @@ enum PortKind {
   BOOL
   DICT
   FLOAT
+  UNION
+}
+
+type Effect {
+  """The dependencies of this effect"""
+  dependencies: [Dependency]
+
+  """The condition of the dependency"""
+  kind: EffectKind!
+  message: String
+}
+
+type Dependency {
+  """The key of the port (null should be self)"""
+  key: String
+
+  """The condition of the dependency"""
+  condition: LogicalCondition!
+  value: GenericScalar!
+}
+
+enum LogicalCondition {
+  IS
+  IS_NOT
+  IN
+}
+
+enum EffectKind {
+  HIDDEN
+  HIGHLIGHT
+  WARN
+  CRAZY
 }
 
 """A unique Structure identifier"""
@@ -675,9 +877,6 @@ enum Scope {
   GLOBAL
   LOCAL
 }
-
-"""Any any field"""
-scalar Any
 
 type ChildPort {
   """the type of input"""
@@ -696,6 +895,9 @@ type ChildPort {
   nullable: Boolean!
   default: Any
 
+  """The varients of this port (only for unions)"""
+  variants: [ChildPort]
+
   """The annotations of this port"""
   annotations: [Annotation]
 
@@ -706,6 +908,9 @@ type ChildPort {
   returnWidget: ReturnWidget
 }
 
+"""Any any field"""
+scalar Any
+
 interface Annotation {
   """The name of the annotation"""
   kind: String
@@ -713,9 +918,6 @@ interface Annotation {
 
 interface Widget {
   kind: String!
-
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
 }
 
 interface ReturnWidget {
@@ -762,6 +964,9 @@ type Template {
 
   """The template this reservation connects"""
   reservations: [Reservation!]!
+
+  """"""
+  testresults: [TestResult!]!
 }
 
 type Agent {
@@ -780,6 +985,9 @@ type Agent {
   """The Channel we are listening to"""
   unique: String!
 
+  """The Instance this Agent is running on"""
+  onInstance: String!
+
   """The Status of this Agent"""
   status: AgentStatus!
 
@@ -787,6 +995,11 @@ type Agent {
   The provide might be limited to a instance like ImageJ belonging to a specific person. Is nullable for backend users
   """
   registry: Registry
+
+  """
+  If this Agent is blocked, it will not be used for provision, nor will it be able to provide
+  """
+  blocked: Boolean!
 
   """The associated registry for this Template"""
   templates: [Template!]!
@@ -800,6 +1013,9 @@ type Agent {
 enum AgentStatus {
   """Active"""
   ACTIVE
+
+  """Just kicked"""
+  KICKED
 
   """Disconnected"""
   DISCONNECTED
@@ -876,6 +1092,13 @@ type Provision {
     """Filter by values"""
     ids: [ID]
     status: [AssignationStatusInput]
+    reference: String
+    reservation: ID
+    reservationReference: String
+    parent: ID
+
+    """Ordering"""
+    o: String
   ): [Assignation]
 }
 
@@ -1136,7 +1359,7 @@ type Assignation {
   """"""
   updatedAt: DateTime!
 
-  """The Unique identifier of this Assignation"""
+  """The Unique identifier of this Assignation considering its parent"""
   reference: String!
 
   """The creator is this assignation"""
@@ -1539,6 +1762,50 @@ enum ProvisionStatusInput {
   CANCELLED
 }
 
+type TestResult {
+  """"""
+  id: ID!
+
+  """"""
+  case: TestCase!
+
+  """"""
+  template: Template!
+
+  """"""
+  passed: Boolean!
+  result: GenericScalar
+
+  """"""
+  createdAt: DateTime!
+}
+
+type TestCase {
+  """"""
+  id: ID!
+
+  """The node this test belongs to"""
+  node: Node!
+
+  """"""
+  key: String
+
+  """"""
+  name: String
+
+  """"""
+  description: String
+
+  """"""
+  isBenchmark: Boolean!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  results: [TestResult!]!
+}
+
 """An enumeration."""
 enum RepositoryType {
   """Repository that is hosted by an App"""
@@ -1575,6 +1842,9 @@ interface Descendent {
 enum AgentStatusInput {
   """Active"""
   ACTIVE
+
+  """Just kicked"""
+  KICKED
 
   """Disconnected"""
   DISCONNECTED
@@ -1674,6 +1944,7 @@ enum SharableModels {
   FACADE_MIRRORREPOSITORY
   FACADE_APPREPOSITORY
   FACADE_AGENT
+  FACADE_COLLECTION
   FACADE_WAITER
   FACADE_NODE
   FACADE_TEMPLATE
@@ -1683,6 +1954,8 @@ enum SharableModels {
   FACADE_RESERVATION
   FACADE_ASSIGNATION
   FACADE_ASSIGNATIONLOG
+  FACADE_TESTCASE
+  FACADE_TESTRESULT
 }
 
 type PermissionsOfReturn {
@@ -1823,6 +2096,7 @@ type Mutation {
 
     """The instance id"""
     instanceId: ID!
+    interface: String!
 
     """Some additional Params for your offering"""
     params: GenericScalar
@@ -1869,8 +2143,9 @@ type Mutation {
 
     """bindings"""
     binds: ReserveBindsInput
+    hash: String
     imitate: ID
-    node: ID!
+    node: ID
 
     """Additional Params"""
     params: ReserveParamsInput
@@ -1879,7 +2154,6 @@ type Mutation {
     persist: Boolean = true
     provision: ID
     reference: String
-    template: ID
     title: String
   ): Reservation
   slate(
@@ -1900,7 +2174,7 @@ type Mutation {
   unreserve(
     """The reference of the Reservation you want to ruin"""
     id: ID!
-  ): Reservation
+  ): UnreserveResult
   link(provision: ID!, reservation: ID!): Provision
   unlink(provision: ID!, reservation: ID!, safe: Boolean): Provision
   tell(message: MessageInput!, reservation: ID!): Tell
@@ -1935,11 +2209,72 @@ type Mutation {
     exclude: [ReservationStatusInput]
   ): ResetReservationsReturn
 
+  """Kick an agent (only signed in users)"""
+  kickAgent(
+    """The id of the agent to delete"""
+    id: ID!
+  ): Agent
+
+  """Kick an agent (only signed in users)"""
+  bounceAgent(
+    """The id of the agent to delete"""
+    id: ID!
+  ): Agent
+
+  """Kick an agent (only signed in users)"""
+  blockAgent(
+    """The id of the agent to delete"""
+    id: ID!
+  ): Agent
+
   """Deletes an agent (only signed in users)"""
   deleteAgent(
     """The id of the agent to delete"""
     id: ID!
   ): DeleteAgentReturn
+
+  """Create Repostiory"""
+  createTestCase(
+    """The description of this testcase"""
+    description: String
+
+    """Is this a benchmark?"""
+    isBenchmark: Boolean
+
+    """The name of this template"""
+    key: String!
+
+    """The name of this testcase"""
+    name: String!
+
+    """The name of this template"""
+    node: ID!
+  ): TestCase
+
+  """
+  Delete TestCase
+      
+      This mutation deletes an TestCase and returns the deleted TestCase.
+  """
+  deleteTestCase(
+    """The ID of the testcase to delete"""
+    id: ID!
+  ): DeleteTestCaseResult
+
+  """Create Test Result"""
+  createTestResult(
+    """The associated case"""
+    case: ID!
+
+    """Did the test-case pass"""
+    passed: Boolean!
+
+    """The result of the test"""
+    result: String
+
+    """The associated template"""
+    template: ID!
+  ): TestResult
 
   """Creates a Sample"""
   changePermissions(
@@ -2027,29 +2362,42 @@ type UpdateMirrorReturn {
 input DefinitionInput {
   """A description for the Node"""
   description: String
+  collections: [ID]
 
   """The name of this template"""
   name: String!
+  portGroups: [PortGroupInput]!
 
   """The Args"""
-  args: [PortInput]
+  args: [PortInput]!
 
   """The Returns"""
-  returns: [PortInput]
-
-  """The interface of this template"""
-  interface: String
+  returns: [PortInput]!
 
   """The Interfaces this node provides makes sense of the metadata"""
-  interfaces: [String]
+  interfaces: [String]!
 
   """The variety"""
   kind: NodeKindInput!
+
+  """The nodes this is a test for"""
+  isTestFor: [String]
   pure: Boolean = false
   idempotent: Boolean = false
 }
 
+input PortGroupInput {
+  """The key of the port group"""
+  key: String!
+
+  """Is this port group hidden"""
+  hidden: Boolean
+}
+
 input PortInput {
+  """The dependencies of this port"""
+  effects: [EffectInput]
+
   """The identifier"""
   identifier: Identifier
 
@@ -2058,6 +2406,9 @@ input PortInput {
 
   """The scope of this port"""
   scope: Scope!
+
+  """The varients of this port (only for union)"""
+  variants: [ChildPortInput]
 
   """The name of this argument"""
   name: String
@@ -2088,17 +2439,31 @@ input PortInput {
 
   """The annotations of this argument"""
   annotations: [AnnotationInput]
+
+  """The port group of this argument"""
+  groups: [String]
 }
 
-enum PortKindInput {
-  INT
-  STRING
-  STRUCTURE
-  LIST
-  BOOL
-  DICT
-  FLOAT
+input EffectInput {
+  """The dependencies of this effect"""
+  dependencies: [DependencyInput]
+
+  """The condition of the dependency"""
+  kind: EffectKind!
+  message: String
 }
+
+input DependencyInput {
+  """The key of the port, defaults to self"""
+  key: String
+
+  """The condition of the dependency"""
+  condition: LogicalCondition!
+  value: AnyInput!
+}
+
+"""Any any field"""
+scalar AnyInput
 
 input ChildPortInput {
   """The identifier"""
@@ -2122,11 +2487,25 @@ input ChildPortInput {
   """The annotations of this argument"""
   annotations: [AnnotationInput]
 
+  """The varients of this port (only for union)"""
+  variants: [ChildPortInput]
+
   """The child of this argument"""
   assignWidget: WidgetInput
 
   """The child of this argument"""
   returnWidget: ReturnWidgetInput
+}
+
+enum PortKindInput {
+  INT
+  STRING
+  STRUCTURE
+  LIST
+  BOOL
+  DICT
+  FLOAT
+  UNION
 }
 
 input AnnotationInput {
@@ -2180,9 +2559,6 @@ input WidgetInput {
   query: SearchQuery
 
   """The dependencies of this port"""
-  dependencies: [String]
-
-  """The dependencies of this port"""
   choices: [ChoiceInput]
 
   """Max value for int widget"""
@@ -2202,6 +2578,9 @@ input WidgetInput {
 
   """A ward for the app to call"""
   ward: String
+
+  """The fields of this widget (onbly on TemplateWidget)"""
+  fields: [TemplateFieldInput]
 }
 
 """The kind of widget"""
@@ -2215,6 +2594,7 @@ enum WidgetKind {
   BoolWidget
   ChoiceWidget
   CustomWidget
+  TemplateWidget
 }
 
 """Search query"""
@@ -2225,8 +2605,19 @@ input ChoiceInput {
   label: String!
 }
 
-"""Any any field"""
-scalar AnyInput
+input TemplateFieldInput {
+  """The parent key (if nested)"""
+  parent: String
+
+  """The key of the field"""
+  key: String!
+
+  """The key of the field"""
+  type: String!
+
+  """A short description of the field"""
+  description: String
+}
 
 input ReturnWidgetInput {
   """type"""
@@ -2287,6 +2678,10 @@ type UnprovideReturn {
   id: ID
 }
 
+type UnreserveResult {
+  id: ID
+}
+
 type Tell {
   reference: String
 }
@@ -2333,6 +2728,10 @@ type DeleteAgentReturn {
   id: String
 }
 
+type DeleteTestCaseResult {
+  id: String
+}
+
 type ChangePermissionsResult {
   success: Boolean
   message: String
@@ -2352,8 +2751,6 @@ input UserAssignmentInput {
 
 """The root Subscriptions"""
 type Subscription {
-  "My Mentions\n\n    Returns an event of a new mention for the user if the user \n    was mentioned in a comment.\n    "
-  mymentions: MentionEvent
   agentsEvent(
     """The log level for alterations"""
     level: String
@@ -2423,12 +2820,9 @@ type Subscription {
     """The Id of the node you are intereset in"""
     id: ID!
   ): Node
-}
 
-type MentionEvent {
-  deleted: ID
-  update: Comment
-  create: Comment
+  "My Mentions\n\n    Returns an event of a new mention for the user if the user \n    was mentioned in a comment.\n    "
+  mymentions: MentionEvent
 }
 
 type AgentEvent {
@@ -2500,6 +2894,12 @@ type NodeEvent {
   updated: Node
 }
 
+type MentionEvent {
+  deleted: ID
+  update: Comment
+  create: Comment
+}
+
 type ValueRange implements Annotation {
   """The name of the annotation"""
   kind: String
@@ -2545,9 +2945,6 @@ type AttributePredicate implements Annotation {
 type QueryWidget implements Widget {
   kind: String!
 
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
-
   """A Complex description"""
   query: String
 }
@@ -2555,18 +2952,12 @@ type QueryWidget implements Widget {
 type LinkWidget implements Widget {
   kind: String!
 
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
-
   """A Complex description"""
   linkbuilder: String
 }
 
 type SearchWidget implements Widget {
   kind: String!
-
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
 
   """A Complex description"""
   query: String!
@@ -2577,16 +2968,10 @@ type SearchWidget implements Widget {
 
 type BoolWidget implements Widget {
   kind: String!
-
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
 }
 
 type ChoiceWidget implements Widget {
   kind: String!
-
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
 
   """A list of choices"""
   choices: [Choice]
@@ -2600,18 +2985,12 @@ type Choice {
 type IntWidget implements Widget {
   kind: String!
 
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
-
   """A Complex description"""
   query: String
 }
 
 type SliderWidget implements Widget {
   kind: String!
-
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
 
   """A Complex description"""
   min: Int
@@ -2623,9 +3002,6 @@ type SliderWidget implements Widget {
 type StringWidget implements Widget {
   kind: String!
 
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
-
   """A placeholder to display"""
   placeholder: String
 
@@ -2636,14 +3012,30 @@ type StringWidget implements Widget {
 type CustomWidget implements Widget {
   kind: String!
 
-  """The set-keys this widget depends on, check *query parameters*"""
-  dependencies: [String]
-
   """A hook for the ward to call"""
   hook: String
 
   """A ward for the app to call"""
   ward: String
+}
+
+type TemplateWidget implements Widget {
+  kind: String!
+  fields: [TemplateField]!
+}
+
+type TemplateField {
+  """The parent key (if nested)"""
+  parent: String
+
+  """The key of the field"""
+  key: String!
+
+  """The type of the field"""
+  type: String!
+
+  """A short description of the field"""
+  description: String!
 }
 
 type ImageReturnWidget implements ReturnWidget {

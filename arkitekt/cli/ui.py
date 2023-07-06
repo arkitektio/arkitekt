@@ -22,7 +22,7 @@ def construct_app_group(app: Arkitekt) -> Group:
 
     actor_tree = Tree("Registered Definitions", style="white not bold")
     panel_group = Group(panel_header, actor_tree)
-    for key, definition in app.rekuest.definition_registry.definitions.items():
+    for key, definition in app.rekuest.agent.definition_registry.definitions.items():
         actor_tree.add(key)
 
     return panel_group
