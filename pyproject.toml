@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.4.125"
+version = "0.4.126"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
@@ -10,7 +10,7 @@ packages = [{ include = "arkitekt" }]
 python = "^3.8, <=3.12"
 herre = ">=0.3.22"
 fakts = ">=0.3.25"
-rekuest = ">=0.1.50"
+rekuest = ">=0.1.51"
 mikro = ">=0.3.81"
 unlok = ">=0.1.15"
 fluss = ">=0.1.56"
