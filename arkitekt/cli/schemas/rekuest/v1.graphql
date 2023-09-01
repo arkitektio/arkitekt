@@ -118,6 +118,7 @@ type Query {
     ids: [ID]
     repository: ID
     collections: [ID]
+    protocols: [ID]
     name: String
 
     """Search"""
@@ -127,6 +128,9 @@ type Query {
 
     """Args"""
     argTypes: [String]
+
+    """Protocol Names"""
+    protocolNames: [String]
 
     """Args"""
     interfaces: [String]
@@ -196,6 +200,18 @@ type Query {
   template(
     """The query pod"""
     id: ID
+  ): Template
+
+  "Asss\n\n    Is A query for all of these specials in the world\n    "
+  mytemplatefor(
+    """The query node"""
+    id: ID
+
+    """The query node"""
+    hash: String
+
+    """The instance id"""
+    instanceId: ID!
   ): Template
   templates(
     """Filter by values"""
@@ -393,6 +409,7 @@ type Comment {
 enum CommentableModels {
   FACADE_REPOSITORY
   FACADE_REGISTRY
+  FACADE_PROTOCOL
   FACADE_STRUCTURE
   FACADE_MIRRORREPOSITORY
   FACADE_APPREPOSITORY
@@ -686,6 +703,13 @@ type Node {
   name: String!
   meta: GenericScalar
 
+  """The tests of its node"""
+  protocols(
+    """Filter by values"""
+    ids: [ID]
+    name: String
+  ): [Protocol]
+
   """A description for the Node"""
   description: String!
 
@@ -779,6 +803,20 @@ GraphQL scalar value that could be:
 String, Boolean, Int, Float, List or Object.
 """
 scalar GenericScalar
+
+type Protocol {
+  """"""
+  id: ID!
+
+  """The name of this Protocol"""
+  name: String!
+
+  """A description for the Protocol"""
+  description: String!
+
+  """The protocols this Node implements (e.g. Predicate)"""
+  nodes: [Node!]!
+}
 
 enum NodeScope {
   GLOBAL
@@ -1940,6 +1978,7 @@ enum SharableModels {
   LOK_LOKCLIENT
   FACADE_REPOSITORY
   FACADE_REGISTRY
+  FACADE_PROTOCOL
   FACADE_STRUCTURE
   FACADE_MIRRORREPOSITORY
   FACADE_APPREPOSITORY
@@ -2088,7 +2127,7 @@ type Mutation {
   createTemplate(
     definition: DefinitionInput!
 
-    """Desired Extensions"""
+    """Desired Extensions (e.g reaktion)"""
     extensions: [String]
 
     """User to imitate"""
@@ -2595,6 +2634,8 @@ enum WidgetKind {
   ChoiceWidget
   CustomWidget
   TemplateWidget
+  DateWidget
+  ColorWidget
 }
 
 """Search query"""
@@ -2603,6 +2644,7 @@ scalar SearchQuery
 input ChoiceInput {
   value: AnyInput!
   label: String!
+  description: String
 }
 
 input TemplateFieldInput {
@@ -2980,6 +3022,7 @@ type ChoiceWidget implements Widget {
 type Choice {
   value: GenericScalar!
   label: String!
+  description: String
 }
 
 type IntWidget implements Widget {
@@ -3017,6 +3060,20 @@ type CustomWidget implements Widget {
 
   """A ward for the app to call"""
   ward: String
+}
+
+type DateWidget implements Widget {
+  kind: String!
+
+  """A start date"""
+  startDate: String
+}
+
+type ColorWidget implements Widget {
+  kind: String!
+
+  """A start date"""
+  startDate: String
 }
 
 type TemplateWidget implements Widget {

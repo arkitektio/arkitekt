@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.4.126"
+version = "0.5.30"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
@@ -8,22 +8,41 @@ packages = [{ include = "arkitekt" }]
 
 [tool.poetry.dependencies]
 python = "^3.8, <=3.12"
-herre = ">=0.3.22"
-fakts = ">=0.3.25"
-rekuest = ">=0.1.51"
-mikro = ">=0.3.81"
-unlok = ">=0.1.15"
-fluss = ">=0.1.56"
+herre = ">=0.3.26"
+fakts = ">=0.3.31"
+rekuest = { version = ">=0.2.18", optional = true }
+mikro = { version = ">=0.3.87", optional = true }
+mikro-next = { version = ">=0.1.2", optional = true }
+unlok = { version = ">=0.1.18", optional = true }
+fluss = { version = ">=0.1.61", optional = true }
+reaktion = { version = ">=0.1.16", python = "^3.9", optional = true }
+
 rich-click = { version = "^1.6.1", optional = true }
 watchfiles = { version = "^0.18.1", optional = true }
-turms = { version = ">=0.3.1a0", python = "^3.9", optional = true }
-reaktion = { version = ">=0.1.35", python = "^3.9", optional = true }
+turms = { version = ">=0.4.2", python = "^3.9", optional = true }
+semver = { version = "^3.0.1", optional = true }
 
 
 [tool.poetry.extras]
-cli = ["rich-click", "watchfiles", "turms"]
-scheduler = ["reaktion"]
-all = ["cli", "scheduler"]
+cli = ["rich-click", "watchfiles", "turms", "semver"]
+reaktion = ["reaktion"]
+rekuest = ["rekuest"]
+mikro = ["mikro"]
+mikro-next = ["mikro-next"]
+unlok = ["unlok"]
+fluss = ["fluss"]
+all = [
+    "rich-click",
+    "watchfiles",
+    "turms",
+    "semver",
+    "reaktion",
+    "rekuest",
+    "mikro",
+    "mikro-next",
+    "unlok",
+    "fluss",
+]
 
 [tool.mypy]
 exclude = ["venv/"]

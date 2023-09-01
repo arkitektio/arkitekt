@@ -1,5 +1,6 @@
 from importlib import import_module
 from arkitekt.cli.types import Manifest
+from arkitekt.cli.build import Build
 from arkitekt.utils import create_arkitekt_folder
 from pydantic import BaseModel, Field
 import sys
@@ -18,7 +19,7 @@ from typing import List, Optional
 import yaml
 import json
 import datetime
-
+import uuid
 from subprocess import check_call
 
 
@@ -35,10 +36,13 @@ def generate_definitions(module_path) -> List[DefinitionInput]:
     return list(reg.definitions.keys())
 
 
-class Deployment(Manifest):
+class Deployment(BaseModel):
+    deployment_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    manifest: Manifest
+    builder: str
+    build_id: str
     definitions: List[DefinitionInput]
     image: str
-    command: Optional[str]
     deployed_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
 
 
@@ -66,8 +70,8 @@ def check_if_manifest_already_deployed(manifest: Manifest):
     config = load_deployments()
     for deployment in config.deployments:
         if (
-            deployment.identifier == manifest.identifier
-            and deployment.version == manifest.version
+            deployment.manifest.identifier == manifest.identifier
+            and deployment.manifest.version == manifest.version
         ):
             raise click.ClickException(
                 f"Deployment of {manifest.identifier}/{manifest.version} already exists. You cannot deploy the same version twice."
@@ -75,9 +79,8 @@ def check_if_manifest_already_deployed(manifest: Manifest):
 
 
 def generate_deployment(
-    manifest: Manifest,
+    build: Build,
     image: str,
-    command: Optional[str],
     with_definitions=True,
 ) -> Deployment:
     path = create_arkitekt_folder()
@@ -87,10 +90,11 @@ def generate_deployment(
     definitions = generate_definitions("app") if with_definitions else []
 
     deployment = Deployment(
-        **manifest.dict(),
+        build_id=build.build_id,
+        manifest=build.manifest,
+        builder=build.builder,
         definitions=definitions,
         image=image,
-        command=command,
     )
 
     if os.path.exists(config_file):
@@ -100,10 +104,11 @@ def generate_deployment(
             config.latest_deployment = datetime.datetime.now()
     else:
         config = ConfigFile(deployments=[deployment])
+        config.latest_deployment = datetime.datetime.now()
 
     with open(config_file, "w") as file:
         yaml.safe_dump(
-            json.loads(config.json(exclude_none=True, exclude_unset=True)),
+            json.loads(config.json(exclude_none=True)),
             file,
             sort_keys=True,
         )

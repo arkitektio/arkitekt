@@ -32,7 +32,10 @@ def load_manifest() -> Optional[Manifest]:
     if os.path.exists(config_file):
         with open(config_file, "r") as file:
             manifest = yaml.safe_load(file)
-        return Manifest(**manifest)
+            if manifest:
+                return Manifest(**manifest)
+            else:
+                return None
     return None
 
 

@@ -1,8 +1,12 @@
 from enum import Enum
 from qtpy import QtWidgets, QtGui, QtCore
 from koil.qt import QtRunner
-from arkitekt import Arkitekt
+from arkitekt import App
 from .utils import get_image_path
+from typing import Optional, Callable
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class Profile(QtWidgets.QDialog):
@@ -10,7 +14,7 @@ class Profile(QtWidgets.QDialog):
 
     def __init__(
         self,
-        app: Arkitekt,
+        app: App,
         bar: "MagicBar",
         *args,
         dark_mode: bool = False,
@@ -20,8 +24,9 @@ class Profile(QtWidgets.QDialog):
         self.app = app
         self.bar = bar
 
-
-        self.settings = QtCore.QSettings("arkitekt", f"{self.app.identifier}:{self.app.version}")
+        self.settings = QtCore.QSettings(
+            "arkitekt", f"{self.app.manifest.identifier}:{self.app.manifest.version}"
+        )
 
         self.setWindowTitle("Profile")
         self.layout = QtWidgets.QVBoxLayout()
@@ -40,11 +45,9 @@ class Profile(QtWidgets.QDialog):
         self.go_all_the_way_button.setChecked(self.go_all_the_way_down)
         self.go_all_the_way_button.clicked.connect(self.on_go_all_the_way_clicked)
 
-
         self.layout.addWidget(self.logout_button)
         self.layout.addWidget(self.unkonfigure_button)
         self.layout.addWidget(self.go_all_the_way_button)
-
 
     def on_go_all_the_way_clicked(self, checked: bool) -> None:
         self.settings.setValue("go_all_the_way_down", checked)
@@ -71,7 +74,6 @@ class ProcessState(str, Enum):
 class MagicBar(QtWidgets.QWidget):
     CONNECT_LABEL = "Connect"
 
-
     app_state_changed = QtCore.Signal()
     app_up = QtCore.Signal()
     app_down = QtCore.Signal()
@@ -79,18 +81,19 @@ class MagicBar(QtWidgets.QWidget):
     state = AppState.DOWN
     process_state = ProcessState.UNKONFIGURED
 
-
-    def __init__(self, app: Arkitekt, dark_mode: bool = False) -> None:
+    def __init__(
+        self,
+        app: App,
+        dark_mode: bool = False,
+        on_error: Optional[Callable[[Exception], None]] = None,
+    ) -> None:
         super().__init__()
         self.app = app
-
 
         # assert isinstance(
         #     self.app.koil, QtPedanticKoil
         # ), f"Koil should be Qt Koil but is {type(self.app.koil)}"
         self.dark_mode = dark_mode
-
-
 
         self.profile = Profile(app, self, dark_mode=dark_mode)
         self.profile.updated.connect(self.on_profile_updated)
@@ -127,6 +130,7 @@ class MagicBar(QtWidgets.QWidget):
         self.gearb.setMaximumWidth(30)
         self.gearb.setMinimumHeight(30)
         self.gearb.setMaximumHeight(30)
+        self._on_error = on_error
 
         self.magicb.clicked.connect(self.magic_button_clicked)
         self.gearb.clicked.connect(self.gear_button_clicked)
@@ -141,15 +145,12 @@ class MagicBar(QtWidgets.QWidget):
     def on_profile_updated(self):
         if self.profile.go_all_the_way_down:
             self.set_unprovided()
-        
+
     def show_error(self, ex: Exception):
-        dialog = QtWidgets.QDialog()
-        dialog.setWindowTitle("Error")
-        layout = QtWidgets.QVBoxLayout()
-        dialog.setLayout(layout)
-        label = QtWidgets.QLabel(str(ex))
-        layout.addWidget(label)
-        dialog.exec_()
+        if self._on_error:
+            self._on_error(ex)
+        else:
+            logger.error(f"Error {repr(ex)}")
 
     def task_errored(self, ex: Exception):
         raise ex
@@ -158,15 +159,12 @@ class MagicBar(QtWidgets.QWidget):
         self.set_unkonfigured()
         self.show_error(ex)
 
-
     def login_errored(self, ex: Exception):
         self.set_unlogined()
-        raise ex
         self.show_error(ex)
 
     def provide_errored(self, ex: Exception):
         self.set_unprovided()
-        raise ex
         self.show_error(ex)
 
     def on_configured(self):
@@ -243,7 +241,10 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setText("Cancel Provide..")
 
     def magic_button_clicked(self):
-        if self.process_state == ProcessState.UNKONFIGURED and not self.profile.go_all_the_way_down:
+        if (
+            self.process_state == ProcessState.UNKONFIGURED
+            and not self.profile.go_all_the_way_down
+        ):
             if not self.configure_future or self.configure_future.done():
                 self.configure_future = self.configure_task.run()
                 self.magicb.setText("Cancel Configuration")
@@ -253,7 +254,10 @@ class MagicBar(QtWidgets.QWidget):
                 self.set_unkonfigured()
                 return
 
-        if self.process_state == ProcessState.UNLOGGED and not self.profile.go_all_the_way_down:
+        if (
+            self.process_state == ProcessState.UNLOGGED
+            and not self.profile.go_all_the_way_down
+        ):
             if not self.login_future or self.login_future.done():
                 self.login_future = self.login_task.run()
                 self.magicb.setText("Cancel Login")
@@ -264,7 +268,10 @@ class MagicBar(QtWidgets.QWidget):
                 self.set_unlogined()
                 return
 
-        if self.process_state != ProcessState.PROVIDING or self.profile.go_all_the_way_down:
+        if (
+            self.process_state != ProcessState.PROVIDING
+            or self.profile.go_all_the_way_down
+        ):
             if not self.provide_future or self.provide_future.done():
                 self.provide_future = self.provide_task.run()
                 self.set_providing()

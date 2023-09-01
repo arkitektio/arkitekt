@@ -32,73 +32,27 @@ def import_entrypoint(entrypoint):
             raise e
 
 
-async def run_costum(
-    entrypoint,
-    identifier,
-    version,
-    builder: str = "arkitekt.builders.easy",
-    nocache=False,
+async def run_production(
+    manifest: Manifest,
+    entrypoint=None,
+    builder: str = None,
+    url=None,
+    version=None,
+    **builder_kwargs,
 ):
     builder = import_builder(builder)
 
-    import_entrypoint(entrypoint)
+    import_entrypoint(entrypoint or manifest.entrypoint)
 
-    app = builder(identifier, version, no_cache=nocache)
-
-    panel = construct_run_panel(app)
-    console.print(panel)
-
-    async with app:
-        await app.rekuest.run()
-
-
-async def run_easy(manifest: Manifest, url, instance_id, headless=False, nocache=False):
-    from arkitekt.builders import easy
-
-    import_entrypoint(manifest.entrypoint)
-
-    app = easy(
-        manifest.identifier,
-        version=manifest.version,
+    app = builder(
+        identifier=manifest.identifier,
+        version=version or manifest.version,
         logo=manifest.logo,
         url=url,
-        instance_id=instance_id,
-        headless=headless,
-        no_cache=nocache,
+        **builder_kwargs,
     )
 
     panel = construct_run_panel(app)
-    console.print(panel)
-
-    async with app:
-        await app.rekuest.run()
-
-
-async def run_port(
-    manifest: Manifest,
-    url,
-    token,
-    instance_id,
-    headless=True,
-    nocache=False,
-):
-    from arkitekt.builders import port
-
-    import_entrypoint(manifest.entrypoint)
-
-    app = port(
-        identifier=manifest.identifier,
-        version=manifest.version,
-        url=url,
-        token=token,
-        instance_id=instance_id,
-        headless=headless,
-        no_cache=nocache,
-    )
-
-    panel = construct_run_panel(
-        app,
-    )
     console.print(panel)
 
     async with app:

@@ -1,0 +1,79 @@
+schema: http://localhost:8090/graphql
+documents: graphql/rekuest/*/**.graphql
+extensions:
+  turms:
+    out_dir: rekuest/api
+    always_resolve_interfaces: True
+    exclude_typenames: true
+    freeze:
+      enabled: true
+    options:
+      enabled: true
+      use_enum_values: true
+      extra: "forbid"
+      types:
+        - "input"
+    parsers:
+      - type: turms.parsers.polyfill.PolyfillParser
+        python_version: 3.7
+    stylers:
+      - type: turms.stylers.default.DefaultStyler
+      - type: turms.stylers.appender.AppenderStyler
+        append_fragment: "Fragment"
+    plugins:
+      - type: turms.plugins.enums.EnumsPlugin
+        skip_unreferenced: True
+      - type: turms.plugins.inputs.InputsPlugin
+        skip_unreferenced: True
+      - type: turms.plugins.fragments.FragmentsPlugin
+      - type: turms.plugins.operations.OperationsPlugin
+      - type: turms.plugins.funcs.FuncsPlugin
+        global_kwargs:
+          - type: rekuest.rath.RekuestRath
+            key: rath
+            description: "The arkitekt rath client"
+        definitions:
+          - type: subscription
+            is_async: True
+            use: rekuest.funcs.asubscribe
+          - type: query
+            is_async: True
+            use: rekuest.funcs.aexecute
+          - type: mutation
+            is_async: True
+            use: rekuest.funcs.aexecute
+          - type: subscription
+            use: rekuest.funcs.subscribe
+          - type: query
+            use: rekuest.funcs.execute
+          - type: mutation
+            use: rekuest.funcs.execute
+    processors:
+      - type: turms.processors.black.BlackProcessor
+    scalar_definitions:
+      uuid: str
+      Callback: str
+      Any: rekuest.scalars.JSONSerializable
+      AnyInput: rekuest.scalars.JSONSerializable
+      QString: rekuest.scalars.QString
+      ID: rath.scalars.ID
+      Identifier: rekuest.scalars.Identifier
+      SearchQuery: rekuest.scalars.SearchQuery
+    additional_bases:
+      Node:
+        - rekuest.traits.node.Reserve
+      AnnotationInput:
+        - rekuest.traits.ports.AnnotationInputTrait
+      PortInput:
+        - rekuest.traits.ports.PortTrait
+      ChildPortInput:
+        - rekuest.traits.ports.PortTrait
+      Port:
+        - rekuest.traits.ports.PortTrait
+      ChildPort:
+        - rekuest.traits.ports.PortTrait
+
+      WidgetInput:
+        - rekuest.traits.ports.WidgetInputTrait
+      ReturnWidgetInput:
+        - rekuest.traits.ports.ReturnWidgetInputTrait

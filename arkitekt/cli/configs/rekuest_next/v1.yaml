@@ -1,0 +1,80 @@
+schema: http://localhost:8020/graphql
+documents: graphql/rekuest_next/*/**.graphql
+extensions:
+  turms:
+    out_dir: rekuest_next/api
+    always_resolve_interfaces: True
+    exclude_typenames: true
+    freeze:
+      enabled: true
+    options:
+      enabled: true
+      use_enum_values: true
+      extra: "forbid"
+      types:
+        - "input"
+    parsers:
+      - type: turms.parsers.polyfill.PolyfillParser
+        python_version: 3.7
+    stylers:
+      - type: turms.stylers.default.DefaultStyler
+      - type: turms.stylers.appender.AppenderStyler
+        append_fragment: "Fragment"
+    plugins:
+      - type: turms.plugins.enums.EnumsPlugin
+        skip_unreferenced: True
+      - type: turms.plugins.inputs.InputsPlugin
+        skip_unreferenced: True
+      - type: turms.plugins.fragments.FragmentsPlugin
+      - type: turms.plugins.operations.OperationsPlugin
+      - type: turms.plugins.funcs.FuncsPlugin
+        global_kwargs:
+          - type: rekuest_next.rath.RekuestRath
+            key: rath
+            description: "The arkitekt rath client"
+        definitions:
+          - type: subscription
+            is_async: True
+            use: rekuest_next.funcs.asubscribe
+          - type: query
+            is_async: True
+            use: rekuest_next.funcs.aexecute
+          - type: mutation
+            is_async: True
+            use: rekuest_next.funcs.aexecute
+          - type: subscription
+            use: rekuest_next.funcs.subscribe
+          - type: query
+            use: rekuest_next.funcs.execute
+          - type: mutation
+            use: rekuest_next.funcs.execute
+    processors:
+      - type: turms.processors.black.BlackProcessor
+    scalar_definitions:
+      uuid: str
+      Callback: str
+      Any: typing.Any
+      AnyInput: typing.Any
+      AnyDefault: typing.Any
+      ID: rath.scalars.ID
+      NodeHash: rekuest_next.scalars.NodeHash
+      InstanceID: rekuest_next.scalars.InstanceID
+      Identifier: rekuest_next.scalars.Identifier
+      SearchQuery: rekuest_next.scalars.SearchQuery
+    additional_bases:
+      Node:
+        - rekuest_next.traits.node.Reserve
+      AnnotationInput:
+        - rekuest_next.traits.ports.AnnotationInputTrait
+      PortInput:
+        - rekuest_next.traits.ports.PortTrait
+      ChildPortInput:
+        - rekuest_next.traits.ports.PortTrait
+      Port:
+        - rekuest_next.traits.ports.PortTrait
+      ChildPort:
+        - rekuest_next.traits.ports.PortTrait
+      WidgetInput:
+        - rekuest_next.traits.ports.WidgetInputTrait
+      ReturnWidgetInput:
+        - rekuest_next.traits.ports.ReturnWidgetInputTrait

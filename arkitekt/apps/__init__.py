@@ -1,3 +1,3 @@
-from .default import Arkitekt
+from .types import App
 
-__all__ = ["Arkitekt"]
+__all__ = ["App"]

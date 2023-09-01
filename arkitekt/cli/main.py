@@ -2,8 +2,9 @@ import rich_click as click
 import asyncio
 from arkitekt.cli.init import Manifest, load_manifest, write_manifest
 import subprocess
-from rich.console import Console
+from rich.console import Console, Group
 from rich.panel import Panel
+from rich.table import Table
 import os
 import sys
 from .utils import build_relative_dir
@@ -13,6 +14,8 @@ from .ui import construct_leaking_group
 from .build import docker_file_wizard
 from .types import Requirement
 from .inspect import inspect_requirements
+import semver
+import yaml
 
 console = Console()
 
@@ -52,6 +55,19 @@ click.rich_click.ERRORS_EPILOGUE = "To find out more, visit [link=https://jhnnsr
 click.rich_click.USE_RICH_MARKUP = True
 
 
+def parse_semver(param: str, loaded=False):
+    if not semver.Version.is_valid(param):
+        if loaded:
+            raise click.ClickException(
+                "Manifest version incorrect, please update your manifest to a valid semver version  [link=https://semver.org]semver[/link]."
+            )
+
+        raise click.ClickException(
+            f"Arkitekt versions need to follow semantic versioning. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
+        )
+    return semver.Version.parse(param)
+
+
 def compile_scopes():
     return ["read", "write"]
 
@@ -78,9 +94,7 @@ def compile_schema_versions():
 def compile_configs():
     z = build_relative_dir("configs")
     return [
-        os.path.basename(f).split(".")[0]
-        for f in os.listdir(z)
-        if os.path.isfile(os.path.join(z, f))
+        os.path.basename(f) for f in os.listdir(z) if os.path.isdir(os.path.join(z, f))
     ]
 
 
@@ -93,12 +107,21 @@ def compile_templates():
     ]
 
 
+def compile_versions():
+    z = build_relative_dir("versions")
+    return [
+        os.path.basename(f).split(".")[0]
+        for f in os.listdir(z)
+        if os.path.isfile(os.path.join(z, f))
+    ]
+
+
 with_token = click.option(
     "--token",
     "-t",
     help="The token for the fakts instance",
     envvar="FAKTS_TOKEN",
-    required=True,
+    required=False,
 )
 with_version = click.option(
     "--version",
@@ -107,8 +130,17 @@ with_version = click.option(
     envvar="ARKITEKT_VERSION",
 )
 
+with_log_level = click.option(
+    "--log",
+    "-l",
+    help="Override the logging level",
+    type=click.Choice(["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]),
+    envvar="ARKITEKT_LOG_LEVEL",
+)
+
+
 with_skip_cache = click.option(
-    "--nocache",
+    "--no-cache",
     "-nc",
     is_flag=True,
     default=False,
@@ -117,11 +149,28 @@ with_skip_cache = click.option(
 )
 
 with_instance_id = click.option(
-    "--instance",
+    "--instance-id",
     "-i",
     default="main",
     help="The token for the fakts instance",
     envvar="REKUEST_INSTANCE",
+)
+
+with_log_level = click.option(
+    "--log-level",
+    "-l",
+    default="INFO",
+    help="The token for the fakts instance",
+    envvar="ARKITEKT_LOG_LEVEL",
+)
+
+
+with_builder = click.option(
+    "--builder",
+    "-b",
+    default="arkitekt.builders.easy",
+    help="The builder for this run",
+    envvar="ARKITEKT_BUILDER",
 )
 
 headless = click.option(
@@ -145,7 +194,8 @@ def cli(ctx):
 
 
 @cli.group()
-def run():
+@click.pass_context
+def run(ctx):
     """Runs the arkitekt app (using a builder) in stable mode
 
     You can choose between different builders to run your app. The default builder is the easy builder, which is
@@ -153,29 +203,40 @@ def run():
     production apps.
 
     """
-    pass
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException(
+            "No manifest found. Please run `arkitekt init` first before deploying an arkitekt app."
+        )
+
+    ctx.ensure_object(dict)
+    ctx.obj["manifest"] = manifest
 
 
-@run.command()
+@run.command("prod")
 @click.option(
     "--url",
     help="The fakts url for connection",
     default="http://localhost:8000",
     envvar="FAKTS_URL",
 )
+@with_builder
+@with_token
 @with_instance_id
 @headless
+@with_log_level
 @with_version
 @with_skip_cache
-def easy(url, instance, version=None, headless=False, nocache=False):
-    """Runs the arkitekt app using the easy builder, which is the default builder
+@click.pass_context
+def prod(ctx, **kwargs):
+    """Runs the arkitekt app in production mode (with a builder)
 
     \n
-    This builder is the default builder for all script based apps. It is designed to be easy to use and
-    to get started with. It is not recommended to use this builder for production apps.
+    By default, the easy builder is used, which is designed to be easy to use and to get started with.
+    It is not recommended to use this builder for 'real production' apps.
     """
 
-    from arkitekt.cli.run import run_easy
+    from arkitekt.cli.run import run_production
 
     manifest = load_manifest()
     if not manifest:
@@ -183,129 +244,34 @@ def easy(url, instance, version=None, headless=False, nocache=False):
             "No manifest found. Please run `arkitekt init` first before deploying an arkitekt app."
         )
 
-    asyncio.run(
-        run_easy(
-            manifest=manifest,
-            url=url,
-            instance_id=instance,
-            headless=headless,
-            nocache=nocache,
-        )
-    )
+    asyncio.run(run_production(ctx.obj["manifest"], **kwargs))
 
 
 @run.command()
-@click.option(
-    "--url",
-    help="The fakts url for connection",
-    envvar="FAKTS_URL",
-    default="http://lok:8000",
-)
-@with_token
-@with_instance_id
-@with_skip_cache
-def port(url, token, instance, nocache=False):
-    """Runs the arkitekt app"""
-
-    from arkitekt.cli.run import run_port
-
-    manifest = load_manifest()
-    if not manifest:
-        raise click.ClickException(
-            "No manifest found. Please run `arkitekt init` first before deploying an arkitekt app."
-        )
-
-    asyncio.run(
-        run_port(
-            manifest,
-            url=url,
-            token=token,
-            instance_id=instance,
-            nocache=nocache,
-        )
-    )
-
-
-@run.command()
-@click.option(
-    "--builder",
-    help="The builder used to construct the app",
-    type=str,
-    default="arkitekt.builders.easy",
-)
-@with_token
-@with_instance_id
-@headless
-@with_version
-@with_skip_cache
-def custom(builder, token, instance, version=None, headless=False, nocache=False):
-    """Runs the arkitekt app using a custom builder (import string)"""
-
-    from arkitekt.cli.run import run_costum
-
-    manifest = load_manifest()
-    if not manifest:
-        raise click.ClickException(
-            "No manifest found. Please run `arkitekt init` first before deploying an arkitekt app."
-        )
-
-    asyncio.run(
-        run_costum(
-            manifest.entrypoint,
-            manifest.identifier,
-            version or manifest.version,
-            builder=builder,
-            nocache=nocache,
-            headless=headless,
-        )
-    )
-
-
-@cli.command()
 @click.option(
     "--url",
     help="The fakts url for connection",
     default="http://localhost:8000",
     envvar="FAKTS_URL",
 )
+@with_builder
+@with_token
 @with_instance_id
-@click.option(
-    "--builder",
-    help="The builder used to construct the app",
-    type=str,
-    default="arkitekt.builders.easy",
-)
+@headless
+@with_version
+@with_log_level
+@with_skip_cache
 @click.option(
     "--deep",
     help="Should we check the whole directory for changes and reload them for dependencie",
     is_flag=True,
 )
-@headless
-@with_version
-@with_skip_cache
-def dev(url, instance, builder, deep, version=None, headless=False, nocache=False):
+@click.pass_context
+def dev(ctx, **kwargs):
     """Runs the arkitekt app in dev mode (with hot reloading)"""
+    from arkitekt.cli.dev import run_dev
 
-    from arkitekt.cli.dev import dev_module
-
-    manifest = load_manifest()
-    if not manifest:
-        raise click.ClickException(
-            "No manifest found. Please run `arkitekt init` first before deploying an arkitekt app."
-        )
-
-    asyncio.run(
-        dev_module(
-            manifest=manifest,
-            version=version,
-            builder=builder,
-            deep=deep,
-            url=url,
-            instance_id=instance,
-            headless=headless,
-            nocache=nocache,
-        )
-    )
+    asyncio.run(run_dev(ctx.obj["manifest"], **kwargs))
 
 
 @cli.command()
@@ -339,10 +305,31 @@ def scan(entrypoint):
     console.print(panel)
 
 
+def check_gen_boring(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
+
+    if not value:
+        md = Panel(
+            logo
+            + "[white]"
+            + welcome
+            + "\n\n"
+            + "[bold green]Let's setup your codegen environment",
+            title="Welcome to Arkitekt Codegen",
+            title_align="center",
+            border_style="green",
+            style="green",
+        )
+        console.print(md)
+    return value
+
+
 @cli.group()
 def gen():
     """Use the arkitekt code generation modules to generate code"""
     try:
+        import turms
+
         pass
     except ImportError as e:
         raise click.ClickException(
@@ -350,66 +337,161 @@ def gen():
         ) from e
 
 
+def check_overwrite_config(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
+
+    config = ctx.params["config"]
+    if os.path.exists(config) and not value:
+        should_overwrite = click.confirm(
+            f"GraphQL Config file already exists. Do you want to overwrite?"
+        )
+        return should_overwrite
+
+    return value
+
+
 @gen.command()
 @click.option(
-    "--version",
-    help="The schema version to use",
-    type=click.Choice(compile_schema_versions()),
-    default="latest",
+    "--boring",
+    help="Should we skip the welcome message?",
+    is_flag=True,
+    default=False,
+    callback=check_gen_boring,
 )
 @click.option(
-    "--template",
-    help="The default configuration template to use",
-    type=click.Choice(compile_configs()),
-    default="latest",
+    "--service",
+    "-s",
+    help="The services to create the codegen for",
+    nargs=2,
+    multiple=True,
+    type=click.Tuple(
+        [click.Choice(compile_configs()), click.Choice(compile_versions())]
+    ),
+    default=[("mikro", "v1"), ("fluss", "v1"), ("rekuest", "v1")],
 )
 @click.option(
     "--config",
+    "-c",
     help="The name of the configuration file",
     type=str,
     default="graphql.config.yaml",
 )
-def init(version, config, template):
+@click.option(
+    "--path",
+    "-c",
+    help="The path of the api to be generated",
+    prompt="Where should we generate the api? (relative to the current directory)",
+    type=str,
+    default="api",
+)
+@click.option(
+    "--overwrite-config",
+    "-o",
+    help="Should we overwrite the config file if it already exists",
+    is_flag=True,
+    default=False,
+    callback=check_overwrite_config,
+)
+@click.option(
+    "--documents",
+    "-d",
+    help="With documents",
+    is_flag=True,
+    default=True,
+)
+@click.option(
+    "--schemas",
+    "-s",
+    help="Should we copy the schemas",
+    is_flag=True,
+    default=True,
+)
+def init(boring, service, config, documents, schemas, overwrite_config, path):
     """Initialize code generation for the arkitekt app"""
     app_directory = os.getcwd()
-    arkitekt_directory = os.path.join(app_directory, ".arkitekt")
-    if not os.path.exists(arkitekt_directory):
-        raise click.ClickException(
-            "No .arkitekt found. Please run this command in the root directory of your arkitekt app. Or initialize a new arkitekt app with `arkitekt init` first"
+
+    if documents:
+        os.makedirs(os.path.join(app_directory, "documents"), exist_ok=True)
+    if schemas:
+        os.makedirs(os.path.join(app_directory, "schemas"), exist_ok=True)
+    if path:
+        os.makedirs(os.path.join(app_directory, path), exist_ok=True)
+
+    # Initializing the config
+    projects = {}
+
+    for service, version in service:
+        config_path = build_relative_dir(f"configs", service, f"{version}.yaml")
+        documents_path = build_relative_dir(f"documents", service, version)
+        schema_path = build_relative_dir(f"schemas", service, f"{version}.graphql")
+
+        if schemas:
+            if os.path.exists(schema_path):
+                try:
+                    shutil.copyfile(
+                        schema_path,
+                        os.path.join(app_directory, "schemas", f"{service}.graphql"),
+                    )
+                except FileExistsError:
+                    if click.confirm(
+                        f"Schema for {service} {version} already exists. Do you want to overwrite?"
+                    ):
+                        shutil.copytree(
+                            documents_path,
+                            os.path.join(app_directory, "documents", service),
+                            dirs_exist_ok=True,
+                        )
+            else:
+                console.print(f"[red]No schema found for {service} {version}[/]")
+
+        if documents:
+            if os.path.exists(documents_path):
+                try:
+                    shutil.copytree(
+                        documents_path,
+                        os.path.join(app_directory, "documents", service),
+                    )
+                except FileExistsError:
+                    if click.confirm(
+                        f"Documents for {service} {version} already exist. Do you want to overwrite them?"
+                    ):
+                        shutil.copytree(
+                            documents_path,
+                            os.path.join(app_directory, "documents", service),
+                            dirs_exist_ok=True,
+                        )
+
+            else:
+                console.print(f"[red]No schema found for {service} {version}[/]")
+
+        project = yaml.load(open(config_path, "r"), Loader=yaml.FullLoader)
+        if schemas:
+            project["schema"] = "schemas/" + service + ".graphql"
+        if documents:
+            project["documents"] = "documents/" + service + "/**/*.graphql"
+
+        project["extensions"]["turms"]["out_dir"] = path
+        project["extensions"]["turms"]["generated_name"] = f"{service}.py"
+
+        projects[service] = project
+
+    if overwrite_config:
+        graph_config_path = os.path.join(app_directory, config)
+        yaml.safe_dump(
+            {"projects": projects}, open(graph_config_path, "w"), sort_keys=False
         )
-
-    os.makedirs(os.path.join(arkitekt_directory, "schemas"), exist_ok=True)
-
-    # Copying the schemas
-    for i in os.listdir(build_relative_dir("schemas", version)):
-        if i.endswith(".graphql"):
-            shutil.copyfile(
-                build_relative_dir("schemas", version, i),
-                os.path.join(arkitekt_directory, "schemas", i),
-            )
-
-    # Copying the config
-
-    graph_config_path = os.path.join(app_directory, config)
-    if os.path.exists(graph_config_path):
-        if not click.confirm(
-            f"{config} already exists. Do you want to overwrite it?", default=False
-        ):
-            return
-
-    shutil.copyfile(
-        build_relative_dir("configs", f"{template}.yaml"), graph_config_path
-    )
-
-    pass
+        print(f"Config file written to {graph_config_path}")
 
 
 @gen.command()
-@click.argument("project", default=None, required=False)
+@click.argument("projects", default=None, required=False, nargs=-1)
 @click.option(
-    "--config", help="The config to use", type=click.Path(exists=True), default=None
+    "--config",
+    help="The config to use",
+    type=click.Path(exists=True),
+    default=None,
 )
-def compile(project, config):
+def compile(projects, config):
     """Initialize code generation for the arkitekt app"""
     app_directory = os.getcwd()
 
@@ -422,11 +504,18 @@ def compile(project, config):
             f"No config file found. Please run `arkitekt gen init` in {app_directory} to create a default config file or specify a config file with the --config flag"
         )
 
-    projects = load_projects_from_configpath(config)
-    if project:
-        projects = {key: value for key, value in projects.items() if key == project}
+    parsing_projects = load_projects_from_configpath(config)
+    if projects:
+        parsing_projects = {
+            key: value for key, value in parsing_projects.items() if key in projects
+        }
 
-    generate_projects(projects, title="Arkitekt Compile")
+    if not parsing_projects:
+        raise click.ClickException(
+            f"No projects found with the name '{projects}'. Available Projects: {', '.join(parsing_projects.keys())}"
+        )
+
+    generate_projects(parsing_projects, title="Arkitekt Compile")
 
     pass
 
@@ -464,11 +553,32 @@ def search_username_in_docker_info(docker_info: str):
             return line.split(":")[1].strip()
 
 
-@cli.command()
+@cli.group()
+@click.pass_context
+def port(ctx):
+    """Deploy the arkitekt app with Port
+
+    The port deployer is an arkitekt plugin service, which allows you to deploy your arkitekt app to
+    any arkitekt instance and make it instantly available to the world. Port uses docker to containerize
+    your application and will publish it locally to your dockerhub account, and mark it locally as
+    deployed. People can then use your github repository to deploy your app to their arkitekt instance.
+
+    """
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException(
+            "No manifest found. Please run `arkitekt init` first before accessing these features."
+        )
+
+    ctx.ensure_object(dict)
+    ctx.obj["manifest"] = manifest
+
+
+@port.command()
 @click.option("--build", help="The build to use", type=str, default="latest")
 @click.option("--tag", help="The tag to use")
 def publish(build, tag):
-    """Deploys the arkitekt app to port"""
+    """Deploys aa previous build to dockerhub"""
 
     from arkitekt.cli.deploy import (
         generate_deployment,
@@ -506,8 +616,6 @@ def publish(build, tag):
 
     deployed = {}
 
-    command = "arkitekt run port"
-
     docker_run = subprocess.run(["docker", "tag", build.build_id, tag])
     if docker_run.returncode != 0:
         raise click.ClickException("Could not retag docker container")
@@ -520,17 +628,19 @@ def publish(build, tag):
     deployed["docker"] = tag
 
     generate_deployment(
-        manifest,
+        build,
         tag,
-        command,
         with_definitions=False,
     )
 
 
-@cli.command()
-@click.option("--dockerfile", help="The dockerfile to use")
-def build(dockerfile):
-    """Builds the arkitekt app to support port"""
+@port.command()
+@click.option("--dockerfile", help="The dockerfile to use", default="Dockerfile")
+@click.option(
+    "--builder", help="The port builder to use", default="arkitekt.builders.port"
+)
+def build(dockerfile, builder):
+    """Builds the arkitekt app to docker"""
 
     from arkitekt.cli.build import generate_build
     import uuid
@@ -543,12 +653,10 @@ def build(dockerfile):
             "No manifest found. Please run `arkitekt init` first before building an arkitekt app."
         )
 
-    if not os.path.exists("Dockerfile"):
-        if click.confirm(
-            "Dockerfile does not exists. Do you want to start the Dockerfile wizard?"
-        ):
-            docker_file_wizard(manifest)
-            click.confirm("Do you want to continue building?", abort=True)
+    if not os.path.exists(dockerfile):
+        raise click.ClickException(
+            f"Dockerfile {dockerfile} does not exist. Please create a dockerfile first (e.g. with the port wizard command)."
+        )
 
     md = Panel(
         "Building for Port", subtitle="This may take a while...", subtitle_align="right"
@@ -563,32 +671,81 @@ def build(dockerfile):
     if docker_run.returncode != 0:
         raise click.ClickException("Could not build docker container")
 
-    generate_build("port", build_id, manifest)
+    generate_build(builder, build_id, manifest)
 
 
-@cli.command()
-def version():
-    """Updates the version of the arkitekt app"""
+def check_overwrite_dockerfile(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
 
-    manifest = load_manifest()
-    if not manifest:
-        raise click.ClickException(
-            "No manifest found. Please run `arkitekt init` first before versioning an arkitekt app."
+    app_file = ctx.params["dockerfile"]
+    if os.path.exists(app_file) and not value:
+        should_overwrite = click.confirm(
+            f"Docker already exists. Do you want to overwrite?", abort=True
         )
 
-    click.echo(f"Current Version: {manifest.version}")
-    new_version = click.prompt("New Version", default=manifest.version, type=str)
-
-    manifest.version = new_version
-    write_manifest(manifest)
-    click.echo("Manifest Updated")
+    return value
 
 
-@cli.command()
+def check_build_boring(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
+
+    if not value:
+        md = Panel(
+            logo + "[white]" + welcome + "\n\n" + "[bold green]Let's build your app",
+            title="Welcome to Arkitekt",
+            title_align="center",
+            border_style="green",
+            style="green",
+        )
+        console.print(md)
+    return value
+
+
+@port.command()
+@click.option("--dockerfile", help="The dockerfile to generate", default="Dockerfile")
+@click.option(
+    "--boring",
+    help="Should we skip the welcome message?",
+    is_flag=True,
+    default=False,
+    callback=check_build_boring,
+)
+@click.option(
+    "--overwrite-dockerfile",
+    "-o",
+    help="Should we overwrite the existing Dockerfile?",
+    is_flag=True,
+    default=False,
+    callback=check_overwrite_dockerfile,
+)
+def wizard(dockerfile, boring, overwrite_dockerfile):
+    """Runs the port wizard to generate a dockerfile to be used with port"""
+
+    manifest = load_manifest()
+    dockfile = docker_file_wizard(manifest)
+
+    if dockfile:
+        with open(dockerfile, "w") as file:
+            file.write(dockfile)
+
+
+@port.command()
 @click.option("--build", help="The build to use", type=str, default="latest")
-@with_version
-def stage(build, version=None):
-    """Stages the latest Build for testing"""
+@click.option(
+    "--url", help="The fakts server to use", type=str, default="localhost:8000"
+)
+@click.option(
+    "--builder", help="The builder to use", type=str, default="arkitekt.builders.easy"
+)
+def stage(build, url, builder):
+    """Stages the latest Build for testing
+
+    Stages the current build for testing. This will create a temporary staged version
+    of the app that is run agains the local arkitekt instance. The builder will be changed
+    to the easy or provided builder to ensure that the app can be run headlessly
+
+
+    """
     from arkitekt.cli.build import get_builds
     import uuid
 
@@ -605,9 +762,7 @@ def stage(build, version=None):
     build = builds[build]
     build_id = build.build_id
 
-    version = version or f"stage-{build_id}"
-
-    click.echo(f"Running inside docker: {manifest.identifier}:{version}")
+    click.echo(f"Running inside docker: {manifest.identifier}:{manifest.version}")
     docker_run = subprocess.run(
         [
             "docker",
@@ -620,14 +775,456 @@ def stage(build, version=None):
             build_id,
             "arkitekt",
             "run",
-            "easy",
-            "--version",
-            version,
+            "prod",
+            "--builder",
+            builder,
             "--headless",
+            "--url",
+            url,
         ],
     )
 
-    raise click.ClickException("Not implemented yet")
+    message_string = (
+        docker_run.stdout.decode("utf-8")
+        if docker_run.stdout
+        else "" + docker_run.stderr.decode("utf-8")
+        if docker_run.stderr
+        else ""
+    )
+
+    if "No manifest found" in message_string:
+        raise click.ClickException(
+            "Looks like the docker container could not find the manifest. Did you mount the '.arkitekt folder' correctly?"
+        )
+
+    raise click.ClickException("Docker container exited")
+
+
+@cli.group()
+@click.pass_context
+def manifest(ctx):
+    """Updates the manifest of this app
+
+    The manifest is used to describe the app and its rights (scopes) and requirements, to be run on the platform.
+    This manifest is used to authenticate the app with the platform establishing its scopes and requirements.
+
+
+
+
+    """
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException(
+            "No manifest found. Please run `arkitekt init` first before accessing these features."
+        )
+
+    ctx.ensure_object(dict)
+    ctx.obj["manifest"] = manifest
+
+
+@manifest.command()
+def inspect():
+    """Inspect the manifest of this app
+
+
+    The manifest is used to describe the app and its rights (scopes) and requirements, to be run on the platform.
+    This manifest is used to authenticate the app with the platform establishing its scopes and requirements.
+
+
+    """
+    manifest = load_manifest()
+
+    table = Table.grid()
+    table.add_column()
+    table.add_column()
+    table.add_row("Identifier", manifest.identifier)
+    table.add_row("Version", manifest.version)
+    table.add_row("Author", manifest.author)
+    table.add_row("Logo", manifest.logo or "-")
+    table.add_row("Entrypoint", manifest.entrypoint)
+    table.add_row("Command", manifest.command)
+    table.add_row("Scopes", ", ".join(manifest.scopes) if manifest.scopes else "-")
+    table.add_row(
+        "Requirements",
+        ", ".join(manifest.requirements) if manifest.requirements else "-",
+    )
+    table.add_row("Created at", str(manifest.created_at.strftime("%Y/%m/%d %H:%M")))
+
+    panel = Panel(
+        Group("[bold green]Manifest[/]", table),
+        title_align="center",
+        border_style="green",
+        style="white",
+    )
+
+    console.print(panel)
+
+
+@manifest.group()
+@click.pass_context
+def version(ctx):
+    """Updates the version of the arkitekt app
+
+    Arkitekt manifests versioning follow [link=https://semver.org]semver[/link] and are used to version the app.
+
+    """
+
+
+@version.command("set")
+@click.argument("VERSION", type=str, required=False)
+@click.pass_context
+def set_version(ctx, version):
+    manifest = ctx.obj["manifest"]
+    old_version = manifest.version
+
+    if not version:
+        try:
+            potential_new_version = parse_semver(old_version, loaded=True).bump_patch()
+        except Exception:
+            potential_new_version = None
+
+        new_version = click.prompt(
+            "Please provide a new version", default=potential_new_version, type=str
+        )
+        version = parse_semver(new_version)
+        version = new_version
+
+    manifest.version = version
+    write_manifest(manifest)
+    console.print(f"Version Updated from {old_version} to {version}")
+
+
+@version.command()
+@click.pass_context
+def patch(ctx):
+    "Patches the version of the arkitekt app"
+    manifest = ctx.obj["manifest"]
+    old_version = manifest.version
+    manifest.version = parse_semver(old_version).bump_patch()
+    write_manifest(manifest)
+    console.print(f"Version Updated from {old_version} to {manifest.version}")
+
+
+@version.command()
+@click.pass_context
+def minor(ctx):
+    "Patches the version of the arkitekt app"
+    manifest = ctx.obj["manifest"]
+    old_version = manifest.version
+    manifest.version = parse_semver(old_version).bump_minor()
+    write_manifest(manifest)
+    console.print(f"Version Updated from {old_version} to {manifest.version}")
+
+
+@version.command()
+@click.pass_context
+def major(ctx):
+    "Patches the version of the arkitekt app"
+    manifest = ctx.obj["manifest"]
+    old_version = manifest.version
+    manifest.version = parse_semver(old_version).bump_major()
+    write_manifest(manifest)
+    console.print(f"Version Updated from {old_version} to {manifest.version}")
+
+
+@version.command()
+@click.pass_context
+def prerelease(ctx):
+    "Patches the version of the arkitekt app"
+    manifest = ctx.obj["manifest"]
+    old_version = manifest.version
+    manifest.version = parse_semver(old_version).bump_prerelease()
+    write_manifest(manifest)
+    console.print(f"Version Updated from {old_version} to {manifest.version}")
+
+
+@version.command("build")
+@click.pass_context
+def bump_build(ctx):
+    "Patches the version of the arkitekt app"
+    manifest = ctx.obj["manifest"]
+    old_version = manifest.version
+    manifest.version = parse_semver(old_version).bump_build()
+    write_manifest(manifest)
+    console.print(f"Version Updated from {old_version} to {manifest.version}")
+
+
+@manifest.group("scopes")
+@click.pass_context
+def scopes_group(ctx):
+    """Inspect, add and remove scopes to this arkitekt app
+
+    Scopes are rights that are granted to any arkitekt application, and correspond
+    to rights that enable feature when interacting with the platform. These scopes
+    provide another element of access control to the arkitekt platform, and describe
+    on top of the users rights, what the application is allowed to do.
+
+    For more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+
+    """
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException(
+            "No manifest found. Please run `arkitekt init` first before accessing these features."
+        )
+
+    ctx.ensure_object(dict)
+    ctx.obj["manifest"] = manifest
+
+
+@scopes_group.command("add")
+@click.argument(
+    "SCOPE",
+    nargs=-1,
+    type=click.Choice(compile_scopes()),
+)
+@click.pass_context
+def add_scopes(ctx, scope):
+    """ "Acd scopes
+
+    Scopes are rights that are granted to any arkitekt application, and correspond
+    to rights that enable feature when interacting with the platform. These scopes
+    provide another element of access control to the arkitekt platform, and describe
+    on top of the users rights, what the application is allowed to do.
+
+    For more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+
+    """
+    if not scope:
+        raise click.ClickException("Please provide at least one scope")
+
+    manifest = ctx.obj["manifest"]
+    if scope:
+        manifest.scopes = set(list(scope) + manifest.scopes)
+        write_manifest(manifest)
+        console.print(f"Scopes Updated to {manifest.scopes}")
+
+
+@scopes_group.command("remove")
+@click.argument(
+    "SCOPE",
+    nargs=-1,
+    type=click.Choice(compile_scopes()),
+)
+@click.pass_context
+def remove_scopes(ctx, scope):
+    """Remove scopes
+
+    Scopes are rights that are granted to any arkitekt application, and correspond
+    to rights that enable feature when interacting with the platform. These scopes
+    provide another element of access control to the arkitekt platform, and describe
+    on top of the users rights, what the application is allowed to do.
+
+    For more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+
+    """
+    if not scope:
+        raise click.ClickException("Please provide at least one scope to remove")
+
+    manifest = ctx.obj["manifest"]
+    if scope:
+        manifest.scopes = set(manifest.scopes) - set(scope)
+        write_manifest(manifest)
+        console.print(f"Scopes Updated to {manifest.scopes}")
+
+
+@scopes_group.command("list")
+@click.pass_context
+def list_scopes(ctx):
+    """List all the [i] currently [/] active scopes
+
+    Scopes are rights that are granted to any arkitekt application, and correspond
+    to rights that enable feature when interacting with the platform. These scopes
+    provide another element of access control to the arkitekt platform, and describe
+    on top of the users rights, what the application is allowed to do.
+
+    For more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+
+    """
+
+    manifest = load_manifest()
+
+    table = Table.grid()
+    table.add_column("Scope")
+    table.add_column("Description")
+    for scope in manifest.scopes:
+        table.add_row(scope, "TODO")
+
+    panel = Panel(
+        Group("[bold green]Scopes[/]", table),
+        title_align="center",
+        border_style="green",
+        style="white",
+    )
+
+    console.print(panel)
+
+
+@scopes_group.command("available")
+@click.pass_context
+def list_available(ctx):
+    """List all the [i] available [/]  scopes
+
+    Scopes are rights that are granted to any arkitekt application, and correspond
+    to rights that enable feature when interacting with the platform. These scopes
+    provide another element of access control to the arkitekt platform, and describe
+    on top of the users rights, what the application is allowed to do.
+
+    For more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+
+    """
+
+    table = Table.grid()
+    table.add_column("Scope")
+    table.add_column("Description")
+    for scope in compile_scopes():
+        table.add_row(scope, "TODO")
+
+    panel = Panel(
+        Group("[bold green]Available Scopes[/]", table),
+        title_align="center",
+        border_style="green",
+        style="white",
+    )
+
+    console.print(panel)
+
+
+@manifest.group("requirements")
+@click.pass_context
+def requirements_group(ctx):
+    """Inspect, add and remove requirements to this arkitekt app
+
+    Requirements are used to hint the user to have specific hardware or software installed, when
+    using your application. It is also used to inform the platform about the requirements of your app,
+    when installing it in its plugin sandbox. for more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+    """
+    manifest = load_manifest()
+    if not manifest:
+        raise click.ClickException(
+            "No manifest found. Please run `arkitekt init` first before accessing these features."
+        )
+
+    ctx.ensure_object(dict)
+    ctx.obj["manifest"] = manifest
+
+
+@requirements_group.command("add")
+@click.argument(
+    "REQUIREMENTS",
+    nargs=-1,
+    type=click.Choice(compile_requirements()),
+)
+@click.pass_context
+def add_requirement(ctx, requirements):
+    """Add requiremenets
+
+    Requirements are used to hint the user to have specific hardware or software installed, when
+    using your application. It is also used to inform the platform about the requirements of your app,
+    when installing it in its plugin sandbox. for more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+    """
+    if not requirements:
+        raise click.ClickException("Please provide at least one requirement")
+
+    manifest = ctx.obj["manifest"]
+    if requirements:
+        manifest.requirements = set(list(requirements) + manifest.requirements)
+        write_manifest(manifest)
+        console.print(f"Requirements Updated to {manifest.requirements}")
+
+
+@requirements_group.command("remove")
+@click.argument(
+    "REQUIREMENTS",
+    nargs=-1,
+    type=click.Choice(compile_requirements()),
+)
+@click.pass_context
+def remove_requirements(ctx, requirements):
+    """Remove requirements
+
+    Requirements are used to hint the user to have specific hardware or software installed, when
+    using your application. It is also used to inform the platform about the requirements of your app,
+    when installing it in its plugin sandbox. for more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+
+    """
+    if not requirements:
+        raise click.ClickException("Please provide at least one requirement to remove")
+
+    manifest = ctx.obj["manifest"]
+    if requirements:
+        manifest.requirements = set(manifest.requirements) - set(requirements)
+        write_manifest(manifest)
+        console.print(f"Requirements Updated to {manifest.requirements}")
+
+
+@requirements_group.command("list")
+@click.pass_context
+def list_requirements(ctx):
+    """Lists the [i]current[/] requirements
+
+    Requirements are used to hint the user to have specific hardware or software installed, when
+    using your application. It is also used to inform the platform about the requirements of your app,
+    when installing it in its plugin sandbox. for more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+    """
+
+    manifest = ctx.obj["manifest"]
+
+    table = Table(
+        title="[green bold ]Requirements[/]",
+        title_justify="left",
+        title_style="green bold",
+    )
+    table.add_column("Requirement")
+    table.add_column("Description")
+
+    for scope in manifest.requirements:
+        table.add_row(scope, "TODO")
+
+    panel = Panel(
+        table,
+        title_align="center",
+        border_style="green",
+        style="white",
+    )
+
+    console.print(panel)
+
+
+@requirements_group.command("available")
+@click.pass_context
+def list_available_requirements(ctx):
+    """Lists the [i]available[/] requirements
+
+    Requirements are used to hint the user to have specific hardware or software installed, when
+    using your application. It is also used to inform the platform about the requirements of your app,
+    when installing it in its plugin sandbox. for more information, please visit the [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]
+
+    """
+
+    table = Table.grid()
+    table.add_column("Scope")
+    table.add_column("Description")
+    for scope in compile_requirements():
+        table.add_row(scope, "TODO")
+
+    panel = Panel(
+        Group("[bold green]Available Scopes[/]", table),
+        title_align="center",
+        border_style="green",
+        style="white",
+    )
+
+    console.print(panel)
 
 
 def prompt_scopes():
@@ -698,22 +1295,133 @@ def prompt_requirements():
     return requirements
 
 
+def check_overwrite(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
+
+    manifest = load_manifest()
+
+    if load_manifest() and not value:
+        should_overwrite = click.confirm(
+            f"Another Arkitekt app {manifest.to_console_string()} exists already?. Do you want to overwrite?",
+            abort=True,
+        )
+        if not should_overwrite:
+            ctx.abort()
+    return value
+
+
+def check_overwrite_app(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
+
+    app_file = ctx.params["app"] + ".py"
+    if os.path.exists(app_file) and not value:
+        should_overwrite = click.confirm(
+            f"App File already exists. Do you want to overwrite?"
+        )
+        return should_overwrite
+
+    return value
+
+
+def check_init_boring(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
+
+    if not value:
+        md = Panel(
+            logo + "[white]" + welcome + "\n\n" + "[bold green]Let's setup your app",
+            title="Welcome to Arkitekt",
+            title_align="center",
+            border_style="green",
+            style="green",
+        )
+        console.print(md)
+    return value
+
+
+def ensure_semver(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
+
+    if not value:
+        value = click.prompt(
+            "The version of your app",
+            default="0.0.1",
+        )
+
+    while not semver.Version.is_valid(value):
+        console.print(
+            "Arkitekt versions need to follow [link=https://semver.org]semver[/link]. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
+        )
+        value = click.prompt(
+            "The version of your app",
+            default="0.0.1",
+        )
+
+    return value
+
+
 @cli.command()
+@click.option(
+    "--boring",
+    help="Should we skip the welcome message?",
+    is_flag=True,
+    default=False,
+    callback=check_init_boring,
+)
+@click.option(
+    "--overwrite-manifest",
+    help="Should we overwrite the existing manifest?",
+    is_flag=True,
+    default=False,
+    callback=check_overwrite,
+)
 @click.option(
     "--template",
     help="The template to use",
     type=click.Choice(compile_templates()),
     default="simple",
 )
-@click.option("--identifier", help="The identifier of your app")
-@click.option("--version", help="The version of your app")
-@click.option("--author", help="The author of your app")
+@click.option(
+    "--identifier",
+    help="The identifier of your app",
+    prompt="Your app name",
+    default=os.path.basename(os.getcwd()),
+)
+@click.option(
+    "--version", help="The version of your app", default="0.0.1", callback=ensure_semver
+)
+@click.option(
+    "--author",
+    help="The author of your app",
+    prompt="Your name",
+    default=getpass.getuser(),
+)
+@click.option(
+    "--template",
+    help="Which template to use top create entrypoint",
+    prompt="Your app file template",
+    type=click.Choice(compile_templates()),
+    default="simple",
+)
+@click.option(
+    "--app",
+    help="The entrypoint of your app. This will be the name of the python file",
+    prompt="Your app file",
+    default="app",
+)
+@click.option(
+    "--overwrite-app",
+    help="The entrypoint of your app. This will be the name of the python file",
+    is_flag=True,
+    default=False,
+    callback=check_overwrite_app,
+)
 @click.option(
     "--requirements",
     "-r",
     help="Hardware requirements of this app",
     type=click.Choice(compile_requirements()),
     multiple=True,
+    default=[],
 )
 @click.option(
     "--scopes",
@@ -721,78 +1429,47 @@ def prompt_requirements():
     help="The scope of the app",
     type=click.Choice(compile_scopes()),
     multiple=True,
+    default=["read"],
 )
-def init(identifier, version, author, scopes, template, requirements):
+def init(
+    identifier,
+    version,
+    author,
+    scopes,
+    template,
+    requirements,
+    app,
+    overwrite_manifest,
+    overwrite_app,
+    boring,
+):
     """Initializes the arkitekt app"""
-
-    md = Panel(
-        logo + "[white]" + welcome + "\n\n" + "[bold green]Let's setup your app",
-        title="Welcome to Arkitekt",
-        title_align="center",
-        border_style="green",
-        style="green",
-    )
-    console.print(md)
-
-    oldmanifest = load_manifest()
-
-    if oldmanifest:
-        console.print(" Found existing manifest.")
-        if not click.confirm(" Do you want to overwrite it?"):
-            raise click.ClickException(" Initialization aborted")
-
-    initialize = Panel(
-        "Initializing Arkitekt App \n[white]Please answer the following basic questions to initialize your app.",
-        border_style="green",
-        style="green",
-    )
-
-    console.print(initialize)
-    entrypoint = "app"
-
+    print(identifier, version, author)
     manifest = Manifest(
-        author=author
-        or click.prompt(
-            " Your name:", default=getattr(oldmanifest, "author", getpass.getuser())
-        ),
-        identifier=identifier
-        or click.prompt(
-            " Your apps name: ",
-            default=getattr(oldmanifest, "identifier", os.path.basename(os.getcwd())),
-        ),
-        version=version
-        or click.prompt(
-            " The current version of this app: ",
-            default=getattr(oldmanifest, "version", "dev"),
-        ),
-        scopes=scopes or prompt_scopes(),
-        requirements=requirements or prompt_requirements(),
-        entrypoint=entrypoint,
+        author=author,
+        identifier=identifier,
+        version=version,
+        scopes=scopes,
+        requirements=requirements,
+        entrypoint=app,
     )
 
     with open(build_relative_dir("templates", f"{template}.py")) as f:
         template_app = f.read()
 
-    if not os.path.exists(f"{entrypoint}.py"):
-        if click.confirm(
-            " Entrypoint does not exists. Do you want to generate a python file?"
-        ):
-            with open(f"{entrypoint}.py", "w") as f:
-                f.write(template_app)
-
-    else:
-        if click.confirm(" Entrypoint already exists. Do you want to overwrite it?"):
-            with open(f"{entrypoint}.py", "w") as f:
-                f.write(template_app)
+    if not os.path.exists("app") or overwrite_app:
+        with open(f"{app}.py", "w") as f:
+            f.write(template_app)
 
     write_manifest(manifest)
-    md = Panel(
-        f"{manifest.identifier} was successfully initialized\n\n"
-        + "[not bold white]We are excited to see what you come up with!",
-        border_style="green",
-        style="green",
-    )
-    console.print(md)
+    if not boring:
+        md = Panel(
+            f"{manifest.to_console_string()} was successfully initialized\n\n"
+            + "[not bold white]We are excited to see what you come up with!",
+            border_style="green",
+            style="green",
+        )
+        console.print(md)
 
 
 if __name__ == "__main__":

@@ -80,11 +80,13 @@ def pip_no_gpu(manifest: Manifest, python_version: str) -> str:
     get_console().print("[blue]Generating Dockerfile...[/blue]")
 
     BASE_IMAGE = f"FROM python:{python_version}\n"
-    PIP_APPENDIX = "# setup pip  environment\nCOPY ./requirements.txt /tmp/requirements.txt\nRUN pip install /tmp/requirements.yml"
-    WORKDIR_APPENDIX = "RUN mkdir /app \n WORKDIR /app"
+    PIP_APPENDIX = "# setup pip  environment\nCOPY ./requirements.txt /tmp/requirements.txt\nRUN pip install /tmp/requirements.yml\n"
+    WORKDIR_APPENDIX = "RUN mkdir /app \nWORKDIR /app"
 
     dockerfile = BASE_IMAGE
-    if click.confirm("Do you want to install the dependencies with pip?"):
+    if click.confirm(
+        "Do you want to install a requirements.txt with the dependencies with pip?"
+    ):
         dockerfile += PIP_APPENDIX
 
     if click.confirm("Do you want to use the current working directory as the app?"):
@@ -107,8 +109,8 @@ def poetry_no_gpu(manifest: Manifest, python_version: str) -> str:
     get_console().print("[blue]Generating Dockerfile...[/blue]")
 
     BASE_IMAGE = f"FROM python:{python_version}\n"
-    SETUP_POETRY = "# Install dependencies\nRUN pip install poetry rich\nENV PYTHONUNBUFFERED=1\nCOPY pyproject.toml /tmp \nCOPY poetry.lock /tmp\nRUN poetry config virtualenvs.create false\nWORKDIR /tmp\nRUN poetry install\n"
-    WORKDIR_APPENDIX = "RUN mkdir /app \n COPY . /app\nWORKDIR /app\n"
+    SETUP_POETRY = "# Install dependencies\nRUN pip install poetry rich\nENV PYTHONUNBUFFERED=1\n# Install Project files\nCOPY pyproject.toml /tmp\nCOPY poetry.lock /tmp\nRUN poetry config virtualenvs.create false\nWORKDIR /tmp\nRUN poetry install\n"
+    WORKDIR_APPENDIX = "RUN mkdir /app\nCOPY . /app\nWORKDIR /app\n"
 
     dockerfile = BASE_IMAGE
     dockerfile += SETUP_POETRY
@@ -222,14 +224,15 @@ def docker_file_wizard(manifest: Manifest, auto: bool = True):
 
         packager = Packager.PIP
 
+    dockfile = None
+
     if click.confirm(
         f"Would you like to generate Template Dockerfile: Using {packager} with Python {python_version} {'and' if gpu else 'without'} GPU support"
     ):
         dockfile = build_dockerfile(
             manifest, packager, gpu=gpu, python_version=python_version
         )
-        with open("Dockerfile", "w") as file:
-            file.write(dockfile)
+    return dockfile
 
 
 def get_builds() -> Dict[str, Build]:

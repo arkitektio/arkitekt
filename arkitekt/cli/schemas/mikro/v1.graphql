@@ -273,18 +273,24 @@ type Query {
     email: String!
   ): [Representation]
 
-  "Get a single Representation by ID\n    \n    Returns a single Representation by ID. If the user does not have access\n    to the Representation, an error will be raised.\n    "
+  "Get a single Representation by ID\n\n    Returns a single Representation by ID. If the user does not have access\n    to the Representation, an error will be raised.\n    "
   representation(
     """The ID to search by"""
     id: ID!
   ): Representation
 
-  "Get a random Representation\n    \n    Gets a random Representation from the database. This is used for\n    testing purposes\n    \n    "
+  "Get a single Image by ID\n\n    Returns a single Representation by ID. If the user does not have access\n    to the Representation, an error will be raised.\n    "
+  image(
+    """The ID to search by"""
+    id: ID!
+  ): Representation
+
+  "Get a random Representation\n\n    Gets a random Representation from the database. This is used for\n    testing purposes\n\n    "
   randomRepresentation: Representation
 
   """
   All Representations
-      
+  
       This query returns all Representations that are stored on the platform
       depending on the user's permissions. Generally, this query will return
       all Representations that the user has access to. If the user is an amdin
@@ -1182,6 +1188,9 @@ type Query {
     """The z you want to filter by either interger or slice string"""
     activeForC: Float
 
+    """Filter by global"""
+    isGlobal: Boolean
+
     """Query limit"""
     limit: Int
 
@@ -1581,8 +1590,8 @@ type Comment {
   """"""
   user: User!
 
-  """"""
-  text: String!
+  """The text of the comment (without any formatting)"""
+  text: String
 
   """"""
   createdAt: DateTime!
@@ -2829,6 +2838,44 @@ type Representation {
   ): Table
   metric(key: String!): Metric
   latestThumbnail: Thumbnail
+
+  """Associated views"""
+  views(
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of name"""
+    name: String
+    omero: ID
+    representation: ID
+
+    """The z you want to filter by either interger or slice string"""
+    z: String
+
+    """The z you want to filter by either interger or slice string"""
+    activeForZ: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForT: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForX: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForY: Float
+
+    """The z you want to filter by either interger or slice string"""
+    activeForC: Float
+
+    """Filter by global"""
+    isGlobal: Boolean
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [View]
   comments: [Comment]
   pinned: Boolean
   renders: [Render]
@@ -3632,6 +3679,9 @@ type Omero {
 
     """The z you want to filter by either interger or slice string"""
     activeForC: Float
+
+    """Filter by global"""
+    isGlobal: Boolean
 
     """Query limit"""
     limit: Int

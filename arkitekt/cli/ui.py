@@ -1,7 +1,7 @@
 from rich.console import Group
 from rich.tree import Tree
 from rich.panel import Panel
-from arkitekt.apps import Arkitekt
+from arkitekt.apps import App
 from typing import MutableSet, Tuple, Any, Dict
 import os
 
@@ -17,8 +17,8 @@ def construct_changes_group(changes: MutableSet[Tuple[Any, str]]) -> Group:
     return panel_group
 
 
-def construct_app_group(app: Arkitekt) -> Group:
-    panel_header = f"Running App \n\n{app.identifier}:{app.version}\n"
+def construct_app_group(app: App) -> Group:
+    panel_header = f"Running App \n\n{app.manifest.identifier}:{app.manifest.version}\n"
 
     actor_tree = Tree("Registered Definitions", style="white not bold")
     panel_group = Group(panel_header, actor_tree)
@@ -46,7 +46,7 @@ def construct_leaking_group(variables: Dict[str, Any]) -> Group:
     return panel_group
 
 
-def construct_run_panel(app: Arkitekt) -> Panel:
+def construct_run_panel(app: App) -> Panel:
     app_group = construct_app_group(app)
 
     return Panel(

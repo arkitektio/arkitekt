@@ -1,0 +1,90 @@
+schema: http://localhost:8030/graphql
+documents: graphql/mikro_next/*/**.graphql
+extensions:
+  turms:
+    out_dir: mikro_next/api
+    exclude_typenames: true
+    freeze:
+      enabled: true
+    options:
+      enabled: true
+      use_enum_values: true
+      allow_population_by_field_name: true
+      extra: "forbid"
+      types:
+        - "input"
+    stylers:
+      - type: turms.stylers.default.DefaultStyler
+      - type: turms.stylers.appender.AppenderStyler
+        append_fragment: "Fragment"
+    plugins:
+      - type: turms.plugins.enums.EnumsPlugin
+        skip_unreferenced: True
+      - type: turms.plugins.inputs.InputsPlugin
+        skip_unreferenced: True
+      - type: turms.plugins.fragments.FragmentsPlugin
+      - type: turms.plugins.operations.OperationsPlugin
+      - type: turms.plugins.funcs.FuncsPlugin
+        global_kwargs:
+          - type: mikro_next.rath.MikroNextRath
+            key: rath
+            description: "The mikro rath client"
+        definitions:
+          - type: subscription
+            is_async: True
+            use: mikro_next.funcs.asubscribe
+          - type: query
+            is_async: True
+            use: mikro_next.funcs.aexecute
+          - type: mutation
+            is_async: True
+            use: mikro_next.funcs.aexecute
+          - type: subscription
+            use: mikro_next.funcs.subscribe
+          - type: query
+            use: mikro_next.funcs.execute
+          - type: mutation
+            use: mikro_next.funcs.execute
+    processors:
+      - type: turms.processors.black.BlackProcessor
+    scalar_definitions:
+      ArrayLike: mikro_next.scalars.ArrayLike
+      ParquetLike: mikro_next.scalars.ParquetLike
+      FileLike: mikro_next.scalars.FileLike
+      Upload: mikro_next.scalars.Upload
+      Vector: mikro_next.scalars.Vector
+      TwoDVector: mikro_next.scalars.TwoDVector
+      ThreeDVector: mikro_next.scalars.ThreeDVector
+      FourDVector: mikro_next.scalars.FourDVector
+      FiveDVector: mikro_next.scalars.FiveDVector
+      Matrix: mikro_next.scalars.Matrix
+      Milliseconds: mikro_next.scalars.Milliseconds
+      Micrometers: mikro_next.scalars.Micrometers
+      MikroStore: mikro_next.scalars.MikroStore
+      FourByFourMatrix: mikro_next.scalars.FourByFourMatrix
+      ID: rath.scalars.ID
+    additional_bases:
+      Image:
+        - mikro_next.traits.Image
+      File:
+        - mikro_next.traits.File
+      Table:
+        - mikro_next.traits.Table
+      Objective:
+        - mikro_next.traits.Objective
+      Position:
+        - mikro_new.traits.Position
+      Stage:
+        - mikro_next.traits.Stage
+      ZarrStore:
+        - mikro_next.traits.ZarrStore
+      ParquetStore:
+        - mikro_next.traits.ParquetStore
+      BigFileStore:
+        - mikro_next.traits.BigFileStore
+      MediaStore:
+        - mikro_next.traits.MediaStore
+      ROI:
+        - mikro_new.traits.ROI
+      TransformationView:
+        - mikro_next.traits.PixelTranslatable

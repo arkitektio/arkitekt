@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 import datetime
 from typing import List, Optional
 import os
@@ -6,6 +6,7 @@ import yaml
 from arkitekt.utils import create_arkitekt_folder
 import json
 from enum import Enum
+import semver
 
 
 class Requirement(str, Enum):
@@ -27,6 +28,21 @@ class Manifest(BaseModel):
     scopes: List[str]
     requirements: List[Requirement] = Field(default_factory=list)
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
+
+    @validator("version", pre=True)
+    def version_must_be_semver(cls, v):
+        if isinstance(v, str):
+            try:
+                semver.VersionInfo.parse(v)
+            except ValueError:
+                raise ValueError("Version must be a valid semver version")
+        return str(v)
+
+    def to_console_string(self):
+        return f"📦 {self.identifier} ({self.version}) by {self.author}"
+
+    class Config:
+        validate_assignment = True
 
 
 class PortBuild(BaseModel):

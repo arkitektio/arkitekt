@@ -1,5 +1,6 @@
-from arkitekt.builders  import easy
+from arkitekt.builders import easy
 
 
 def test_easy():
-    easy("johannes", "latest")
+    with easy("johannes", "latest"):
+        print("Hello world!")

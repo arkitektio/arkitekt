@@ -35,5 +35,9 @@
   "python.linting.pylintEnabled": false,
   "python.linting.pylintArgs": ["--enable=W0614"],
   "python.testing.pytestEnabled": true,
-  "mypy.runUsingActiveInterpreter": true
+  "mypy.runUsingActiveInterpreter": true,
+  "[python]": {
+    "editor.defaultFormatter": "ms-python.black-formatter"
+  },
+  "python.formatting.provider": "none"
 }

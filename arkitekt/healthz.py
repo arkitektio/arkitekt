@@ -7,7 +7,7 @@ import certifi
 from pydantic import Field
 from koil.composition import KoiledModel
 from fakts.fakt.base import Fakt
-from fakts.fakts import get_current_fakts
+from fakts.fakts import Fakts
 
 
 class HealthzConfig(Fakt):
@@ -18,6 +18,7 @@ class FaktsHealthz(KoiledModel):
     ssl_context: SSLContext = Field(
         default_factory=lambda: ssl.create_default_context(cafile=certifi.where())
     )
+    fakts: Fakts
     fakts_group: str
     strict: bool = False
     endpoint_url: Optional[str]
@@ -29,11 +30,7 @@ class FaktsHealthz(KoiledModel):
         self.endpoint_url = config.healthz
 
     async def check(self):
-        fakts = get_current_fakts()
-
-        if fakts.has_changed(self._old_fakt, self.fakts_group):
-            self._old_fakt = await fakts.aget(self.fakts_group)
-            self.configure(HealthzConfig(**self._old_fakt))
+        self.endpoint_url = await self.fakts.aget(self.fakts_group)["healthz"]
 
         async with aiohttp.ClientSession(
             headers={"Content-Type": "application/json"},
@@ -41,7 +38,6 @@ class FaktsHealthz(KoiledModel):
         ) as session:
             # get json from endpoint
             async with session.get(self.endpoint_url + "?format=json") as resp:
-
                 healthz_json = await resp.json()
                 if self.strict:
                     faulty_services = []

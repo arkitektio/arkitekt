@@ -1,6 +1,6 @@
 from importlib import import_module, reload
 import asyncio
-from arkitekt import Arkitekt
+from arkitekt import App
 from watchfiles import awatch
 from rich.panel import Panel
 from watchfiles.filters import PythonFilter
@@ -15,7 +15,7 @@ from arkitekt.cli.utils import import_builder
 from .types import Manifest
 
 
-async def build_and_run(app):
+async def build_and_run(app: App):
     async with app:
         await app.rekuest.run()
 
@@ -79,15 +79,12 @@ def is_entrypoint_change(
     return False
 
 
-async def dev_module(
+async def run_dev(
     manifest: Manifest,
     version=None,
-    url=None,
     builder: str = "arkitekt.builders.easy",
     deep: bool = False,
-    headless: bool = False,
-    nocache: bool = False,
-    instance_id: str = None,
+    **builder_kwargs,
 ):
     entrypoint = manifest.entrypoint
     identifier = manifest.identifier
@@ -139,13 +136,11 @@ async def dev_module(
                 console.print(panel)
 
     try:
-        app: Arkitekt = builder_func(
-            identifier,
+        app: App = builder_func(
+            identifier=identifier,
             version=version,
-            url=url,
-            instance_id=instance_id,
-            headless=headless,
-            no_cache=nocache,
+            logo=manifest.logo,
+            **builder_kwargs,
         )
         group = construct_app_group(app)
         panel = Panel(group, style="bold green", border_style="green")
@@ -223,13 +218,11 @@ async def dev_module(
             continue
 
         try:
-            app: Arkitekt = builder_func(
-                identifier,
+            app: App = builder_func(
+                identifier=identifier,
                 version=version,
-                url=url,
-                instance_id=instance_id,
-                headless=headless,
-                no_cache=nocache,
+                logo=manifest.logo,
+                **builder_kwargs,
             )
             group = construct_app_group(app)
             panel = Panel(group, style="bold green", border_style="green")

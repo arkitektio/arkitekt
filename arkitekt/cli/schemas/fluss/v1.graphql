@@ -960,6 +960,12 @@ enum ReactiveImplementationModelInput {
   """BUFFER_UNTIL (Buffer values until signal is send)"""
   BUFFER_UNTIL
 
+  """DELAY (Delay the data)"""
+  DELAY
+
+  """DELAY_UNTIL (Delay the data until signal is send)"""
+  DELAY_UNTIL
+
   """CHUNK (Chunk the data)"""
   CHUNK
 
@@ -1393,6 +1399,9 @@ input ReturnWidgetInput {
   """Do we have a possible"""
   query: String
 
+  """The dependencies of this port"""
+  choices: [ChoiceInput]
+
   """A hook for the app to call"""
   hook: String
 
@@ -1568,6 +1577,11 @@ type MentionEvent {
   create: Comment
 }
 
+"""
+A map node that utilizes
+a call to the associated rekuest node
+run a task
+"""
 type ArkitektNode implements FlowNode & FlowNodeCommons & RetriableNode {
   id: String!
   position: Position!
@@ -1610,6 +1624,37 @@ interface RetriableNode {
 type Binds {
   templates: [String]
   clients: [String]
+}
+
+"""
+A filter node that utilizes
+a call to the associated rekuest node
+to filter a stream based on a predicate
+(the rekuest node must return a boolean)
+"""
+type ArkitektFilterNode implements FlowNode & FlowNodeCommons & RetriableNode {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+  maxRetries: Int!
+  retryDelay: Int!
+  hash: String!
+  name: String
+  description: String
+  kind: String!
+  mapStrategy: MapStrategy!
+  allowLocal: Boolean!
+  assignTimeout: Float!
+  yieldTimeout: Float!
+  reserveTimeout: Float!
+  binds: Binds
 }
 
 type LocalNode implements FlowNode & FlowNodeCommons & RetriableNode {

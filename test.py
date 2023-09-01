@@ -1,7 +1,7 @@
 from arkitekt import easy
 
 
-app = easy("com.example.test", url="http://localhost:8000/f/")
+app = easy("com.example.test", url="http://localhost:8000")
 
 
 @app.rekuest.register()
