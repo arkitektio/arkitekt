@@ -2,7 +2,7 @@ from typing import List, Optional
 import logging
 import os
 from .utils import create_arkitekt_folder
-from fakts.grants.remote import Manifest
+from .model import Manifest
 
 
 def easy(
@@ -270,6 +270,7 @@ def publicqt(
     beacon_widget=None,
     login_widget=None,
     force_herre_grant=None,
+    settings=None,
 ):
     """Public QtApp creation
 
@@ -311,6 +312,7 @@ def publicqt(
         beacon_widget=beacon_widget,
         login_widget=login_widget,
         instance_id=instance_id,
+        settings=settings,
     )
     app.enter()  # This will start the event loop and attach the event handlers
     return app
@@ -328,6 +330,7 @@ def publicscheduleqt(
     instance_id: str = "main",
     no_cache: bool = False,
     log_level: str = "ERROR",
+    settings=None,
 ):
     """Public QtApp creation
 
@@ -369,6 +372,7 @@ def publicscheduleqt(
         beacon_widget=beacon_widget,
         login_widget=login_widget,
         instance_id=instance_id,
+        settings=settings,
     )
     x.enter()
     return x

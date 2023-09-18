@@ -5,7 +5,7 @@ from arkitekt.apps.rekuest import ArkitektRekuest
 from arkitekt.apps.unlok import ArkitektUnlok
 from arkitekt.apps.fluss import ArkitektFluss
 from koil.composition import Composition
-from fakts.grants.remote import Manifest
+from arkitekt.model import Manifest
 from arkitekt.apps.mikro import build_arkitekt_mikro
 from arkitekt.apps.unlok import build_arkitekt_unlok
 from arkitekt.apps.fluss import build_arkitekt_fluss
@@ -53,19 +53,21 @@ def build_arkitekt_scheduleqt_app(
     beacon_widget=None,
     login_widget=None,
     parent=None,
+    settings=None,
 ):
     fakts = build_arkitekt_qt_fakts(
         manifest=manifest,
         no_cache=no_cache,
         beacon_widget=beacon_widget,
         parent=parent,
+        settings=settings,
     )
     herre = build_arkitekt_qt_herre(
         manifest=manifest,
         fakts=fakts,
-        no_cache=no_cache,
         login_widget=login_widget,
         parent=parent,
+        settings=settings,
     )
     rekuest = build_arkitekt_reaktion_rekuest(
         fakts=fakts, herre=herre, instance_id=instance_id

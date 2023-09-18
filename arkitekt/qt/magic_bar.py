@@ -1,12 +1,96 @@
 from enum import Enum
+from PyQt5 import QtCore
+from PyQt5.QtWidgets import QWidget
 from qtpy import QtWidgets, QtGui, QtCore
-from koil.qt import QtRunner
+import urllib
+from arkitekt.apps.qt import QtApp
+from koil.qt import async_to_qt
 from arkitekt import App
 from .utils import get_image_path
 from typing import Optional, Callable
 import logging
+import aiohttp
 
 logger = logging.getLogger(__name__)
+
+
+class Logo(QtWidgets.QWidget):
+    def __init__(self, url: str, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.logo_url = url
+        self.getter = async_to_qt(
+            self.aget_image,
+        )
+
+        self.layout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.layout)
+        self.getter.returned.connect(self.on_image)
+        self.getter.run()
+
+    def on_image(self, data: bytes):
+        self.pixmap = QtGui.QPixmap()
+        self.pixmap.loadFromData(data)
+        self.scaled_pixmap = self.pixmap.scaledToWidth(100)
+        self.logo = QtWidgets.QLabel()
+        self.logo.setPixmap(self.scaled_pixmap)
+
+        self.layout.addWidget(self.logo)
+
+    async def aget_image(self):
+        async with aiohttp.ClientSession() as session:
+            async with session.get(self.logo_url) as resp:
+                if resp.status == 200 and "image" in resp.headers["Content-Type"]:
+                    data = await resp.read()
+                    return data
+                else:
+                    print(f"Failed to download the image. Status code: {resp.status}")
+                    return None
+
+
+class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
+    appendPlainText = QtCore.Signal(str)
+
+    def __init__(self, widget: QtWidgets.QPlainTextEdit, *args, **kwargs):
+        super().__init__()
+        QtCore.QObject.__init__(self)
+        self.appendPlainText.connect(widget.appendPlainText)
+        self.setFormatter(
+            logging.Formatter(
+                "%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s"
+            )
+        )
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.appendPlainText.emit(msg)
+
+
+class ArkitektLogs(QtWidgets.QDialog):
+    def __init__(self, settings: QtCore.QSettings, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.settings = settings
+        self.setWindowTitle("Logs")
+        self.layout = QtWidgets.QVBoxLayout()
+        self.text = QtWidgets.QPlainTextEdit(parent=self)
+        self.text.setMaximumBlockCount(5000)
+        self.text.setReadOnly(True)
+        self.layout.addWidget(self.text)
+        self.logRetriever = ArkitektLogsRetriever(self.text)
+        logging.getLogger().addHandler(self.logRetriever)
+        logging.getLogger().setLevel(self.log_level)
+        self.setLayout(self.layout)
+
+    def update_log_level(self, level: str):
+        logging.getLogger().setLevel(level)
+        self.settings.setValue("log_level", level)
+
+    @property
+    def log_to_file(self):
+        return self.settings.value("log_to_file", False, bool)
+
+    @property
+    def log_level(self):
+        return self.settings.value("log_level", "INFO", str)
 
 
 class Profile(QtWidgets.QDialog):
@@ -14,7 +98,7 @@ class Profile(QtWidgets.QDialog):
 
     def __init__(
         self,
-        app: App,
+        app: QtApp,
         bar: "MagicBar",
         *args,
         dark_mode: bool = False,
@@ -25,29 +109,60 @@ class Profile(QtWidgets.QDialog):
         self.bar = bar
 
         self.settings = QtCore.QSettings(
-            "arkitekt", f"{self.app.manifest.identifier}:{self.app.manifest.version}"
+            "arkitekt",
+            f"{self.app.manifest.identifier}:{self.app.manifest.version}:profile",
         )
 
-        self.setWindowTitle("Profile")
-        self.layout = QtWidgets.QVBoxLayout()
+        self.setWindowTitle("Settings")
+
+        self.infobar = QtWidgets.QVBoxLayout()
+
+        self.layout = QtWidgets.QHBoxLayout()
         self.setLayout(self.layout)
+        self.layout.addLayout(self.infobar)
 
-        self.logout_button = QtWidgets.QPushButton("Logout")
-        self.logout_button.clicked.connect(lambda: self.bar.logout_task.run())
+        if self.app.manifest.logo:
+            self.infobar.addWidget(Logo(self.app.manifest.logo, parent=self))
 
-        self.unkonfigure_button = QtWidgets.QPushButton("Unkonfirug")
-        self.unkonfigure_button.clicked.connect(
-            lambda: self.bar.configure_task.run(force_refresh=True)
+        self.infobar.addWidget(QtWidgets.QLabel(self.app.manifest.identifier))
+        self.infobar.addWidget(QtWidgets.QLabel(self.app.manifest.version))
+
+        self.logout_button = QtWidgets.QPushButton("Change User")
+        self.logout_button.clicked.connect(
+            lambda: self.bar.refresh_token_task.run(
+                allow_cache=False, allow_refresh=False, allow_auto_login=False
+            )
         )
+
+        self.unkonfigure_button = QtWidgets.QPushButton("Change Server")
+        self.unkonfigure_button.clicked.connect(
+            lambda: self.bar.refresh_task.run(
+                allow_auto_demand=False,
+                allow_auto_discover=False,
+            )
+        )
+
+        button_bar = QtWidgets.QHBoxLayout()
+        self.infobar.addLayout(button_bar)
+        button_bar.addWidget(self.logout_button)
+        button_bar.addWidget(self.unkonfigure_button)
+
+        self.logs = ArkitektLogs(self.settings, parent=self)
 
         self.go_all_the_way_button = QtWidgets.QPushButton("One click provide")
         self.go_all_the_way_button.setCheckable(True)
         self.go_all_the_way_button.setChecked(self.go_all_the_way_down)
         self.go_all_the_way_button.clicked.connect(self.on_go_all_the_way_clicked)
 
-        self.layout.addWidget(self.logout_button)
-        self.layout.addWidget(self.unkonfigure_button)
-        self.layout.addWidget(self.go_all_the_way_button)
+        self.sidebar = QtWidgets.QVBoxLayout()
+        self.layout.addLayout(self.sidebar)
+
+        self.show_logs_button = QtWidgets.QPushButton("Show Logs")
+        self.show_logs_button.clicked.connect(self.logs.show)
+
+        self.sidebar.addWidget(self.go_all_the_way_button)
+        self.sidebar.addWidget(self.show_logs_button)
+        self.sidebar.addStretch()
 
     def on_go_all_the_way_clicked(self, checked: bool) -> None:
         self.settings.setValue("go_all_the_way_down", checked)
@@ -55,7 +170,7 @@ class Profile(QtWidgets.QDialog):
 
     @property
     def go_all_the_way_down(self) -> bool:
-        return self.settings.value("go_all_the_way_down", False, bool)
+        return self.settings.value("go_all_the_way_down", True, bool)
 
 
 class AppState(str, Enum):
@@ -72,6 +187,10 @@ class ProcessState(str, Enum):
 
 
 class MagicBar(QtWidgets.QWidget):
+    """The magic bar is a small button widget, that can be used to configure, login and put the
+    app up and down. (providing and non providing). It also has a gear button that opens the
+    settings dialog. To adjust some parameters of the app"""
+
     CONNECT_LABEL = "Connect"
 
     app_state_changed = QtCore.Signal()
@@ -98,19 +217,24 @@ class MagicBar(QtWidgets.QWidget):
         self.profile = Profile(app, self, dark_mode=dark_mode)
         self.profile.updated.connect(self.on_profile_updated)
 
-        self.configure_task = QtRunner(self.app.fakts.aload)
+        self.configure_task = async_to_qt(self.app.fakts.aget)
         self.configure_task.errored.connect(self.configure_errored)
         self.configure_task.returned.connect(self.set_unlogined)
 
-        self.login_task = QtRunner(self.app.herre.alogin)
-        self.login_task.errored.connect(self.login_errored)
-        self.login_task.returned.connect(self.set_unprovided)
+        self.refresh_task = async_to_qt(self.app.fakts.arefresh)
+        self.refresh_task.errored.connect(self.configure_errored)
+        self.refresh_task.returned.connect(self.set_unlogined)
 
-        self.logout_task = QtRunner(self.app.herre.alogout)
-        self.logout_task.errored.connect(self.task_errored)
-        self.logout_task.returned.connect(self.set_unlogined)
+        self.get_token_task = async_to_qt(self.app.herre.aget_token)
+        self.get_token_task.errored.connect(self.login_errored)
+        self.get_token_task.returned.connect(self.set_unprovided)
 
-        self.provide_task: QtRunner = QtRunner(self.app.rekuest.agent.aprovide)
+        self.refresh_token_task = async_to_qt(self.app.herre.arefresh_token)
+        self.refresh_token_task.started.connect(self.set_providing)
+        self.refresh_token_task.errored.connect(self.login_errored)
+        self.refresh_token_task.returned.connect(self.set_unprovided)
+
+        self.provide_task = async_to_qt(self.app.rekuest.agent.aprovide)
         self.provide_task.errored.connect(self.provide_errored)
         self.provide_task.returned.connect(self.set_unprovided)
 
@@ -259,7 +383,7 @@ class MagicBar(QtWidgets.QWidget):
             and not self.profile.go_all_the_way_down
         ):
             if not self.login_future or self.login_future.done():
-                self.login_future = self.login_task.run()
+                self.login_future = self.get_token_task.run()
                 self.magicb.setText("Cancel Login")
                 return
             if not self.login_future.done():

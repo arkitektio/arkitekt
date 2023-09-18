@@ -1457,7 +1457,7 @@ def init(
     with open(build_relative_dir("templates", f"{template}.py")) as f:
         template_app = f.read()
 
-    if not os.path.exists("app") or overwrite_app:
+    if not os.path.exists("app") and overwrite_app:
         with open(f"{app}.py", "w") as f:
             f.write(template_app)
 

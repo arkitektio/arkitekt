@@ -1,35 +1,27 @@
 from fakts.fakts import Fakts
-from koil.composition.base import Composition
-from pydantic import Field
-from fakts.fakts import Fakts
-from fakts.grants.remote.static import StaticGrant
-from fakts.grants import CacheGrant
-from herre.grants import CacheGrant as HerreCacheGrant
-from herre.grants.oauth2.refresh import RefreshGrant
-from herre.grants.fakts import FaktsGrant
-from fakts.grants.remote import Manifest
-from typing import List, Optional
-from fakts.discovery.well_known import WellKnownDiscovery
-from fakts.grants.remote.device_code import DeviceCodeGrant
-from fakts.grants.remote import Manifest
-from fakts.grants.remote.retrieve import RetrieveGrant
-from fakts.discovery.qt.selectable_beacon import (
+from typing import Optional
+from fakts.grants.remote import RemoteGrant
+from fakts.grants.remote.demanders.auto_save import AutoSaveDemander
+from fakts.grants.remote.discovery.auto_save import AutoSaveDiscovery
+from fakts.grants.remote.discovery.qt.auto_save_store import AutoSaveEndpointStore
+from fakts.grants.remote.discovery.qt.auto_save_widget import AutoSaveEndpointWidget
+from fakts.grants.remote.demanders.qt.auto_save_store import AutoSaveTokenStore
+from fakts.grants.remote.demanders.qt.auto_save_widget import AutoSaveTokenWidget
+
+from fakts.grants.remote.demanders.retrieve import RetrieveDemander
+from fakts.grants.remote.discovery.qt.selectable_beacon import (
     SelectBeaconWidget,
     QtSelectableDiscovery,
 )
+from arkitekt.model import Manifest
 
 
-class ArkitektFaktsRetrieveGrant(RetrieveGrant):
-    discovery: QtSelectableDiscovery
-
-
-class ArkitektFaktsQtCacheGrant(CacheGrant):
-    grant: ArkitektFaktsRetrieveGrant
+class ArkitektFaktsQtRemoteGrant(RemoteGrant):
+    discovery: AutoSaveDiscovery
 
 
 class ArkitektFaktsQt(Fakts):
-    grant: ArkitektFaktsQtCacheGrant
-    pass
+    grant: ArkitektFaktsQtRemoteGrant
 
 
 def build_arkitekt_qt_fakts(
@@ -37,25 +29,38 @@ def build_arkitekt_qt_fakts(
     no_cache: Optional[bool] = False,
     beacon_widget=None,
     parent=None,
+    settings=None,
 ):
-    identifier = manifest.identifier
-    version = manifest.version
-
-    beacon_widget = beacon_widget or SelectBeaconWidget(parent=parent)
+    beacon_widget = beacon_widget or SelectBeaconWidget(
+        parent=parent, settings=settings
+    )
 
     return ArkitektFaktsQt(
-        grant=CacheGrant(
-            cache_file=f".arkitekt/cache/{identifier}-{version}_fakts_cache.json",  # no url
-            skip_cache=True,
-            grant=RetrieveGrant(
-                manifest=manifest,
-                redirect_uri="http://localhost:6767",
+        grant=RemoteGrant(
+            demander=AutoSaveDemander(
+                store=AutoSaveTokenStore(
+                    settings=settings,
+                    save_key="fakts_token",
+                ),
+                demander=RetrieveDemander(
+                    manifest=manifest,
+                    redirect_uri="http://localhost:6767",
+                ),
+            ),
+            discovery=AutoSaveDiscovery(
+                store=AutoSaveEndpointStore(
+                    settings=settings,
+                    save_key="fakts_endpoint",
+                ),
+                decider=AutoSaveEndpointWidget(
+                    parent=parent,
+                ),
                 discovery=QtSelectableDiscovery(
                     widget=beacon_widget,
+                    settings=settings,
                     allow_appending_slash=True,
                     auto_protocols=["http", "https"],
                 ),
             ),
-        ),
-        assert_groups={"mikro", "rekuest"},
+        )
     )

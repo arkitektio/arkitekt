@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.5.30"
+version = "0.5.40"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "CC BY-NC 3.0"
@@ -8,14 +8,14 @@ packages = [{ include = "arkitekt" }]
 
 [tool.poetry.dependencies]
 python = "^3.8, <=3.12"
-herre = ">=0.3.26"
-fakts = ">=0.3.31"
-rekuest = { version = ">=0.2.18", optional = true }
-mikro = { version = ">=0.3.87", optional = true }
-mikro-next = { version = ">=0.1.2", optional = true }
+herre = ">=0.3.27"
+fakts = ">=0.3.40"
+rekuest = { version = ">=0.2.22", optional = true }
+mikro = { version = ">=0.3.90", optional = true }
+mikro-next = { version = ">=0.1.2", python = "^3.10", optional = true }
 unlok = { version = ">=0.1.18", optional = true }
 fluss = { version = ">=0.1.61", optional = true }
-reaktion = { version = ">=0.1.16", python = "^3.9", optional = true }
+reaktion = { version = ">=0.1.47", python = "^3.8", optional = true }
 
 rich-click = { version = "^1.6.1", optional = true }
 watchfiles = { version = "^0.18.1", optional = true }
@@ -24,7 +24,7 @@ semver = { version = "^3.0.1", optional = true }
 
 
 [tool.poetry.extras]
-cli = ["rich-click", "watchfiles", "turms", "semver"]
+cli = ["rich-click", "watchfiles", "turms", "semver", "rekuest"]
 reaktion = ["reaktion"]
 rekuest = ["rekuest"]
 mikro = ["mikro"]
@@ -39,10 +39,10 @@ all = [
     "reaktion",
     "rekuest",
     "mikro",
-    "mikro-next",
     "unlok",
     "fluss",
 ]
+next = ["mikro-next"]
 
 [tool.mypy]
 exclude = ["venv/"]

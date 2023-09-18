@@ -1,54 +1,57 @@
 from herre.herre import Herre
-from fakts.grants.remote import Manifest
 from fakts import Fakts
 from herre.grants import CacheGrant
 from herre.grants.oauth2.refresh import RefreshGrant
-from herre.grants.fakts import FaktsGrant
 from typing import Optional
-from herre.grants.fakts.fakts_login_screen import FaktsQtLoginScreen
-from herre.grants.qt.login_screen import LoginWidget
+from herre.fakts.grant import FaktsGrant
+from herre.fakts.fakts_qt_store import FaktsQtStore
+
+from herre.grants.stored_login import StoredLoginGrant
+from herre.grants.auto_login import AutoLoginGrant
+from herre.grants.qt.auto_login import AutoLoginWidget
+from herre.fakts.fakts_endpoint_fetcher import FaktsUserFetcher
+from arkitekt.model import Manifest, User
 
 
-class ArkitektHerreRefreshGrant(RefreshGrant):
+class ArkitektAutoLogin(AutoLoginGrant):
+    store: FaktsQtStore
+    fetcher: FaktsUserFetcher
     grant: FaktsGrant
 
 
-class ArkitektHerreChooseFaktsQt(FaktsQtLoginScreen):
-    grant: RefreshGrant
-
-
-class ArkitektHerreQtCacheGrant(CacheGrant):
-    grant: ArkitektHerreChooseFaktsQt
+class ArkitektRefreshGrant(RefreshGrant):
+    grant: ArkitektAutoLogin
 
 
 class ArkitektHerreQt(Herre):
-    grant: ArkitektHerreQtCacheGrant
+    grant: ArkitektRefreshGrant
 
 
 def build_arkitekt_qt_herre(
     manifest: Manifest,
     fakts: Fakts,
-    no_cache: Optional[bool] = False,
     login_widget=None,
     parent=None,
+    settings=None,
 ):
-    identifier = manifest.identifier
-    version = manifest.version
+    login_widget = login_widget or AutoLoginWidget(parent=parent)
 
-    login_widget = login_widget or LoginWidget(identifier, version, parent=parent)
+    grant = ArkitektAutoLogin(
+        store=FaktsQtStore(
+            fakts=fakts,
+            settings=settings,
+            fakts_key="lok.endpoint_url",
+        ),
+        widget=login_widget,
+        fetcher=FaktsUserFetcher(
+            fakts=fakts, fakts_key="lok.userinfo_url", userModel=User
+        ),
+        grant=FaktsGrant(fakts=fakts, fakts_group="lok"),
+    )
 
     return ArkitektHerreQt(
-        grant=ArkitektHerreQtCacheGrant(
-            cache_file=f".arkitekt/cache/{identifier}-{version}_herre_cache.json",
-            hash=f"{identifier}-{version}",
-            skip_cache=not no_cache,
-            grant=ArkitektHerreChooseFaktsQt(
-                fakts=fakts,
-                widget=login_widget,
-                auto_login=True,
-                grant=ArkitektHerreRefreshGrant(
-                    grant=FaktsGrant(fakts=fakts, fakts_group="lok")
-                ),
-            ),
+        grant=ArkitektRefreshGrant(grant=grant),
+        fetcher=FaktsUserFetcher(
+            fakts=fakts, fakts_key="lok.userinfo_url", userModel=User
         ),
     )
