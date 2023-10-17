@@ -15,17 +15,9 @@ class ArkitektHerre(Herre):
 def build_arkitekt_herre(
     manifest: Manifest, fakts: Fakts, url: str, no_cache: Optional[bool] = False
 ) -> ArkitektHerre:
-    identifier = manifest.identifier
-    version = manifest.version
-
     return ArkitektHerre(
         grant=RefreshGrant(
-            grant=HerreCacheGrant(
-                cache_file=f".arkitekt/cache/{identifier}-{version}_herre_cache.json",
-                hash=f"{identifier}-{version}-{url}",
-                skip_cache=no_cache,
-                grant=FaktsGrant(fakts=fakts, fakts_group="lok"),
-            ),
+            grant=FaktsGrant(fakts=fakts, fakts_group="lok"),
         ),
         fetcher=FaktsUserFetcher(
             fakts=fakts, fakts_key="lok.userinfo_url", userModel=User

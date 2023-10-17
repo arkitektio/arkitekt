@@ -6,7 +6,6 @@ from arkitekt.apps.mikro_next import ArkitektMikroNext
 from arkitekt.apps.rekuest_next import ArkitektRekuestNext
 from arkitekt.apps.unlok import ArkitektUnlok
 from koil.composition import Composition
-from fakts.grants.remote import Manifest
 from arkitekt.apps.fakts import build_arkitekt_fakts, build_arkitekt_token_fakts
 from arkitekt.apps.herre import build_arkitekt_herre
 from arkitekt.apps.rekuest_next import build_arkitekt_rekuest_next
@@ -15,6 +14,7 @@ from arkitekt.apps.mikro import build_arkitekt_mikro
 from arkitekt.apps.unlok import build_arkitekt_unlok
 from arkitekt.apps.fluss import build_arkitekt_fluss
 from koil.composition import PedanticKoil
+from arkitekt.model import Manifest
 
 
 class NextApp(Composition):

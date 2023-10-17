@@ -76,7 +76,6 @@ def build_arkitekt_qt_app(
     fluss = build_arkitekt_fluss(herre=herre, fakts=fakts)
 
     return QtApp(
-        koil=QtPedanticKoil(parent=parent),
         manifest=manifest,
         fakts=fakts,
         herre=herre,

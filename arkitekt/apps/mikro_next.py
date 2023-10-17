@@ -70,8 +70,8 @@ def build_arkitekt_mikro_next(herre: Herre, fakts: Fakts):
                     datalayer=datalayer,
                 ),
                 split=SplitLink(
-                    left=FaktsAIOHttpLink(fakts_group="mikro_new", fakts=fakts),
-                    right=FaktsGraphQLWSLink(fakts_group="mikro_new", fakts=fakts),
+                    left=FaktsAIOHttpLink(fakts_group="mikro_next", fakts=fakts),
+                    right=FaktsGraphQLWSLink(fakts_group="mikro_next", fakts=fakts),
                     split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
                 ),
             )

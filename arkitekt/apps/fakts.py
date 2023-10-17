@@ -29,6 +29,7 @@ def build_arkitekt_fakts(
         demander = DeviceCodeDemander(
             manifest=manifest,
             redirect_uri="http://localhost:6767",
+            open_browser=not headless,
         )
 
     else:
@@ -36,6 +37,7 @@ def build_arkitekt_fakts(
             demander=DeviceCodeDemander(
                 manifest=manifest,
                 redirect_uri="http://localhost:6767",
+                open_browser=not headless,
             ),
             store=AutoSaveCacheStore(
                 cache_file=f".arkitekt/cache/{identifier}-{version}_fakts_cache.json"
