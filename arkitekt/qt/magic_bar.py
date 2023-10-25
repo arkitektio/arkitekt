@@ -1,6 +1,4 @@
 from enum import Enum
-from PyQt5 import QtCore
-from PyQt5.QtWidgets import QWidget
 from qtpy import QtWidgets, QtGui, QtCore
 import urllib
 from arkitekt.apps.qt import QtApp
