@@ -11,8 +11,7 @@ streaming analysis for mikroscopy
 
 ## Idea
 
-arkitekt is the python client-library for the arkitekt framework
-it provides a one installation candi.
+arkitekt is the python client-library for the [arkitekt](https://arkitekt.live) framework 
 
 ## Install
 
@@ -21,4 +20,4 @@ pip install arkitekt
 ```
 
 ## Usage
-Check out the arkitekt [documentation](https://jhnnsrs.github.io/doks/) for usage of this libary
+Check out the arkitekt [documentation](https://arkitekt.live) for usage of this libary
