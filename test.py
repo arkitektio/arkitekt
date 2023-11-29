@@ -1,7 +1,10 @@
+"hallo"
 from arkitekt import easy
 
 
-app = easy("com.example.test", url="http://localhost:8000")
+print("hello")
+
+app = easy("com.example.test", url="http://localhost:8000",log_level="DEBUG")
 
 
 @app.rekuest.register()
@@ -21,3 +24,4 @@ def test(hallo: str) -> str:
 
 with app:
     app.rekuest.run()
+    print("hello")

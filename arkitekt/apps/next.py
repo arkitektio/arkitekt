@@ -1,55 +1,9 @@
-from arkitekt.apps.fakts import ArkitektFakts
-from arkitekt.apps.herre import ArkitektHerre
-from arkitekt.apps.mikro import ArkitektMikro
-from arkitekt.apps.fluss import ArkitektFluss
-from arkitekt.apps.mikro_next import ArkitektMikroNext
-from arkitekt.apps.rekuest_next import ArkitektRekuestNext
-from arkitekt.apps.unlok import ArkitektUnlok
-from koil.composition import Composition
-from arkitekt.apps.fakts import build_arkitekt_fakts, build_arkitekt_token_fakts
-from arkitekt.apps.herre import build_arkitekt_herre
-from arkitekt.apps.rekuest_next import build_arkitekt_rekuest_next
-from arkitekt.apps.mikro_next import build_arkitekt_mikro_next
-from arkitekt.apps.mikro import build_arkitekt_mikro
-from arkitekt.apps.unlok import build_arkitekt_unlok
-from arkitekt.apps.fluss import build_arkitekt_fluss
 from koil.composition import PedanticKoil
 from arkitekt.model import Manifest
-
-
-class NextApp(Composition):
-    manifest: Manifest
-    fakts: ArkitektFakts
-    herre: ArkitektHerre
-    rekuest: ArkitektRekuestNext
-    mikro: ArkitektMikro
-    mikro_next: ArkitektMikroNext
-    unlok: ArkitektUnlok
-    fluss: ArkitektFluss
-    """
-    Arkitekt
-
-    An app that connected to the services of the arkitekt Api,
-    it comes included with the following services:
-
-    - Rekuest: A service for that handles requests to the arkitekt Api as well as provides an
-      interface to provide functionality on the arkitekt Api.
-    - Herre: A service for that handles the authentication and authorization of the user
-    - Fakts: A service for that handles the discovery
-      and retrieval of the configuration of the arkitekt Api
-    - Mikro: A service for that handles the storage and data of microscopy data
-
-    Apps have to be always used within a context manager, this is to ensure that the services
-    are properly closed when the app is no longer needed.
-
-    Example:
-        >>> from arkitekt import Arkitekt
-        >>> app = Arkitekt()
-        >>> with app:
-        >>>     # Do stuff
-        >>> # App is closed
-
-    """
+from .types import NextApp
+from arkitekt.apps.fallbacks import ImportException
+from arkitekt.apps.service.fakts_next import build_arkitekt_fakts_next
+from arkitekt.apps.herre import build_arkitekt_herre
 
 
 def build_next_app(
@@ -59,30 +13,56 @@ def build_next_app(
     headless=False,
     instance_id=None,
     token=None,
+    app_kind="development",
 ):
-    fakts = (
-        build_arkitekt_fakts(
-            manifest=manifest, url=url, no_cache=no_cache, headless=headless
-        )
-        if not token
-        else build_arkitekt_token_fakts(
-            manifest=manifest,
-            token=token,
-            url=url,
-            no_cache=no_cache,
-            headless=headless,
-        )
+    fakts = build_arkitekt_fakts_next(
+        manifest=manifest,
+        url=url,
+        no_cache=no_cache,
+        headless=headless,
+        client_kind=app_kind,
     )
+
     herre = build_arkitekt_herre(
         manifest=manifest, fakts=fakts, url=url, no_cache=no_cache
     )
-    rekuest = build_arkitekt_rekuest_next(
-        fakts=fakts, herre=herre, instance_id=instance_id
-    )
-    mikro = build_arkitekt_mikro(fakts=fakts, herre=herre)
-    mikro_new = build_arkitekt_mikro_next(fakts=fakts, herre=herre)
-    unlok = build_arkitekt_unlok(herre=herre, fakts=fakts)
-    fluss = build_arkitekt_fluss(herre=herre, fakts=fakts)
+
+    try:
+        from arkitekt.apps.service.rekuest_next import build_arkitekt_rekuest_next
+
+        rekuest = build_arkitekt_rekuest_next(
+            fakts=fakts, herre=herre, instance_id=instance_id
+        )
+    except ImportError as e:
+        rekuest = ImportException(import_exception=e, install_library="rekuest_next")
+
+    try:
+        from arkitekt.apps.mikro_next import build_arkitekt_mikro_next
+
+        mikro = build_arkitekt_mikro_next(fakts=fakts, herre=herre)
+    except ImportError as e:
+        mikro = ImportException(import_exception=e, install_library="mikro_next")
+
+    try:
+        from arkitekt.apps.service.unlok import build_arkitekt_unlok
+
+        unlok = build_arkitekt_unlok(herre=herre, fakts=fakts)
+    except ImportError as e:
+        unlok = ImportException(import_exception=e, install_library="unlok")
+
+    try:
+        from arkitekt.apps.service.fluss import build_arkitekt_fluss
+
+        fluss = build_arkitekt_fluss(herre=herre, fakts=fakts)
+    except ImportError as e:
+        fluss = ImportException(import_exception=e, install_library="fluss")
+
+    try:
+        from arkitekt.apps.service.omero_ark import build_arkitekt_omero_ark
+
+        omero_ark = build_arkitekt_omero_ark(herre=herre, fakts=fakts)
+    except ImportError as e:
+        omero_ark = ImportException(import_exception=e, install_library="omero_ark")
 
     return NextApp(
         manifest=manifest,
@@ -90,7 +70,7 @@ def build_next_app(
         herre=herre,
         rekuest=rekuest,
         mikro=mikro,
-        mikro_next=mikro_new,
         unlok=unlok,
         fluss=fluss,
+        omero_ark=omero_ark,
     )

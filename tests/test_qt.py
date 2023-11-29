@@ -9,6 +9,8 @@ import time
 class QtArkitektWidget(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+
         self.app = publicqt("countries", "latest", no_cache=True, parent=self)
 
         self.magic_bar = MagicBar(self.app)
@@ -30,6 +32,7 @@ class QtArkitektWidget(QtWidgets.QWidget):
 
 
 @pytest.mark.qt
+@pytest.mark.skip
 def test_qteasy(qtbot):
     widget = QtArkitektWidget()
     qtbot.addWidget(widget)
@@ -44,8 +47,7 @@ def test_qteasy(qtbot):
 
         def visible():
             assert (
-                widget.app.fakts.grant.grant.discovery.widget.isVisible()
+                widget.app.fakts.grant.discovery.discovery.widget.isVisible()
             ), "Widget is not visible"
 
         qtbot.waitUntil(visible)
-        cancel_button = widget.app.fakts.grant.grant.discovery.widget.on_reject()

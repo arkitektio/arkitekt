@@ -16,6 +16,9 @@ from .types import Requirement
 from .inspect import inspect_requirements
 import semver
 import yaml
+from typing import List
+
+
 
 console = Console()
 
@@ -51,11 +54,14 @@ WORKDIR /app
 
 
 click.rich_click.HEADER_TEXT = logo
-click.rich_click.ERRORS_EPILOGUE = "To find out more, visit [link=https://jhnnsrs.github.io/doks]https://jhnnsrs.github.io/doks[/link]"
+click.rich_click.ERRORS_EPILOGUE = (
+    "To find out more, visit [link=https://arkitekt.live]https://arkitekt.live[/link]"
+)
 click.rich_click.USE_RICH_MARKUP = True
 
 
-def parse_semver(param: str, loaded=False):
+def parse_semver(param: str, loaded=False) -> semver.VersionInfo:
+    """Checks if the param is a valid semver version and returns it as a semver object"""
     if not semver.Version.is_valid(param):
         if loaded:
             raise click.ClickException(
@@ -68,7 +74,8 @@ def parse_semver(param: str, loaded=False):
     return semver.Version.parse(param)
 
 
-def compile_scopes():
+def compile_scopes() -> List[str]:
+    """Compile all available scopes"""
     return ["read", "write"]
 
 
@@ -633,6 +640,15 @@ def publish(build, tag):
         with_definitions=False,
     )
 
+    md = Panel(
+        "[bold green] Sucessfully pushed your plugin to dockerhub. Make sure to commit and push your changes to github to make them available to others.",
+        title="Yeah! Success",
+        title_align="center",
+        border_style="green",
+        style="green",
+    )
+    console.print(md)
+
 
 @port.command()
 @click.option("--dockerfile", help="The dockerfile to use", default="Dockerfile")
@@ -737,7 +753,7 @@ def wizard(dockerfile, boring, overwrite_dockerfile):
 @click.option(
     "--builder", help="The builder to use", type=str, default="arkitekt.builders.easy"
 )
-def stage(build, url, builder):
+def stage(build, url, builder) -> None:
     """Stages the latest Build for testing
 
     Stages the current build for testing. This will create a temporary staged version
@@ -761,6 +777,31 @@ def stage(build, url, builder):
     ), f"Build {build} not found. Please run `arkitekt build` first"
     build = builds[build]
     build_id = build.build_id
+
+
+
+    base_command= ["docker", "run", "-it"]
+    with_network = ["--net", "host"]
+    with_gpus = ["--gpus", "all"]
+    with_build_id = [build_id]
+    with_builder = ["arkitekt", "run", "prod", "--builder", builder, "--headless"]
+    with_url = ["--url", url]
+
+
+    # Bulding the command
+    command = base_command
+    command += with_network
+
+
+    if Requirement.GPU.value in manifest.requirements:
+        click.echo("GPU Requirement found. Staging with GPU")
+        command += with_gpus
+
+    command += with_build_id
+    command += with_builder
+    command += with_url
+
+
 
     click.echo(f"Running inside docker: {manifest.identifier}:{manifest.version}")
     docker_run = subprocess.run(
@@ -802,12 +843,11 @@ def stage(build, url, builder):
 
 @cli.group()
 @click.pass_context
-def manifest(ctx):
+def manifest(ctx) -> None:
     """Updates the manifest of this app
 
     The manifest is used to describe the app and its rights (scopes) and requirements, to be run on the platform.
     This manifest is used to authenticate the app with the platform establishing its scopes and requirements.
-
 
 
 
@@ -823,7 +863,7 @@ def manifest(ctx):
 
 
 @manifest.command()
-def inspect():
+def inspect() -> None:
     """Inspect the manifest of this app
 
 

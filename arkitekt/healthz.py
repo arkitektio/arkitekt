@@ -10,27 +10,32 @@ from fakts.fakt.base import Fakt
 from fakts.fakts import Fakts
 
 
-class HealthzConfig(Fakt):
-    healthz: str
 
 
 class FaktsHealthz(KoiledModel):
-    ssl_context: SSLContext = Field(
-        default_factory=lambda: ssl.create_default_context(cafile=certifi.where())
+    """A model to check the healthz endpoint on a service configured through fakts."""
+
+
+    fakts: Fakts = Field(
+        description="The Fakts instance to use to fetch the healthz endpoint"
     )
-    fakts: Fakts
-    fakts_group: str
-    strict: bool = False
-    endpoint_url: Optional[str]
-    fakt: Optional[HealthzConfig]
+    fakts_group: str = Field(
+        description="The Fakts group to use to fetch the healthz endpoint"
+    )
+    ssl_context: SSLContext = Field(
+        default_factory=lambda: ssl.create_default_context(cafile=certifi.where()),
+        description="SSL Context to use for the request"
+    )
+    
+    healthz_item: str = Field(default="healthz", description="The item in the Fakts group that contains the healthz endpoint. Fakts->Group->Item")
+    strict: bool = Field(default=False, description="Whether to raise an exception if the healthz endpoint is not working")
+    endpoint_url: Optional[str] = Field(description="Overwrite the endpoint url.")
 
-    _old_fakt: Dict[str, Any] = None
 
-    def configure(self, config: HealthzConfig):
-        self.endpoint_url = config.healthz
 
     async def check(self):
-        self.endpoint_url = await self.fakts.aget(self.fakts_group)["healthz"]
+        """Check the healthz endpoint of the Fakts instance."""
+        self.endpoint_url = await self.fakts.aget(self.fakts_group)[self.healthz_item]
 
         async with aiohttp.ClientSession(
             headers={"Content-Type": "application/json"},
@@ -40,6 +45,7 @@ class FaktsHealthz(KoiledModel):
             async with session.get(self.endpoint_url + "?format=json") as resp:
                 healthz_json = await resp.json()
                 if self.strict:
+                    # check if all services are working
                     faulty_services = []
                     for key, value in healthz_json.items():
                         if value != "working":
@@ -49,6 +55,7 @@ class FaktsHealthz(KoiledModel):
                         raise Exception(f"Faulty services: {faulty_services}")
 
                 if "detail" in healthz_json:
+                    # detail is only present if the endpoint is not working
                     raise Exception("Error on the Healtzh endpoint ")
 
                 return healthz_json

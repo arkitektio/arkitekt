@@ -13,12 +13,19 @@ logger = logging.getLogger(__name__)
 
 
 class Logo(QtWidgets.QWidget):
+    """Logo widget 
+    
+    THhe logo widget is a widget that can be used to display a logo in the settings dialog.
+    It will download the logo from the url, and display it.
+
+    
+    """
     def __init__(self, url: str, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.logo_url = url
         self.getter = async_to_qt(
             self.aget_image,
-        )
+        ) # we use async_to_qt to convert the async function to a Qt signal. (see koil docs)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
@@ -26,6 +33,7 @@ class Logo(QtWidgets.QWidget):
         self.getter.run()
 
     def on_image(self, data: bytes):
+        """ Callback for when the image is downloaded."""
         self.pixmap = QtGui.QPixmap()
         self.pixmap.loadFromData(data)
         self.scaled_pixmap = self.pixmap.scaledToWidth(100)
@@ -35,6 +43,7 @@ class Logo(QtWidgets.QWidget):
         self.layout.addWidget(self.logo)
 
     async def aget_image(self):
+        """ Async function to download the image."""
         async with aiohttp.ClientSession() as session:
             async with session.get(self.logo_url) as resp:
                 if resp.status == 200 and "image" in resp.headers["Content-Type"]:
@@ -46,6 +55,7 @@ class Logo(QtWidgets.QWidget):
 
 
 class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
+    """A logging handler that will emit a Qt signal when a log message is received."""
     appendPlainText = QtCore.Signal(str)
 
     def __init__(self, widget: QtWidgets.QPlainTextEdit, *args, **kwargs):
@@ -64,8 +74,23 @@ class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
 
 
 class ArkitektLogs(QtWidgets.QDialog):
-    def __init__(self, settings: QtCore.QSettings, *args, **kwargs) -> None:
+    """A dialog that will display the logs of the app."""
+
+    def __init__(self, settings: QtCore.QSettings,  *args, log_level_key: str = "log_level", log_to_file_key="log_to_file", **kwargs) -> None:
+        """A dialog that will display the logs of the app.
+
+        Parameters
+        ----------
+        settings : QtCore.QSettings
+            The settings object to use to store the log level. (so that is persistent, and can be changed by the user)
+        log_level_key : str, optional
+            The key to use to store the log level, by default "log_level"
+        log_to_file_key : str, optional
+            The key to use to store whether the logs should be written to a file, by default "log_to_file"
+        """
         super().__init__(*args, **kwargs)
+        self.log_level_key = log_level_key
+        self.log_to_file_key = log_to_file_key
         self.settings = settings
         self.setWindowTitle("Logs")
         self.layout = QtWidgets.QVBoxLayout()
@@ -78,20 +103,37 @@ class ArkitektLogs(QtWidgets.QDialog):
         logging.getLogger().setLevel(self.log_level)
         self.setLayout(self.layout)
 
-    def update_log_level(self, level: str):
+    def update_log_level(self, level: str) -> None:
+        """Update the log level.
+
+        Parameters
+        ----------
+        level : str
+           Update the log level to this level.
+        """
         logging.getLogger().setLevel(level)
-        self.settings.setValue("log_level", level)
+        self.settings.setValue(self.log_level_key, level)
 
     @property
-    def log_to_file(self):
-        return self.settings.value("log_to_file", False, bool)
+    def log_to_file(self) -> bool:
+        """Should the logs be written to a file."""
+        return self.settings.value(self.log_to_file_key, False, bool)
 
     @property
-    def log_level(self):
-        return self.settings.value("log_level", "INFO", str)
+    def log_level(self) -> str:
+        """The log level in use."""
+        return self.settings.value(self.log_level_key, "INFO", str)
 
 
 class Profile(QtWidgets.QDialog):
+    """The profile dialog. 
+    
+    It will display the logo, and allow the user to change the user, and server.
+    It will also allow the user to change the log level, and show the logs on
+    demand.
+    
+    
+    """
     updated = QtCore.Signal()
 
     def __init__(
@@ -102,6 +144,17 @@ class Profile(QtWidgets.QDialog):
         dark_mode: bool = False,
         **kwargs,
     ) -> None:
+        """The profile dialog.
+
+        Parameters
+        ----------
+        app : QtApp
+            The app to use. (needs to be a QtApp as it uses Qt signals)
+        bar : MagicBar
+            The magic bar to use and to update when the user changes the settings.
+        dark_mode : bool, optional
+            Should we use dark_mode, by default False TODO: implement dark mode
+        """
         super(Profile, self).__init__(*args, parent=bar, **kwargs)
         self.app = app
         self.bar = bar
@@ -128,7 +181,10 @@ class Profile(QtWidgets.QDialog):
         self.logout_button = QtWidgets.QPushButton("Change User")
         self.logout_button.clicked.connect(
             lambda: self.bar.refresh_token_task.run(
-                allow_cache=False, allow_refresh=False, allow_auto_login=False
+                allow_cache=False,
+                allow_refresh=False,
+                allow_auto_login=False,
+                delete_active=True,
             )
         )
 
@@ -137,6 +193,7 @@ class Profile(QtWidgets.QDialog):
             lambda: self.bar.refresh_task.run(
                 allow_auto_demand=False,
                 allow_auto_discover=False,
+                delete_active=True,
             )
         )
 
@@ -163,15 +220,27 @@ class Profile(QtWidgets.QDialog):
         self.sidebar.addStretch()
 
     def on_go_all_the_way_clicked(self, checked: bool) -> None:
+        """Callback for when the go all the way button is clicked.
+
+        Will update the settings, and emit the updated signal.
+        
+        Parameters
+        ----------
+        checked : bool
+            Whether the button is checked or not.
+        
+        """
         self.settings.setValue("go_all_the_way_down", checked)
         self.updated.emit()
 
     @property
     def go_all_the_way_down(self) -> bool:
+        """Should the app go all the way down when the user clicks the magic button."""
         return self.settings.value("go_all_the_way_down", True, bool)
 
 
 class AppState(str, Enum):
+    """ The state of the app."""
     READY = "ready"
     DOWN = "down"
     UP = "up"
@@ -185,9 +254,11 @@ class ProcessState(str, Enum):
 
 
 class MagicBar(QtWidgets.QWidget):
-    """The magic bar is a small button widget, that can be used to configure, login and put the
-    app up and down. (providing and non providing). It also has a gear button that opens the
-    settings dialog. To adjust some parameters of the app"""
+    """Magic bar widget.
+    
+    The magic bar is a small button widget, that can be used to configure, login and put the
+    app in providing and non providing states.. It also has a gear button that opens the
+    profile dialog. To adjust some parameters of the app"""
 
     CONNECT_LABEL = "Connect"
 
@@ -265,10 +336,18 @@ class MagicBar(QtWidgets.QWidget):
         self.on_profile_updated()
 
     def on_profile_updated(self):
+        """Callback for when the profile is updated."""
         if self.profile.go_all_the_way_down:
             self.set_unprovided()
 
     def show_error(self, ex: Exception):
+        """Show an error message
+
+        Parameters
+        ----------
+        ex : Exception
+            The exception to show.
+        """
         if self._on_error:
             self._on_error(ex)
         else:

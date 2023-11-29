@@ -30,7 +30,8 @@ class Manifest(BaseModel):
     created_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
 
     @validator("version", pre=True)
-    def version_must_be_semver(cls, v):
+    def version_must_be_semver(cls, v) -> str:
+        """Checks that the version is a valid semver version"""
         if isinstance(v, str):
             try:
                 semver.VersionInfo.parse(v)
