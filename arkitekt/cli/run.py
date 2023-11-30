@@ -9,6 +9,7 @@ console = Console()
 
 
 async def run_app(entrypoint, app):
+    """Import the entrypoint module and run the app"""
     try:
         with console.status("Loading entrypoint module..."):
             try:

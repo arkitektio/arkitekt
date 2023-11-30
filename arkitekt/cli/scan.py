@@ -6,6 +6,17 @@ z = locals()
 y = locals()
 
 def inspect_dangerous_variables(module_path):
+    """Inspect the module and return a dictionary of all the variables that are
+    not upper case and that are not classes, modules, functions or builtins.
+    
+    This is used to check if a module is safe to import. Or if it runs code
+    that might be dangegours:
+    
+    TODO: This is not the ebst way to do this. We should probably use the ast
+    module to parse the module and check for dangerous code. This is a quick
+    and dirty solution.
+    
+    """
 
     module = import_module(module_path)
 
@@ -32,6 +43,7 @@ def inspect_dangerous_variables(module_path):
 
 
 def scan_module(module_path):
+    """Scan a module for dangerous variables."""
     return inspect_dangerous_variables(module_path)
 
     

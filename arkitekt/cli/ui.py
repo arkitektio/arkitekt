@@ -7,6 +7,7 @@ import os
 
 
 def construct_changes_group(changes: MutableSet[Tuple[Any, str]]) -> Group:
+    """ Construct a rich panel group for the detected changes"""
     panel_header = "Detected changes\n"
 
     actor_tree = Tree("Changes in", style="white not bold")
@@ -18,6 +19,20 @@ def construct_changes_group(changes: MutableSet[Tuple[Any, str]]) -> Group:
 
 
 def construct_app_group(app: App) -> Group:
+    """Construct a rich panel group for the app
+
+    It displays the registered definitions
+
+    Parameters
+    ----------
+    app : App
+        The app to construct the panel for
+
+    Returns
+    -------
+    Group
+        A rich panel group
+    """
     panel_header = f"Running App \n\n{app.manifest.identifier}:{app.manifest.version}\n"
 
     actor_tree = Tree("Registered Definitions", style="white not bold")
@@ -29,6 +44,22 @@ def construct_app_group(app: App) -> Group:
 
 
 def construct_leaking_group(variables: Dict[str, Any]) -> Group:
+    """Construct a rich panel group for the leaking variables
+
+    This panel is displayed if the app has leaking variables
+    and is therefore considered to be not safe to run
+    as an Arkitekt plugin
+
+    Parameters
+    ----------
+    variables : Dict[str, Any]
+        The leaking variables
+
+    Returns
+    -------
+    Group
+        The rich panel group
+    """
     panel_header = (
         "Detected leaking Variables\n\n"
         "[white]Your app is leaking variables. "
@@ -47,6 +78,7 @@ def construct_leaking_group(variables: Dict[str, Any]) -> Group:
 
 
 def construct_run_panel(app: App) -> Panel:
+    
     app_group = construct_app_group(app)
 
     return Panel(

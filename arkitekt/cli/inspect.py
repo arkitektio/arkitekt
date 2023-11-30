@@ -36,6 +36,21 @@ def check_dl_frameworks():
 
 
 def inspect_requirements(automatic=False):
+    """Inspect the requirements and 
+    
+    
+    return a list of requirements and reasons.
+
+    Parameters
+    ----------
+    automatic : bool, optional
+        Should we automically add all of the requirements, by default False
+
+    Returns
+    -------
+    _type_
+        _description_
+    """
     requirements = []
     reasons = []
     frameworks = check_dl_frameworks()

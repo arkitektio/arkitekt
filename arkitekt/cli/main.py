@@ -270,12 +270,16 @@ def prod(ctx, **kwargs):
 @with_skip_cache
 @click.option(
     "--deep",
-    help="Should we check the whole directory for changes and reload them for dependencie",
+    help="Should we check the whole directory for changes and reload them when changes?",
     is_flag=True,
 )
 @click.pass_context
 def dev(ctx, **kwargs):
-    """Runs the arkitekt app in dev mode (with hot reloading)"""
+    """Runs the arkitekt app in dev mode (with hot reloading)
+    
+    Running the app in dev mode will automatically reload the app when changes are detected.
+    This is useful for development and debugging.
+    """
     from arkitekt.cli.dev import run_dev
 
     asyncio.run(run_dev(ctx.obj["manifest"], **kwargs))
@@ -499,7 +503,7 @@ def init(boring, service, config, documents, schemas, overwrite_config, path):
     default=None,
 )
 def compile(projects, config):
-    """Initialize code generation for the arkitekt app"""
+    """Genererate the code of a project"""
     app_directory = os.getcwd()
 
     from turms.run import scan_folder_for_single_config, load_projects_from_configpath
@@ -1472,18 +1476,21 @@ def ensure_semver(ctx, param, value):
     default=["read"],
 )
 def init(
-    identifier,
-    version,
-    author,
-    scopes,
-    template,
-    requirements,
-    app,
-    overwrite_manifest,
-    overwrite_app,
-    boring,
+    identifier: str,
+    version: str,
+    author: str,
+    scopes: List[str],
+    template: str,
+    requirements: List[str],
+    app: str,
+    overwrite_manifest: bool,
+    overwrite_app: bool,
+    boring: bool,
 ):
     """Initializes the arkitekt app"""
+
+
+
     print(identifier, version, author)
     manifest = Manifest(
         author=author,

@@ -3,7 +3,7 @@ name = "arkitekt"
 version = "0.5.59"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
-license = "CC BY-NC 3.0"
+license = "MIT"
 packages = [{ include = "arkitekt" }]
 
 [tool.poetry.dependencies]

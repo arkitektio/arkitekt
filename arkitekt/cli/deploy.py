@@ -37,16 +37,30 @@ def generate_definitions(module_path) -> List[DefinitionInput]:
 
 
 class Deployment(BaseModel):
-    deployment_id: str = Field(default_factory=lambda: str(uuid.uuid4()))
-    manifest: Manifest
-    builder: str
-    build_id: str
-    definitions: List[DefinitionInput]
-    image: str
-    deployed_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
+    """ A deployment is a Release of a Build. 
+    It contains the build_id, the manifest, the builder, the definitions, the image and the deployed_at timestamp.
+
+    
+    
+    """
+    deployment_id: str = Field(default_factory=lambda: str(uuid.uuid4()), description="The unique identifier of the deployment")
+    manifest: Manifest = Field(description="The manifest of the app that was deployed")
+    builder: str = Field(description="The builder that was used to build the app. CUrrently always port")
+    build_id: str = Field(description="The build_id of the build that was deployed. Is referenced in the build.yaml file.")
+    definitions: List[DefinitionInput] = Field(description="Definitions of nodes that are contained in the app.")
+    image: str = Field(description="The docker image that was built for this deployment")
+    deployed_at: datetime.datetime = Field(default_factory=datetime.datetime.now, description="The timestamp of the deployment")
 
 
 class ConfigFile(BaseModel):
+    """The ConfigFile is a pydantic model that represents the deployments.yaml file
+
+
+    Parameters
+    ----------
+    BaseModel : _type_
+        _description_
+    """
     deployments: List[Deployment] = []
     latest_deployment: datetime.datetime = Field(default_factory=datetime.datetime.now)
 
@@ -57,6 +71,8 @@ class DockerFile(BaseModel):
 
 
 def load_deployments() -> ConfigFile:
+    """ Loads the deployments.yaml file and returns a ConfigFile object
+    if it exists. If it does not exist, it returns an empty ConfigFile object."""
     path = create_arkitekt_folder()
     config_file = os.path.join(path, "deployments.yaml")
     if os.path.exists(config_file):
@@ -67,6 +83,18 @@ def load_deployments() -> ConfigFile:
 
 
 def check_if_manifest_already_deployed(manifest: Manifest):
+    """Checks if a manifest has already been deployed. If it has, it raises a click.ClickException.
+
+    Parameters
+    ----------
+    manifest : Manifest
+        THe manifest to check
+
+    Raises
+    ------
+    click.ClickException
+        A click exception if the manifest has already been deployed
+    """
     config = load_deployments()
     for deployment in config.deployments:
         if (
@@ -83,6 +111,26 @@ def generate_deployment(
     image: str,
     with_definitions=True,
 ) -> Deployment:
+    """Generates a deployment from a build and an image
+    
+    Parameters
+    ----------
+
+    build : Build
+        The build that should be deployed
+    image: str
+        The image that is the actuall deployment of the build
+    with_definitions: bool:
+        Should we generated and inspect definitions to bundle with
+        the deployment?
+    
+    Returns:
+    ------
+    Deployment: The created deployment
+    
+    """
+
+
     path = create_arkitekt_folder()
 
     config_file = os.path.join(path, "deployments.yaml")
