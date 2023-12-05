@@ -23,7 +23,7 @@ jobs:
         with:
           poetry-version: ${{ matrix.poetry-version }}
       - name: Run Poetry Install
-        run: poetry install
+        run: poetry install --all-extras
       - name: Install Qt because Qt sucks with Poetry
         run: poetry run pip install pyqt5 pyqtwebengine
       - name: Run Tests
