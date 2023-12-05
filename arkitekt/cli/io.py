@@ -14,16 +14,17 @@ from typing import Dict
 import datetime
 
 
+def load_manifest_yaml(path: str) -> Manifest:
+    with open(path, "r") as file:
+        manifest = yaml.safe_load(file)
+        return Manifest(**manifest)
+
+
 def load_manifest() -> Optional[Manifest]:
     path = create_arkitekt_folder()
     config_file = os.path.join(path, "manifest.yaml")
     if os.path.exists(config_file):
-        with open(config_file, "r") as file:
-            manifest = yaml.safe_load(file)
-            if manifest:
-                return Manifest(**manifest)
-            else:
-                return None
+        return load_manifest_yaml(config_file)
     return None
 
 

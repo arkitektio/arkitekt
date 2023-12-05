@@ -14,7 +14,8 @@ from arkitekt.cli.io import get_builds
 @click.option(
     "--builder", help="The builder to use", type=str, default="arkitekt.builders.easy"
 )
-def stage(build, url, builder) -> None:
+@click.pass_context
+def stage(ctx, build, url, builder) -> None:
     """Stages the latest Build for testing
 
     Stages the current build for testing. This will create a temporary staged version
@@ -25,7 +26,7 @@ def stage(build, url, builder) -> None:
     """
     import uuid
 
-    manifest = get_manifest()
+    manifest = get_manifest(ctx)
 
     builds = get_builds()
     assert (

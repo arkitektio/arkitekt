@@ -22,13 +22,13 @@ logger = logging.getLogger(__name__)
 try:
     from arkitekt.apps.service.rekuest import ArkitektRekuest
 except ImportError as e:
-    ArkitektRekuest = ImportException #type: ignore
+    ArkitektRekuest = ImportException  # type: ignore
 
-    
+
 try:
     from arkitekt.apps.service.rekuest_next import ArkitektRekuestNext
 except ImportError as e:
-    ArkitektRekuestNext = ImportException  #type: ignore
+    ArkitektRekuestNext = ImportException  # type: ignore
 
 try:
     from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
@@ -44,39 +44,39 @@ except ImportError as e:
 try:
     from arkitekt.apps.service.mikro import ArkitektMikro
 except ImportError as e:
-    ArkitektMikro = ImportException #type: ignore
+    ArkitektMikro = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.mikro_next import ArkitektMikroNext
 except ImportError as e:
-    ArkitektMikroNext = ImportException #type: ignore
+    ArkitektMikroNext = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.herre import ArkitektHerre
 except ImportError as e:
-    ArkitektHerre = ImportException #type: ignore
+    ArkitektHerre = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.fluss import ArkitektFluss
 except ImportError as e:
-    ArkitektFluss = ImportException #type: ignore
+    ArkitektFluss = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.unlok import ArkitektUnlok
 except ImportError as e:
-    ArkitektUnlok = ImportException #type: ignore
+    ArkitektUnlok = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.omero_ark import ArkitektOmeroArk
 except ImportError as e:
-    ArkitektOmeroArk = ImportException #type: ignore
+    ArkitektOmeroArk = ImportException  # type: ignore
 
 
 try:
     from arkitekt.apps.service.fakts import ArkitektFakts
 except ImportError as e:
-    ArkitektFakts = ImportException #type: ignore
+    ArkitektFakts = ImportException  # type: ignore
 
 
 try:
     from arkitekt.apps.service.fakts_next import ArkitektFaktsNext, Manifest
 except ImportError as e:
-    ArkitektFaktsNext = ImportException #type: ignore
+    ArkitektFaktsNext = ImportException  # type: ignore
 
 
 if TYPE_CHECKING:
@@ -93,12 +93,12 @@ if TYPE_CHECKING:
     from arkitekt.apps.herre_qt import ArkitektHerreQt
     from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
 
-    
 
 class App(Composition):
-    """ An app that is built with the easy builder """
+    """An app that is built with the easy builder"""
+
     manifest: Manifest
-    fakts: ArkitektFakts 
+    fakts: ArkitektFakts
     herre: ArkitektHerre
     rekuest: ArkitektRekuest
     mikro: ArkitektMikro
@@ -108,7 +108,8 @@ class App(Composition):
 
 
 class EasyApp(Composition):
-    """ An app that is built with the easy builder """
+    """An app that is built with the easy builder"""
+
     manifest: Manifest
     fakts: ArkitektFakts
     herre: ArkitektHerre
@@ -120,7 +121,8 @@ class EasyApp(Composition):
 
 
 class NextApp(Composition):
-    """ An app that is built with the next builder """
+    """An app that is built with the next builder"""
+
     manifest: Manifest
     fakts: ArkitektFaktsNext
     herre: ArkitektHerre
@@ -139,4 +141,3 @@ class QtApp(Composition):
     mikro: ArkitektMikro
     unlok: ArkitektUnlok
     fluss: ArkitektFluss
-    

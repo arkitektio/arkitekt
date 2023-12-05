@@ -232,10 +232,11 @@ def check_overwrite_dockerfile(ctx, param, value):
     default=False,
     callback=check_overwrite_dockerfile,
 )
-def wizard(dockerfile, overwrite_dockerfile):
+@click.pass_context
+def wizard(ctx, dockerfile, overwrite_dockerfile):
     """Runs the port wizard to generate a dockerfile to be used with port"""
 
-    manifest = get_manifest()
+    manifest = get_manifest(ctx)
     dockfile = docker_file_wizard(manifest)
 
     if dockfile:

@@ -10,42 +10,28 @@ current_manifest = contextvars.ContextVar("current_manifest")
 current_builds = contextvars.ContextVar("current_builds")
 
 
-def get_console() -> Console:
+def get_console(ctx) -> Console:
     try:
-        return current_console.get()
+        return ctx.obj["console"]
     except LookupError:
         raise click.ClickException(
             "No Current Console. Probably you are not running this command from the CLI."
         )
 
 
-def set_console(console):
-    current_console.set(console)
+def set_console(ctx, console):
+    ctx.obj["console"] = console
 
 
-def get_manifest() -> Manifest:
+def get_manifest(ctx) -> Manifest:
     """Get the current manifest or raise an exception."""
     try:
-        return current_manifest.get()
+        return ctx.obj["manifest"]
     except LookupError:
         raise click.ClickException(
             "No manifest found. You need to run the `arkitekt init` command first."
         )
 
 
-def set_manifest(manifest):
-    current_manifest.set(manifest)
-
-
-def get_builds() -> Dict[str, Any]:
-    """Get the current builds or raise an exception."""
-    try:
-        return current_builds.get()
-    except LookupError:
-        raise click.ClickException(
-            "No builds found. You need to run the `arkitekt build` command first."
-        )
-
-
-def set_builds(builds):
-    current_builds.set(builds)
+def set_manifest(ctx, manifest):
+    ctx.obj["manifest"] = manifest

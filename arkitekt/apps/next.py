@@ -3,7 +3,7 @@ from arkitekt.model import Manifest
 from .types import NextApp
 from arkitekt.apps.fallbacks import ImportException
 from arkitekt.apps.service.fakts_next import build_arkitekt_fakts_next
-from arkitekt.apps.herre import build_arkitekt_herre
+from arkitekt.apps.service.herre import build_arkitekt_herre
 
 
 def build_next_app(

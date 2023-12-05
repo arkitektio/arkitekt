@@ -19,27 +19,29 @@ from qtpy import QtCore, QtWidgets
 
 class ArkitektFaktsAutoSaveDiscovery(AutoSaveDiscovery):
     """An Arkitekt Fakts discovery that uses Qt widgets for token and endpoint storage"""
-    discovery: QtSelectableDiscovery 
+
+    discovery: QtSelectableDiscovery
+
 
 class ArkitektFaktsQtRemoteGrant(RemoteGrant):
     """An Arkitekt Fakts grant that uses Qt widgets for token and endpoint storage"""
+
     discovery: ArkitektFaktsAutoSaveDiscovery
 
 
 class ArkitektFaktsQt(Fakts):
     """A Fakts that uses Qt widgets for token and endpoint storage"""
+
     grant: ArkitektFaktsQtRemoteGrant
 
 
 def build_arkitekt_qt_fakts(
     manifest: Manifest,
     no_cache: Optional[bool] = False,
-    beacon_widget: QtWidgets.QWidget=None,
-    parent: QtWidgets.QWidget=None,
-    settings: QtCore.QSettings =None,
+    beacon_widget: QtWidgets.QWidget = None,
+    parent: QtWidgets.QWidget = None,
+    settings: QtCore.QSettings = None,
 ) -> ArkitektFaktsQt:
-
-
     beacon_widget = beacon_widget or SelectBeaconWidget(
         parent=parent, settings=settings
     )

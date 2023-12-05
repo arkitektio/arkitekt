@@ -12,13 +12,14 @@ from arkitekt.cli.io import generate_build
 @click.option(
     "--builder", help="The port builder to use", default="arkitekt.builders.port"
 )
-def build(dockerfile, builder):
+@click.pass_context
+def build(ctx, dockerfile, builder):
     """Builds the arkitekt app to docker"""
 
     build_id = str(uuid.uuid4())
 
-    manifest = get_manifest()
-    console = get_console()
+    manifest = get_manifest(ctx)
+    console = get_console(ctx)
 
     if not os.path.exists(dockerfile):
         raise click.ClickException(

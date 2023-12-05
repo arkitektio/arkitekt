@@ -34,8 +34,8 @@ def prod(ctx, version=None, url=None, entrypoint=None, builder=None, **builder_k
     It is not recommended to use this builder for 'real production' apps.
     """
 
-    manifest = get_manifest()
-    console = get_console()
+    manifest = get_manifest(ctx)
+    console = get_console(ctx)
     entrypoint = entrypoint or manifest.entrypoint
 
     builder = import_builder(builder)
@@ -53,6 +53,6 @@ def prod(ctx, version=None, url=None, entrypoint=None, builder=None, **builder_k
     )
 
     panel = construct_run_panel(app)
-    get_console().print(panel)
+    console.print(panel)
 
     asyncio.run(run_app(app))

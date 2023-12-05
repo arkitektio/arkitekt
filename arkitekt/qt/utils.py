@@ -6,7 +6,9 @@ THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 ASSETS_DIR = os.path.join(THIS_DIR, "assets")
 
 
-def get_image_path(image_name: str, dark_mode: bool=False, assets_dir: str=ASSETS_DIR) -> str:
+def get_image_path(
+    image_name: str, dark_mode: bool = False, assets_dir: str = ASSETS_DIR
+) -> str:
     """Get the path to an image.
 
     Parameters

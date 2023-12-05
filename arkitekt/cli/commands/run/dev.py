@@ -88,6 +88,7 @@ def is_entrypoint_change(
 
 
 async def run_dev(
+    console: Console,
     manifest: Manifest,
     version=None,
     builder: str = "arkitekt.builders.easy",
@@ -101,8 +102,6 @@ async def run_dev(
     entypoint_real_path = os.path.realpath(entrypoint_file)
 
     builder_func = import_builder(builder)
-
-    console = get_console()
 
     generation_message = "[not bold white]This is a development tool for arkitekt apps. It will watch your app for changes and reload it when it detects a change. It will also print out the current state of your app.[/]"
 
@@ -268,6 +267,7 @@ def dev(ctx, **kwargs):
     This is useful for development and debugging.
     """
 
-    manifest = get_manifest()
+    manifest = get_manifest(ctx)
+    console = get_console(ctx)
 
-    asyncio.run(run_dev(manifest, **kwargs))
+    asyncio.run(run_dev(console, manifest, **kwargs))

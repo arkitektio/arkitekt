@@ -5,13 +5,14 @@ from arkitekt.apps.service.fakts import build_arkitekt_fakts, build_arkitekt_tok
 from arkitekt.apps.service.herre import build_arkitekt_herre
 from typing import Optional, List
 
+
 def build_arkitekt_easy_app(
     manifest: Manifest,
-    url: str =None,
-    no_cache: bool =False,
-    headless: bool =False,
-    instance_id: str =None,
-    token: str =None,
+    url: str = None,
+    no_cache: bool = False,
+    headless: bool = False,
+    instance_id: str = None,
+    token: str = None,
     enforce: Optional[List[str]] = None,
 ):
     fakts = (
@@ -30,7 +31,6 @@ def build_arkitekt_easy_app(
     herre = build_arkitekt_herre(
         manifest=manifest, fakts=fakts, url=url, no_cache=no_cache
     )
-
 
     try:
         from arkitekt.apps.service.rekuest import build_arkitekt_rekuest
@@ -72,7 +72,7 @@ def build_arkitekt_easy_app(
 
     try:
         from arkitekt.apps.service.omero_ark import build_arkitekt_omero_ark
- 
+
         omero_ark = build_arkitekt_omero_ark(herre=herre, fakts=fakts)
     except ImportError as e:
         if enforce and "omero_ark" in enforce:

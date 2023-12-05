@@ -51,17 +51,20 @@ def scan_module(module_path):
 
 @click.command()
 @click.option("--entrypoint", help="The module path", default=None)
-def scan(entrypoint):
+@click.pass_context
+def scan(ctx, entrypoint):
     """Scans your arkitekt app for leaking variables"""
 
+    console = get_console(ctx)
+
     if not entrypoint:
-        manifest = get_manifest()
+        manifest = get_manifest(ctx)
         entrypoint = manifest.entrypoint
 
     variables = scan_module(entrypoint)
 
     if not variables:
-        get_console().print(
+        console.print(
             Panel(
                 "No dangerous variables found. You are good to go!  🎉",
                 style="green",
@@ -76,4 +79,4 @@ def scan(entrypoint):
     panel = Panel(
         group, title="Arkitekt Scan", expand=True, border_style="red", style="red"
     )
-    get_console().print(panel)
+    console.print(panel)

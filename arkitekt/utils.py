@@ -35,4 +35,4 @@ def create_arkitekt_folder(with_cache: bool = True) -> str:
                 "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/"
             )
 
-    return ".arkitekt"
+    return os.path.abspath(".arkitekt")

@@ -4,7 +4,7 @@ from arkitekt import easy
 
 print("hello")
 
-app = easy("com.example.test", url="http://localhost:8000",log_level="DEBUG")
+app = easy("com.example.test", url="http://localhost:8000", log_level="DEBUG")
 
 
 @app.rekuest.register()

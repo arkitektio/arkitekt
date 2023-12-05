@@ -44,10 +44,11 @@ def check_if_manifest_already_deployed(manifest: Manifest):
 
 @click.option("--build", help="The build to use", type=str, default="latest")
 @click.option("--tag", help="The tag to use")
-def publish(build, tag):
+@click.pass_context
+def publish(ctx, build, tag):
     """Deploys aa previous build to dockerhub"""
 
-    console = get_console()
+    console = get_console(ctx)
 
     builds = get_builds()
     assert (

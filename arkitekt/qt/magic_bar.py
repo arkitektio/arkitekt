@@ -13,19 +13,20 @@ logger = logging.getLogger(__name__)
 
 
 class Logo(QtWidgets.QWidget):
-    """Logo widget 
-    
+    """Logo widget
+
     THhe logo widget is a widget that can be used to display a logo in the settings dialog.
     It will download the logo from the url, and display it.
 
-    
+
     """
+
     def __init__(self, url: str, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.logo_url = url
         self.getter = async_to_qt(
             self.aget_image,
-        ) # we use async_to_qt to convert the async function to a Qt signal. (see koil docs)
+        )  # we use async_to_qt to convert the async function to a Qt signal. (see koil docs)
 
         self.layout = QtWidgets.QVBoxLayout()
         self.setLayout(self.layout)
@@ -33,7 +34,7 @@ class Logo(QtWidgets.QWidget):
         self.getter.run()
 
     def on_image(self, data: bytes):
-        """ Callback for when the image is downloaded."""
+        """Callback for when the image is downloaded."""
         self.pixmap = QtGui.QPixmap()
         self.pixmap.loadFromData(data)
         self.scaled_pixmap = self.pixmap.scaledToWidth(100)
@@ -43,7 +44,7 @@ class Logo(QtWidgets.QWidget):
         self.layout.addWidget(self.logo)
 
     async def aget_image(self):
-        """ Async function to download the image."""
+        """Async function to download the image."""
         async with aiohttp.ClientSession() as session:
             async with session.get(self.logo_url) as resp:
                 if resp.status == 200 and "image" in resp.headers["Content-Type"]:
@@ -56,6 +57,7 @@ class Logo(QtWidgets.QWidget):
 
 class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
     """A logging handler that will emit a Qt signal when a log message is received."""
+
     appendPlainText = QtCore.Signal(str)
 
     def __init__(self, widget: QtWidgets.QPlainTextEdit, *args, **kwargs):
@@ -76,7 +78,14 @@ class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
 class ArkitektLogs(QtWidgets.QDialog):
     """A dialog that will display the logs of the app."""
 
-    def __init__(self, settings: QtCore.QSettings,  *args, log_level_key: str = "log_level", log_to_file_key="log_to_file", **kwargs) -> None:
+    def __init__(
+        self,
+        settings: QtCore.QSettings,
+        *args,
+        log_level_key: str = "log_level",
+        log_to_file_key="log_to_file",
+        **kwargs,
+    ) -> None:
         """A dialog that will display the logs of the app.
 
         Parameters
@@ -126,14 +135,15 @@ class ArkitektLogs(QtWidgets.QDialog):
 
 
 class Profile(QtWidgets.QDialog):
-    """The profile dialog. 
-    
+    """The profile dialog.
+
     It will display the logo, and allow the user to change the user, and server.
     It will also allow the user to change the log level, and show the logs on
     demand.
-    
-    
+
+
     """
+
     updated = QtCore.Signal()
 
     def __init__(
@@ -223,12 +233,12 @@ class Profile(QtWidgets.QDialog):
         """Callback for when the go all the way button is clicked.
 
         Will update the settings, and emit the updated signal.
-        
+
         Parameters
         ----------
         checked : bool
             Whether the button is checked or not.
-        
+
         """
         self.settings.setValue("go_all_the_way_down", checked)
         self.updated.emit()
@@ -240,7 +250,8 @@ class Profile(QtWidgets.QDialog):
 
 
 class AppState(str, Enum):
-    """ The state of the app."""
+    """The state of the app."""
+
     READY = "ready"
     DOWN = "down"
     UP = "up"
@@ -255,7 +266,7 @@ class ProcessState(str, Enum):
 
 class MagicBar(QtWidgets.QWidget):
     """Magic bar widget.
-    
+
     The magic bar is a small button widget, that can be used to configure, login and put the
     app in providing and non providing states.. It also has a gear button that opens the
     profile dialog. To adjust some parameters of the app"""

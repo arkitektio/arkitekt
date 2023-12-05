@@ -26,6 +26,7 @@ from arkitekt.cli.commands.init.main import init
 from arkitekt.cli.commands.manifest.main import manifest
 from arkitekt.cli.commands.scan.main import scan
 from arkitekt.cli.io import write_manifest, load_manifest
+from arkitekt.utils import create_arkitekt_folder
 
 default_docker_file = """
 FROM python:3.8-slim-buster
@@ -54,12 +55,15 @@ def cli(ctx):
     It is build on top of Rekuest and is designed to be easy to use."""
     sys.path.append(os.getcwd())
 
+    ctx.obj = {}
     console = Console()
-    set_console(console)
+    set_console(ctx, console)
+
+    path = create_arkitekt_folder()
 
     manifest = load_manifest()
     if manifest:
-        set_manifest(manifest)
+        set_manifest(ctx, manifest)
 
     pass
 

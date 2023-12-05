@@ -26,10 +26,10 @@ def check_overwrite(ctx, param, value):
     """Callback to check and prompt for file overwrite."""
 
     try:
-        manifest = get_manifest()
+        manifest = get_manifest(ctx)
         if not value:
             should_overwrite = click.confirm(
-                f"Another Arkitekt app {manifest.to_console_string()} exists already?. Do you want to overwrite?",
+                f"Another Arkitekt app {manifest.to_console_string()} exists already at {os.getcwd()}?. Do you want to overwrite?",
                 abort=True,
             )
             if not should_overwrite:
@@ -126,7 +126,9 @@ def ensure_semver(ctx, param, value):
     multiple=True,
     default=["read"],
 )
+@click.pass_context
 def init(
+    ctx,
     identifier: str,
     version: str,
     author: str,
@@ -140,7 +142,7 @@ def init(
     """Initializes the arkitekt app"""
 
     print(identifier, version, author)
-    console = get_console()
+    console = get_console(ctx)
 
     manifest = Manifest(
         author=author,

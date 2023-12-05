@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.5.59"
+version = "0.6.0a0"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "MIT"
@@ -106,6 +106,7 @@ qt_api = "pyqt5"
 markers = [
     "integration: marks tests that require a running server",
     "qt: marks tests that require a running qt application",
+    "cli: marks tests that require a running cli",
 ]
 
 

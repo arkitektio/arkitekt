@@ -1,26 +1,28 @@
-
 from arkitekt.model import Manifest
 from arkitekt.apps.types import QtApp
 from koil.composition.qt import QtPedanticKoil
 from arkitekt.apps.fallbacks import ImportException, InstallModuleException
 from typing import Any, TYPE_CHECKING, Dict
 
+
 def build_arkitekt_qt_app(
     manifest: Manifest,
-    no_cache: bool =False,
-    instance_id: str =  None,
-    beacon_widget: Any =None,
-    login_widget: Any=None,
-    parent: Any =None,
-    settings: Any =None,
+    no_cache: bool = False,
+    instance_id: str = None,
+    beacon_widget: Any = None,
+    login_widget: Any = None,
+    parent: Any = None,
+    settings: Any = None,
 ):
-    
     if settings is None:
-        try :
+        try:
             from qtpy import QtCore
+
             settings = QtCore.QSettings()
         except ImportError as e:
-            raise InstallModuleException("Please install qtpy to use arkitekt_qt") from e    
+            raise InstallModuleException(
+                "Please install qtpy to use arkitekt_qt"
+            ) from e
 
     try:
         from arkitekt.apps.service.fakts_qt import build_arkitekt_qt_fakts
@@ -37,6 +39,7 @@ def build_arkitekt_qt_app(
 
     try:
         from arkitekt.apps.service.herre_qt import build_arkitekt_qt_herre
+
         herre = build_arkitekt_qt_herre(
             manifest=manifest,
             fakts=fakts,
@@ -49,29 +52,36 @@ def build_arkitekt_qt_app(
 
     try:
         from arkitekt.apps.service.rekuest import build_arkitekt_rekuest
-        rekuest = build_arkitekt_rekuest(fakts=fakts, herre=herre, instance_id=instance_id)
+
+        rekuest = build_arkitekt_rekuest(
+            fakts=fakts, herre=herre, instance_id=instance_id
+        )
     except ImportError as e:
         rekuest = ImportException(import_exception=e, install_library="rekuest")
 
     try:
         from arkitekt.apps.service.mikro import build_arkitekt_mikro
+
         mikro = build_arkitekt_mikro(fakts=fakts, herre=herre)
     except ImportError as e:
         mikro = ImportException(import_exception=e, install_library="mikro")
 
     try:
         from arkitekt.apps.service.unlok import build_arkitekt_unlok
+
         unlok = build_arkitekt_unlok(herre=herre, fakts=fakts)
     except ImportError as e:
         unlok = ImportException(import_exception=e, install_library="unlok")
 
     try:
         from arkitekt.apps.service.fluss import build_arkitekt_fluss
+
         fluss = build_arkitekt_fluss(herre=herre, fakts=fakts)
     except ImportError as e:
         fluss = ImportException(import_exception=e, install_library="fluss")
 
     return QtApp(
+        koil=QtPedanticKoil(parent=parent),
         manifest=manifest,
         fakts=fakts,
         herre=herre,
