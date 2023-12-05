@@ -10,7 +10,6 @@ class QtArkitektWidget(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-
         self.app = publicqt("countries", "latest", no_cache=True, parent=self)
 
         self.magic_bar = MagicBar(self.app)
@@ -31,8 +30,8 @@ class QtArkitektWidget(QtWidgets.QWidget):
         self.app.fakts.get("fakts")
 
 
-@pytest.mark.qt
 @pytest.mark.skip
+@pytest.mark.qt
 def test_qteasy(qtbot):
     widget = QtArkitektWidget()
     qtbot.addWidget(widget)

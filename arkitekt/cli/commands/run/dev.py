@@ -11,16 +11,16 @@ import inspect
 from rekuest.definition.registry import get_default_definition_registry
 from typing import MutableSet, Tuple, Any
 from arkitekt.cli.ui import construct_changes_group, construct_app_group
-from arkitekt.cli.utils import import_builder
-from .types import Manifest
-
-
-async def build_and_run(app: App):
-    async with app:
-        await app.rekuest.run()
+from arkitekt.cli.commands.run.utils import import_builder
+from arkitekt.cli.types import Manifest
+from arkitekt.apps.types import App
+import rich_click as click
+from arkitekt.cli.options import *
 
 
 class EntrypointFilter(PythonFilter):
+    """Checks if the entrypoint is changed"""
+
     def __init__(self, entrypoint, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.entrypoint = entrypoint
@@ -37,11 +37,19 @@ class EntrypointFilter(PythonFilter):
 
 
 class DeepFilter(PythonFilter):
+    """Checks if any of the python filters are changed"""
+
     def __call__(self, change, path: str) -> bool:
         return super().__call__(change, path)
 
 
+async def run_app(app: App):
+    async with app:
+        await app.rekuest.run()
+
+
 def reload_modules(reloadable_modules):
+    """Reloads the modules in the reloadable_modules set"""
     for module in reloadable_modules:
         reload(sys.modules[module])
 
@@ -146,7 +154,7 @@ async def run_dev(
         panel = Panel(group, style="bold green", border_style="green")
         console.print(panel)
 
-        x = asyncio.create_task(build_and_run(app))
+        x = asyncio.create_task(run_app(app))
         x.add_done_callback(callback)
     except Exception:
         console.print_exception()
@@ -228,7 +236,7 @@ async def run_dev(
             panel = Panel(group, style="bold green", border_style="green")
             console.print(panel)
 
-            x = asyncio.create_task(build_and_run(app))
+            x = asyncio.create_task(run_app(app))
             x.add_done_callback(callback)
         except Exception:
             console.print_exception()
@@ -236,3 +244,30 @@ async def run_dev(
                 "Error building reloaded App", style="bold red", border_style="red"
             )
             console.print(panel)
+
+
+@click.command()
+@with_fakts_url
+@with_builder
+@with_token
+@with_instance_id
+@with_headless
+@with_version
+@with_log_level
+@with_skip_cache
+@click.option(
+    "--deep",
+    help="Should we check the whole directory for changes and reload them when changes?",
+    is_flag=True,
+)
+@click.pass_context
+def dev(ctx, **kwargs):
+    """Runs the arkitekt app in dev mode (with hot reloading)
+
+    Running the app in dev mode will automatically reload the app when changes are detected.
+    This is useful for development and debugging.
+    """
+
+    manifest = get_manifest()
+
+    asyncio.run(run_dev(manifest, **kwargs))

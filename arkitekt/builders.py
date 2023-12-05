@@ -19,7 +19,7 @@ def easy(
     token: str = None,
     no_cache: bool = False,
     instance_id: str = "main",
-    register_reaktion: bool = True,
+    register_reaktion: bool = False,
     app_kind: str = "development",
     enforce: Optional[List[str]] = None,
 ) -> EasyApp:
@@ -27,17 +27,17 @@ def easy(
 
     A simple way to create an Arkitekt app, that will be able to connect to the
     Arkitekt server in a variety of scenarious. It should be used for most
-    Arkitekt apps, as it will provide access to the most common features and 
+    Arkitekt apps, as it will provide access to the most common features and
     services.
 
     A few things to note:
         - Easy apps will try to establish themselves a "development" apps, by default
-          which means that they will be authenticated with the Arkitekt server on 
+          which means that they will be authenticated with the Arkitekt server on
           a per user basis. If you want to create a "desktop" app, which multiple users
           can use, you should set the `app_kind` to "desktop" TODO: Currently not implemented (use next app for this)
         - The Easy builder can also be used in plugin apps, and when provided with a fakts token
            will be able to connect to the Arkitekt server without any user interaction.
-        
+
 
     Parameters
     ----------
@@ -63,7 +63,7 @@ def easy(
         Will be overwritten by the FAKTS_TOKEN environment variable
     no_cache : bool, optional
         Should we skip caching token, acess-token, by default False
-        Attention: If this is set to True, the app will always have to be configured 
+        Attention: If this is set to True, the app will always have to be configured
         and authenticated.
     instance_id : str, optional
         The instance_id to use, by default "main"
@@ -157,12 +157,12 @@ def next(
             and will therefore not be compatible with the current generation.
 
         -  Next apps will try to establish themselves a "development" apps, by default
-            which means that they will be authenticated with the Arkitekt server on 
+            which means that they will be authenticated with the Arkitekt server on
             a per user basis. If you want to create a "desktop" app, which multiple users
             can use, you should set the `app_kind` to "desktop" TODO: Currently not implemented (use next app for this)
         -  The Next builder can also be used in plugin apps, and when provided with a fakts token
            will be able to connect to the Arkitekt server without any user interaction.
-        
+
 
     Parameters
     ----------
@@ -188,7 +188,7 @@ def next(
         Will be overwritten by the FAKTS_TOKEN environment variable
     no_cache : bool, optional
         Should we skip caching token, acess-token, by default False
-        Attention: If this is set to True, the app will always have to be configured 
+        Attention: If this is set to True, the app will always have to be configured
         and authenticated.
     instance_id : str, optional
         The instance_id to use, by default "main"
@@ -263,7 +263,7 @@ def jupy(
     token: str = None,
     no_cache: bool = False,
     instance_id: str = "main",
-    register_reaktion: bool = True,
+    register_reaktion: bool = False,
     app_kind: str = "development",
 ):
     """Creates a Jupyter app
@@ -282,20 +282,20 @@ def jupy(
         exit the app, by calling the `app.exit()` method. Arkitekt will otherwise
         not be able to properly shut down the app, and will continue to run in
         the background (until the notebook is restarted)
-        
+
         This should only be a big problem, if you want to run multiple apps
-        in the same notebook, and therefore should not be necessary in most cases, 
+        in the same notebook, and therefore should not be necessary in most cases,
         but you should be aware of this.
 
 
     A few things to note:
         -  Jupy apps will try to establish themselves a "development" apps, by default
-            which means that they will be authenticated with the Arkitekt server on 
+            which means that they will be authenticated with the Arkitekt server on
             a per user basis. If you want to create a "desktop" app, which multiple users
             can use, you should set the `app_kind` to "desktop" TODO: Currently not implemented (use next app for this)
         -  The Jupy builder can also be used in plugin apps, and when provided with a fakts token
            will be able to connect to the Arkitekt server without any user interaction.
-        
+
 
     Parameters
     ----------
@@ -321,7 +321,7 @@ def jupy(
         Will be overwritten by the FAKTS_TOKEN environment variable
     no_cache : bool, optional
         Should we skip caching token, acess-token, by default False
-        Attention: If this is set to True, the app will always have to be configured 
+        Attention: If this is set to True, the app will always have to be configured
         and authenticated.
     instance_id : str, optional
         The instance_id to use, by default "main"
@@ -367,7 +367,6 @@ def jupy(
             raise InstallModuleException(
                 "You need to install reaktion to use the reaktion extension"
             ) from e
-
 
     app.enter()  # This will start the event loop with the sync interface (for automatic awaits in jupyter)
     return app

@@ -7,9 +7,21 @@ from arkitekt.utils import create_arkitekt_folder
 import json
 from enum import Enum
 import semver
+import uuid
+from rekuest.api.schema import DefinitionInput
+
+
+class Framework(str, Enum):
+    """Do we support other frameworks?"""
+
+    VANILLA = "vanilla"
+    TENSORFLOW = "tensorflow"
+    PYTORCH = "pytorch"
 
 
 class Requirement(str, Enum):
+    """ """
+
     GPU = "gpu"
 
 
@@ -42,31 +54,70 @@ class Manifest(BaseModel):
     def to_console_string(self):
         return f"📦 {self.identifier} ({self.version}) by {self.author}"
 
+    def to_builder_dict(self):
+        return {
+            "identifier": self.identifier,
+            "version": self.version,
+            "logo": self.logo,
+            "scopes": self.scopes,
+        }
+
     class Config:
         validate_assignment = True
 
 
-class PortBuild(BaseModel):
-    capabilities: List[str]
+class Deployment(BaseModel):
+    """A deployment is a Release of a Build.
+    It contains the build_id, the manifest, the builder, the definitions, the image and the deployed_at timestamp.
 
 
-def load_portbuild() -> Optional[PortBuild]:
-    path = create_arkitekt_folder()
-    config_file = os.path.join(path, "portbuild.yaml")
-    if os.path.exists(config_file):
-        with open(config_file, "r") as file:
-            manifest = yaml.safe_load(file)
-        return Manifest(**manifest)
-    return None
+
+    """
+
+    deployment_id: str = Field(
+        default_factory=lambda: str(uuid.uuid4()),
+        description="The unique identifier of the deployment",
+    )
+    manifest: Manifest = Field(description="The manifest of the app that was deployed")
+    builder: str = Field(
+        description="The builder that was used to build the app. CUrrently always port"
+    )
+    build_id: str = Field(
+        description="The build_id of the build that was deployed. Is referenced in the build.yaml file."
+    )
+    definitions: List[DefinitionInput] = Field(
+        description="Definitions of nodes that are contained in the app."
+    )
+    image: str = Field(
+        description="The docker image that was built for this deployment"
+    )
+    deployed_at: datetime.datetime = Field(
+        default_factory=datetime.datetime.now,
+        description="The timestamp of the deployment",
+    )
 
 
-def write_portbuild(build: PortBuild):
-    path = create_arkitekt_folder()
-    config_file = os.path.join(path, "portbuild.yaml")
+class DeploymentsConfigFile(BaseModel):
+    """The ConfigFile is a pydantic model that represents the deployments.yaml file
 
-    with open(config_file, "w") as file:
-        yaml.safe_dump(
-            json.loads(build.json(exclude_none=True, exclude_unset=True)),
-            file,
-            sort_keys=True,
-        )
+
+    Parameters
+    ----------
+    BaseModel : _type_
+        _description_
+    """
+
+    deployments: List[Deployment] = []
+    latest_deployment: datetime.datetime = Field(default_factory=datetime.datetime.now)
+
+
+class Build(BaseModel):
+    manifest: Manifest
+    build_id: str
+    builder: str
+    build_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
+
+
+class BuildsConfigFile(BaseModel):
+    builds: List[Build] = Field(default_factory=list)
+    latest_build: Optional[Build]

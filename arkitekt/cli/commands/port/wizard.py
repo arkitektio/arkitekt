@@ -1,6 +1,7 @@
 from importlib import import_module
 from arkitekt.cli.types import Manifest, Packager
 from arkitekt.utils import create_arkitekt_folder
+from arkitekt.cli.vars import get_manifest
 from pydantic import BaseModel, Field
 import sys
 import rich_click as click
@@ -23,33 +24,6 @@ import datetime
 
 from subprocess import check_call
 
-click.rich_click.USE_RICH_MARKUP = True
-
-
-def import_deployer(builder):
-    module_path, function_name = builder.rsplit(".", 1)
-    module = import_module(module_path)
-    function = getattr(module, function_name)
-    return function
-
-
-def generate_definitions(module_path) -> List[DefinitionInput]:
-    import_module(module_path)
-    reg = get_default_definition_registry()
-    return list(reg.definitions.keys())
-
-
-class Build(BaseModel):
-    manifest: Manifest
-    build_id: str
-    builder: str
-    build_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
-
-
-class ConfigFile(BaseModel):
-    builds: List[Build] = Field(default_factory=list)
-    latest_build: Optional[Build]
-
 
 def get_base_prefix_compat():
     """Get base/real prefix, or sys.prefix if there is none."""
@@ -61,6 +35,7 @@ def get_base_prefix_compat():
 
 
 def in_virtualenv():
+    """Return True if we are running in a virtualenv, False otherwise."""
     return get_base_prefix_compat() != sys.prefix
 
 
@@ -158,9 +133,9 @@ BUILDERS = {
 def build_dockerfile(
     manifest: Manifest, packager: Packager, gpu: bool, python_version: str
 ) -> str:
-    packager = BUILDERS.get(packager, {}).get(gpu and "gpu" or "no-gpu", None)
-    if packager:
-        return packager(manifest, python_version)
+    builder = BUILDERS.get(packager, {}).get(gpu and "gpu" or "no-gpu", None)
+    if builder:
+        return builder(manifest, python_version)
     else:
         raise click.ClickException(
             f"Packager {packager} {gpu and 'with GPU Support'} is not supported. Please create a issue on github and create your own Dockerfile for now."
@@ -235,49 +210,34 @@ def docker_file_wizard(manifest: Manifest, auto: bool = True):
     return dockfile
 
 
-def get_builds() -> Dict[str, Build]:
-    path = create_arkitekt_folder()
-    config_file = os.path.join(path, "builds.yaml")
+def check_overwrite_dockerfile(ctx, param, value):
+    """Callback to check and prompt for file overwrite."""
 
-    builds = {}
-
-    if os.path.exists(config_file):
-        with open(config_file, "r") as file:
-            config = ConfigFile(**yaml.safe_load(file))
-
-            builds = {build.build_id: build for build in config.builds}
-            builds["latest"] = config.latest_build
-            return builds
-    else:
-        return {}
-
-
-def generate_build(
-    builder: str,
-    build_id: str,
-    manifest: Manifest,
-) -> Build:
-    path = create_arkitekt_folder()
-
-    config_file = os.path.join(path, "builds.yaml")
-
-    build = Build(
-        manifest=manifest,
-        builder=builder,
-        build_id=build_id,
-    )
-
-    if os.path.exists(config_file):
-        with open(config_file, "r") as file:
-            config = ConfigFile(**yaml.safe_load(file))
-            config.builds.append(build)
-            config.latest_build = build
-    else:
-        config = ConfigFile(builds=[build], latest_build=build)
-
-    with open(config_file, "w") as file:
-        yaml.safe_dump(
-            json.loads(config.json(exclude_none=True, exclude_unset=True)),
-            file,
-            sort_keys=True,
+    app_file = ctx.params["dockerfile"]
+    if os.path.exists(app_file) and not value:
+        should_overwrite = click.confirm(
+            f"Docker already exists. Do you want to overwrite?", abort=True
         )
+
+    return value
+
+
+@click.command()
+@click.option("--dockerfile", help="The dockerfile to generate", default="Dockerfile")
+@click.option(
+    "--overwrite-dockerfile",
+    "-o",
+    help="Should we overwrite the existing Dockerfile?",
+    is_flag=True,
+    default=False,
+    callback=check_overwrite_dockerfile,
+)
+def wizard(dockerfile, overwrite_dockerfile):
+    """Runs the port wizard to generate a dockerfile to be used with port"""
+
+    manifest = get_manifest()
+    dockfile = docker_file_wizard(manifest)
+
+    if dockfile:
+        with open(dockerfile, "w") as file:
+            file.write(dockfile)

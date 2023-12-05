@@ -1,0 +1,35 @@
+builds:
+- build_id: 02bdb00f-1348-4446-a1fd-3e0853168a03
+  builder: arkitekt.builders.port
+  manifest:
+    author: jhnnsrs
+    entrypoint: app
+    identifier: arkitekt
+    requirements: []
+    scopes:
+    - read
+    - write
+    version: 0.0.1
+- build_id: d2a9ba2a-2c03-4d64-b306-ae282b5dccf1
+  builder: arkitekt.builders.port
+  manifest:
+    author: jhnnsrs
+    entrypoint: app
+    identifier: arkitekt
+    requirements: []
+    scopes:
+    - read
+    - write
+    version: 0.0.1
+latest_build:
+  build_id: d2a9ba2a-2c03-4d64-b306-ae282b5dccf1
+  builder: arkitekt.builders.port
+  manifest:
+    author: jhnnsrs
+    entrypoint: app
+    identifier: arkitekt
+    requirements: []
+    scopes:
+    - read
+    - write
+    version: 0.0.1

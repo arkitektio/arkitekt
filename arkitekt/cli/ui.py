@@ -4,10 +4,30 @@ from rich.panel import Panel
 from arkitekt.apps import App
 from typing import MutableSet, Tuple, Any, Dict
 import os
+from .texts import LOGO, WELCOME_MESSAGE
+
+
+def construct_codegen_welcome_panel() -> Panel:
+    md = Panel(
+        LOGO
+        + "[white]"
+        + WELCOME_MESSAGE
+        + "\n\n"
+        + "[bold green]Let's setup your codegen environment",
+        title="Welcome to Arkitekt Codegen",
+        title_align="center",
+        border_style="green",
+        style="green",
+    )
+    return md
 
 
 def construct_changes_group(changes: MutableSet[Tuple[Any, str]]) -> Group:
-    """ Construct a rich panel group for the detected changes"""
+    """Construct a rich panel group for the detected changes
+
+    This panel is displayed if the app has detected changes before
+    running the app. This can be caused by a change in the code or
+    a change in the environment (e.g. a new package was installed)"""
     panel_header = "Detected changes\n"
 
     actor_tree = Tree("Changes in", style="white not bold")
@@ -78,7 +98,6 @@ def construct_leaking_group(variables: Dict[str, Any]) -> Group:
 
 
 def construct_run_panel(app: App) -> Panel:
-    
     app_group = construct_app_group(app)
 
     return Panel(
