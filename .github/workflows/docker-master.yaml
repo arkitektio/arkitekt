@@ -88,6 +88,6 @@ jobs:
       - name: Install Qt because Qt sucks with Poetry
         run: poetry run pip install pyqt5 pyqtwebengine
       - name: Run Tests
-        run: poetrry run pytest --cov --cov-report=xml
+        run: poetry run pytest --cov --cov-report=xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v1
