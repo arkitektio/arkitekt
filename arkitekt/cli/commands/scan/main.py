@@ -50,10 +50,23 @@ def scan_module(module_path):
 
 
 @click.command()
-@click.option("--entrypoint", help="The module path", default=None)
+@click.option(
+    "--entrypoint",
+    help="The file you want to scan for unsafe code ",
+    default=None,
+)
 @click.pass_context
 def scan(ctx, entrypoint):
-    """Scans your arkitekt app for leaking variables"""
+    """Scans your arkitekt app for unsafe code
+
+    When designing an Arkitekt app, you should not have variables in your
+    global scope, as on potential reloads (like for example in development)
+    these variables will be redefined and cause memory leaks and other issues.
+
+    You can use this command to scan your app for dangerous variables. If you
+    have any, you should consider moving them into a function or class.
+
+    """
 
     console = get_console(ctx)
 

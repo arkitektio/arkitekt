@@ -8,7 +8,12 @@ import os
     "--config", help="The config to use", type=click.Path(exists=True), default=None
 )
 def watch(project, config):
-    """Watch the project for changes in graphql docuemnts and compile them automatically"""
+    """Watch your projects documents and automatically generate code when they change
+
+    This command will watch all the projects in your config file and automatically
+    generate code when the documents change. This is useful for development.
+
+    """
     app_directory = os.getcwd()
 
     from turms.run import scan_folder_for_single_config, load_projects_from_configpath

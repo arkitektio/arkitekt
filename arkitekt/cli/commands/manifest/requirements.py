@@ -39,8 +39,8 @@ def add_requirement(ctx, requirements):
     if not requirements:
         raise click.ClickException("Please provide at least one requirement")
 
-    manifest = get_manifest()
-    console = get_console()
+    manifest = get_manifest(ctx)
+    console = get_console(ctx)
 
     if requirements:
         manifest.requirements = set(list(requirements) + manifest.requirements)
@@ -67,8 +67,8 @@ def remove_requirements(ctx, requirements):
     if not requirements:
         raise click.ClickException("Please provide at least one requirement to remove")
 
-    manifest = get_manifest()
-    console = get_console()
+    manifest = get_manifest(ctx)
+    console = get_console(ctx)
 
     if requirements:
         manifest.requirements = set(manifest.requirements) - set(requirements)
@@ -87,8 +87,8 @@ def list_requirements(ctx):
 
     """
 
-    manifest = get_manifest()
-    console = get_console()
+    manifest = get_manifest(ctx)
+    console = get_console(ctx)
 
     table = Table(
         title="[green bold ]Requirements[/]",
@@ -122,7 +122,7 @@ def list_available_requirements(ctx):
 
     """
 
-    console = get_console()
+    console = get_console(ctx)
 
     table = Table.grid()
     table.add_column("Scope")

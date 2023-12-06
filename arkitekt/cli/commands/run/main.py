@@ -6,11 +6,14 @@ from .prod import prod
 @click.group()
 @click.pass_context
 def run(ctx):
-    """Runs the arkitekt app (using a builder) in stable mode
+    """Runs your arkitekt app
 
-    You can choose between different builders to run your app. The default builder is the easy builder, which is
-    designed to be easy to use and to get started with. It is not recommended to use this builder for
-    production apps.
+    Running your app locally is the first step to developing your app. You can run your app in
+    development mode, which will automatically reload your app when you change the code, or in
+    production mode, which not reload your app when you change the code, but allows you to
+    scale your app to multiple processes.
+
+
 
     """
 

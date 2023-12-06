@@ -13,7 +13,15 @@ from arkitekt.cli.options import *
 @with_docuements
 @with_schemas
 def init(boring, service, config, documents, schemas, overwrite_config, path):
-    """Initialize code generation for the arkitekt app"""
+    """Initialize code generation for the arkitekt app
+
+    Code generation for API's is done with the help of GraphQL Code Generation
+    that is powered by turms. This command initializes the code generation for
+    the app. It creates the necessary folders and files for the code generation
+    to work. It also creates a graphql config file that is used by turms to
+    generate the code.
+
+    """
     app_directory = os.getcwd()
 
     if documents:

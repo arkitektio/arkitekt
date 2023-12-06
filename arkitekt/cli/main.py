@@ -50,9 +50,14 @@ click.rich_click.USE_RICH_MARKUP = True
 @click.group()
 @click.pass_context
 def cli(ctx):
-    """Arkitekt is a framework for building beautiful and fast (serverless) APIs around
-    your python code.
-    It is build on top of Rekuest and is designed to be easy to use."""
+    """Arkitekt is a framework for building safe and performant apps that then can be centrally orchestrated and managed
+    in workflows.
+
+
+    This is the CLI for the Arkitekt Python SDK. It allows you to create and deploy Arkitekt Apps from your python code
+    as well as to run them locally for testing and development. For more information about Arkitekt, please visit
+    [link=https://arkitekt.live]https://arkitekt.live[/link]
+    """
     sys.path.append(os.getcwd())
 
     ctx.obj = {}
@@ -68,10 +73,10 @@ def cli(ctx):
     pass
 
 
+cli.add_command(init, "init")
 cli.add_command(run, "run")
 cli.add_command(gen, "gen")
 cli.add_command(port, "port")
-cli.add_command(init, "init")
 cli.add_command(manifest, "manifest")
 cli.add_command(scan, "scan")
 

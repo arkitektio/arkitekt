@@ -261,7 +261,7 @@ async def run_dev(
 )
 @click.pass_context
 def dev(ctx, **kwargs):
-    """Runs the arkitekt app in dev mode (with hot reloading)
+    """Runs the app in dev mode (with hot reloading)
 
     Running the app in dev mode will automatically reload the app when changes are detected.
     This is useful for development and debugging.

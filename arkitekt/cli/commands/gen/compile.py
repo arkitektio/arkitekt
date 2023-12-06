@@ -1,4 +1,5 @@
 import rich_click as click
+import os
 
 
 @click.command()
@@ -10,7 +11,13 @@ import rich_click as click
     default=None,
 )
 def compile(projects, config):
-    """Genererate the code of a project"""
+    """Genererate the code of a project"
+
+    Uses a previously generated graphql-config.yaml file to generate the code for a or multiple projects.
+    If no project is specified, all projects will be generated.
+
+
+    """
     app_directory = os.getcwd()
 
     from turms.run import scan_folder_for_single_config, load_projects_from_configpath

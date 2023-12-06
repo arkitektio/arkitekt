@@ -8,7 +8,16 @@ from .init import init
 
 @click.group()
 def gen():
-    """Use the arkitekt code generation modules to generate code"""
+    """Codegeneration tools for Arkitekt Apps (requires turms)
+
+    Code generation for API's is done with the help of GraphQL Code Generation
+    that is powered by [link=https://github.com/jhnnsrs/turms]turms[/link]. Simply
+    design your API in the documents folder and run `arkitekt gen compile` to
+    create fully typed code for your API. You can also run `arkitekt gen watch`
+    to automatically generate code when your documents change. This is useful
+    for development.
+
+    """
     try:
         import turms
 

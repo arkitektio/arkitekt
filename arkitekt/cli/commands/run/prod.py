@@ -27,11 +27,11 @@ async def run_app(app):
 @with_skip_cache
 @click.pass_context
 def prod(ctx, version=None, url=None, entrypoint=None, builder=None, **builder_kwargs):
-    """Runs the arkitekt app in production mode (with a builder)
+    """Runs the app in production mode
 
     \n
-    By default, the easy builder is used, which is designed to be easy to use and to get started with.
-    It is not recommended to use this builder for 'real production' apps.
+    You can specify the builder to use with the --builder flag. By default, the easy builder is used, which is designed to be easy to use and to get started with.
+
     """
 
     manifest = get_manifest(ctx)

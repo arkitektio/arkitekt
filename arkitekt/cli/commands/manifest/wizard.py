@@ -65,23 +65,25 @@ def inspect_requirements(automatic=False):
 @click.command()
 @click.pass_context
 def wizard(ctx) -> None:
-    """Inspect the current project
+    """Inspect the current project for requirements
 
-    And ask the user for the required information to create a manifest.
-
-
-
+    Inspects the current project and provides a list of [i]suggest[/]ed requirements
+    that should be added to the manifest. You should run this command in the same
+    virtual environment as you are running your app, as it will detect the installed
+    packages and provide a list of requirements that should be added to the manifest.
 
     """
+
     console = get_console(ctx)
     requirements, reasons = inspect_requirements()
 
     table = Table.grid()
-    table.add_column()
-    table.add_column()
+    table.padding = (0, 4)
+    table.add_column("Requirement")
+    table.add_column("Reason")
 
     for item in zip(requirements, reasons):
-        table.add_row(str(item[0]), item[1])
+        table.add_row(str(item[0].value), item[1])
 
     panel = Panel(
         Group("[bold green]Manifest[/]", table),

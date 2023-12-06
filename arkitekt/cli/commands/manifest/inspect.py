@@ -6,16 +6,16 @@ from arkitekt.cli.vars import get_manifest, get_console
 
 
 @click.command()
-def inspect() -> None:
-    """Inspect the manifest of this app
-
+@click.pass_context
+def inspect(ctx) -> None:
+    """Inspect the [i]current[/i] manifest of this app
 
     The manifest is used to describe the app and its rights (scopes) and requirements, to be run on the platform.
     This manifest is used to authenticate the app with the platform establishing its scopes and requirements.
 
 
     """
-    manifest = get_manifest()
+    manifest = get_manifest(ctx)
 
     table = Table.grid()
     table.add_column()
@@ -39,4 +39,4 @@ def inspect() -> None:
         style="white",
     )
 
-    get_console().print(panel)
+    get_console(ctx).print(panel)
