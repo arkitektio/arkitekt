@@ -2,11 +2,12 @@ import rich_click as click
 import os
 from arkitekt.cli.constants import *
 from getpass import getuser
-from arkitekt.cli.types import Manifest
+from arkitekt.cli.types import Manifest, Requirement
 from arkitekt.cli.vars import get_manifest, get_console
 import semver
 from arkitekt.cli.io import write_manifest
 from rich.panel import Panel
+from typing import Optional, List
 
 
 def check_overwrite_app(ctx, param, value):
@@ -105,6 +106,13 @@ def ensure_semver(ctx, param, value):
     default="simple",
 )
 @click.option(
+    "--logo",
+    help="Which logo to use for this app, needs to be a valid url",
+    prompt="Your app logo",
+    default=None,
+    required=False,
+)
+@click.option(
     "--entrypoint",
     "-e",
     help="The entrypoint of your app. This will be the name of the python file. Omit the .py ending",
@@ -141,9 +149,10 @@ def init(
     identifier: str,
     version: str,
     author: str,
+    logo: Optional[str],
     scopes: List[str],
     template: str,
-    requirements: List[str],
+    requirements: List[Requirement],
     entrypoint: str,
     overwrite_manifest: bool,
     overwrite_app: bool,
@@ -161,6 +170,7 @@ def init(
     console = get_console(ctx)
 
     manifest = Manifest(
+        logo=logo,
         author=author,
         identifier=identifier,
         version=version,

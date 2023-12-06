@@ -5,18 +5,19 @@ from .utils import create_arkitekt_folder
 from .model import Manifest
 from arkitekt.apps.types import NextApp, EasyApp
 from arkitekt.apps.easy import build_arkitekt_easy_app
+from arkitekt.apps.qt import build_arkitekt_qt_app
 from arkitekt.apps.fallbacks import InstallModuleException
 
 
 def easy(
     identifier: str,
     version: str = "0.0.1",
-    logo: str = None,
-    scopes: List[str] = None,
+    logo: Optional[str] = None,
+    scopes: Optional[List[str]] = None,
     url: str = "http://localhost:8000",
     headless: bool = False,
     log_level: str = "ERROR",
-    token: str = None,
+    token: Optional[str] = None,
     no_cache: bool = False,
     instance_id: str = "main",
     register_reaktion: bool = False,
@@ -131,12 +132,12 @@ def easy(
 def next(
     identifier: str,
     version: str = "latest",
-    logo: str = None,
-    scopes: List[str] = None,
+    logo: Optional[str] = None,
+    scopes: Optional[List[str]] = None,
     url: str = "http://localhost:8000",
     headless: bool = False,
     log_level: str = "ERROR",
-    token: str = None,
+    token: Optional[str] = None,
     no_cache: bool = False,
     instance_id: str = "main",
     register_reaktion: bool = False,
@@ -255,12 +256,12 @@ def next(
 def jupy(
     identifier: str,
     version: str = "0.0.1",
-    logo: str = None,
-    scopes: List[str] = None,
+    logo: Optional[str] = None,
+    scopes: Optional[List[str]] = None,
     url: str = "http://localhost:8000",
     headless: bool = False,
     log_level: str = "ERROR",
-    token: str = None,
+    token: Optional[str] = None,
     no_cache: bool = False,
     instance_id: str = "main",
     register_reaktion: bool = False,
@@ -352,7 +353,6 @@ def jupy(
         register_reaktion=register_reaktion,
         app_kind=app_kind,
         headless=headless,
-        allow_sync_in_async=True,
         instance_id=instance_id,
         no_cache=no_cache,
     )
@@ -403,12 +403,12 @@ def port(**kwargs):
 def scheduler(
     identifier: str,
     version: str = "latest",
-    logo: str = None,
-    scopes: List[str] = None,
+    logo: Optional[str] = None,
+    scopes: Optional[List[str]] = None,
     url: str = "http://localhost:8000",
     headless: bool = False,
     log_level: str = "ERROR",
-    token: str = None,
+    token: Optional[str] = None,
     no_cache: bool = False,
     instance_id: str = "main",
 ):
@@ -427,8 +427,6 @@ def scheduler(
     Returns:
         Arkitekt: _description_
     """
-    from arkitekt.apps.easy import App, build_arkitekt_app
-    from arkitekt.apps.service.rekuest import ArkitektWebsocketAgentTransport
 
     try:
         from reaktion.extension import ReaktionExtension
@@ -456,12 +454,17 @@ def scheduler(
     except ImportError:
         logging.basicConfig(level=log_level)
 
-    app = build_arkitekt_app(
-        manifest=manifest,
+    app = easy(
+        identifier=identifier,
+        version=version,
         url=url,
-        no_cache=no_cache,
+        token=token,
+        logo=logo,
+        scopes=scopes,
+        log_level=log_level,
         headless=headless,
         instance_id=instance_id,
+        no_cache=no_cache,
     )
     app.rekuest.agent.extensions["reaktion"] = ReaktionExtension()
 
@@ -471,12 +474,12 @@ def scheduler(
 def publicqt(
     identifier: str,
     version: str = "latest",
-    logo: str = None,
-    scopes: List[str] = None,
+    logo: Optional[str] = None,
+    scopes: Optional[List[str]] = None,
     url: str = "http://localhost:8000",
     headless: bool = False,
     log_level: str = "ERROR",
-    token: str = None,
+    token: Optional[str] = None,
     no_cache: bool = False,
     instance_id: str = "main",
     parent=None,
@@ -560,8 +563,12 @@ def publicscheduleqt(
     Returns:
         Arkitekt: The Arkitekt app
     """
-
-    from arkitekt.apps.scheduleqt import build_arkitekt_scheduleqt_app
+    try:
+        from reaktion.extension import ReaktionExtension
+    except ImportError as e:
+        raise ImportError(
+            "You need to install reaktion to use the scheduler function"
+        ) from e
 
     manifest = Manifest(
         version=version,
@@ -570,6 +577,8 @@ def publicscheduleqt(
         logo=logo,
     )
 
+    create_arkitekt_folder(with_cache=True)
+
     try:
         from rich.logging import RichHandler
 
@@ -577,9 +586,7 @@ def publicscheduleqt(
     except ImportError:
         logging.basicConfig(level=log_level)
 
-    create_arkitekt_folder(with_cache=True)
-
-    x = build_arkitekt_scheduleqt_app(
+    app = build_arkitekt_qt_app(
         manifest=manifest,
         parent=parent,
         no_cache=no_cache,
@@ -588,5 +595,6 @@ def publicscheduleqt(
         instance_id=instance_id,
         settings=settings,
     )
-    x.enter()
-    return x
+    app.rekuest.agent.extensions["reaktion"] = ReaktionExtension()
+    app.enter()
+    return app

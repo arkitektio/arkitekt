@@ -12,9 +12,7 @@ class ArkitektHerre(Herre):
     pass
 
 
-def build_arkitekt_herre(
-    manifest: Manifest, fakts: Fakts, url: str, no_cache: Optional[bool] = False
-) -> ArkitektHerre:
+def build_arkitekt_herre(fakts: Fakts) -> ArkitektHerre:
     return ArkitektHerre(
         grant=RefreshGrant(
             grant=FaktsGrant(fakts=fakts, fakts_group="lok"),

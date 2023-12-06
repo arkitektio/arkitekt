@@ -20,7 +20,10 @@ class ArkitektFakts(Fakts):
 
 
 def build_arkitekt_fakts(
-    manifest: Manifest, url: str = None, no_cache: bool = False, headless: bool = False
+    manifest: Manifest,
+    url: Optional[str] = None,
+    no_cache: bool = False,
+    headless: bool = False,
 ) -> ArkitektFakts:
     identifier = manifest.identifier
     version = manifest.version

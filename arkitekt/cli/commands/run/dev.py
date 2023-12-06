@@ -3,6 +3,7 @@ import asyncio
 from arkitekt import App
 from watchfiles import awatch
 from rich.panel import Panel
+from rich.console import Console
 from watchfiles.filters import PythonFilter
 import os
 from rich import get_console
@@ -15,7 +16,17 @@ from arkitekt.cli.commands.run.utils import import_builder
 from arkitekt.cli.types import Manifest
 from arkitekt.apps.types import App
 import rich_click as click
-from arkitekt.cli.options import *
+import os
+from arkitekt.cli.options import (
+    with_fakts_url,
+    with_builder,
+    with_token,
+    with_instance_id,
+    with_headless,
+    with_version,
+    with_log_level,
+    with_skip_cache,
+)
 
 
 class EntrypointFilter(PythonFilter):
@@ -30,8 +41,8 @@ class EntrypointFilter(PythonFilter):
         if not x:
             return False
 
-        x = os.path.basename(path)
-        module_name = x.split(".")[0]
+        basename = os.path.basename(path)
+        module_name = basename.split(".")[0]
 
         return module_name == self.entrypoint
 
@@ -225,7 +236,7 @@ async def run_dev(
             continue
 
         try:
-            app: App = builder_func(
+            app = builder_func(
                 identifier=identifier,
                 version=version,
                 logo=manifest.logo,

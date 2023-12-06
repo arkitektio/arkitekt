@@ -8,11 +8,11 @@ from typing import Optional, List
 
 def build_arkitekt_easy_app(
     manifest: Manifest,
-    url: str = None,
+    url: Optional[str] = None,
     no_cache: bool = False,
     headless: bool = False,
-    instance_id: str = None,
-    token: str = None,
+    instance_id: Optional[str] = None,
+    token: Optional[str] = None,
     enforce: Optional[List[str]] = None,
 ):
     fakts = (
@@ -28,15 +28,13 @@ def build_arkitekt_easy_app(
             headless=headless,
         )
     )
-    herre = build_arkitekt_herre(
-        manifest=manifest, fakts=fakts, url=url, no_cache=no_cache
-    )
+    herre = build_arkitekt_herre(fakts=fakts)
 
     try:
         from arkitekt.apps.service.rekuest import build_arkitekt_rekuest
 
         rekuest = build_arkitekt_rekuest(
-            fakts=fakts, herre=herre, instance_id=instance_id
+            fakts=fakts, herre=herre, instance_id=instance_id or "main"
         )
     except ImportError as e:
         if enforce and "rekuest" in enforce:

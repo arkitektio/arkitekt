@@ -2,13 +2,13 @@ from arkitekt.model import Manifest
 from arkitekt.apps.types import QtApp
 from koil.composition.qt import QtPedanticKoil
 from arkitekt.apps.fallbacks import ImportException, InstallModuleException
-from typing import Any, TYPE_CHECKING, Dict
+from typing import Any, TYPE_CHECKING, Dict, Optional
 
 
 def build_arkitekt_qt_app(
     manifest: Manifest,
     no_cache: bool = False,
-    instance_id: str = None,
+    instance_id: Optional[str] = None,
     beacon_widget: Any = None,
     login_widget: Any = None,
     parent: Any = None,
@@ -54,7 +54,7 @@ def build_arkitekt_qt_app(
         from arkitekt.apps.service.rekuest import build_arkitekt_rekuest
 
         rekuest = build_arkitekt_rekuest(
-            fakts=fakts, herre=herre, instance_id=instance_id
+            fakts=fakts, herre=herre, instance_id=instance_id or "main"
         )
     except ImportError as e:
         rekuest = ImportException(import_exception=e, install_library="rekuest")

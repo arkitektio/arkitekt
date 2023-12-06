@@ -23,9 +23,7 @@ def build_next_app(
         client_kind=app_kind,
     )
 
-    herre = build_arkitekt_herre(
-        manifest=manifest, fakts=fakts, url=url, no_cache=no_cache
-    )
+    herre = build_arkitekt_herre(fakts=fakts)
 
     try:
         from arkitekt.apps.service.rekuest_next import build_arkitekt_rekuest_next

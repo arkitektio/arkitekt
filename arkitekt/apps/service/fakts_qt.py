@@ -38,9 +38,9 @@ class ArkitektFaktsQt(Fakts):
 def build_arkitekt_qt_fakts(
     manifest: Manifest,
     no_cache: Optional[bool] = False,
-    beacon_widget: QtWidgets.QWidget = None,
-    parent: QtWidgets.QWidget = None,
-    settings: QtCore.QSettings = None,
+    beacon_widget: Optional[QtWidgets.QWidget] = None,
+    parent: Optional[QtWidgets.QWidget] = None,
+    settings: Optional[QtCore.QSettings] = None,
 ) -> ArkitektFaktsQt:
     beacon_widget = beacon_widget or SelectBeaconWidget(
         parent=parent, settings=settings

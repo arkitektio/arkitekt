@@ -78,7 +78,7 @@ def wizard(ctx) -> None:
     requirements, reasons = inspect_requirements()
 
     table = Table.grid()
-    table.padding = (0, 4)
+    table.padding = (0, 4, 0, 0)
     table.add_column("Requirement")
     table.add_column("Reason")
 

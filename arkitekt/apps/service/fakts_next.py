@@ -20,7 +20,7 @@ class ArkitektFaktsNext(Fakts):
 
 def build_arkitekt_fakts_next(
     manifest: Manifest,
-    url: str = None,
+    url: Optional[str] = None,
     no_cache: bool = False,
     headless: bool = False,
     client_kind: str = "development",

@@ -28,8 +28,8 @@ class Logo(QtWidgets.QWidget):
             self.aget_image,
         )  # we use async_to_qt to convert the async function to a Qt signal. (see koil docs)
 
-        self.layout = QtWidgets.QVBoxLayout()
-        self.setLayout(self.layout)
+        self.mylayout = QtWidgets.QVBoxLayout()
+        self.setLayout(self.mylayout)
         self.getter.returned.connect(self.on_image)
         self.getter.run()
 
@@ -41,7 +41,7 @@ class Logo(QtWidgets.QWidget):
         self.logo = QtWidgets.QLabel()
         self.logo.setPixmap(self.scaled_pixmap)
 
-        self.layout.addWidget(self.logo)
+        self.mylayout.addWidget(self.logo)
 
     async def aget_image(self):
         """Async function to download the image."""
@@ -102,15 +102,15 @@ class ArkitektLogs(QtWidgets.QDialog):
         self.log_to_file_key = log_to_file_key
         self.settings = settings
         self.setWindowTitle("Logs")
-        self.layout = QtWidgets.QVBoxLayout()
+        self.mylayout = QtWidgets.QVBoxLayout()
         self.text = QtWidgets.QPlainTextEdit(parent=self)
         self.text.setMaximumBlockCount(5000)
         self.text.setReadOnly(True)
-        self.layout.addWidget(self.text)
+        self.mylayout.addWidget(self.text)
         self.logRetriever = ArkitektLogsRetriever(self.text)
         logging.getLogger().addHandler(self.logRetriever)
         logging.getLogger().setLevel(self.log_level)
-        self.setLayout(self.layout)
+        self.setLayout(self.mylayout)
 
     def update_log_level(self, level: str) -> None:
         """Update the log level.
@@ -178,9 +178,9 @@ class Profile(QtWidgets.QDialog):
 
         self.infobar = QtWidgets.QVBoxLayout()
 
-        self.layout = QtWidgets.QHBoxLayout()
-        self.setLayout(self.layout)
-        self.layout.addLayout(self.infobar)
+        self.mylayout = QtWidgets.QHBoxLayout()
+        self.setLayout(self.mylayout)
+        self.mylayout.addLayout(self.infobar)
 
         if self.app.manifest.logo:
             self.infobar.addWidget(Logo(self.app.manifest.logo, parent=self))
@@ -220,7 +220,7 @@ class Profile(QtWidgets.QDialog):
         self.go_all_the_way_button.clicked.connect(self.on_go_all_the_way_clicked)
 
         self.sidebar = QtWidgets.QVBoxLayout()
-        self.layout.addLayout(self.sidebar)
+        self.mylayout.addLayout(self.sidebar)
 
         self.show_logs_button = QtWidgets.QPushButton("Show Logs")
         self.show_logs_button.clicked.connect(self.logs.show)

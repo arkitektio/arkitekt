@@ -5,9 +5,12 @@ from .types import Manifest
 from typing import Dict, Any
 
 
-current_console = contextvars.ContextVar("current_console")
-current_manifest = contextvars.ContextVar("current_manifest")
-current_builds = contextvars.ContextVar("current_builds")
+current_console: contextvars.ContextVar[Console] = contextvars.ContextVar(
+    "current_console"
+)
+current_manifest: contextvars.ContextVar[Manifest] = contextvars.ContextVar(
+    "current_manifest"
+)
 
 
 def get_console(ctx) -> Console:

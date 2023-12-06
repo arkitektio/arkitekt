@@ -51,7 +51,8 @@ def get_builds() -> Dict[str, Build]:
             config = BuildsConfigFile(**yaml.safe_load(file))
 
             builds = {build.build_id: build for build in config.builds}
-            builds["latest"] = config.latest_build
+            if config.latest_build:
+                builds["latest"] = config.latest_build
             return builds
     else:
         return {}
@@ -86,6 +87,8 @@ def generate_build(
             file,
             sort_keys=True,
         )
+
+    return build
 
 
 def get_deployments() -> DeploymentsConfigFile:
@@ -128,13 +131,11 @@ def generate_deployment(
 
     config_file = os.path.join(path, "deployments.yaml")
 
-    definitions = []
-
     deployment = Deployment(
         build_id=build.build_id,
         manifest=build.manifest,
         builder=build.builder,
-        definitions=definitions,
+        definitions=[],
         image=image,
     )
 
@@ -153,3 +154,5 @@ def generate_deployment(
             file,
             sort_keys=True,
         )
+
+    return deployment

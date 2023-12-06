@@ -84,13 +84,13 @@ if TYPE_CHECKING:
     from arkitekt.apps.service.fakts_next import ArkitektFaktsNext
     from arkitekt.apps.service.rekuest import ArkitektRekuest
     from arkitekt.apps.service.omero_ark import ArkitektOmeroArk
-    from arkitekt.apps.herre import ArkitektHerre
-    from arkitekt.apps.mikro import ArkitektMikro
-    from arkitekt.apps.mikro_next import ArkitektMikroNext
+    from arkitekt.apps.service.herre import ArkitektHerre
+    from arkitekt.apps.service.mikro import ArkitektMikro
+    from arkitekt.apps.service.mikro_next import ArkitektMikroNext
     from arkitekt.apps.service.fluss import ArkitektFluss
     from arkitekt.apps.service.unlok import ArkitektUnlok
     from arkitekt.apps.service.rekuest_next import ArkitektRekuestNext
-    from arkitekt.apps.herre_qt import ArkitektHerreQt
+    from arkitekt.apps.service.herre_qt import ArkitektHerreQt
     from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
 
 
