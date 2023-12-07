@@ -1,7 +1,0 @@
-author: jhnnsrs
-entrypoint: app
-identifier: arkitekt
-requirements: []
-scopes:
-- read
-version: 0.0.1
