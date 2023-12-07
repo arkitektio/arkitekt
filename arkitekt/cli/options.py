@@ -129,7 +129,7 @@ def check_overwrite_config(ctx, param, value):
     config = ctx.params["config"]
     if os.path.exists(config) and not value:
         should_overwrite = click.confirm(
-            f"GraphQL Config file already exists. Do you want to overwrite?"
+            "GraphQL Config file already exists. Do you want to overwrite?"
         )
         return should_overwrite
 

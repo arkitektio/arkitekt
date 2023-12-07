@@ -1,9 +1,4 @@
 import rich_click as click
-from rich.table import Table
-from rich.panel import Panel
-from rich.layout import Layout
-from rich.console import Group
-from rich.console import Console
 from semver import parse as parse_semver
 from arkitekt.cli.vars import get_console, get_manifest
 from arkitekt.cli.io import write_manifest
@@ -36,7 +31,7 @@ def set_version(ctx, version):
     """
 
     manifest = get_manifest(ctx)
-    console = get_console(ctx)
+    get_console(ctx)
     old_version = manifest.version
 
     if not version:

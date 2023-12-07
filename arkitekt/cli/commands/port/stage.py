@@ -2,7 +2,7 @@ import rich_click as click
 from arkitekt.cli.vars import get_manifest
 from arkitekt.cli.types import Requirement
 import subprocess
-
+from click import Context
 from arkitekt.cli.io import get_builds
 
 
@@ -15,7 +15,7 @@ from arkitekt.cli.io import get_builds
     "--builder", help="The builder to use", type=str, default="arkitekt.builders.easy"
 )
 @click.pass_context
-def stage(ctx, build, url, builder) -> None:
+def stage(ctx: Context, build: str, url: str, builder: str) -> None:
     """Stages the latest Build for testing
 
     Stages the current build for testing. This will create a temporary staged version
@@ -24,7 +24,6 @@ def stage(ctx, build, url, builder) -> None:
 
 
     """
-    import uuid
 
     manifest = get_manifest(ctx)
 
@@ -32,8 +31,8 @@ def stage(ctx, build, url, builder) -> None:
     assert (
         build in builds
     ), f"Build {build} not found. Please run `arkitekt build` first"
-    build = builds[build]
-    build_id = build.build_id
+    build_model = builds[build]
+    build_id = build_model.build_id
 
     base_command = ["docker", "run", "-it"]
     with_network = ["--net", "host"]

@@ -5,7 +5,7 @@ from rich.panel import Panel
 import subprocess
 import uuid
 from arkitekt.cli.io import generate_build
-
+from click import Context
 
 @click.command()
 @click.option("--dockerfile", help="The dockerfile to use", default="Dockerfile")
@@ -13,7 +13,7 @@ from arkitekt.cli.io import generate_build
     "--builder", help="The port builder to use", default="arkitekt.builders.port"
 )
 @click.pass_context
-def build(ctx, dockerfile, builder):
+def build(ctx: Context, dockerfile: str, builder: str) -> None:
     """Builds the arkitekt app to docker"""
 
     build_id = str(uuid.uuid4())
@@ -23,7 +23,8 @@ def build(ctx, dockerfile, builder):
 
     if not os.path.exists(dockerfile):
         raise click.ClickException(
-            f"Dockerfile {dockerfile} does not exist. Please create a dockerfile first (e.g. with the port wizard command)."
+            f"Dockerfile {dockerfile} does not exist. Please create a dockerfile first"
+             "(e.g. with the port wizard command)."
         )
 
     md = Panel(

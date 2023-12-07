@@ -1,24 +1,13 @@
 import rich_click as click
 import subprocess
-from arkitekt.utils import create_arkitekt_folder
 from .utils import search_username_in_docker_info
-from arkitekt.cli.vars import get_console, get_manifest
+from arkitekt.cli.vars import get_console
 from arkitekt.cli.types import Manifest
 from rich.panel import Panel
-from rich.console import Group
-from arkitekt.cli.types import DeploymentsConfigFile, Build, Deployment
-import os
-import yaml
-from rekuest.api.schema import DefinitionInput
-from importlib import import_module
-from rekuest.definition.registry import get_default_definition_registry
-from typing import List
-import datetime
-import json
 from arkitekt.cli.io import get_builds, get_deployments, generate_deployment
+from click import Context
 
-
-def check_if_manifest_already_deployed(manifest: Manifest):
+def check_if_manifest_already_deployed(manifest: Manifest) -> None:
     """Checks if a manifest has already been deployed. If it has, it raises a click.ClickException.
 
     Parameters
@@ -41,11 +30,11 @@ def check_if_manifest_already_deployed(manifest: Manifest):
                 f"Deployment of {manifest.identifier}/{manifest.version} already exists. You cannot deploy the same version twice."
             )
 
-
+@click.command()
 @click.option("--build", help="The build to use", type=str, default="latest")
 @click.option("--tag", help="The tag to use")
 @click.pass_context
-def publish(ctx, build, tag):
+def publish(ctx: Context, build: str , tag: str) -> None:
     """Deploys aa previous build to dockerhub"""
 
     console = get_console(ctx)
@@ -54,10 +43,10 @@ def publish(ctx, build, tag):
     assert (
         build in builds
     ), f"Build {build} not found. Please run `arkitekt build` first"
-    build = builds[build]
+    build_model = builds[build]
 
-    manifest = build.manifest
-    if build.manifest.version == "dev":
+    manifest = build_model.manifest
+    if build_model.manifest.version == "dev":
         raise click.ClickException(
             "You cannot deploy a dev version. Please run `arkitekt version` first to set a version"
         )
@@ -72,7 +61,7 @@ def publish(ctx, build, tag):
 
     tag = tag or click.prompt(
         "The tag to use",
-        default=f"{username}/{build.manifest.identifier}:{build.manifest.version}",
+        default=f"{username}/{build_model.manifest.identifier}:{build_model.manifest.version}",
     )
 
     md = Panel("Building Docker Container")
@@ -80,7 +69,7 @@ def publish(ctx, build, tag):
 
     deployed = {}
 
-    docker_run = subprocess.run(["docker", "tag", build.build_id, tag])
+    docker_run = subprocess.run(["docker", "tag", build_model.build_id, tag])
     if docker_run.returncode != 0:
         raise click.ClickException("Could not retag docker container")
 
@@ -92,7 +81,7 @@ def publish(ctx, build, tag):
     deployed["docker"] = tag
 
     generate_deployment(
-        build,
+        build_model,
         tag,
         with_definitions=False,
     )

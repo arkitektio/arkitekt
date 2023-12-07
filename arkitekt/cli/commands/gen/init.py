@@ -35,9 +35,9 @@ def init(boring, service, config, documents, schemas, overwrite_config, path):
     projects = {}
 
     for service, version in service:
-        config_path = build_relative_dir(f"configs", service, f"{version}.yaml")
-        documents_path = build_relative_dir(f"documents", service, version)
-        schema_path = build_relative_dir(f"schemas", service, f"{version}.graphql")
+        config_path = build_relative_dir("configs", service, f"{version}.yaml")
+        documents_path = build_relative_dir("documents", service, version)
+        schema_path = build_relative_dir("schemas", service, f"{version}.graphql")
 
         if schemas:
             if os.path.exists(schema_path):

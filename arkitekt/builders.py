@@ -389,7 +389,6 @@ def port(**kwargs):
     Returns:
         Arkitekt: _description_
     """
-    from arkitekt.apps.easy import App, build_arkitekt_app
 
     if not kwargs.get("token", None):
         raise ValueError("You must provide a token")
@@ -440,7 +439,7 @@ def scheduler(
 
     create_arkitekt_folder(with_cache=True)
 
-    manifest = Manifest(
+    Manifest(
         version=version,
         identifier=identifier,
         scopes=scopes if scopes else ["openid"],

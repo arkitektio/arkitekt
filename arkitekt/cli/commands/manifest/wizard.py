@@ -1,11 +1,10 @@
-from enum import Enum
 import os
 import rich_click as click
 from arkitekt.cli.types import Requirement, Framework
 from rich.table import Table
 from rich.panel import Panel
-from rich.console import Console, Group
-from arkitekt.cli.vars import get_manifest, get_console
+from rich.console import Group
+from arkitekt.cli.vars import get_console
 
 
 def check_dl_frameworks():

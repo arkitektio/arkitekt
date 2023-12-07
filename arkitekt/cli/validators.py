@@ -12,6 +12,6 @@ def is_valid_semver(param: str, loaded=False) -> semver.VersionInfo:
             )
 
         raise ValidationError(
-            f"Arkitekt versions need to follow semantic versioning. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
+            "Arkitekt versions need to follow semantic versioning. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
         )
     return semver.Version.parse(param)

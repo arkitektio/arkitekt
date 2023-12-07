@@ -6,7 +6,7 @@ from arkitekt.cli.main import cli
 @pytest.fixture
 def initialized_app_cli_runner():
     runner = CliRunner()
-    with runner.isolated_filesystem() as td:
+    with runner.isolated_filesystem():
         result = runner.invoke(
             cli,
             [

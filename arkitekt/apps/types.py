@@ -10,7 +10,7 @@ an import exception to the app.
 
 """
 from koil.composition import Composition
-from typing import Any, TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 from arkitekt.model import Manifest
 from arkitekt.apps.fallbacks import ImportException
 
@@ -21,61 +21,61 @@ logger = logging.getLogger(__name__)
 
 try:
     from arkitekt.apps.service.rekuest import ArkitektRekuest
-except ImportError as e:
+except ImportError:
     ArkitektRekuest = ImportException  # type: ignore
 
 
 try:
     from arkitekt.apps.service.rekuest_next import ArkitektRekuestNext
-except ImportError as e:
+except ImportError:
     ArkitektRekuestNext = ImportException  # type: ignore
 
 try:
     from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
-except ImportError as e:
+except ImportError:
     ArkitektFaktsQt = ImportException
 
 try:
     from arkitekt.apps.service.herre_qt import ArkitektHerreQt
-except ImportError as e:
+except ImportError:
     ArkitektHerreQt = ImportException
 
 
 try:
     from arkitekt.apps.service.mikro import ArkitektMikro
-except ImportError as e:
+except ImportError:
     ArkitektMikro = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.mikro_next import ArkitektMikroNext
-except ImportError as e:
+except ImportError:
     ArkitektMikroNext = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.herre import ArkitektHerre
-except ImportError as e:
+except ImportError:
     ArkitektHerre = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.fluss import ArkitektFluss
-except ImportError as e:
+except ImportError:
     ArkitektFluss = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.unlok import ArkitektUnlok
-except ImportError as e:
+except ImportError:
     ArkitektUnlok = ImportException  # type: ignore
 try:
     from arkitekt.apps.service.omero_ark import ArkitektOmeroArk
-except ImportError as e:
+except ImportError:
     ArkitektOmeroArk = ImportException  # type: ignore
 
 
 try:
     from arkitekt.apps.service.fakts import ArkitektFakts
-except ImportError as e:
+except ImportError:
     ArkitektFakts = ImportException  # type: ignore
 
 
 try:
     from arkitekt.apps.service.fakts_next import ArkitektFaktsNext, Manifest
-except ImportError as e:
+except ImportError:
     ArkitektFaktsNext = ImportException  # type: ignore
 
 

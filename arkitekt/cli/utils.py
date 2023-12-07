@@ -1,7 +1,4 @@
 import os
-from importlib import import_module
-from arkitekt.apps import App
-from typing import Type
 
 
 def build_relative_dir(*paths):

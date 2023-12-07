@@ -8,7 +8,7 @@ import pytest
 @pytest.fixture
 def initialized_app_cli_runner():
     runner = CliRunner()
-    with runner.isolated_filesystem() as td:
+    with runner.isolated_filesystem():
         result = runner.invoke(
             cli,
             [
@@ -70,7 +70,7 @@ def test_init():
 @pytest.mark.cli
 def test_no_init():
     runner = CliRunner()
-    with runner.isolated_filesystem() as td:
+    with runner.isolated_filesystem():
         result = runner.invoke(
             cli,
             [
@@ -92,7 +92,7 @@ def test_no_init():
 @pytest.mark.cli
 def test_with_overwrite():
     runner = CliRunner()
-    with runner.isolated_filesystem() as td:
+    with runner.isolated_filesystem():
         result = runner.invoke(
             cli,
             [
@@ -114,7 +114,7 @@ def test_with_overwrite():
 @pytest.mark.cli
 def test_not_yet_initialized():
     runner = CliRunner()
-    with runner.isolated_filesystem() as td:
+    with runner.isolated_filesystem():
         result = runner.invoke(
             cli,
             ["manifest", "scopes", "add", "write"],

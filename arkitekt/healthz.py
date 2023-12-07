@@ -1,12 +1,11 @@
 from ssl import SSLContext
 import ssl
-from typing import Any, Dict, Optional
+from typing import Optional
 
 import aiohttp
 import certifi
 from pydantic import Field
 from koil.composition import KoiledModel
-from fakts.fakt.base import Fakt
 from fakts.fakts import Fakts
 
 

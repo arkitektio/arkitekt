@@ -1,7 +1,7 @@
 import rich_click as click
 from rich.table import Table
 from rich.panel import Panel
-from rich.console import Console, Group
+from rich.console import Group
 from arkitekt.cli.vars import get_manifest, get_console
 
 

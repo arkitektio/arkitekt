@@ -1,4 +1,3 @@
-from koil.composition import PedanticKoil
 from arkitekt.model import Manifest
 from .types import NextApp
 from arkitekt.apps.fallbacks import ImportException

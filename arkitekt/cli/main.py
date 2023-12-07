@@ -3,13 +3,8 @@ import os
 
 try:
     import rich_click as click
-    import semver
 
-    from rich.console import Console, Group
-    from rich.panel import Panel
-    from rich.table import Table
-    import semver
-    import watchfiles
+    from rich.console import Console
 except ImportError:
     print(
         "Arkitekt CLI is not installed, please install it first. By installing the cli, e.g with `pip install arkitekt[cli]`, you can use the `arkitekt` command."
@@ -25,7 +20,7 @@ from arkitekt.cli.commands.port.main import port
 from arkitekt.cli.commands.init.main import init
 from arkitekt.cli.commands.manifest.main import manifest
 from arkitekt.cli.commands.scan.main import scan
-from arkitekt.cli.io import write_manifest, load_manifest
+from arkitekt.cli.io import load_manifest
 from arkitekt.utils import create_arkitekt_folder
 
 default_docker_file = """
@@ -64,7 +59,7 @@ def cli(ctx):
     console = Console()
     set_console(ctx, console)
 
-    path = create_arkitekt_folder()
+    create_arkitekt_folder()
 
     manifest = load_manifest()
     if manifest:

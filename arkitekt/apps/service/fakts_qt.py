@@ -6,7 +6,6 @@ from fakts.grants.remote.discovery.auto_save import AutoSaveDiscovery
 from fakts.grants.remote.discovery.qt.auto_save_store import AutoSaveEndpointStore
 from fakts.grants.remote.discovery.qt.auto_save_widget import AutoSaveEndpointWidget
 from fakts.grants.remote.demanders.qt.auto_save_store import AutoSaveTokenStore
-from fakts.grants.remote.demanders.qt.auto_save_widget import AutoSaveTokenWidget
 
 from fakts.grants.remote.demanders.retrieve import RetrieveDemander
 from fakts.grants.remote.discovery.qt.selectable_beacon import (

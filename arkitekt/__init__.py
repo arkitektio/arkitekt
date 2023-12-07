@@ -1,10 +1,10 @@
 def missing_rekuest_install(*args, **kwargs):
-    raise ImportError(f"Missing import: rekuest. Please install the missing package. ")
+    raise ImportError("Missing import: rekuest. Please install the missing package. ")
 
 
 def missing_rekuest_next_install(*args, **kwargs):
     raise ImportError(
-        f"Missing import: rekuest_next. Please install the missing package. "
+        "Missing import: rekuest_next. Please install the missing package. "
     )
 
 

@@ -1,6 +1,4 @@
-from typing import List
 import rich_click as click
-import shutil
 from .watch import watch
 from .compile import compile
 from .init import init
@@ -19,7 +17,6 @@ def gen():
 
     """
     try:
-        import turms
 
         pass
     except ImportError as e:

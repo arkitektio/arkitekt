@@ -1,31 +1,22 @@
-from importlib import import_module
 from arkitekt.cli.types import Manifest, Packager
-from arkitekt.utils import create_arkitekt_folder
 from arkitekt.cli.vars import get_manifest
-from pydantic import BaseModel, Field
 import sys
 import rich_click as click
-from enum import Enum
+from click import Context
 import subprocess
 from rich import get_console
 
 try:
-    from rekuest.api.schema import DefinitionInput
-    from rekuest.definition.registry import get_default_definition_registry
+    pass
 except ImportError as e:
     raise ImportError("Please install rekuest to use this feature") from e
 
 
 import os
-from typing import Dict, List, Optional
-import yaml
-import json
-import datetime
-
-from subprocess import check_call
 
 
-def get_base_prefix_compat():
+
+def get_base_prefix_compat() -> str:
     """Get base/real prefix, or sys.prefix if there is none."""
     return (
         getattr(sys, "base_prefix", None)
@@ -34,12 +25,26 @@ def get_base_prefix_compat():
     )
 
 
-def in_virtualenv():
-    """Return True if we are running in a virtualenv, False otherwise."""
+def in_virtualenv() -> bool:
+    """Returns True if in a virtualenv, otherwise False."""
     return get_base_prefix_compat() != sys.prefix
 
 
 def pip_no_gpu(manifest: Manifest, python_version: str) -> str:
+    """A function to generate a dockerfile for pip without gpu support
+
+    Parameters
+    ----------
+    manifest : Manifest
+        The manifest of the project
+    python_version : str
+        The python version to use
+
+    Returns
+    -------
+    str
+        The dockerfile
+    """
     get_console().print("[blue]Setting up environment...[/blue]")
     if not in_virtualenv():
         click.confirm(
@@ -50,7 +55,7 @@ def pip_no_gpu(manifest: Manifest, python_version: str) -> str:
     if not os.path.exists(".requirements.txt") and click.confirm(
         "Do you want to freeze the dependencies the current interpreter?"
     ):
-        subprocess.check_call(f"pip freeze > requirements.txt", shell=True)
+        subprocess.check_call("pip freeze > requirements.txt", shell=True)
 
     get_console().print("[blue]Generating Dockerfile...[/blue]")
 
@@ -71,6 +76,20 @@ def pip_no_gpu(manifest: Manifest, python_version: str) -> str:
 
 
 def poetry_no_gpu(manifest: Manifest, python_version: str) -> str:
+    """A function to generate a dockerfile for pip without gpu support
+
+    Parameters
+    ----------
+    manifest : Manifest
+        The manifest of the project
+    python_version : str
+        The python version to use
+
+    Returns
+    -------
+    str
+        The dockerfile
+    """
     get_console().print("[blue]Setting up environment...[/blue]")
     if not in_virtualenv():
         click.confirm(
@@ -133,25 +152,74 @@ BUILDERS = {
 def build_dockerfile(
     manifest: Manifest, packager: Packager, gpu: bool, python_version: str
 ) -> str:
-    builder = BUILDERS.get(packager, {}).get(gpu and "gpu" or "no-gpu", None)
-    if builder:
-        return builder(manifest, python_version)
-    else:
+    """A function to build a dockerfile
+
+    It delegates to the correct builder, based on the packager and gpu support
+
+
+    Parameters
+    ----------
+    manifest : Manifest
+        The manifest of the project
+    packager : Packager
+        The detected packager
+    gpu : bool
+        The detected gpu support
+    python_version : str
+        _description_
+
+    Returns
+    -------
+    str
+        The dockerfile
+
+    Raises
+    ------
+    click.ClickException
+        An exception if the packager is not supported
+    """
+
+
+
+    strategy = BUILDERS.get(packager, {})
+    
+    if not strategy:
+        raise click.ClickException(f"Packager {packager} is not supported. Please create a issue on github and create your own Dockerfile for now.")
+    
+    builder = strategy.get(gpu and "gpu" or "no-gpu", None)
+
+    if not builder:
         raise click.ClickException(
             f"Packager {packager} {gpu and 'with GPU Support'} is not supported. Please create a issue on github and create your own Dockerfile for now."
         )
+    
+    return builder(manifest, python_version)
+   
+        
 
 
-class DockerFile(BaseModel):
-    base: Optional[str] = None
-    commands: List[str] = Field(default_factory=list)
 
+def docker_file_wizard(manifest: Manifest, auto: bool = True) -> str:
+    """A wizard to generate a dockerfile
 
-def docker_file_wizard(manifest: Manifest, auto: bool = True):
-    # get python version
-    python_version = sys.version_info
+    Parameters
+    ----------
+    manifest : Manifest
+        The manifest of the project
+    auto : bool, optional
+        Should we autodefault prompts to true, by default True
+    
+    Returns
+    -------
+    str
+        The dockerfile
+    
+    ------
+    ImportError
+        If toml is not installed
+    """
     python_version = (
-        f"{python_version.major}.{python_version.minor}.{python_version.micro}"
+        f"{ sys.version_info.major}.{ sys.version_info.minor}.{ sys.version_info.micro}"
     )
     python_version = (
         python_version
@@ -191,7 +259,8 @@ def docker_file_wizard(manifest: Manifest, auto: bool = True):
 
     if not packager:
         click.echo(
-            "No advanced packager found. Considering using poetry with a pyproject.toml or conda with a environment.yml"
+            "No advanced packager found. Considering using poetry "
+            "with a pyproject.toml or conda with a environment.yml"
         )
 
         if os.path.exists("requirements.txt"):
@@ -199,25 +268,47 @@ def docker_file_wizard(manifest: Manifest, auto: bool = True):
 
         packager = Packager.PIP
 
-    dockfile = None
 
-    if click.confirm(
+    if not click.confirm(
         f"Would you like to generate Template Dockerfile: Using {packager} with Python {python_version} {'and' if gpu else 'without'} GPU support"
     ):
-        dockfile = build_dockerfile(
-            manifest, packager, gpu=gpu, python_version=python_version
-        )
+        raise click.Abort("Aborted")
+    
+    dockfile = build_dockerfile(
+        manifest, packager, gpu=gpu, python_version=python_version
+    )
+
+
     return dockfile
 
 
-def check_overwrite_dockerfile(ctx, param, value):
-    """Callback to check and prompt for file overwrite."""
+def check_overwrite_dockerfile(ctx: Context,param: str, value: bool) -> bool:
+    """A callback to check if the dockerfile should be overwritten
+
+    Parameters
+    ----------
+    ctx : Context
+        The context of the click command
+    param : str
+        The parameter name
+    value : str
+        The value of the parameter
+
+    Returns
+    -------
+    bool
+        Should we overwrite the dockerfile?
+    """
 
     app_file = ctx.params["dockerfile"]
     if os.path.exists(app_file) and not value:
         should_overwrite = click.confirm(
-            f"Docker already exists. Do you want to overwrite?", abort=True
+            "Docker already exists. Do you want to overwrite?", abort=True
         )
+        if should_overwrite:
+            return True
+        else:
+            raise click.Abort()
 
     return value
 
@@ -233,12 +324,12 @@ def check_overwrite_dockerfile(ctx, param, value):
     callback=check_overwrite_dockerfile,
 )
 @click.pass_context
-def wizard(ctx, dockerfile, overwrite_dockerfile):
+def wizard(ctx: Context, dockerfile: str, overwrite_dockerfile: bool) -> None:
     """Runs the port wizard to generate a dockerfile to be used with port"""
 
     manifest = get_manifest(ctx)
+    
     dockfile = docker_file_wizard(manifest)
 
-    if dockfile:
-        with open(dockerfile, "w") as file:
-            file.write(dockfile)
+    with open(dockerfile, "w") as file:
+        file.write(dockfile)

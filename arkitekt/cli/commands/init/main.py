@@ -16,7 +16,7 @@ def check_overwrite_app(ctx, param, value):
     app_file = ctx.params["entrypoint"] + ".py"
     if os.path.exists(app_file) and not value:
         should_overwrite = click.confirm(
-            f"Entrypoint File already exists. Do you want to overwrite?"
+            "Entrypoint File already exists. Do you want to overwrite?"
         )
         return should_overwrite
 
@@ -108,8 +108,6 @@ def ensure_semver(ctx, param, value):
 @click.option(
     "--logo",
     help="Which logo to use for this app, needs to be a valid url",
-    prompt="Your app logo",
-    default=None,
     required=False,
 )
 @click.option(

@@ -1,11 +1,9 @@
 from herre.herre import Herre
 from fakts import Fakts
-from herre.grants import CacheGrant as HerreCacheGrant
 from herre.grants.oauth2.refresh import RefreshGrant
 from herre.fakts.fakts_endpoint_fetcher import FaktsUserFetcher
 from herre.fakts.grant import FaktsGrant
-from typing import Optional
-from arkitekt.model import Manifest, User
+from arkitekt.model import User
 
 
 class ArkitektHerre(Herre):

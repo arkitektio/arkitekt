@@ -2,7 +2,7 @@ from arkitekt.model import Manifest
 from arkitekt.apps.types import QtApp
 from koil.composition.qt import QtPedanticKoil
 from arkitekt.apps.fallbacks import ImportException, InstallModuleException
-from typing import Any, TYPE_CHECKING, Dict, Optional
+from typing import Any, Optional
 
 
 def build_arkitekt_qt_app(

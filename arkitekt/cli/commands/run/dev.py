@@ -1,16 +1,15 @@
 from importlib import import_module, reload
 import asyncio
 from arkitekt import App
-from watchfiles import awatch
+from watchfiles import awatch, Change
 from rich.panel import Panel
 from rich.console import Console
 from watchfiles.filters import PythonFilter
 import os
-from rich import get_console
 import sys
 import inspect
 from rekuest.definition.registry import get_default_definition_registry
-from typing import MutableSet, Tuple, Any
+from typing import MutableSet, Tuple, Any, Set
 from arkitekt.cli.ui import construct_changes_group, construct_app_group
 from arkitekt.cli.commands.run.utils import import_builder
 from arkitekt.cli.types import Manifest
@@ -27,16 +26,39 @@ from arkitekt.cli.options import (
     with_log_level,
     with_skip_cache,
 )
+from arkitekt.cli.vars import get_console, get_manifest
+
 
 
 class EntrypointFilter(PythonFilter):
     """Checks if the entrypoint is changed"""
 
-    def __init__(self, entrypoint, *args, **kwargs) -> None:
+    def __init__(self, entrypoint: str, *args, **kwargs) -> None:
+        """A filter that checks if the entrypoint is changed
+
+        Parameters
+        ----------
+        entrypoint : str
+            The entrypoint to check
+        """
         super().__init__(*args, **kwargs)
         self.entrypoint = entrypoint
 
-    def __call__(self, change, path: str) -> bool:
+    def __call__(self, change: Change, path: str) -> bool:
+        """Checks if any of the python filters are changed
+_description_
+        Parameters
+        ----------
+        change : Change
+            The change type
+        path : str
+            The causing path
+
+        Returns
+        -------
+        bool
+            Should we reload?
+        """
         x = super().__call__(change, path)
         if not x:
             return False
@@ -50,22 +72,61 @@ class EntrypointFilter(PythonFilter):
 class DeepFilter(PythonFilter):
     """Checks if any of the python filters are changed"""
 
-    def __call__(self, change, path: str) -> bool:
+    def __call__(self, change: Change, path: str) -> bool:
+        """Checks if any of the python filters are changed
+
+        Parameters
+        ----------
+        change : Change
+            The change type
+        path : str
+            The causing path
+
+        Returns
+        -------
+        bool
+            Should we reload?
+        """
         return super().__call__(change, path)
 
 
-async def run_app(app: App):
+async def run_app(app: App) -> None:
+    """ A helper function to run the app
+    
+    Parameters
+    ---------- 
+    app : App
+        The app to run
+        
+    """
     async with app:
         await app.rekuest.run()
 
 
-def reload_modules(reloadable_modules):
+def reload_modules(reloadable_modules) -> None:
     """Reloads the modules in the reloadable_modules set"""
     for module in reloadable_modules:
         reload(sys.modules[module])
 
 
-def check_deeps(changes: set):
+def check_deeps(changes: Set[
+Tuple[Change, str] ]) -> Set[str]:
+    """Checks if any of the changes 
+    are happening in a module that is installed
+    and returns the modules that should be reloaded
+
+
+
+    Parameters
+    ----------
+    changes : Set[ Tuple[Change, str] ]
+        The changes to check
+
+    Returns
+    -------
+    Set[str]
+        A set of modules that should be reloaded
+    """
     normalized = [os.path.normpath(file) for modified, file in changes]
 
     reloadable_modules = set()
@@ -85,7 +146,9 @@ def check_deeps(changes: set):
     return reloadable_modules
 
 
-def reset_structure():
+def reset_structure() -> None:
+    """Resets the default defintiion rgistry and all
+    regitered nodes"""
     get_default_definition_registry().definitions.clear()
 
 
@@ -110,7 +173,7 @@ async def run_dev(
     identifier = manifest.identifier
     version = version or "dev"
     entrypoint_file = f"{manifest.entrypoint}.py"
-    entypoint_real_path = os.path.realpath(entrypoint_file)
+    os.path.realpath(entrypoint_file)
 
     builder_func = import_builder(builder)
 
@@ -208,14 +271,7 @@ async def run_dev(
         # Restarting the app
         try:
             with console.status("Reloading module..."):
-                if is_entrypoint_change(changes, entypoint_real_path):
-                    panel = Panel(
-                        "Detected Entrypoint change, resetting app",
-                        style="bold cyan",
-                        border_style="cyan",
-                    )
-                    console.print(panel)
-                    reset_structure()
+                reset_structure()
 
                 if not module:
                     module = import_module(entrypoint)
@@ -224,7 +280,6 @@ async def run_dev(
                         reload_modules(to_be_reloaded)
                     else:
                         reload(module)
-
         except Exception:
             console.print_exception()
             panel = Panel(

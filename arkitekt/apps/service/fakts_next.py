@@ -1,4 +1,4 @@
-from typing import List, Optional
+from typing import Optional
 
 from fakts.fakts import Fakts
 from fakts.grants.remote import RemoteGrant

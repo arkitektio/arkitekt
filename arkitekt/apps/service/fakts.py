@@ -1,9 +1,8 @@
 from fakts.fakts import Fakts
 from fakts.fakts import Fakts
-from typing import List, Optional
+from typing import Optional
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts.grants.remote import RemoteGrant
-from fakts.grants.remote.demanders.retrieve import RetrieveDemander
 from fakts.grants.remote.demanders.auto_save import AutoSaveDemander
 from fakts.grants.remote.demanders.cache import AutoSaveCacheStore
 from fakts.grants.remote.demanders.static import StaticDemander

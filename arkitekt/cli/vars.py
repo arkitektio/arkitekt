@@ -2,7 +2,6 @@ import contextvars
 from rich.console import Console
 import rich_click as click
 from .types import Manifest
-from typing import Dict, Any
 
 
 current_console: contextvars.ContextVar[Console] = contextvars.ContextVar(

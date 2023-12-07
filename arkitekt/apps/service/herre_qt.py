@@ -1,12 +1,9 @@
 from herre.herre import Herre
 from fakts import Fakts
-from herre.grants import CacheGrant
 from herre.grants.oauth2.refresh import RefreshGrant
-from typing import Optional
 from herre.fakts.grant import FaktsGrant
 from herre.fakts.fakts_qt_store import FaktsQtStore
 
-from herre.grants.stored_login import StoredLoginGrant
 from herre.grants.auto_login import AutoLoginGrant
 from herre.grants.qt.auto_login import AutoLoginWidget
 from herre.fakts.fakts_endpoint_fetcher import FaktsUserFetcher

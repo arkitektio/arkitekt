@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.6.0a0"
+version = "0.6.0a1"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "MIT"
@@ -51,6 +51,7 @@ ignore_missing_imports = true
 
 [tool.ruff]
 extend-select = ["ANN", "D1"]
+extend-ignore = ["ANN101", "ANN002", "ANN003"]
 
 # Exclude a variety of commonly ignored directories.
 exclude = [
@@ -91,6 +92,8 @@ pytest-cov = "^4.0.0"
 pytest-aiohttp = "^1.0.4"
 ruff = "^0.0.254"
 mypy = "^1.0.1"
+types-pyyaml = "^6.0.12.12"
+pyqt5-stubs = "^5.15.6.0"
 
 
 [tool.poetry.scripts]

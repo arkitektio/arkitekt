@@ -1,14 +1,12 @@
 from enum import Enum
 from qtpy import QtWidgets, QtGui, QtCore
-import urllib
 from arkitekt.apps.qt import QtApp
 from koil.qt import async_to_qt
-from arkitekt import App
 from .utils import get_image_path
 from typing import Optional, Callable
 import logging
 import aiohttp
-
+from logging import LogRecord
 logger = logging.getLogger(__name__)
 
 
@@ -22,6 +20,14 @@ class Logo(QtWidgets.QWidget):
     """
 
     def __init__(self, url: str, *args, **kwargs) -> None:
+        """Logo widget
+
+        Parameters
+        ----------
+        url : str
+            The url to download the logo from.
+        """
+
         super().__init__(*args, **kwargs)
         self.logo_url = url
         self.getter = async_to_qt(
@@ -33,8 +39,11 @@ class Logo(QtWidgets.QWidget):
         self.getter.returned.connect(self.on_image)
         self.getter.run()
 
-    def on_image(self, data: bytes):
+    def on_image(self, data: Optional[bytes]) -> None:
         """Callback for when the image is downloaded."""
+        if not data:
+            return
+        
         self.pixmap = QtGui.QPixmap()
         self.pixmap.loadFromData(data)
         self.scaled_pixmap = self.pixmap.scaledToWidth(100)
@@ -43,7 +52,7 @@ class Logo(QtWidgets.QWidget):
 
         self.mylayout.addWidget(self.logo)
 
-    async def aget_image(self):
+    async def aget_image(self) -> Optional[bytes]:
         """Async function to download the image."""
         async with aiohttp.ClientSession() as session:
             async with session.get(self.logo_url) as resp:
@@ -60,7 +69,14 @@ class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
 
     appendPlainText = QtCore.Signal(str)
 
-    def __init__(self, widget: QtWidgets.QPlainTextEdit, *args, **kwargs):
+    def __init__(self, widget: QtWidgets.QPlainTextEdit, *args, **kwargs) -> None:
+        """A logging handler that will emit a Qt signal when a log message is received.
+
+        Parameters
+        ----------
+        widget : QtWidgets.QPlainTextEdit
+            A plain text edit widget to display the logs in.
+        """
         super().__init__()
         QtCore.QObject.__init__(self)
         self.appendPlainText.connect(widget.appendPlainText)
@@ -70,7 +86,8 @@ class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
             )
         )
 
-    def emit(self, record):
+    def emit(self, record: LogRecord) -> None:
+        """Emit a Qt signal when a log message is received."""
         msg = self.format(record)
         self.appendPlainText.emit(msg)
 
@@ -83,7 +100,7 @@ class ArkitektLogs(QtWidgets.QDialog):
         settings: QtCore.QSettings,
         *args,
         log_level_key: str = "log_level",
-        log_to_file_key="log_to_file",
+        log_to_file_key: str ="log_to_file",
         **kwargs,
     ) -> None:
         """A dialog that will display the logs of the app.
@@ -91,11 +108,13 @@ class ArkitektLogs(QtWidgets.QDialog):
         Parameters
         ----------
         settings : QtCore.QSettings
-            The settings object to use to store the log level. (so that is persistent, and can be changed by the user)
+            The settings object to use to store the log level. (so that is persistent, 
+            and can be changed by the user)
         log_level_key : str, optional
             The key to use to store the log level, by default "log_level"
         log_to_file_key : str, optional
-            The key to use to store whether the logs should be written to a file, by default "log_to_file"
+            The key to use to store whether the logs should be written to a file,
+             by default "log_to_file"
         """
         super().__init__(*args, **kwargs)
         self.log_level_key = log_level_key
@@ -163,9 +182,10 @@ class Profile(QtWidgets.QDialog):
         bar : MagicBar
             The magic bar to use and to update when the user changes the settings.
         dark_mode : bool, optional
-            Should we use dark_mode, by default False TODO: implement dark mode
+            Should we use dark_mode, by default False 
+            TODO: implement dark mode
         """
-        super(Profile, self).__init__(*args, parent=bar, **kwargs)
+        super().__init__(*args, **{"parent": bar, **kwargs})
         self.app = app
         self.bar = bar
 
@@ -282,10 +302,25 @@ class MagicBar(QtWidgets.QWidget):
 
     def __init__(
         self,
-        app: App,
+        app: QtApp,
         dark_mode: bool = False,
         on_error: Optional[Callable[[Exception], None]] = None,
     ) -> None:
+        """Magic bar Widget
+
+        This widget is a small button widget, that can be used to configure, login and put the
+        app in providing and non providing states.. It also has a gear button that opens the
+        profile dialog, that can be used to adjust some parameters of the qt app.
+
+        Parameters
+        ----------
+        app : QtApp
+            A qt app to use.
+        dark_mode : bool, optional
+            Should we use the dark mode, by default False
+        on_error : Optional[Callable[[Exception], None]], optional
+            And additinal callback if an error is raised, by default None
+        """
         super().__init__()
         self.app = app
 
@@ -326,7 +361,7 @@ class MagicBar(QtWidgets.QWidget):
         self.login_future = None
         self.provide_future = None
 
-        self.layout = QtWidgets.QHBoxLayout()
+        self.mylayout = QtWidgets.QHBoxLayout()
         self.gearb_pix = QtGui.QPixmap(get_image_path("gear.png", dark_mode=dark_mode))
         self.gearb = QtWidgets.QPushButton()
         self.gearb.setIcon(QtGui.QIcon(self.gearb_pix))
@@ -339,19 +374,19 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.clicked.connect(self.magic_button_clicked)
         self.gearb.clicked.connect(self.gear_button_clicked)
 
-        self.layout.addWidget(self.magicb)
-        self.layout.addWidget(self.gearb)
-        self.setLayout(self.layout)
+        self.mylayout.addWidget(self.magicb)
+        self.mylayout.addWidget(self.gearb)
+        self.setLayout(self.mylayout)
 
         self.set_unkonfigured()
         self.on_profile_updated()
 
-    def on_profile_updated(self):
+    def on_profile_updated(self) -> None:
         """Callback for when the profile is updated."""
         if self.profile.go_all_the_way_down:
             self.set_unprovided()
 
-    def show_error(self, ex: Exception):
+    def show_error(self, ex: Exception) -> None:
         """Show an error message
 
         Parameters
@@ -364,40 +399,52 @@ class MagicBar(QtWidgets.QWidget):
         else:
             logger.error(f"Error {repr(ex)}")
 
-    def task_errored(self, ex: Exception):
+    def task_errored(self, ex: Exception) -> None:
+        """_summary_
+
+        Parameters
+        ----------
+        ex : Exception
+            _description_
+
+        Raises
+        ------
+        ex
+            _description_
+        """
         raise ex
 
-    def configure_errored(self, ex: Exception):
+    def configure_errored(self, ex: Exception) -> None:
         self.set_unkonfigured()
         self.show_error(ex)
 
-    def login_errored(self, ex: Exception):
+    def login_errored(self, ex: Exception)-> None:
         self.set_unlogined()
         self.show_error(ex)
 
-    def provide_errored(self, ex: Exception):
+    def provide_errored(self, ex: Exception)-> None:
         self.set_unprovided()
         self.show_error(ex)
 
-    def on_configured(self):
+    def on_configured(self)-> None:
         self.magicb.setText("Login")
 
-    def on_login(self):
+    def on_login(self)-> None:
         self.magicb.setText("Provide")
 
-    def on_provided(self):
+    def on_provided(self)-> None:
         self.magicb.setText("Provide ended")
 
-    def on_providing_ended(self):
+    def on_providing_ended(self)-> None:
         pass
 
-    def gear_button_clicked(self):
+    def gear_button_clicked(self)-> None:
         self.profile.show()
 
-    def update_movie(self):
+    def update_movie(self)-> None:
         self.magicb.setIcon(QtGui.QIcon(self.magicb_movie.currentPixmap()))
 
-    def set_button_movie(self, movie):
+    def set_button_movie(self, movie)-> None:
         self.magicb_movie = QtGui.QMovie(
             get_image_path(movie, dark_mode=self.dark_mode)
         )
@@ -405,7 +452,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb_movie.setScaledSize(QtCore.QSize(30, 30))
         self.magicb_movie.start()
 
-    def set_unkonfigured(self):
+    def set_unkonfigured(self) -> None:
         self.state = AppState.DOWN
         self.process_state = ProcessState.UNKONFIGURED
         self.app_down.emit()
@@ -416,7 +463,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Konfigure App")
 
-    def set_unlogined(self):
+    def set_unlogined(self)-> None:
         self.state = AppState.DOWN
         self.process_state = ProcessState.UNLOGGED
         self.app_down.emit()
@@ -428,7 +475,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Login")
 
-    def set_unprovided(self):
+    def set_unprovided(self)-> None:
         self.state = AppState.UP
         self.process_state = ProcessState.UNPROVIDED
         self.app_up.emit()
@@ -440,7 +487,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Provide")
 
-    def set_providing(self):
+    def set_providing(self)-> None:
         self.state = AppState.UP
         self.process_state = ProcessState.PROVIDING
         self.app_up.emit()
@@ -452,7 +499,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Cancel Provide..")
 
-    def magic_button_clicked(self):
+    def magic_button_clicked(self)-> None:
         if (
             self.process_state == ProcessState.UNKONFIGURED
             and not self.profile.go_all_the_way_down
@@ -489,7 +536,8 @@ class MagicBar(QtWidgets.QWidget):
                 self.set_providing()
                 return
 
-        if not self.provide_future.done():
-            self.provide_future.cancel()
-            self.set_unprovided()
-            return
+        if self.provide_future:
+            if not self.provide_future.done():
+                self.provide_future.cancel()
+                self.set_unprovided()
+                return

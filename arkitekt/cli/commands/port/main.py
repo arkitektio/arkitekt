@@ -3,11 +3,11 @@ from .build import build
 from .publish import publish
 from .stage import stage
 from .wizard import wizard
-
+from click import Context
 
 @click.group()
 @click.pass_context
-def port(ctx):
+def port(ctx: Context) -> None:
     """Deploy the arkitekt app with Port
 
     The port deployer is an arkitekt plugin service, which allows you to deploy your arkitekt app to

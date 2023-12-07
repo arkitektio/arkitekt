@@ -1,5 +1,4 @@
 from arkitekt import register
-import time
 from mikro.api.schema import RepresentationFragment, from_xarray
 
 

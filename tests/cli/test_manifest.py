@@ -1,4 +1,3 @@
-from click.testing import CliRunner
 from arkitekt.cli.main import cli
 import os
 from arkitekt.cli.io import load_manifest_yaml

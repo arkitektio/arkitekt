@@ -3,11 +3,10 @@ from arkitekt.qt.magic_bar import MagicBar
 import pytest
 from qtpy import QtWidgets, QtCore
 from koil.qt import QtRunner
-import time
 
 
 class QtArkitektWidget(QtWidgets.QWidget):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
         self.app = publicqt("countries", "latest", no_cache=True, parent=self)
@@ -38,7 +37,7 @@ def test_qteasy(qtbot):
 
     with qtbot.waitSignal(
         widget.magic_bar.configure_task.errored, timeout=9000, raising=True
-    ) as p:
+    ):
         qtbot.mouseClick(
             widget.magic_bar.magicb,
             QtCore.Qt.LeftButton,
