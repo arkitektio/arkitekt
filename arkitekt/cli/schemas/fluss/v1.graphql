@@ -1,0 +1,1841 @@
+"""The root Query"""
+type Query {
+  hello: String
+  void: String
+  run(
+    """The Id of the Graph"""
+    id: ID
+
+    """The assignation of the Graph"""
+    assignation: ID
+  ): Run
+  eventsBetween(run: ID!, min: Int, max: Int): [RunEvent]
+  snapshot(
+    """The Id of the Graph"""
+    id: ID!
+  ): Snapshot
+  runs(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Run]
+  myruns(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Run]
+  runLogs(
+    """Filter by values"""
+    ids: [ID]
+    run: ID
+  ): [RunLog]
+  snapshots(
+    """Filter by values"""
+    ids: [ID]
+    run: ID
+  ): [Snapshot]
+  workspace(
+    """The Id of the Graph"""
+    id: ID!
+  ): Workspace
+  workspaces(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Search for substring of name"""
+    search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Workspace]
+  flows(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+    workspace: ID
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Flow]
+  myflows(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+    workspace: ID
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Flow]
+  flow(
+    """A unique ID for this Graph"""
+    id: ID
+  ): Flow
+  myworkspaces(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Search for substring of name"""
+    search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Workspace]
+  reactivetemplate(
+    """The Id of the Graph"""
+    id: ID
+    implementation: ReactiveImplementationModelInput
+  ): ReactiveTemplate
+  reactivetemplates(
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of name"""
+    name: String
+  ): [ReactiveTemplate]
+  condition(
+    """The Id of the Graph"""
+    id: ID
+
+    """The assignation of the Graph"""
+    provision: ID
+  ): Condition
+  conditionEventsBetween(condition: ID!, min: DateTime, max: DateTime): [ConditionEvent]
+  conditionSnapshot(
+    """The Id of the Graph"""
+    id: ID!
+  ): ConditionSnapshot
+  conditions(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Condition]
+  myconditions(
+    """Filter by values"""
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Ordering"""
+    order: String
+
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Condition]
+  conditionSnapshots(
+    """Filter by values"""
+    ids: [ID]
+    condition: ID
+  ): [ConditionSnapshot]
+  permissionsFor(model: SharableModels!, name: String): [Permission]
+  permissionsOf(model: SharableModels!, id: ID!): PermissionsOfReturn
+  me: User
+  user(
+    """The user's id"""
+    id: ID
+
+    """The user's id"""
+    email: String
+  ): User
+
+  """Get a list of users"""
+  users(
+    """Search for substring of name"""
+    username: String
+
+    """Search for substring of name"""
+    email: String
+
+    """Search for substring of name"""
+    search: String
+  ): [User]
+
+  "Comments for a specific object\n    \n    This query returns all comments for a specific object. The object is\n    specified by the `model` and `id` arguments. The `model` argument is\n    a string that is the name of the model. The `id` argument is the id of\n    the object.\n\n    You can only query for comments for objects that you have access to.\n    \n    "
+  commentsfor(deep: Boolean, model: CommentableModels!, id: ID): [Comment]
+  mymentions: [Comment]
+  comment(id: ID!): Comment
+}
+
+type Run {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdWhile: String
+
+  """"""
+  flow: Flow
+
+  """"""
+  assignation: String
+
+  """"""
+  status: String
+
+  """"""
+  snapshotInterval: Int
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """"""
+  snapshots: [Snapshot!]!
+
+  """"""
+  logs: [RunLog!]!
+
+  """"""
+  events: [RunEvent!]!
+  pinned: Boolean
+  latestSnapshot: Snapshot
+}
+
+"""
+The `DateTime` scalar type represents a DateTime
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar DateTime
+
+"""A reflection on the real User"""
+type User {
+  """"""
+  id: ID!
+
+  """"""
+  password: String!
+
+  """"""
+  lastLogin: DateTime
+
+  """
+  Designates that this user has all permissions without explicitly assigning them.
+  """
+  isSuperuser: Boolean!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  groups: [Group!]!
+
+  """Specific permissions for this user."""
+  userPermissions: [Permission!]!
+
+  """Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."""
+  username: String!
+
+  """"""
+  firstName: String!
+
+  """"""
+  lastName: String!
+
+  """"""
+  email: String!
+
+  """Designates whether the user can log into this admin site."""
+  isStaff: Boolean!
+
+  """
+  Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+  """
+  isActive: Boolean!
+
+  """"""
+  dateJoined: DateTime!
+
+  """The sub of the user"""
+  sub: String
+
+  """"""
+  iss: String
+
+  """"""
+  workspaceSet: [Workspace!]!
+
+  """The users that have pinned the position"""
+  pinnedWorkspaces: [Workspace!]!
+
+  """"""
+  workspaceCreatedBy: [Workspace!]!
+
+  """"""
+  flowSet: [Flow!]!
+
+  """The users that have pinned the position"""
+  pinnedFlows: [Flow!]!
+
+  """"""
+  flowCreatedBy: [Flow!]!
+
+  """The users that have pinned the position"""
+  pinnedRuns: [Run!]!
+
+  """"""
+  runCreatedBy: [Run!]!
+
+  """The users that have pinned the position"""
+  pinnedConditions: [Condition!]!
+
+  """"""
+  conditionCreatedBy: [Condition!]!
+
+  """"""
+  comments: [Comment!]!
+
+  """"""
+  mentionedIn: [Comment!]!
+
+  """"""
+  resolvedComments: [Comment!]!
+
+  """The associated color for this user"""
+  color: String
+
+  """The name of the user"""
+  name: String
+}
+
+type Group {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  permissions: [Permission!]!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  userSet: [User!]!
+}
+
+"""
+A Permission object
+
+This object represents a permission in the system. Permissions are
+used to control access to different parts of the system. Permissions
+are assigned to groups and users. A user has access to a part of the
+system if the user is a member of a group that has the permission
+assigned to it.
+"""
+type Permission {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  codename: String!
+
+  """"""
+  groupSet: [Group!]!
+
+  """Specific permissions for this user."""
+  userSet: [User!]!
+
+  """Unique ID for this permission"""
+  unique: String!
+}
+
+type Workspace {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdWhile: String
+  restrict: [String]!
+
+  """"""
+  name: String
+
+  """"""
+  creator: User
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """"""
+  flows: [Flow!]!
+  pinned: Boolean
+
+  """The latest flow"""
+  latestFlow: Flow
+}
+
+type Flow {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdWhile: String
+
+  """"""
+  workspace: Workspace
+
+  """"""
+  creator: User
+  restrict: GenericScalar
+
+  """"""
+  version: String!
+  name: String!
+  nodes: GenericScalar
+  edges: GenericScalar
+  graph: FlowGraph!
+
+  """"""
+  hash: String!
+
+  """"""
+  screenshot: String
+
+  """"""
+  description: String
+
+  """Is this a brittle flow? aka. should the flow fail on any exception?"""
+  brittle: Boolean!
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """"""
+  runs: [Run!]!
+
+  """"""
+  conditions: [Condition!]!
+  pinned: Boolean
+  zoom: Float
+  position: [Int]
+}
+
+"""
+The `GenericScalar` scalar type represents a generic
+GraphQL scalar value that could be:
+String, Boolean, Int, Float, List or Object.
+"""
+scalar GenericScalar
+
+type FlowGraph {
+  zoom: Float
+  position: [Int]
+  nodes: [FlowNode]!
+  edges: [FlowEdge]!
+  globals: [Global]!
+  args: [Port]!
+  returns: [Port]!
+}
+
+interface FlowNode {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+}
+
+type Position {
+  x: Int!
+  y: Int!
+}
+
+interface FlowEdge {
+  id: String!
+  source: String!
+  target: String!
+  sourceHandle: String!
+  targetHandle: String!
+  typename: String!
+}
+
+type Global {
+  toKeys: [String]!
+  port: Port!
+}
+
+type Port {
+  key: String!
+
+  """The key of the arg"""
+  nullable: Boolean!
+  scope: Scope!
+  default: Any
+  identifier: String
+  variants: [PortChild]
+  kind: StreamKind!
+  child: PortChild
+  label: String
+  description: String
+  assignWidget: Widget
+  returnWidget: ReturnWidget
+}
+
+"""Scope of the Port"""
+enum Scope {
+  GLOBAL
+  LOCAL
+}
+
+"""Any any field"""
+scalar Any
+
+type PortChild {
+  nullable: Boolean!
+  kind: StreamKind!
+  scope: Scope!
+  identifier: String
+  variants: [PortChild]
+  child: PortChild
+
+  """Description of the Widget"""
+  assignWidget: Widget
+
+  """A return widget"""
+  returnWidget: ReturnWidget
+}
+
+enum StreamKind {
+  INT
+  STRING
+  STRUCTURE
+  FLOAT
+  LIST
+  BOOL
+  ENUM
+  DICT
+  UNION
+  UNSET
+}
+
+type Widget {
+  """type"""
+  kind: String!
+
+  """Do we have a possible"""
+  query: String
+
+  """The dependencies of this port"""
+  dependencies: [String]
+
+  """The dependencies of this port"""
+  choices: [Choice]
+
+  """Max value for int widget"""
+  max: Int
+
+  """Max value for int widget"""
+  min: Int
+
+  """Placeholder for any widget"""
+  placeholder: String
+
+  """Is this a paragraph"""
+  asParagraph: Boolean
+
+  """A hook for the app to call"""
+  hook: String
+
+  """A hook for the app to call"""
+  ward: String
+}
+
+type Choice {
+  value: Any!
+  label: String!
+}
+
+type ReturnWidget {
+  """type"""
+  kind: String!
+
+  """Do we have a possible"""
+  query: String
+
+  """The dependencies of this port"""
+  dependencies: [String]
+
+  """The dependencies of this port"""
+  choices: [Choice]
+}
+
+type Condition {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  createdBy: User
+
+  """"""
+  createdWhile: String
+
+  """"""
+  flow: Flow
+
+  """"""
+  provision: String
+
+  """"""
+  snapshotInterval: Int
+
+  """The users that have pinned the position"""
+  pinnedBy: [User!]!
+
+  """"""
+  snapshots: [ConditionSnapshot!]!
+
+  """"""
+  events: [ConditionEvent!]!
+  pinned: Boolean
+  latestSnapshot: ConditionSnapshot
+}
+
+type ConditionSnapshot {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  condition: Condition
+
+  """"""
+  status: String
+
+  """"""
+  events: [ConditionEvent!]!
+}
+
+type ConditionEvent {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  condition: Condition
+
+  """"""
+  snapshot: [ConditionSnapshot!]!
+  source: String
+  value: String!
+  state: ContractStatus!
+}
+
+"""Scope of the Port"""
+enum ContractStatus {
+  ACTIVE
+  INACTIVE
+}
+
+"""
+A comment
+
+A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+"""
+type Comment {
+  """"""
+  id: ID!
+
+  """The content type of the commentable object"""
+  contentType: CommentableModels
+
+  """"""
+  objectId: Int!
+
+  """"""
+  user: User!
+
+  """"""
+  text: String!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  parent: Comment
+
+  """The descendents of the comment (this referes to the Comment Tree)"""
+  descendents: [Descendent]
+
+  """"""
+  mentions: [User!]!
+
+  """"""
+  resolved: DateTime
+
+  """"""
+  resolvedBy: User
+
+  """Comments that are replies to this comment"""
+  children(
+    """How many children to return"""
+    limit: Int
+
+    """The offset for the children"""
+    offset: Int
+  ): [Comment]
+}
+
+enum CommentableModels {
+  FLOW_WORKSPACE
+  FLOW_FLOW
+  FLOW_RUN
+  FLOW_SNAPSHOT
+  FLOW_RUNLOG
+  FLOW_RUNEVENT
+  FLOW_REACTIVETEMPLATE
+  FLOW_CONDITION
+  FLOW_CONDITIONSNAPSHOT
+  FLOW_CONDITIONEVENT
+}
+
+"""A descendent of a node in the comment tree"""
+interface Descendent {
+  typename: String
+}
+
+type Snapshot {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  run: Run
+
+  """"""
+  t: Int!
+
+  """"""
+  status: String
+
+  """"""
+  events: [RunEvent!]!
+}
+
+type RunEvent {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  run: Run
+
+  """"""
+  snapshot: [Snapshot!]!
+
+  """"""
+  type: RunEventType!
+
+  """"""
+  t: Int!
+  causedBy: [Int]
+  source: String!
+  handle: String!
+  value: EventValue
+}
+
+"""An enumeration."""
+enum RunEventType {
+  """NEXT (Value represent Item)"""
+  NEXT
+
+  """Error (Value represent Exception)"""
+  ERROR
+
+  """COMPLETE (Value is none)"""
+  COMPLETE
+
+  """UNKNOWN (Should never be used)"""
+  UNKNOWN
+}
+
+"""Any any field"""
+scalar EventValue
+
+type RunLog {
+  """"""
+  id: ID!
+
+  """"""
+  run: Run
+
+  """"""
+  log: String
+  node: String!
+}
+
+type ReactiveTemplate {
+  """"""
+  id: ID!
+  name: String!
+
+  """"""
+  description: String
+  implementation: ReactiveImplementationModelInput!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  defaults: GenericScalar
+  constants: [Port]
+}
+
+"""An enumeration."""
+enum ReactiveImplementationModelInput {
+  """ZIP (Zip the data)"""
+  ZIP
+
+  """COMBINELATEST (Combine values with latest value from each stream)"""
+  COMBINELATEST
+
+  """WITHLATEST (Combine a leading value with the latest value)"""
+  WITHLATEST
+
+  """BUFFER_COMPLETE (Buffer values until complete is retrieved)"""
+  BUFFER_COMPLETE
+
+  """BUFFER_UNTIL (Buffer values until signal is send)"""
+  BUFFER_UNTIL
+
+  """DELAY (Delay the data)"""
+  DELAY
+
+  """DELAY_UNTIL (Delay the data until signal is send)"""
+  DELAY_UNTIL
+
+  """CHUNK (Chunk the data)"""
+  CHUNK
+
+  """SPLIT (Split the data)"""
+  SPLIT
+
+  """OMIT (Omit the data)"""
+  OMIT
+
+  """ENSURE (Ensure the data (discards None in the stream))"""
+  ENSURE
+
+  """ADD (Add a number to the data)"""
+  ADD
+
+  """SUBTRACT (Subtract a number from the data)"""
+  SUBTRACT
+
+  """MULTIPLY (Multiply the data with a number)"""
+  MULTIPLY
+
+  """DIVIDE (Divide the data with a number)"""
+  DIVIDE
+
+  """MODULO (Modulo the data with a number)"""
+  MODULO
+
+  """POWER (Power the data with a number)"""
+  POWER
+
+  """PREFIX (Prefix the data with a string)"""
+  PREFIX
+
+  """SUFFIX (Suffix the data with a string)"""
+  SUFFIX
+
+  """FILTER (Filter the data of a union)"""
+  FILTER
+
+  """GATE (Gate the data, first value is gated, second is gate)"""
+  GATE
+
+  """TO_LIST (Convert to list)"""
+  TO_LIST
+
+  """FOREACH (Foreach element in list)"""
+  FOREACH
+
+  """IF (If condition is met)"""
+  IF
+
+  """AND (AND condition)"""
+  AND
+
+  """ALL (establish if all values are Trueish)"""
+  ALL
+}
+
+"""
+Sharable Models are models that can be shared amongst users and groups. They representent the models of the DB
+"""
+enum SharableModels {
+  FLOW_WORKSPACE
+  FLOW_FLOW
+  FLOW_RUN
+  FLOW_SNAPSHOT
+  FLOW_RUNLOG
+  FLOW_RUNEVENT
+  FLOW_REACTIVETEMPLATE
+  FLOW_CONDITION
+  FLOW_CONDITIONSNAPSHOT
+  FLOW_CONDITIONEVENT
+}
+
+type PermissionsOfReturn {
+  available: [Permission]
+  userAssignments: [UserAssignment]
+  groupAssignments: [GroupAssignment]
+}
+
+type UserAssignment {
+  permissions: [String]!
+
+  """A query that returns an image path"""
+  user: User!
+}
+
+type GroupAssignment {
+  permissions: [String]!
+
+  """A query that returns an image path"""
+  group: Group!
+}
+
+"""The root Mutation"""
+type Mutation {
+  updateworkspace(brittle: Boolean = false, graph: GraphInput, id: ID!, screenshot: ImageFile): Workspace
+  importflow(graph: GraphInput, name: String): Workspace
+  drawvanilla(
+    brittle: Boolean = false
+    name: String
+
+    """Do you want to restrict nodes to specific apps?"""
+    restrict: [String]
+  ): Workspace
+  deleteFlow(
+    """The Id of the Graph"""
+    id: ID!
+  ): DeleteFlowReturn
+  deleteWorkspace(
+    """The Id of the Graph"""
+    id: ID!
+  ): DeleteWorkspaceReturn
+
+  """
+  Pin Run
+      
+      This mutation pins an Runs and returns the pinned Run.
+  """
+  pinFlow(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Flow
+
+  """
+  Pin Run
+      
+      This mutation pins an Runs and returns the pinned Run.
+  """
+  pinWorkspace(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Workspace
+  start(assignation: ID!, flow: ID!, snapshotInterval: Int): Run
+  deleteRun(
+    """The Id of the Graph"""
+    id: ID!
+  ): DeleteRunReturn
+  alog(message: String!, run: ID!): RunLog
+  snapshot(
+    """The IDs of the events that make up the snapshot"""
+    events: [ID]!
+    run: ID!
+    t: Int!
+  ): Snapshot
+  deleteSnapshot(
+    """The Id of the Graph"""
+    id: ID!
+  ): DeleteSnapshotReturn
+  track(causedBy: [Int]!, handle: String!, run: ID!, source: String!, t: Int!, type: EventTypeInput!, value: EventValue): RunEvent
+
+  """
+  Pin Run
+      
+      This mutation pins an Runs and returns the pinned Run.
+  """
+  pinRun(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Run
+  createCondition(flow: ID!, provision: ID!, snapshotInterval: Int): Condition
+  deleteCondition(
+    """The Id of the Graph"""
+    id: ID!
+  ): DeleteConditionReturn
+  createConditionSnapshot(
+    condition: ID!
+
+    """The IDs of the events that make up the snapshot"""
+    events: [ID]!
+  ): ConditionSnapshot
+  deleteConditionSnapshot(
+    """The Id of the Graph"""
+    id: ID!
+  ): DeleteConditionSnapshotReturn
+  trace(condition: ID!, source: String!, state: ContractStatus!, value: String): ConditionEvent
+
+  """
+  Pin Condition
+      
+      This mutation pins an Runs and returns the pinned Run.
+  """
+  pinCondition(
+    """The ID of the representation"""
+    id: ID!
+
+    """The pin state"""
+    pin: Boolean!
+  ): Condition
+
+  """Creates a Sample"""
+  changePermissions(
+    groupAssignments: [GroupAssignmentInput]
+
+    """The Representationss this sROI belongs to"""
+    object: ID!
+    type: SharableModels!
+    userAssignments: [UserAssignmentInput]
+  ): ChangePermissionsResult
+
+  """
+  Create an Comment 
+      
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+  
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+  
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+  
+      
+      (only signed in users)
+  """
+  createComment(
+    """The comment tree"""
+    descendents: [DescendendInput]!
+
+    """The Representationss this sROI belongs to"""
+    object: ID!
+
+    """The parent comment"""
+    parent: ID
+
+    """The type model you want to comment on"""
+    type: CommentableModels!
+  ): Comment
+
+  """
+  Reply to an Comment 
+      
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+  
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+  
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+  
+      
+      (only signed in users)
+  """
+  replyTo(
+    """The comment tree"""
+    descendents: [DescendendInput]!
+
+    """The parent comment"""
+    parent: ID!
+  ): Comment
+
+  """
+  Create an Comment 
+      
+      This mutation resolves a comment. By resolving a comment, it will be marked as resolved,
+      and the user that resolved it will be set as the resolver.
+  
+      (only signed in users)
+  """
+  resolveComment(
+    """The comments id"""
+    id: ID!
+
+    """
+    Should we imitate the resolving by another user (requires imitate permission)
+    """
+    imitate: ID
+  ): Comment
+}
+
+input GraphInput {
+  zoom: Float
+  nodes: [NodeInput]!
+  edges: [EdgeInput]!
+  args: [PortInput]!
+  returns: [PortInput]!
+  globals: [GlobalInput]!
+}
+
+input NodeInput {
+  id: String!
+  typename: String!
+  hash: String
+  interface: String
+  name: String
+  description: String
+  kind: String
+  implementation: ReactiveImplementationModelInput
+  documentation: String
+  position: PositionInput!
+  defaults: GenericScalar
+  extra: GenericScalar
+  instream: [[PortInput]]!
+  outstream: [[PortInput]]!
+  constream: [[PortInput]]!
+  mapStrategy: MapStrategy
+  allowLocal: Boolean
+  binds: BindsInput
+  assignTimeout: Float = 100000
+  yieldTimeout: Float = 100000
+  maxRetries: Int = 3
+  retryDelay: Int = 5000
+  reserveTimeout: Float = 100000
+  parentNode: ID
+}
+
+input PositionInput {
+  x: Float!
+  y: Float!
+}
+
+input PortInput {
+  """The identifier"""
+  identifier: String
+
+  """The key of the arg"""
+  key: String!
+
+  """The name of this argument"""
+  name: String
+
+  """The name of this argument"""
+  label: String
+
+  """The type of this argument"""
+  kind: StreamKind!
+
+  """The scope of this argument"""
+  scope: Scope!
+
+  """The description of this argument"""
+  description: String
+
+  """The child of this argument"""
+  child: ChildPortInput
+  variants: [ChildPortInput]
+
+  """The child of this argument"""
+  assignWidget: WidgetInput
+
+  """The child of this argument"""
+  returnWidget: ReturnWidgetInput
+
+  """The key of the arg"""
+  default: Any
+
+  """Is this argument nullable"""
+  nullable: Boolean!
+}
+
+input ChildPortInput {
+  nullable: Boolean
+
+  """The scope of this argument"""
+  scope: Scope!
+
+  """The identifier"""
+  identifier: String
+
+  """The type of this argument"""
+  kind: StreamKind!
+  child: ChildPortInput
+  variants: [ChildPortInput]
+
+  """Description of the Widget"""
+  assignWidget: WidgetInput
+
+  """A return widget"""
+  returnWidget: ReturnWidgetInput
+}
+
+input WidgetInput {
+  """type"""
+  kind: String!
+
+  """Do we have a possible"""
+  query: String
+
+  """The dependencies of this port"""
+  dependencies: [String]
+
+  """The dependencies of this port"""
+  choices: [ChoiceInput]
+
+  """Max value for int widget"""
+  max: Int
+
+  """Max value for int widget"""
+  min: Int
+
+  """Placeholder for any widget"""
+  placeholder: String
+
+  """Is this a paragraph"""
+  asParagraph: Boolean
+
+  """A hook for the app to call"""
+  hook: String
+
+  """A ward for the app to call"""
+  ward: String
+}
+
+input ChoiceInput {
+  value: Any!
+  label: String!
+}
+
+input ReturnWidgetInput {
+  """type"""
+  kind: String!
+
+  """Do we have a possible"""
+  query: String
+
+  """The dependencies of this port"""
+  choices: [ChoiceInput]
+
+  """A hook for the app to call"""
+  hook: String
+
+  """A ward for the app to call"""
+  ward: String
+}
+
+"""Maping Strategy for the Map Operator"""
+enum MapStrategy {
+  MAP
+  AS_COMPLETED
+  ORDERED
+}
+
+input BindsInput {
+  templates: [String]
+  clients: [String]
+}
+
+input EdgeInput {
+  id: String!
+  typename: String!
+  source: String!
+  target: String!
+  sourceHandle: String!
+  targetHandle: String!
+  stream: [StreamItemInput]
+}
+
+input StreamItemInput {
+  key: String!
+  kind: StreamKind!
+
+  """The scope of this argument"""
+  scope: Scope!
+  identifier: String
+  nullable: Boolean!
+  variants: [StreamItemChildInput]
+  child: StreamItemChildInput
+}
+
+input StreamItemChildInput {
+  kind: StreamKind!
+
+  """The scope of this argument"""
+  scope: Scope!
+  identifier: String
+  nullable: Boolean!
+  variants: [StreamItemChildInput]
+  child: StreamItemChildInput
+}
+
+input GlobalInput {
+  toKeys: [String]!
+  port: PortInput!
+}
+
+"""
+An Image File (png, jpg)
+
+[type]: [description]
+"""
+scalar ImageFile
+
+type DeleteFlowReturn {
+  id: ID
+}
+
+type DeleteWorkspaceReturn {
+  id: ID
+}
+
+type DeleteRunReturn {
+  id: ID!
+}
+
+type DeleteSnapshotReturn {
+  id: ID!
+}
+
+"""Event Type for the Event Operator"""
+enum EventTypeInput {
+  """NEXT (Value represent Item)"""
+  NEXT
+
+  """Error (Value represent Exception)"""
+  ERROR
+
+  """COMPLETE (Value is none)"""
+  COMPLETE
+
+  """UNKNOWN (Should never be used)"""
+  UNKNOWN
+}
+
+type DeleteConditionReturn {
+  id: ID!
+}
+
+type DeleteConditionSnapshotReturn {
+  id: ID!
+}
+
+type ChangePermissionsResult {
+  success: Boolean
+  message: String
+}
+
+input GroupAssignmentInput {
+  permissions: [String]!
+  group: ID!
+}
+
+input UserAssignmentInput {
+  permissions: [String]!
+
+  """The user id"""
+  user: String!
+}
+
+input DescendendInput {
+  children: [DescendendInput]
+
+  """The type of the descendent"""
+  typename: String
+
+  """The user that is mentioned"""
+  user: String
+
+  """Is this a bold leaf?"""
+  bold: Boolean
+
+  """Is this a italic leaf?"""
+  italic: Boolean
+
+  """Is this a code leaf?"""
+  code: Boolean
+
+  """The text of the leaf"""
+  text: String
+}
+
+"""The root Subscriptions"""
+type Subscription {
+  events(
+    """The id of the run you want to listen to"""
+    id: ID!
+  ): Event
+  conditionevents(
+    """The id of the run you want to listen to"""
+    id: ID!
+  ): ConditionEvents
+
+  "My Mentions\n\n    Returns an event of a new mention for the user if the user \n    was mentioned in a comment.\n    "
+  mymentions: MentionEvent
+}
+
+type Event {
+  deleted: ID
+  update: RunEvent
+  create: RunEvent
+}
+
+type ConditionEvents {
+  deleted: ID
+  update: ConditionEvent
+  create: ConditionEvent
+}
+
+type MentionEvent {
+  deleted: ID
+  update: Comment
+  create: Comment
+}
+
+"""
+A map node that utilizes
+a call to the associated rekuest node
+run a task
+"""
+type ArkitektNode implements FlowNode & FlowNodeCommons & RetriableNode {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+  maxRetries: Int!
+  retryDelay: Int!
+  hash: String!
+  name: String
+  description: String
+  kind: String!
+  mapStrategy: MapStrategy!
+  allowLocal: Boolean!
+  assignTimeout: Float!
+  yieldTimeout: Float!
+  reserveTimeout: Float!
+  binds: Binds
+}
+
+interface FlowNodeCommons {
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+}
+
+interface RetriableNode {
+  maxRetries: Int!
+  retryDelay: Int!
+}
+
+type Binds {
+  templates: [String]
+  clients: [String]
+}
+
+"""
+A filter node that utilizes
+a call to the associated rekuest node
+to filter a stream based on a predicate
+(the rekuest node must return a boolean)
+"""
+type ArkitektFilterNode implements FlowNode & FlowNodeCommons & RetriableNode {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+  maxRetries: Int!
+  retryDelay: Int!
+  hash: String!
+  name: String
+  description: String
+  kind: String!
+  mapStrategy: MapStrategy!
+  allowLocal: Boolean!
+  assignTimeout: Float!
+  yieldTimeout: Float!
+  reserveTimeout: Float!
+  binds: Binds
+}
+
+type LocalNode implements FlowNode & FlowNodeCommons & RetriableNode {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+  maxRetries: Int!
+  retryDelay: Int!
+  hash: String!
+  interface: String!
+  name: String
+  description: String
+  kind: String!
+  mapStrategy: MapStrategy!
+  allowLocal: Boolean!
+  assignTimeout: Float!
+  yieldTimeout: Float!
+  retrySleepMs: Int!
+}
+
+type GraphNode implements FlowNode & FlowNodeCommons {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+  hash: String!
+  name: String
+}
+
+type ArgNode implements FlowNode & FlowNodeCommons {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+}
+
+type KwargNode implements FlowNode & FlowNodeCommons {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+}
+
+type ReturnNode implements FlowNode & FlowNodeCommons {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+}
+
+type ReactiveNode implements FlowNode & FlowNodeCommons {
+  id: String!
+  position: Position!
+  parentNode: ID
+  typename: String!
+  instream: [[Port]]!
+  outstream: [[Port]]!
+  constream: [[Port]]!
+  constants: GenericScalar
+  documentation: String
+  defaults: GenericScalar
+  implementation: ReactiveImplementationModelInput!
+}
+
+type LabeledEdge implements FlowEdge & FlowEdgeCommons {
+  id: String!
+  source: String!
+  target: String!
+  sourceHandle: String!
+  targetHandle: String!
+  typename: String!
+  stream: [StreamItem]!
+}
+
+interface FlowEdgeCommons {
+  stream: [StreamItem]!
+}
+
+type StreamItem {
+  key: String!
+  kind: StreamKind!
+  scope: Scope!
+  identifier: String
+  nullable: Boolean!
+  child: StreamItemChild
+  variants: [StreamItemChild]
+}
+
+type StreamItemChild {
+  kind: StreamKind!
+  scope: Scope!
+  nullable: Boolean!
+  identifier: String
+  child: StreamItemChild
+  variants: [StreamItemChild]
+}
+
+type FancyEdge implements FlowEdge & FlowEdgeCommons {
+  id: String!
+  source: String!
+  target: String!
+  sourceHandle: String!
+  targetHandle: String!
+  typename: String!
+  stream: [StreamItem]!
+}
+
+"""A node in the comment tree"""
+interface CommentNode {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+}
+
+"""A leaf in the comment tree. Representations some sort of text"""
+type Leaf implements Descendent {
+  typename: String
+
+  """Is this a bold leaf?"""
+  bold: Boolean
+
+  """Is this a italic leaf?"""
+  italic: Boolean
+
+  """Is this a code leaf?"""
+  code: Boolean
+
+  """The text of the leaf"""
+  text: String
+}
+
+"""
+A mention in the comment tree. This  is a reference to another user on the platform
+"""
+type MentionDescendent implements CommentNode & Descendent {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+  typename: String
+
+  """The user that is mentioned"""
+  user: User!
+}
+
+"""
+A paragraph in the comment tree. This paragraph contains other nodes (list nodes)
+"""
+type ParagraphDescendent implements CommentNode & Descendent {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+  typename: String
+
+  """The size of the paragraph"""
+  size: String
+}

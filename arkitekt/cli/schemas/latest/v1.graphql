@@ -1,0 +1,775 @@
+"""The root Query"""
+type Query {
+  hello: String
+  void: String
+  userapp(
+    """Unique app name for user"""
+    name: String
+
+    """Unique app name for user"""
+    clientId: ID
+  ): Application
+  applications: [Application]
+  myapplications: [Application]
+  application(
+    """The ID to search by"""
+    clientId: ID!
+  ): Application
+  myclients: [Application]
+  scopes(
+    """Unique app name for user"""
+    search: String
+
+    """Unique app name for user"""
+    values: [ID]
+  ): [Scope]
+  scope(
+    """Unique app name for user"""
+    key: String!
+  ): Scope
+  user(
+    """The email of the user"""
+    email: String
+
+    """The email of the user"""
+    id: ID
+  ): HerreUser
+  me: HerreUser
+  users(
+    username: String
+    email: String
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of username"""
+    search: String
+  ): [HerreUser]
+
+  """Get a group"""
+  group(
+    """Unique app name fddor user"""
+    id: ID
+
+    """Unique app name fddor user"""
+    name: String
+  ): Group
+
+  """Get a list of users"""
+  groups(
+    name: String
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of username"""
+    search: String
+  ): [Group]
+
+  """Get a list of users"""
+  mygroups(
+    """Unique app name for user"""
+    name: String
+  ): [Group]
+
+  """Get a group"""
+  channel(
+    """Unique app name fddor user"""
+    id: ID
+  ): Channel
+
+  """Get a list of users"""
+  channels(
+    name: String
+
+    """Filter by values"""
+    ids: [ID]
+
+    """Search for substring of username"""
+    search: String
+
+    """Filter by user"""
+    user: ID
+  ): [Channel]
+  client(
+    """The FaktApp ID"""
+    id: ID
+
+    """The client id of one associated oauth2 application"""
+    clientId: ID
+
+    """The FaktApp ID"""
+    token: ID
+  ): Client
+  myPrivateClients: [Client]
+  clients: [Client]
+  myPublicClients: [Client]
+  app(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    identifier: String
+
+    """Unique app name for user"""
+    version: String
+
+    """The client id of one associated oauth2 application"""
+    clientId: ID
+  ): App
+  apps(
+    """Search for substring of identifier"""
+    search: String
+  ): [App]
+  release(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    identifier: String
+
+    """Unique app name for user"""
+    version: String
+
+    """The client id of one associated oauth2 application"""
+    clientId: ID
+  ): Release
+  releases(
+    """Filter by app"""
+    app: ID
+  ): [Release]
+  filter(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    name: String
+  ): Filter
+  filters(
+    """Filter by linker"""
+    linker: ID
+
+    """Search for methods of identifier"""
+    methods: [FilterMethod]
+  ): [Filter]
+  linker(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    name: String
+  ): Linker
+  linkers(
+    """Filter by template"""
+    template: ID
+
+    """Search for substring of identifier"""
+    search: String
+  ): [Linker]
+  configuration(
+    """The FaktApp ID"""
+    id: ID
+
+    """Unique app name for user"""
+    name: String
+  ): Configuration
+  configurations(
+    """Search for substring of identifier"""
+    search: String
+  ): [Configuration]
+
+  """Get information on your Docker Template"""
+  member(
+    """The Whale ID"""
+    id: ID!
+  ): Member
+  graphs: [Graph]
+}
+
+type Application {
+  """"""
+  id: ID!
+
+  """"""
+  clientId: String!
+
+  """"""
+  user: HerreUser
+
+  """The associated Redirect Uris"""
+  redirectUris: [String]
+
+  """"""
+  clientType: ApplicationClientType!
+
+  """"""
+  authorizationGrantType: ApplicationAuthorizationGrantType!
+
+  """"""
+  name: String!
+
+  """"""
+  skipAuthorization: Boolean!
+
+  """"""
+  created: DateTime!
+
+  """"""
+  updated: DateTime!
+
+  """"""
+  algorithm: ApplicationAlgorithm
+  client: Client
+
+  """The Url of the Image"""
+  image: String
+}
+
+type HerreUser {
+  """"""
+  id: ID!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  groups: [Group!]!
+
+  """Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."""
+  username: String!
+
+  """"""
+  firstName: String!
+
+  """"""
+  lastName: String!
+
+  """"""
+  email: String!
+
+  """
+  Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+  """
+  isActive: Boolean!
+  profile: Profile
+
+  """The associated rules of this """
+  roles: [String]
+}
+
+type Group {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  userSet: [HerreUser!]!
+  profile: GroupProfile
+}
+
+type GroupProfile {
+  """"""
+  id: ID!
+
+  """"""
+  name: String
+
+  """"""
+  group: Group!
+  avatar: String
+}
+
+type Profile {
+  """"""
+  id: ID!
+
+  """"""
+  name: String
+
+  """"""
+  user: HerreUser!
+  avatar: String
+}
+
+"""An enumeration."""
+enum ApplicationClientType {
+  """Confidential"""
+  CONFIDENTIAL
+
+  """Public"""
+  PUBLIC
+}
+
+"""An enumeration."""
+enum ApplicationAuthorizationGrantType {
+  """Authorization code"""
+  AUTHORIZATION_CODE
+
+  """Implicit"""
+  IMPLICIT
+
+  """Resource owner password-based"""
+  PASSWORD
+
+  """Client credentials"""
+  CLIENT_CREDENTIALS
+
+  """OpenID connect hybrid"""
+  OPENID_HYBRID
+}
+
+"""
+The `DateTime` scalar type represents a DateTime
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar DateTime
+
+"""An enumeration."""
+enum ApplicationAlgorithm {
+  """No OIDC support"""
+  A_
+
+  """RSA with SHA-2 256"""
+  RS256
+
+  """HMAC with SHA-2 256"""
+  HS256
+}
+
+type Client {
+  """"""
+  id: ID!
+
+  """"""
+  release: Release
+
+  """"""
+  oauth2Client: Application!
+
+  """"""
+  kind: ClientKind
+
+  """"""
+  token: String!
+
+  """"""
+  clientId: String!
+
+  """"""
+  clientSecret: String!
+  scopes: [String]!
+
+  """"""
+  creator: HerreUser!
+
+  """"""
+  user: HerreUser
+}
+
+type Release {
+  """"""
+  id: ID!
+
+  """"""
+  app: App!
+
+  """"""
+  version: String!
+
+  """"""
+  name: String!
+  logo: String
+
+  """"""
+  clients: [Client!]!
+}
+
+type App {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  identifier: String!
+  logo: String
+
+  """"""
+  releases: [Release!]!
+}
+
+"""An enumeration."""
+enum ClientKind {
+  """Website"""
+  WEBSITE
+
+  """Dekstop"""
+  DESKTOP
+
+  """User"""
+  USER
+}
+
+type Scope {
+  value: String!
+  label: String!
+  description: String
+}
+
+type Channel {
+  """"""
+  id: ID!
+
+  """"""
+  name: String
+
+  """"""
+  user: HerreUser!
+
+  """"""
+  token: String
+}
+
+type Filter {
+  """"""
+  id: ID!
+
+  """"""
+  linker: Linker!
+  method: FilterMethod!
+
+  """"""
+  value: String!
+}
+
+type Linker {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  template: Configuration!
+
+  """"""
+  priority: Int!
+
+  """"""
+  filters: [Filter!]!
+}
+
+type Configuration {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  body: String!
+
+  """"""
+  linkers: [Linker!]!
+}
+
+enum FilterMethod {
+  HOST_REGEX
+  HOST_IS
+  HOST_IS_NOT
+  PORT_IS
+  PORT_IS_NOT
+  VERSION_IS
+  VERSION_IS_NOT
+  VERSION_REGEX
+  IDENTIFIER_IS
+  IDENTIFIER_IS_NOT
+  IDENTIFIER_REGEX
+  USER_IS
+  USER_IS_DEVELOPER
+}
+
+type Member {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+}
+
+type Graph {
+  """"""
+  id: ID!
+
+  """"""
+  name: String!
+
+  """"""
+  version: String!
+
+  """Is this appearing on a selection of hosts?"""
+  host: String!
+
+  """"""
+  elements: [Element!]!
+
+  """"""
+  codes: [DeviceCode!]!
+}
+
+type Element {
+  """"""
+  id: ID!
+
+  """"""
+  graph: Graph!
+
+  """"""
+  name: String!
+  values: GenericScalar
+}
+
+"""
+The `GenericScalar` scalar type represents a generic
+GraphQL scalar value that could be:
+String, Boolean, Int, Float, List or Object.
+"""
+scalar GenericScalar
+
+type DeviceCode {
+  """"""
+  id: ID!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  code: String!
+
+  """"""
+  user: HerreUser
+
+  """"""
+  name: String
+
+  """"""
+  version: String
+
+  """"""
+  identifier: String
+  scopes: GenericScalar
+
+  """"""
+  graph: Graph
+
+  """"""
+  logo: String
+}
+
+"""The root Mutation"""
+type Mutation {
+  deleteApplication(
+    """The ID of the application"""
+    clientId: ID!
+  ): DeleteApplicationResult
+  createApplication(
+    """The Grant Type"""
+    grantType: GrantType!
+
+    """The Name of this Application"""
+    name: String!
+
+    """Available Redirect Uris for this Grant (required for implicit)"""
+    redirectUris: [String]
+  ): Application
+  createUserLoginApp(
+    """The Name of this Application"""
+    name: String!
+
+    """Available Redirect Uris for this Grant (required for code)"""
+    redirectUris: [String]
+  ): Application
+  createUserApp(
+    """The Identifier of this Application"""
+    identifier: String!
+
+    """The Name of this Application"""
+    name: String!
+
+    """The Version of this Application"""
+    version: String!
+  ): CreatedBackendApp
+  changeMe(email: Email, firstName: String, lastName: String): HerreUser
+  updateUser(active: Boolean, avatar: Upload, email: Email, firstName: String, id: ID!, lastName: String): HerreUser
+  updateGroup(
+    avatar: Upload
+    id: ID!
+
+    """The name of the group (non unique)"""
+    name: String
+  ): Group
+  deleteChannel(
+    """The ID of the application"""
+    token: String!
+  ): DeleteChannelResult
+  createChannel(
+    """The channel you want to create or update"""
+    name: String
+
+    """The expo token"""
+    token: String!
+  ): Channel
+  publishToChannel(channel: ID!, message: String!, title: String!): PublishResult
+  notifyUser(channels: [String], message: String!, title: String!, user: ID!): [PublishResult]
+  createPrivateClient(
+    """The Name of this Elemet"""
+    identifier: String!
+
+    """The ID of the User to imitate (only managers can do this)"""
+    imitate: ID
+
+    """The Logo of this Apps"""
+    logoUrl: String
+
+    """A list of potential scopes for this app"""
+    scopes: [String]!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    version: String!
+  ): Client
+  createPublicClient(
+    """The Name of this Elemet"""
+    identifier: String!
+
+    """The kind of this app"""
+    kind: PublicFaktType!
+
+    """The Logo of this Apps"""
+    logoUrl: String
+
+    """A list of potential redirects for this app"""
+    redirectUris: [String]!
+
+    """A list of potential scopes for this app"""
+    scopes: [String]!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    version: String!
+  ): Client
+  deleteClient(
+    """The ID of the application"""
+    id: ID!
+  ): DeleteClientResult
+  updateApp(
+    """The id of the app"""
+    id: ID!
+
+    """The Logo of this Apps"""
+    logo: Upload
+  ): App
+  createLinker(
+    """The Filters of this Elemet"""
+    filters: [FilterInput]!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    name: String!
+
+    """The Priority of this Elemet"""
+    priority: Int!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    template: ID!
+  ): Linker
+  deleteLinker(
+    """The ID of the application"""
+    id: ID!
+  ): DeleteLinkerResult
+  createConfiguration(
+    """The Name of this Elemet"""
+    body: String!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    name: String!
+  ): Configuration
+  deleteConfiguration(
+    """The ID of the application"""
+    id: ID!
+  ): DeleteConfigurationResult
+  createElement(
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    graph: ID!
+
+    """The Name of this Elemet"""
+    name: String!
+
+    """The configuraiton"""
+    values: Config!
+  ): Element
+  createGraph(
+    """The Name of this Elemet"""
+    name: String!
+  ): Graph
+}
+
+type DeleteApplicationResult {
+  clientId: ID
+}
+
+enum GrantType {
+  CLIENT_CREDENTIALS
+  IMPLICIT
+  PASSWORD
+  AUTHORIZATION_CODE
+}
+
+type CreatedBackendApp {
+  clientSecret: String
+  clientId: String
+}
+
+scalar Email
+
+"""
+Create scalar that ignores normal serialization/deserialization, since
+that will be handled by the multipart request spec
+"""
+scalar Upload
+
+type DeleteChannelResult {
+  token: String
+}
+
+type PublishResult {
+  channel: Channel
+  status: String
+}
+
+enum PublicFaktType {
+  DEKSTOP
+  WEBSITE
+}
+
+type DeleteClientResult {
+  id: ID
+}
+
+input FilterInput {
+  method: FilterMethod!
+  value: String!
+}
+
+type DeleteLinkerResult {
+  id: ID
+}
+
+type DeleteConfigurationResult {
+  id: ID
+}
+
+"""The configuration"""
+scalar Config

@@ -1,0 +1,96 @@
+services:
+  db:
+    environment:
+      POSTGRES_MULTIPLE_DATABASES: rekuest_db, mikro_db, fluss_db, lok_db, port_db
+      POSTGRES_PASSWORD: ed739bc1772e1c012374f07908bf6577
+      POSTGRES_USER: pokeyceladonant
+    image: jhnnsrs/daten:prod
+    volumes:
+    - ./configs/postgres.yaml:/workspace/config.yaml
+  fluss:
+    depends_on:
+    - redis
+    - db
+    image: jhnnsrs/fluss:prod
+    ports:
+    - 8070:8070
+    volumes:
+    - ./configs/fluss.yaml:/workspace/config.yaml
+  hub:
+    depends_on:
+    - lok
+    environment:
+      DOCKER_NETWORK_NAME: hub
+    image: jhnnsrs/hub:prod
+    ports:
+    - 8040:8040
+    volumes:
+    - ./configs/hub.yaml:/workspace/config.yaml
+  initc:
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_HOST: http://minio:9000
+      MINIO_ROOT_PASSWORD: 6a606b701ca4ec6e7856c3d0cef063bb
+      MINIO_ROOT_USER: hastylinenowl
+    image: jhnnsrs/init:prod
+    volumes:
+    - ./configs/minio.yaml:/workspace/config.yaml
+  lok:
+    depends_on:
+    - redis
+    - db
+    image: jhnnsrs/lok:prod
+    ports:
+    - 8000:8000
+    volumes:
+    - ./configs/lok.yaml:/workspace/config.yaml
+    - ./fakts:/workspace/fakts
+  mikro:
+    depends_on:
+    - redis
+    - db
+    - minio
+    image: jhnnsrs/mikro:prod
+    ports:
+    - 8080:8080
+    volumes:
+    - ./configs/mikro.yaml:/workspace/config.yaml
+  minio:
+    command: server /data
+    environment:
+      MINIO_ROOT_PASSWORD: 6a606b701ca4ec6e7856c3d0cef063bb
+      MINIO_ROOT_USER: hastylinenowl
+    image: minio/minio:RELEASE.2023-02-10T18-48-39Z
+    ports:
+    - 9000:9000
+    volumes:
+    - ./data:/data
+  port:
+    depends_on:
+    - lok
+    - db
+    - redis
+    image: jhnnsrs/port:prod
+    ports:
+    - 8050:8050
+    volumes:
+    - ./configs/port.yaml:/workspace/config.yaml
+    - /var/run/docker.sock:/var/run/docker.sock
+  rabbitmq:
+    command: rabbitmq-server
+    image: jhnnsrs/mister:fancy
+  redis:
+    image: redis:latest
+  rekuest:
+    depends_on:
+    - redis
+    - db
+    - rabbitmq
+    image: jhnnsrs/rekuest:prod
+    ports:
+    - 8090:8090
+    volumes:
+    - ./configs/rekuest.yaml:/workspace/config.yaml
+version: '3.7'

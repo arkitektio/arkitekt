@@ -1,5 +1,6 @@
-from arkitekt import Arkitekt
+from arkitekt.builders import easy
 
 
-def test_connect_app():
-    app = Arkitekt()
+def test_easy():
+    with easy("johannes", "latest"):
+        print("Hello world!")

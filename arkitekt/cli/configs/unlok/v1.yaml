@@ -1,0 +1,52 @@
+schema: http://localhost:8000/graphql
+documents: graphql/unlok/*/**.graphql
+extensions:
+  turms:
+    out_dir: unlok/api
+    exclude_typenames: true
+    freeze:
+      enabled: true
+    options:
+      enabled: true
+      use_enum_values: true
+      extra: "forbid"
+      types:
+        - "input"
+    stylers:
+      - type: turms.stylers.default.DefaultStyler
+      - type: turms.stylers.appender.AppenderStyler
+        append_fragment: "Fragment"
+    plugins:
+      - type: turms.plugins.enums.EnumsPlugin
+        skip_unreferenced: True
+      - type: turms.plugins.inputs.InputsPlugin
+        skip_unreferenced: True
+      - type: turms.plugins.fragments.FragmentsPlugin
+      - type: turms.plugins.operations.OperationsPlugin
+      - type: turms.plugins.funcs.FuncsPlugin
+        global_kwargs:
+          - type: unlok.rath.UnlokRath
+            key: rath
+            description: "The client we want to use (defaults to the currently active client)"
+        definitions:
+          - type: subscription
+            is_async: True
+            use: unlok.funcs.asubscribe
+          - type: query
+            is_async: True
+            use: unlok.funcs.aexecute
+          - type: mutation
+            is_async: True
+            use: unlok.funcs.aexecute
+          - type: subscription
+            use: unlok.funcs.subscribe
+          - type: query
+            use: unlok.funcs.execute
+          - type: mutation
+            use: unlok.funcs.execute
+    processors:
+      - type: turms.processors.black.BlackProcessor
+    scalar_definitions:
+      uuid: str
+      Any: typing.Any
+      ID: rath.scalars.ID
