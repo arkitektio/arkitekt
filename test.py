@@ -1,13 +1,15 @@
 "hallo"
-from arkitekt import easy
+from arkitekt.deployed import deployed
 
 
-print("hello")
 
-app = easy("com.example.test", url="http://localhost:8000", log_level="DEBUG")
+composition =  deployed("paper", "com.example.test")
+composition.deployment.up_on_enter = True
+composition.deployment.down_on_exit = False
+composition.deployment.stop_on_exit = False
 
 
-@app.rekuest.register()
+@composition.app.rekuest.register()
 def test(hallo: str) -> str:
     """Hallo
 
@@ -19,9 +21,14 @@ def test(hallo: str) -> str:
     Returns:
         str: Hallo
     """
+    print(hallo)
     return "test"
 
 
-with app:
-    app.rekuest.run()
+with composition:
+
+    print(composition.deployment.project.compose_files)
+
+
+
     print("hello")

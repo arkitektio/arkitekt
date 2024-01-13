@@ -61,6 +61,13 @@ def build_next_app(
     except ImportError as e:
         omero_ark = ImportException(import_exception=e, install_library="omero_ark")
 
+    try:
+        from arkitekt.apps.service.kluster import build_arkitekt_kluster
+
+        kluster = build_arkitekt_kluster(herre=herre, fakts=fakts)
+    except ImportError as e:
+        kluster = ImportException(import_exception=e, install_library="kluster")
+
     return NextApp(
         manifest=manifest,
         fakts=fakts,
@@ -69,5 +76,6 @@ def build_next_app(
         mikro=mikro,
         unlok=unlok,
         fluss=fluss,
+        kluster=kluster,
         omero_ark=omero_ark,
     )

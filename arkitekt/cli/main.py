@@ -16,6 +16,7 @@ from arkitekt.cli.constants import *
 from arkitekt.cli.texts import *
 from arkitekt.cli.commands.run.main import run
 from arkitekt.cli.commands.gen.main import gen
+from arkitekt.cli.commands.server.main import server
 from arkitekt.cli.commands.port.main import port
 from arkitekt.cli.commands.init.main import init
 from arkitekt.cli.commands.manifest.main import manifest
@@ -74,6 +75,7 @@ cli.add_command(gen, "gen")
 cli.add_command(port, "port")
 cli.add_command(manifest, "manifest")
 cli.add_command(scan, "scan")
+cli.add_command(server, "server")
 
 if __name__ == "__main__":
     cli()

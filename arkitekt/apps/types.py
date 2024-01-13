@@ -26,6 +26,12 @@ except ImportError:
 
 
 try:
+    from arkitekt.apps.service.kluster import ArkitektKluster
+except ImportError:
+    ArkitektKluster = ImportException  # type: ignore
+
+
+try:
     from arkitekt.apps.service.rekuest_next import ArkitektRekuestNext
 except ImportError:
     ArkitektRekuestNext = ImportException  # type: ignore
@@ -91,6 +97,7 @@ if TYPE_CHECKING:
     from arkitekt.apps.service.unlok import ArkitektUnlok
     from arkitekt.apps.service.rekuest_next import ArkitektRekuestNext
     from arkitekt.apps.service.herre_qt import ArkitektHerreQt
+    from arkitekt.apps.service.kluster import ArkitektKluster
     from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
 
 
@@ -105,6 +112,7 @@ class App(Composition):
     fluss: ArkitektFluss
     unlok: ArkitektUnlok
     omero_ark: ArkitektOmeroArk
+    kluster: ArkitektKluster
 
 
 class EasyApp(Composition):
@@ -118,6 +126,7 @@ class EasyApp(Composition):
     fluss: ArkitektFluss
     unlok: ArkitektUnlok
     omero_ark: ArkitektOmeroArk
+    kluster: ArkitektKluster
 
 
 class NextApp(Composition):
@@ -131,6 +140,7 @@ class NextApp(Composition):
     fluss: ArkitektFluss
     unlok: ArkitektUnlok
     omero_ark: ArkitektOmeroArk
+    kluster: ArkitektKluster
 
 
 class QtApp(Composition):
@@ -141,3 +151,4 @@ class QtApp(Composition):
     mikro: ArkitektMikro
     unlok: ArkitektUnlok
     fluss: ArkitektFluss
+    kluster: ArkitektKluster

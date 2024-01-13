@@ -11,27 +11,27 @@ self-documenting asynchronous scalable RPC
 
 ## Idea
 
-arkitekt is the python client for the arkitekt server, a central repository for the provision and calling of functions in distributed apps.
+arkitekt is the python client for the arkitekt platform. It allows you to utilize the full extent of the platform from your python code.
+To understand the idea behind arkitekt, you need to understand the idea behind the arkitekt platform.
+(More on this in the [documentation](https://arkitekt.live))
 
-Together with fluss it provides the backbone of the mikro platform, that enables distributed scalable reactive workflows.
+## Features
+
+- Host your python functions and make them to your team
+- Use functions from your team in your code
+- Interact with and store data in a secure and scalable way on the platform
+- Use the platform as a central storage for your data
 
 ## Install
 
 ```bash
-pip install arkitekt
+pip install arkitekt[all]
 ```
 
-arkitekt is relying heavily on asyncio patters and therfore supports python 3.7 and above. It also relies on the pydantic stack for serialization.
+This installs all dependencies for the arkitekt platform, inlcuding the arkitekt CLI, which can be used to develop and create apps, containerize them and deploy t
 
-arkitekt installs also _three sister packages_:
 
-**koil** - an abstraction layer on top of asyncio to enable usage of async apis (syncronously) in other event loops (qt, juypter)
-
-**fakts** - an configuration discovery agent that helps with locating the backend services (think oauth2 for configuration)
-
-**herre** - an async implentation of oauth2 authenticaiton flows. (authorizaiton code + client credentials)
-
-> If you are working in image analysis checkout the mikro platform that also provides data structures for image analysis.
+arkitekt is relying heavily on asyncio patters and therfore supports python 3.8 and above. It also relies on the pydantic stack for serialization.
 
 ## Get started
 

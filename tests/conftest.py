@@ -29,3 +29,13 @@ def initialized_app_cli_runner():
         )
         assert result.exit_code == 0, result.output
         yield runner
+
+
+
+@pytest.fixture
+def deployed_app():
+    from arkitekt.deployed import deployed
+
+    deployment = deployed("paper", "com.example.test")
+    with deployment:
+        yield deployment
