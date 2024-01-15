@@ -12,18 +12,18 @@ herre = ">=0.4.2"
 fakts = ">=0.4.0"
 rekuest = { version = ">=0.2.24", optional = true }
 mikro = { version = ">=0.3.95", optional = true }
-mikro-next = { version = ">=0.1.4", python = "^3.10", optional = true }
+mikro-next = { version = ">=0.1.6", python = "^3.10", optional = true }
 unlok = { version = ">=0.1.18", optional = true }
 fluss = { version = ">=0.1.61", optional = true }
 reaktion = { version = ">=0.1.48", python = "^3.8", optional = true }
 omero-ark = { version = ">=0.0.3", python = "^3.8", optional = true }
 kluster = { version = ">=0.0.3", python = "^3.9", optional = true }
 
-rich-click = { version = "^1.6.1", optional = true }
-watchfiles = { version = "^0.18.1", optional = true }
+rich-click = { version = ">=1.6.1", optional = true }
+watchfiles = { version = ">=0.18.1", optional = true }
 turms = { version = ">=0.4.2", python = "^3.9", optional = true }
-semver = { version = "^3.0.1", optional = true }
-dokker = "^0.1.19"
+semver = { version = ">=3.0.1", optional = true }
+dokker = ">=0.1.20"
 
 
 [tool.poetry.extras]
