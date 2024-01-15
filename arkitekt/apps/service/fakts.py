@@ -4,9 +4,10 @@ from typing import Optional
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts.grants.remote import RemoteGrant
 from fakts.grants.remote.demanders.auto_save import AutoSaveDemander
-from fakts.grants.remote.demanders.cache import AutoSaveCacheStore
+from fakts.grants.remote.demanders.cache import CacheTokenStore
 from fakts.grants.remote.demanders.static import StaticDemander
 from fakts.grants.remote.demanders.device_code import DeviceCodeDemander
+from fakts.grants.remote.claimers.post import ClaimEndpointClaimer
 from arkitekt.model import Manifest
 
 
@@ -41,7 +42,7 @@ def build_arkitekt_fakts(
                 redirect_uri="http://localhost:6767",
                 open_browser=not headless,
             ),
-            store=AutoSaveCacheStore(
+            store=CacheTokenStore(
                 cache_file=f".arkitekt/cache/{identifier}-{version}_fakts_cache.json"
             ),
         )
@@ -50,6 +51,7 @@ def build_arkitekt_fakts(
         grant=RemoteGrant(
             demander=demander,
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
+            claimer=ClaimEndpointClaimer(),
         )
     )
 
@@ -65,5 +67,6 @@ def build_arkitekt_token_fakts(
         grant=RemoteGrant(
             demander=StaticDemander(token=token),
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
+            claimer=ClaimEndpointClaimer(),
         )
     )

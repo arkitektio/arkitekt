@@ -77,6 +77,15 @@ def build_arkitekt_easy_app(
             raise e
         omero_ark = ImportException(import_exception=e, install_library="omero_ark")
 
+    try:
+        from arkitekt.apps.service.kluster import build_arkitekt_kluster
+
+        kluster = build_arkitekt_kluster(herre=herre, fakts=fakts)
+    except ImportError as e:
+        if enforce and "kluster" in enforce:
+            raise e
+        kluster = ImportException(import_exception=e, install_library="kluster")
+
     return EasyApp(
         manifest=manifest,
         fakts=fakts,
@@ -86,4 +95,5 @@ def build_arkitekt_easy_app(
         unlok=unlok,
         fluss=fluss,
         omero_ark=omero_ark,
+        kluster=kluster,
     )

@@ -20,7 +20,8 @@ def easy(
     token: Optional[str] = None,
     no_cache: bool = False,
     instance_id: str = "main",
-    register_reaktion: bool = False,
+    register_reaktion: bool = True,
+    strict: bool = False,
     app_kind: str = "development",
     enforce: Optional[List[str]] = None,
 ) -> EasyApp:
@@ -122,9 +123,14 @@ def easy(
 
             app.rekuest.agent.extensions["reaktion"] = ReaktionExtension()
         except ImportError as e:
-            raise InstallModuleException(
-                "You need to install reaktion to use the reaktion extension"
-            ) from e
+            if strict:
+                raise InstallModuleException(
+                    "You need to install reaktion to use the reaktion extension"
+                ) from e
+            else:
+                logging.warning(
+                    "You need to install reaktion in order to schedule workflows. You can install it with `pip install reaktion`"
+                )
 
     return app
 
@@ -572,7 +578,9 @@ def publicscheduleqt(
     manifest = Manifest(
         version=version,
         identifier=identifier,
-        scopes=scopes or ["openid", "read", "write"],
+        scopes=scopes + ["openid"]
+        if scopes
+        else ["openid"],  # we need openid to get the user info
         logo=logo,
     )
 

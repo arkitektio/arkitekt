@@ -8,6 +8,7 @@ from herre.grants.auto_login import AutoLoginGrant
 from herre.grants.qt.auto_login import AutoLoginWidget
 from herre.fakts.fakts_endpoint_fetcher import FaktsUserFetcher
 from arkitekt.model import Manifest, User
+from arkitekt.apps.service.grant_registry import ARKITEKT_GRANT_REGISTRY
 
 
 class ArkitektAutoLogin(AutoLoginGrant):
@@ -43,7 +44,9 @@ def build_arkitekt_qt_herre(
         fetcher=FaktsUserFetcher(
             fakts=fakts, fakts_key="lok.userinfo_url", userModel=User
         ),
-        grant=FaktsGrant(fakts=fakts, fakts_group="lok"),
+        grant=FaktsGrant(
+            fakts=fakts, fakts_group="lok", grant_registry=ARKITEKT_GRANT_REGISTRY
+        ),
     )
 
     return ArkitektHerreQt(

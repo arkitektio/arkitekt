@@ -1,6 +1,5 @@
 from arkitekt.model import Manifest
 from arkitekt.apps.types import QtApp
-from koil.composition.qt import QtPedanticKoil
 from arkitekt.apps.fallbacks import ImportException, InstallModuleException
 from typing import Any, Optional
 
@@ -16,6 +15,7 @@ def build_arkitekt_qt_app(
 ):
     if settings is None:
         try:
+            from koil.composition.qt import QtPedanticKoil
             from qtpy import QtCore
 
             settings = QtCore.QSettings()
@@ -80,6 +80,13 @@ def build_arkitekt_qt_app(
     except ImportError as e:
         fluss = ImportException(import_exception=e, install_library="fluss")
 
+    try:
+        from arkitekt.apps.service.kluster import build_arkitekt_kluster
+
+        kluster = build_arkitekt_kluster(herre=herre, fakts=fakts)
+    except ImportError as e:
+        kluster = ImportException(import_exception=e, install_library="kluster")
+
     return QtApp(
         koil=QtPedanticKoil(parent=parent),
         manifest=manifest,
@@ -89,4 +96,5 @@ def build_arkitekt_qt_app(
         mikro=mikro,
         unlok=unlok,
         fluss=fluss,
+        kluster=kluster,
     )
