@@ -7,7 +7,7 @@
 [![PyPI pyversions](https://img.shields.io/pypi/pyversions/arkitekt.svg)](https://pypi.python.org/pypi/arkitekt/)
 [![PyPI status](https://img.shields.io/pypi/status/arkitekt.svg)](https://pypi.python.org/pypi/arkitekt/)
 
-self-documenting asynchronous scalable RPC
+streaming analysis for mikroscopy
 
 ## Idea
 
@@ -72,7 +72,7 @@ Arkitekt takes care of serialization and documentation of standard python datast
 - Dict
 - List
 
-To increase performance and latency it is not possible to serialize complex python objects like numpy arrays into the messages. These are best transformed into immutable objects on a centrally accessible storage and then only the reference is passed.
+To increase performance and reduce latency it is not possible to serialize complex python objects like numpy arrays into the messages. These are best transformed into immutable objects on a centrally accessible storage and then only the reference is passed.
 
 Arkitekt does not impose any rules on how you handle this storage (see mikro for ideas), it provides however a simple api.
 
@@ -105,20 +105,7 @@ def complex_call(x: ComplexStrucuture) -> int:
 
 ```
 
-## Terminology
 
-**Node** A concept (documentatio) of a function that is enabled on the platform.
 
-**App**: A provider of functions, that negotiates
-access right to data and other Apps through Oauth2
+Check out the arkitekt [documentation](https://arkitekt.live) for usage of this libary
 
-**Template**: An Implementation of a Node by an App.
-
-**Agent**: An active instance of this App, its the host of actors. Agents connect and disconnect.
-
-**Actor**: A stateless instance of a function that was provisioned
-
-**Provision**: A contract between arkitekt and a Agent for the usage of a specific function. As long as the provision is active the connected agent will be required to provide the resources of the function (think Deployment in Kubernetes)
-
-**Reservation**: A contract between a User and arkitekt that wants to use one or mulitple instances of functions (Actors). The platform tries to autocorrect and failure correct. Calls to the function are always address to the
-reservation no the provision (think: Exchange in RabbitMQ)
