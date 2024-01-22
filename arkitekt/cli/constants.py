@@ -36,6 +36,15 @@ def compile_configs() -> List[str]:
     ]
 
 
+def compile_dockerfiles() -> List[str]:
+    z = build_relative_dir("dockerfiles")
+    return [
+        os.path.basename(f).replace(".dockerfile", "")
+        for f in os.listdir(z)
+        if os.path.isfile(os.path.join(z, f))
+    ]
+
+
 def compile_templates() -> List[str]:
     z = build_relative_dir("templates")
     return [

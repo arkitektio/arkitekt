@@ -55,7 +55,7 @@ with_instance_id = click.option(
 with_log_level = click.option(
     "--log-level",
     "-l",
-    default="INFO",
+    default="ERROR",
     help="The token for the fakts instance",
     envvar="ARKITEKT_LOG_LEVEL",
 )

@@ -7,6 +7,7 @@ from typing import Optional, Callable
 import logging
 import aiohttp
 from logging import LogRecord
+
 logger = logging.getLogger(__name__)
 
 
@@ -43,7 +44,7 @@ class Logo(QtWidgets.QWidget):
         """Callback for when the image is downloaded."""
         if not data:
             return
-        
+
         self.pixmap = QtGui.QPixmap()
         self.pixmap.loadFromData(data)
         self.scaled_pixmap = self.pixmap.scaledToWidth(100)
@@ -100,7 +101,7 @@ class ArkitektLogs(QtWidgets.QDialog):
         settings: QtCore.QSettings,
         *args,
         log_level_key: str = "log_level",
-        log_to_file_key: str ="log_to_file",
+        log_to_file_key: str = "log_to_file",
         **kwargs,
     ) -> None:
         """A dialog that will display the logs of the app.
@@ -108,7 +109,7 @@ class ArkitektLogs(QtWidgets.QDialog):
         Parameters
         ----------
         settings : QtCore.QSettings
-            The settings object to use to store the log level. (so that is persistent, 
+            The settings object to use to store the log level. (so that is persistent,
             and can be changed by the user)
         log_level_key : str, optional
             The key to use to store the log level, by default "log_level"
@@ -182,7 +183,7 @@ class Profile(QtWidgets.QDialog):
         bar : MagicBar
             The magic bar to use and to update when the user changes the settings.
         dark_mode : bool, optional
-            Should we use dark_mode, by default False 
+            Should we use dark_mode, by default False
             TODO: implement dark mode
         """
         super().__init__(*args, **{"parent": bar, **kwargs})
@@ -418,33 +419,33 @@ class MagicBar(QtWidgets.QWidget):
         self.set_unkonfigured()
         self.show_error(ex)
 
-    def login_errored(self, ex: Exception)-> None:
+    def login_errored(self, ex: Exception) -> None:
         self.set_unlogined()
         self.show_error(ex)
 
-    def provide_errored(self, ex: Exception)-> None:
+    def provide_errored(self, ex: Exception) -> None:
         self.set_unprovided()
         self.show_error(ex)
 
-    def on_configured(self)-> None:
+    def on_configured(self) -> None:
         self.magicb.setText("Login")
 
-    def on_login(self)-> None:
+    def on_login(self) -> None:
         self.magicb.setText("Provide")
 
-    def on_provided(self)-> None:
+    def on_provided(self) -> None:
         self.magicb.setText("Provide ended")
 
-    def on_providing_ended(self)-> None:
+    def on_providing_ended(self) -> None:
         pass
 
-    def gear_button_clicked(self)-> None:
+    def gear_button_clicked(self) -> None:
         self.profile.show()
 
-    def update_movie(self)-> None:
+    def update_movie(self) -> None:
         self.magicb.setIcon(QtGui.QIcon(self.magicb_movie.currentPixmap()))
 
-    def set_button_movie(self, movie)-> None:
+    def set_button_movie(self, movie) -> None:
         self.magicb_movie = QtGui.QMovie(
             get_image_path(movie, dark_mode=self.dark_mode)
         )
@@ -463,7 +464,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Konfigure App")
 
-    def set_unlogined(self)-> None:
+    def set_unlogined(self) -> None:
         self.state = AppState.DOWN
         self.process_state = ProcessState.UNLOGGED
         self.app_down.emit()
@@ -475,7 +476,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Login")
 
-    def set_unprovided(self)-> None:
+    def set_unprovided(self) -> None:
         self.state = AppState.UP
         self.process_state = ProcessState.UNPROVIDED
         self.app_up.emit()
@@ -487,7 +488,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Provide")
 
-    def set_providing(self)-> None:
+    def set_providing(self) -> None:
         self.state = AppState.UP
         self.process_state = ProcessState.PROVIDING
         self.app_up.emit()
@@ -499,7 +500,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Cancel Provide..")
 
-    def magic_button_clicked(self)-> None:
+    def magic_button_clicked(self) -> None:
         if (
             self.process_state == ProcessState.UNKONFIGURED
             and not self.profile.go_all_the_way_down

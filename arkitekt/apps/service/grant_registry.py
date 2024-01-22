@@ -1,10 +1,5 @@
-from herre.herre import Herre
-from fakts import Fakts
-from herre.grants.oauth2.refresh import RefreshGrant
-from herre.fakts.fakts_endpoint_fetcher import FaktsUserFetcher
 from herre.fakts.grant import FaktsGrant
 from herre.fakts.registry import GrantRegistry, GrantType
-from arkitekt.model import User
 from herre.grants.oauth2.authorization_code import AuthorizationCodeGrant
 from herre.grants.oauth2.redirecters.aiohttp_server import AioHttpServerRedirecter
 from herre.grants.oauth2.client_credentials import ClientCredentialsGrant

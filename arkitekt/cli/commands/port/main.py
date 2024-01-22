@@ -2,8 +2,11 @@ import rich_click as click
 from .build import build
 from .publish import publish
 from .stage import stage
+from .init import init
 from .wizard import wizard
+from .validate import validate
 from click import Context
+
 
 @click.group()
 @click.pass_context
@@ -21,6 +24,8 @@ def port(ctx: Context) -> None:
 
 
 port.add_command(build, "build")
+port.add_command(init, "init")
+port.add_command(validate, "validate")
 port.add_command(publish, "publish")
 port.add_command(stage, "stage")
 port.add_command(wizard, "wizard")

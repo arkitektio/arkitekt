@@ -15,7 +15,6 @@ except ImportError as e:
 import os
 
 
-
 def get_base_prefix_compat() -> str:
     """Get base/real prefix, or sys.prefix if there is none."""
     return (
@@ -179,24 +178,21 @@ def build_dockerfile(
         An exception if the packager is not supported
     """
 
-
-
     strategy = BUILDERS.get(packager, {})
-    
+
     if not strategy:
-        raise click.ClickException(f"Packager {packager} is not supported. Please create a issue on github and create your own Dockerfile for now.")
-    
+        raise click.ClickException(
+            f"Packager {packager} is not supported. Please create a issue on github and create your own Dockerfile for now."
+        )
+
     builder = strategy.get(gpu and "gpu" or "no-gpu", None)
 
     if not builder:
         raise click.ClickException(
             f"Packager {packager} {gpu and 'with GPU Support'} is not supported. Please create a issue on github and create your own Dockerfile for now."
         )
-    
-    return builder(manifest, python_version)
-   
-        
 
+    return builder(manifest, python_version)
 
 
 def docker_file_wizard(manifest: Manifest, auto: bool = True) -> str:
@@ -208,12 +204,12 @@ def docker_file_wizard(manifest: Manifest, auto: bool = True) -> str:
         The manifest of the project
     auto : bool, optional
         Should we autodefault prompts to true, by default True
-    
+
     Returns
     -------
     str
         The dockerfile
-    
+
     ------
     ImportError
         If toml is not installed
@@ -268,21 +264,19 @@ def docker_file_wizard(manifest: Manifest, auto: bool = True) -> str:
 
         packager = Packager.PIP
 
-
     if not click.confirm(
         f"Would you like to generate Template Dockerfile: Using {packager} with Python {python_version} {'and' if gpu else 'without'} GPU support"
     ):
         raise click.Abort("Aborted")
-    
+
     dockfile = build_dockerfile(
         manifest, packager, gpu=gpu, python_version=python_version
     )
 
-
     return dockfile
 
 
-def check_overwrite_dockerfile(ctx: Context,param: str, value: bool) -> bool:
+def check_overwrite_dockerfile(ctx: Context, param: str, value: bool) -> bool:
     """A callback to check if the dockerfile should be overwritten
 
     Parameters
@@ -328,7 +322,7 @@ def wizard(ctx: Context, dockerfile: str, overwrite_dockerfile: bool) -> None:
     """Runs the port wizard to generate a dockerfile to be used with port"""
 
     manifest = get_manifest(ctx)
-    
+
     dockfile = docker_file_wizard(manifest)
 
     with open(dockerfile, "w") as file:

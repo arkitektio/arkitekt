@@ -1,22 +1,51 @@
-from typing import Optional
-import os
-import yaml
 from arkitekt.cli.types import Flavour
-from arkitekt.cli.vars import get_console
 import rich_click as click
+from click import Context
+from rich import get_console
+from arkitekt.utils import create_arkitekt_folder
+import yaml
 
 
-def search_username_in_docker_info(docker_info: str):
-    for line in docker_info.splitlines():
-        if "Username" in line:
-            return line.split(":")[1].strip()
+try:
+    pass
+except ImportError as e:
+    raise ImportError("Please install rekuest to use this feature") from e
+
+import os
 
 
-def validate_flavours(flavours_folder: str, only: Optional[str]):
+@click.command()
+@click.option("--flavour", "-f", help="The flavour to use", default=None)
+@click.option(
+    "--description",
+    "-d",
+    help="The description for this flavour to use",
+    default="This is a vanilla flavour",
+)
+@click.option(
+    "--overwrite",
+    "-o",
+    help="Should we overwrite the existing Dockerfile?",
+    is_flag=True,
+    default=False,
+)
+@click.pass_context
+def validate(ctx: Context, description: str, overwrite: bool, flavour: str) -> None:
+    """Runs the port wizard to generate a dockerfile to be used with port"""
+
+    arkitekt_folder = create_arkitekt_folder()
+
+    flavours_folder = os.path.join(arkitekt_folder, "flavours")
+
+    if not os.path.exists(flavours_folder):
+        raise click.ClickException(
+            "We could not find the flavours folder. Please run arkitekt port init first"
+        )
+
     for dir_name in os.listdir(flavours_folder):
         dir = os.path.join(flavours_folder, dir_name)
         if os.path.isdir(dir):
-            if only is not None and only != dir_name:
+            if flavour is not None and flavour != dir_name:
                 continue
 
             if os.path.exists(os.path.join(dir, "config.yaml")):
@@ -45,3 +74,5 @@ def validate_flavours(flavours_folder: str, only: Optional[str]):
             print(
                 f"Found file {dir_name} in flavours folder. Not a valid flavour. Ignoring"
             )
+
+    click.echo("Ice Ice Baby! All flavours are valid")

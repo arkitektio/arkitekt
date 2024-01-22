@@ -27,12 +27,12 @@ def create_arkitekt_folder(with_cache: bool = True) -> str:
     if not os.path.exists(gitignore):
         with open(gitignore, "w") as f:
             f.write(
-                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/"
+                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/\nservers/"
             )
     if not os.path.exists(dockerignore):
         with open(dockerignore, "w") as f:
             f.write(
-                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/"
+                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/\nservers/"
             )
 
     return os.path.abspath(".arkitekt")

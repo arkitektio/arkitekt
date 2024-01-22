@@ -17,7 +17,6 @@ def gen():
 
     """
     try:
-
         pass
     except ImportError as e:
         raise click.ClickException(
