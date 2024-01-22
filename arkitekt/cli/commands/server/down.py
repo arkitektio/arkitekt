@@ -1,14 +1,11 @@
 import rich_click as click
 from click import Context
-from dokker.projects.contrib.konstruktor import KonstruktorProject
 from dokker.projects.local import LocalProject
 from dokker.loggers.print import PrintLogger
 from dokker.deployment import Deployment
-import asyncio
-from typing import Optional, Any
+from typing import Optional
 import os
 from .utils import compile_options
-
 
 
 @click.command()

@@ -22,12 +22,10 @@ from arkitekt.cli.options import (
     with_token,
     with_instance_id,
     with_headless,
-    with_version,
     with_log_level,
     with_skip_cache,
 )
 from arkitekt.cli.vars import get_console, get_manifest
-
 
 
 class EntrypointFilter(PythonFilter):
@@ -46,18 +44,18 @@ class EntrypointFilter(PythonFilter):
 
     def __call__(self, change: Change, path: str) -> bool:
         """Checks if any of the python filters are changed
-_description_
-        Parameters
-        ----------
-        change : Change
-            The change type
-        path : str
-            The causing path
+        _description_
+                Parameters
+                ----------
+                change : Change
+                    The change type
+                path : str
+                    The causing path
 
-        Returns
-        -------
-        bool
-            Should we reload?
+                Returns
+                -------
+                bool
+                    Should we reload?
         """
         x = super().__call__(change, path)
         if not x:
@@ -91,13 +89,13 @@ class DeepFilter(PythonFilter):
 
 
 async def run_app(app: App) -> None:
-    """ A helper function to run the app
-    
+    """A helper function to run the app
+
     Parameters
-    ---------- 
+    ----------
     app : App
         The app to run
-        
+
     """
     async with app:
         await app.rekuest.run()
@@ -109,9 +107,8 @@ def reload_modules(reloadable_modules) -> None:
         reload(sys.modules[module])
 
 
-def check_deeps(changes: Set[
-Tuple[Change, str] ]) -> Set[str]:
-    """Checks if any of the changes 
+def check_deeps(changes: Set[Tuple[Change, str]]) -> Set[str]:
+    """Checks if any of the changes
     are happening in a module that is installed
     and returns the modules that should be reloaded
 
@@ -317,7 +314,6 @@ async def run_dev(
 @with_token
 @with_instance_id
 @with_headless
-@with_version
 @with_log_level
 @with_skip_cache
 @click.option(

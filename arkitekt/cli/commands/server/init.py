@@ -2,7 +2,7 @@ import rich_click as click
 from click import Context
 from dokker.projects.contrib.konstruktor import KonstruktorProject
 import asyncio
-from typing import Optional, Any
+from typing import Optional
 import os
 
 DEFAULT_REPO_URL = (

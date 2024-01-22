@@ -1,10 +1,12 @@
 from importlib import import_module
-import inspect
+import inspect as pyinspect
 import rich_click as click
 
 from arkitekt.cli.ui import construct_leaking_group
 from arkitekt.cli.vars import get_console, get_manifest
 from rich.panel import Panel
+
+import rich_click as click
 
 
 def inspect_dangerous_variables(module_path):
@@ -24,16 +26,16 @@ def inspect_dangerous_variables(module_path):
 
     dangerous_variables = {}
 
-    for key, value in inspect.getmembers(module):
+    for key, value in pyinspect.getmembers(module):
         if key.startswith("_"):
             continue
-        if inspect.isclass(value):
+        if pyinspect.isclass(value):
             continue
-        if inspect.ismodule(value):
+        if pyinspect.ismodule(value):
             continue
-        if inspect.isfunction(value):
+        if pyinspect.isfunction(value):
             continue
-        if inspect.isbuiltin(value):
+        if pyinspect.isbuiltin(value):
             continue
 
         if type(value) in [str, float, int, bool, list, dict, tuple]:
@@ -50,14 +52,9 @@ def scan_module(module_path):
 
 
 @click.command()
-@click.option(
-    "--entrypoint",
-    help="The file you want to scan for unsafe code ",
-    default=None,
-)
 @click.pass_context
-def scan(ctx, entrypoint):
-    """Scans your arkitekt app for unsafe code
+def variables(ctx, entrypoint):
+    """Scans your arkitekt app for unsafe variables
 
     When designing an Arkitekt app, you should not have variables in your
     global scope, as on potential reloads (like for example in development)

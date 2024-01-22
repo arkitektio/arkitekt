@@ -31,7 +31,6 @@ def initialized_app_cli_runner():
         yield runner
 
 
-
 @pytest.fixture
 def deployed_app():
     from arkitekt.deployed import deployed

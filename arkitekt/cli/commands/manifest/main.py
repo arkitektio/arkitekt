@@ -1,6 +1,5 @@
 import rich_click as click
 from .inspect import inspect
-from .requirements import requirements_group
 from .scopes import scopes_group
 from .version import version
 from .wizard import wizard
@@ -21,7 +20,6 @@ def manifest(ctx) -> None:
 
 
 manifest.add_command(inspect, "inspect")
-manifest.add_command(requirements_group, "requirements")
 manifest.add_command(scopes_group, "scopes")
 manifest.add_command(version, "version")
 manifest.add_command(wizard, "wizard")

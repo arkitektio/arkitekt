@@ -1,17 +1,19 @@
 from arkitekt.utils import create_arkitekt_folder
 import os
-from typing import Optional
+from typing import Optional, List, Dict
 from arkitekt.cli.types import (
+    Inspection,
     Manifest,
     Build,
     BuildsConfigFile,
     Deployment,
+    Flavour,
     DeploymentsConfigFile,
+    DefinitionInput,
 )
 import yaml
 import json
-from typing import Dict
-import datetime
+import rich_click as click
 
 
 def load_manifest_yaml(path: str) -> Manifest:
@@ -77,7 +79,7 @@ def write_manifest(manifest: Manifest):
         )
 
 
-def get_builds() -> Dict[str, Build]:
+def get_builds(selected_run: Optional[str] = None) -> Dict[str, Build]:
     """Will load the builds.yaml file and return a dictionary of builds
 
     Will load the builds.yaml file and return a dictionary of builds
@@ -98,18 +100,28 @@ def get_builds() -> Dict[str, Build]:
         with open(config_file, "r") as file:
             config = BuildsConfigFile(**yaml.safe_load(file))
 
-            builds = {build.build_id: build for build in config.builds}
-            if config.latest_build:
-                builds["latest"] = config.latest_build
+            # We will only return the builds from the selected run
+            selected_run = selected_run or config.latest_build_run
+
+            builds = {
+                build.build_id: build
+                for build in config.builds
+                if build.build_run == selected_run
+            }
             return builds
     else:
-        return {}
+        raise click.ClickException(
+            "Could not find any builds. Please run `arkitekt port build` first"
+        )
 
 
 def generate_build(
-    builder: str,
+    build_run: str,
     build_id: str,
+    flavour_name: str,
+    flavour: Flavour,
     manifest: Manifest,
+    inspection: Optional[Inspection],
 ) -> Build:
     """Generates a build from a builder, build_id and manifest
 
@@ -137,21 +149,27 @@ def generate_build(
 
     build = Build(
         manifest=manifest,
-        builder=builder,
+        flavour=flavour_name,
+        selectors=flavour.selectors,
         build_id=build_id,
+        build_run=build_run,
+        description=flavour.description,
+        inspection=inspection,
     )
 
     if os.path.exists(config_file):
         with open(config_file, "r") as file:
             config = BuildsConfigFile(**yaml.safe_load(file))
             config.builds.append(build)
-            config.latest_build = build
+            config.latest_build_run = build_run
     else:
-        config = BuildsConfigFile(builds=[build], latest_build=build)
+        config = BuildsConfigFile(builds=[build], latest_build_run=build_run)
 
     with open(config_file, "w") as file:
         yaml.safe_dump(
-            json.loads(config.json(exclude_none=True, exclude_unset=True)),
+            json.loads(
+                config.json(exclude_none=True, exclude_unset=True, by_alias=True)
+            ),
             file,
             sort_keys=True,
         )
@@ -181,9 +199,10 @@ def get_deployments() -> DeploymentsConfigFile:
 
 
 def generate_deployment(
+    deployment_run: str,
     build: Build,
     image: str,
-    with_definitions: bool =True,
+    definitions: Optional[List[DefinitionInput]] = None,
 ) -> Deployment:
     """Generates a deployment from a build and an image
 
@@ -211,8 +230,9 @@ def generate_deployment(
     deployment = Deployment(
         build_id=build.build_id,
         manifest=build.manifest,
-        builder=build.builder,
-        definitions=[],
+        flavour=build.flavour,
+        selectors=build.selectors,
+        inspection=build.inspection,
         image=image,
     )
 
@@ -220,14 +240,14 @@ def generate_deployment(
         with open(config_file, "r") as file:
             config = DeploymentsConfigFile(**yaml.safe_load(file))
             config.deployments.append(deployment)
-            config.latest_deployment = datetime.datetime.now()
+            config.latest_deployment_run = deployment_run
     else:
         config = DeploymentsConfigFile(deployments=[deployment])
-        config.latest_deployment = datetime.datetime.now()
+        config.latest_deployment_run = deployment_run
 
     with open(config_file, "w") as file:
         yaml.safe_dump(
-            json.loads(config.json(exclude_none=True)),
+            json.loads(config.json(exclude_none=True, by_alias=True)),
             file,
             sort_keys=True,
         )

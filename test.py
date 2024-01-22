@@ -2,8 +2,7 @@
 from arkitekt.deployed import deployed
 
 
-
-composition =  deployed("paper", "com.example.test")
+composition = deployed("paper", "com.example.test")
 composition.deployment.up_on_enter = True
 composition.deployment.down_on_exit = False
 composition.deployment.stop_on_exit = False
@@ -26,9 +25,6 @@ def test(hallo: str) -> str:
 
 
 with composition:
-
     print(composition.deployment.project.compose_files)
-
-
 
     print("hello")

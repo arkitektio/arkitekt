@@ -1,11 +1,11 @@
-import os 
+import os
 from typing import List
 
 
 def compile_options() -> List[str]:
-    """ Compiles the available options for the server up and down commands:
-     
-      All deployments in the .arkitekt/deployments folder
+    """Compiles the available options for the server up and down commands:
+
+    All deployments in the .arkitekt/deployments folder
     """
     deployments = os.path.join(os.getcwd(), ".arkitekt", "deployments")
 
