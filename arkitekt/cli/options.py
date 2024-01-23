@@ -83,7 +83,7 @@ def check_gen_boring(ctx, param, value):
     """Callback to check and prompt for file overwrite."""
 
     if not value:
-        get_console().print(construct_codegen_welcome_panel())
+        get_console(ctx).print(construct_codegen_welcome_panel())
 
     return value
 
@@ -95,16 +95,20 @@ with_boring = click.option(
     default=False,
     callback=check_gen_boring,
 )
+with_seperate_document_dirs = click.option(
+    "--seperate-doc-dirs",
+    "-sd",
+    help="Should we generate seperate dirs for the documents?",
+    is_flag=True,
+    default=False,
+)
 with_choose_services = click.option(
-    "--service",
+    "--services",
     "-s",
     help="The services to create the codegen for",
-    nargs=2,
     multiple=True,
-    type=click.Tuple(
-        [click.Choice(compile_configs()), click.Choice(compile_versions())]
-    ),
-    default=[("mikro", "v1"), ("fluss", "v1"), ("rekuest", "v1")],
+    type=click.Choice(compile_services()),
+    default=["mikro"],
 )
 with_graphql_config = click.option(
     "--config",
@@ -144,7 +148,7 @@ with_overwrite_graphql = click.option(
     default=False,
     callback=check_overwrite_config,
 )
-with_docuements = click.option(
+with_documents = click.option(
     "--documents",
     "-d",
     help="With documents",

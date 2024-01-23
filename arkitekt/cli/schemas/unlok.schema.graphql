@@ -33,8 +33,8 @@ type Query {
 
     """The email of the user"""
     id: ID
-  ): HerreUser
-  me: HerreUser
+  ): User
+  me: User
   users(
     username: String
     email: String
@@ -44,7 +44,7 @@ type Query {
 
     """Search for substring of username"""
     search: String
-  ): [HerreUser]
+  ): [User]
 
   """Get a group"""
   group(
@@ -91,6 +91,17 @@ type Query {
     """Filter by user"""
     user: ID
   ): [Channel]
+
+  "Comments for a specific object\n\n    This query returns all comments for a specific object. The object is\n    specified by the `model` and `id` arguments. The `model` argument is\n    a string that is the name of the model. The `id` argument is the id of\n    the object.\n\n    You can only query for comments for objects that you have access to.\n\n    "
+  commentsfor(
+    deep: Boolean
+
+    """The identifier of the object"""
+    identifier: String!
+    object: ID!
+  ): [Comment]
+  mymentions: [Comment]
+  comment(id: ID!): Comment
   client(
     """The FaktApp ID"""
     id: ID
@@ -194,7 +205,7 @@ type Application {
   clientId: String!
 
   """"""
-  user: HerreUser
+  user: User
 
   """The associated Redirect Uris"""
   redirectUris: [String]
@@ -225,7 +236,7 @@ type Application {
   image: String
 }
 
-type HerreUser {
+type User {
   """"""
   id: ID!
 
@@ -266,7 +277,7 @@ type Group {
   """
   The groups this user belongs to. A user will get all permissions granted to each of their groups.
   """
-  userSet: [HerreUser!]!
+  userSet: [User!]!
   profile: GroupProfile
 }
 
@@ -290,7 +301,7 @@ type Profile {
   name: String
 
   """"""
-  user: HerreUser!
+  user: User!
   avatar: String
 }
 
@@ -364,10 +375,10 @@ type Client {
   scopes: [String]!
 
   """"""
-  creator: HerreUser!
+  creator: User!
 
   """"""
-  user: HerreUser
+  user: User
 }
 
 type Release {
@@ -429,10 +440,65 @@ type Channel {
   name: String
 
   """"""
-  user: HerreUser!
+  user: User!
 
   """"""
   token: String
+}
+
+"""
+A comment
+
+A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+"""
+type Comment {
+  """"""
+  id: ID!
+
+  """The identifier of the object that this comment is on"""
+  identifier: String
+
+  """The Object this comment is on"""
+  object: ID!
+
+  """"""
+  user: User!
+
+  """"""
+  text: String!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  parent: Comment
+
+  """The descendents of the comment (this referes to the Comment Tree)"""
+  descendents: [Descendent]
+
+  """"""
+  mentions: [User!]!
+
+  """"""
+  resolved: DateTime
+
+  """"""
+  resolvedBy: User
+
+  """Comments that are replies to this comment"""
+  children(
+    """How many children to return"""
+    limit: Int
+
+    """The offset for the children"""
+    offset: Int
+  ): [Comment]
+}
+
+"""A descendent of a node in the comment tree"""
+interface Descendent {
+  typename: String
 }
 
 type Filter {
@@ -552,7 +618,7 @@ type DeviceCode {
   code: String!
 
   """"""
-  user: HerreUser
+  user: User
 
   """"""
   name: String
@@ -604,8 +670,8 @@ type Mutation {
     """The Version of this Application"""
     version: String!
   ): CreatedBackendApp
-  changeMe(email: Email, firstName: String, lastName: String): HerreUser
-  updateUser(active: Boolean, avatar: Upload, email: Email, firstName: String, id: ID!, lastName: String): HerreUser
+  changeMe(email: Email, firstName: String, lastName: String): User
+  updateUser(active: Boolean, avatar: Upload, email: Email, firstName: String, id: ID!, lastName: String): User
   updateGroup(
     avatar: Upload
     id: ID!
@@ -626,6 +692,87 @@ type Mutation {
   ): Channel
   publishToChannel(channel: ID!, message: String!, title: String!): PublishResult
   notifyUser(channels: [String], message: String!, title: String!, user: ID!): [PublishResult]
+
+  """
+  Create an Comment
+  
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+  
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+  
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+  
+  
+      (only signed in users)
+  """
+  createComment(
+    """The comment tree"""
+    descendents: [DescendendInput]!
+
+    """The commentable identifier"""
+    identifier: String!
+
+    """Should we notify the mentioned users?"""
+    notifyMentions: Boolean
+
+    """The Representationss this sROI belongs to"""
+    object: ID!
+
+    """The parent comment"""
+    parent: ID
+  ): Comment
+
+  """
+  Reply to an Comment
+  
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+  
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+  
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+  
+  
+      (only signed in users)
+  """
+  replyTo(
+    """The comment tree"""
+    descendents: [DescendendInput]!
+
+    """The parent comment"""
+    parent: ID!
+  ): Comment
+
+  """
+  Create an Comment
+  
+      This mutation resolves a comment. By resolving a comment, it will be marked as resolved,
+      and the user that resolved it will be set as the resolver.
+  
+      (only signed in users)
+  """
+  resolveComment(
+    """The comments id"""
+    id: ID!
+
+    """
+    Should we imitate the resolving by another user (requires imitate permission)
+    """
+    imitate: ID
+  ): Comment
   createPrivateClient(
     """The Name of this Elemet"""
     identifier: String!
@@ -749,6 +896,35 @@ type PublishResult {
   status: String
 }
 
+input DescendendInput {
+  children: [DescendendInput]
+
+  """The type of the descendent"""
+  kind: DescendendKind
+
+  """The user that is mentioned"""
+  user: String
+
+  """Is this a bold leaf?"""
+  bold: Boolean
+
+  """Is this a italic leaf?"""
+  italic: Boolean
+
+  """Is this a code leaf?"""
+  code: Boolean
+
+  """The text of the leaf"""
+  text: String
+}
+
+"""The kind of the comment"""
+enum DescendendKind {
+  MENTION
+  PARAGRAPH
+  LEAF
+}
+
 enum PublicFaktType {
   DEKSTOP
   WEBSITE
@@ -773,3 +949,65 @@ type DeleteConfigurationResult {
 
 """The configuration"""
 scalar Config
+
+"""The root Subscriptions"""
+type Subscription {
+  "My Mentions\n\n    Returns an event of a new mention for the user if the user\n    was mentioned in a comment.\n    "
+  mymentions(
+    """The identifier of the objects you want to listen to?"""
+    identifier: String
+  ): MentionEvent
+}
+
+type MentionEvent {
+  deleted: ID
+  update: Comment
+  create: Comment
+}
+
+"""A node in the comment tree"""
+interface CommentNode {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+}
+
+"""A leaf in the comment tree. Representations some sort of text"""
+type Leaf implements Descendent {
+  typename: String
+
+  """Is this a bold leaf?"""
+  bold: Boolean
+
+  """Is this a italic leaf?"""
+  italic: Boolean
+
+  """Is this a code leaf?"""
+  code: Boolean
+
+  """The text of the leaf"""
+  text: String
+}
+
+"""
+A mention in the comment tree. This  is a reference to another user on the platform
+"""
+type MentionDescendent implements CommentNode & Descendent {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+  typename: String
+
+  """The user that is mentioned"""
+  user: User!
+}
+
+"""
+A paragraph in the comment tree. This paragraph contains other nodes (list nodes)
+"""
+type ParagraphDescendent implements CommentNode & Descendent {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+  typename: String
+
+  """The size of the paragraph"""
+  size: String
+}

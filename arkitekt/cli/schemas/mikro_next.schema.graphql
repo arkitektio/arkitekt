@@ -1,0 +1,1639 @@
+"""Make string uppercase"""
+directive @upper on FIELD
+
+directive @replace(old: String!, new: String!) on FIELD
+
+"""Make get stuff uppercase"""
+directive @relation(on: String!) on FIELD
+
+type Query {
+  images(filters: ImageFilter, order: ImageOrder, pagination: OffsetPaginationInput): [Image!]!
+  myimages(filters: ImageFilter, order: ImageOrder, pagination: OffsetPaginationInput): [Image!]!
+  datasets(filters: DatasetFilter, pagination: OffsetPaginationInput): [Dataset!]!
+  mydatasets(filters: DatasetFilter, pagination: OffsetPaginationInput): [Dataset!]!
+  timepointViews(filters: TimepointViewFilter, pagination: OffsetPaginationInput): [TimepointView!]!
+  labelViews: [LabelView!]!
+  channelViews: [ChannelView!]!
+  continousScanViews(filters: ContinousScanViewFilter, pagination: OffsetPaginationInput): [ContinousScanView!]!
+  wellPositionViews(filters: WellPositionViewFilter, pagination: OffsetPaginationInput): [WellPositionView!]!
+  acquisitionViews: [AcquisitionView!]!
+  rgbViews: [RGBView!]!
+  affineTransformationViews(filters: AffineTransformationViewFilter, pagination: OffsetPaginationInput): [AffineTransformationView!]!
+  eras(filters: EraFilter, pagination: OffsetPaginationInput): [Era!]!
+  myeras(filters: EraFilter, pagination: OffsetPaginationInput): [Era!]!
+  fluorophores(filters: FluorophoreFilter, pagination: OffsetPaginationInput): [Fluorophore!]!
+  antibodies(filters: AntibodyFilter, pagination: OffsetPaginationInput): [Antibody!]!
+  stages(filters: StageFilter, pagination: OffsetPaginationInput): [Stage!]!
+  channels: [Channel!]!
+  rgbcontexts(filters: RGBContextFilter, pagination: OffsetPaginationInput): [RGBContext!]!
+  mychannels: [Channel!]!
+  instruments: [Instrument!]!
+  multiWellPlates(filters: MultiWellPlateFilter, pagination: OffsetPaginationInput): [MultiWellPlate!]!
+  objectives: [Objective!]!
+  myobjectives: [Objective!]!
+  tables(pagination: OffsetPaginationInput): [Table!]!
+  mytables(pagination: OffsetPaginationInput): [Table!]!
+  snapshots(filters: SnapshotFilter, pagination: OffsetPaginationInput): [Snapshot!]!
+  mysnapshots(filters: SnapshotFilter, pagination: OffsetPaginationInput): [Snapshot!]!
+  files(filters: FileFilter, pagination: OffsetPaginationInput): [File!]!
+  myfiles(filters: FileFilter, pagination: OffsetPaginationInput): [File!]!
+  randomImage: Image!
+  image(id: ID!): Image!
+  fluorophore(id: ID!): Fluorophore!
+  rgbcontext(id: ID!): RGBContext!
+  objective(id: ID!): Objective!
+  camera(id: ID!): Camera!
+  snapshot(id: ID!): Snapshot!
+  file(id: ID!): File!
+  table(id: ID!): Table!
+  instrument(id: ID!): Instrument!
+  dataset(id: ID!): Dataset!
+  multiWellPlate(id: ID!): MultiWellPlate!
+  stage(id: ID!): Stage!
+}
+
+type Image {
+  id: ID!
+  name: String!
+
+  """The store where the image data is stored."""
+  store: ZarrStore!
+  views(filters: ViewFilter, types: [ViewKind!]): [View!]!
+  snapshots(filters: SnapshotFilter, pagination: OffsetPaginationInput): [Snapshot!]!
+  videos(pagination: OffsetPaginationInput): [Video!]!
+  origins(filters: ImageFilter, order: ImageOrder, pagination: OffsetPaginationInput): [Image!]!
+  fileOrigins(filters: FileFilter, pagination: OffsetPaginationInput): [File!]!
+  roiOrigins: [ROI!]!
+  dataset: Dataset
+  history(pagination: OffsetPaginationInput): [History!]!
+
+  """The affine transformation views of the image."""
+  affineTransformationViews(filters: AffineTransformationViewFilter, pagination: OffsetPaginationInput): [AffineTransformationView!]!
+  labelViews: [LabelView!]!
+  channelViews: [ChannelView!]!
+  timepointViews(filters: TimepointViewFilter, pagination: OffsetPaginationInput): [TimepointView!]!
+  opticsViews(filters: OpticsViewFilter, pagination: OffsetPaginationInput): [OpticsView!]!
+  intMetrics(pagination: OffsetPaginationInput): [ImageIntMetric!]!
+  createdAt: DateTime!
+  creator: User
+  latestSnapshot: Snapshot
+  pinned: Boolean!
+  tags: [String!]!
+  metrics(filters: ViewFilter, types: [RenderKind!]): [ImageMetric!]!
+  renders(filters: ViewFilter, types: [RenderKind!]): [Render!]!
+  rois(filters: ROIFilter): [View!]!
+}
+
+type ZarrStore {
+  id: ID!
+
+  """The path to the data. Relative to the bucket."""
+  path: String
+
+  """The shape of the data."""
+  shape: [Int!]
+
+  """The dtype of the data."""
+  dtype: String
+
+  """The bucket where the data is stored."""
+  bucket: String!
+
+  """The key where the data is stored."""
+  key: String!
+
+  """The chunks of the data."""
+  chunks: [Int!]
+
+  """Whether the zarr store was populated (e.g. was a dataset created)."""
+  populated: Boolean!
+}
+
+interface View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+}
+
+input ViewFilter {
+  isGlobal: Boolean
+  provenance: ProvenanceFilter
+  AND: ViewFilter
+  OR: ViewFilter
+}
+
+input ProvenanceFilter {
+  during: String
+  AND: ProvenanceFilter
+  OR: ProvenanceFilter
+}
+
+enum ViewKind {
+  CHANNEL
+  LABEL
+  AFFINE_TRANSFORMATION
+  TIMEPOINT
+  OPTICS
+}
+
+type Snapshot implements Render {
+  createdAt: DateTime!
+  creator: User
+  id: ID!
+  store: MediaStore!
+  name: String!
+}
+
+interface Render {
+  createdAt: DateTime!
+  creator: User
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+"""A user."""
+type User {
+  id: ID!
+  sub: String!
+  username: String!
+  email: String!
+  password: String!
+}
+
+type MediaStore {
+  id: ID!
+  path: String!
+  bucket: String!
+  key: String!
+  presignedUrl(host: String = null): String!
+}
+
+input SnapshotFilter {
+  name: StrFilterLookup
+  ids: [ID!]
+  AND: SnapshotFilter
+  OR: SnapshotFilter
+}
+
+input StrFilterLookup {
+  exact: String
+  iExact: String
+  contains: String
+  iContains: String
+  inList: [String!]
+  gt: String
+  gte: String
+  lt: String
+  lte: String
+  startsWith: String
+  iStartsWith: String
+  endsWith: String
+  iEndsWith: String
+  range: [String!]
+  isNull: Boolean
+  regex: String
+  iRegex: String
+  nExact: String
+  nIExact: String
+  nContains: String
+  nIContains: String
+  nInList: [String!]
+  nGt: String
+  nGte: String
+  nLt: String
+  nLte: String
+  nStartsWith: String
+  nIStartsWith: String
+  nEndsWith: String
+  nIEndsWith: String
+  nRange: [String!]
+  nIsNull: Boolean
+  nRegex: String
+  nIRegex: String
+}
+
+input OffsetPaginationInput {
+  offset: Int! = 0
+  limit: Int! = -1
+}
+
+type Video implements Render {
+  createdAt: DateTime!
+  creator: User
+  id: ID!
+  store: MediaStore!
+  thumbnail: MediaStore!
+}
+
+input ImageFilter {
+  name: StrFilterLookup
+  ids: [ID!]
+  store: ZarrStoreFilter
+  dataset: DatasetFilter
+  transformationViews: AffineTransformationViewFilter
+  timepointViews: TimepointViewFilter
+  provenance: ProvenanceFilter
+  AND: ImageFilter
+  OR: ImageFilter
+}
+
+input ZarrStoreFilter {
+  shape: IntFilterLookup
+  AND: ZarrStoreFilter
+  OR: ZarrStoreFilter
+}
+
+input IntFilterLookup {
+  exact: Int
+  iExact: Int
+  contains: Int
+  iContains: Int
+  inList: [Int!]
+  gt: Int
+  gte: Int
+  lt: Int
+  lte: Int
+  startsWith: Int
+  iStartsWith: Int
+  endsWith: Int
+  iEndsWith: Int
+  range: [Int!]
+  isNull: Boolean
+  regex: String
+  iRegex: String
+  nExact: Int
+  nIExact: Int
+  nContains: Int
+  nIContains: Int
+  nInList: [Int!]
+  nGt: Int
+  nGte: Int
+  nLt: Int
+  nLte: Int
+  nStartsWith: Int
+  nIStartsWith: Int
+  nEndsWith: Int
+  nIEndsWith: Int
+  nRange: [Int!]
+  nIsNull: Boolean
+  nRegex: String
+  nIRegex: String
+}
+
+input DatasetFilter {
+  id: ID
+  name: StrFilterLookup
+  provenance: ProvenanceFilter
+  AND: DatasetFilter
+  OR: DatasetFilter
+}
+
+input AffineTransformationViewFilter {
+  isGlobal: Boolean
+  provenance: ProvenanceFilter
+  AND: AffineTransformationViewFilter
+  OR: AffineTransformationViewFilter
+  stage: StageFilter
+  pixelSize: FloatFilterLookup
+}
+
+input StageFilter {
+  ids: [ID!]
+  search: String
+  id: ID
+  kind: String
+  name: StrFilterLookup
+  provenance: ProvenanceFilter
+  AND: StageFilter
+  OR: StageFilter
+}
+
+input FloatFilterLookup {
+  exact: Float
+  iExact: Float
+  contains: Float
+  iContains: Float
+  inList: [Float!]
+  gt: Float
+  gte: Float
+  lt: Float
+  lte: Float
+  startsWith: Float
+  iStartsWith: Float
+  endsWith: Float
+  iEndsWith: Float
+  range: [Float!]
+  isNull: Boolean
+  regex: String
+  iRegex: String
+  nExact: Float
+  nIExact: Float
+  nContains: Float
+  nIContains: Float
+  nInList: [Float!]
+  nGt: Float
+  nGte: Float
+  nLt: Float
+  nLte: Float
+  nStartsWith: Float
+  nIStartsWith: Float
+  nEndsWith: Float
+  nIEndsWith: Float
+  nRange: [Float!]
+  nIsNull: Boolean
+  nRegex: String
+  nIRegex: String
+}
+
+input TimepointViewFilter {
+  isGlobal: Boolean
+  provenance: ProvenanceFilter
+  AND: TimepointViewFilter
+  OR: TimepointViewFilter
+  era: EraFilter
+  msSinceStart: Float
+  indexSinceStart: Int
+}
+
+input EraFilter {
+  id: ID
+  begin: DateTime
+  provenance: ProvenanceFilter
+  AND: EraFilter
+  OR: EraFilter
+}
+
+input ImageOrder {
+  createdAt: Ordering
+}
+
+enum Ordering {
+  ASC
+  DESC
+}
+
+type File {
+  id: ID!
+  name: String!
+  origins(filters: ImageFilter, order: ImageOrder, pagination: OffsetPaginationInput): [Image!]!
+  store: BigFileStore!
+}
+
+type BigFileStore {
+  id: ID!
+  path: String!
+  bucket: String!
+  key: String!
+  presignedUrl: String!
+}
+
+input FileFilter {
+  id: ID
+  name: StrFilterLookup
+  provenance: ProvenanceFilter
+  AND: FileFilter
+  OR: FileFilter
+}
+
+interface ROI {
+  id: ID!
+  image: Image!
+  vectors: FiveDVector!
+}
+
+"""The `Vector` scalar type represents a matrix values as specified by"""
+scalar FiveDVector
+
+type Dataset {
+  id: ID!
+  images(filters: ImageFilter, order: ImageOrder, pagination: OffsetPaginationInput): [Image!]!
+  files(filters: FileFilter, pagination: OffsetPaginationInput): [File!]!
+  children(filters: DatasetFilter, pagination: OffsetPaginationInput): [Dataset!]!
+  description: String
+  name: String!
+  history(pagination: OffsetPaginationInput): [History!]!
+  isDefault: Boolean!
+  createdAt: DateTime!
+  creator: User
+  pinned: Boolean!
+  tags: [String!]!
+}
+
+type History {
+  app: App
+  user: User
+  kind: HistoryKind!
+  date: DateTime!
+  during: String
+  id: ID!
+  effectiveChanges: [ModelChange!]!
+}
+
+type App {
+  id: ID!
+}
+
+enum HistoryKind {
+  CREATE
+  UPDATE
+  DELETE
+}
+
+type ModelChange {
+  field: String!
+  oldValue: String!
+  newValue: String!
+}
+
+type AffineTransformationView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  stage: Stage!
+  affineMatrix: FourByFourMatrix!
+  pixelSize: ThreeDVector!
+  pixelSizeX: Micrometers!
+  pixelSizeY: Micrometers!
+  position: ThreeDVector!
+}
+
+type Stage {
+  id: ID!
+  affineViews(filters: AffineTransformationViewFilter, pagination: OffsetPaginationInput): [AffineTransformationView!]!
+  description: String
+  name: String!
+  history(pagination: OffsetPaginationInput): [History!]!
+  pinned: Boolean!
+}
+
+"""
+The `FourByFourMatrix` scalar type represents a matrix values as specified by
+"""
+scalar FourByFourMatrix
+
+"""The `Vector` scalar type represents a matrix values as specified by"""
+scalar ThreeDVector
+
+"""
+The `Micrometers` scalar type represents a matrix valuesas specified by
+"""
+scalar Micrometers
+
+type LabelView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  fluorophore: Fluorophore
+  primaryAntibody: Antibody
+  secondaryAntibody: Antibody
+  acquisitionMode: String
+}
+
+type Fluorophore {
+  id: ID!
+  name: String!
+  views: [LabelView!]!
+  emissionWavelength: Micrometers
+  excitationWavelength: Micrometers
+  history(pagination: OffsetPaginationInput): [History!]!
+}
+
+type Antibody {
+  id: ID!
+  name: String!
+  epitope: String
+  primaryViews: [LabelView!]!
+  secondaryViews: [LabelView!]!
+  history(pagination: OffsetPaginationInput): [History!]!
+}
+
+type ChannelView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  channel: Channel!
+}
+
+type Channel {
+  id: ID!
+  views: [ChannelView!]!
+  name: String!
+  emissionWavelength: Float
+  excitationWavelength: Float
+  acquisitionMode: String
+  color: String
+}
+
+type TimepointView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  era: Era!
+  msSinceStart: Milliseconds
+  indexSinceStart: Int
+}
+
+type Era {
+  id: ID!
+  begin: DateTime
+  views(filters: TimepointViewFilter, pagination: OffsetPaginationInput): [TimepointView!]!
+  name: String!
+  history(pagination: OffsetPaginationInput): [History!]!
+}
+
+"""The `Matrix` scalar type represents a matrix values as specified by"""
+scalar Milliseconds
+
+type OpticsView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  instrument: Instrument
+  camera: Camera
+  objective: Objective
+}
+
+type Instrument {
+  id: ID!
+  name: String!
+  model: String
+  serialNumber: String!
+  views(filters: OpticsViewFilter, pagination: OffsetPaginationInput): [OpticsView!]!
+  manufacturer: String
+}
+
+input OpticsViewFilter {
+  isGlobal: Boolean
+  provenance: ProvenanceFilter
+  AND: OpticsViewFilter
+  OR: OpticsViewFilter
+  instrument: InstrumentFilter
+  objective: ObjectiveFilter
+  camera: CameraFilter
+}
+
+input InstrumentFilter {
+  id: ID
+  name: String
+  provenance: ProvenanceFilter
+  AND: InstrumentFilter
+  OR: InstrumentFilter
+}
+
+input ObjectiveFilter {
+  id: ID
+  name: String
+  provenance: ProvenanceFilter
+  AND: ObjectiveFilter
+  OR: ObjectiveFilter
+}
+
+input CameraFilter {
+  id: ID
+  name: String
+  provenance: ProvenanceFilter
+  AND: CameraFilter
+  OR: CameraFilter
+}
+
+type Camera {
+  id: ID!
+  name: String!
+  serialNumber: String!
+  views(filters: OpticsViewFilter, pagination: OffsetPaginationInput): [OpticsView!]!
+  model: String
+  bitDepth: Int
+  pixelSizeX: Micrometers
+  pixelSizeY: Micrometers
+  sensorSizeX: Int
+  sensorSizeY: Int
+  manufacturer: String
+  history(pagination: OffsetPaginationInput): [History!]!
+}
+
+type Objective {
+  id: ID!
+  name: String!
+  serialNumber: String!
+  na: Float
+  magnification: Float
+  immersion: String
+  views(filters: OpticsViewFilter, pagination: OffsetPaginationInput): [OpticsView!]!
+}
+
+type ImageIntMetric implements ImageMetric & IntMetric {
+  image: Image!
+  createdAt: DateTime!
+  creator: User
+  value: Int!
+  id: ID!
+}
+
+interface ImageMetric {
+  image: Image!
+  createdAt: DateTime!
+  creator: User
+}
+
+interface IntMetric {
+  value: Int!
+}
+
+enum RenderKind {
+  VIDEO
+  SNAPSHOT
+}
+
+input ROIFilter {
+  id: ID
+  kind: RoiKind
+  AND: ROIFilter
+  OR: ROIFilter
+}
+
+enum RoiKind {
+  ELLIPSIS
+  POLYGON
+  LINE
+  RECTANGLE
+  SPECTRAL_RECTANGLE
+  TEMPORAL_RECTANGLE
+  CUBE
+  SPECTRAL_CUBE
+  TEMPORAL_CUBE
+  HYPERCUBE
+  SPECTRAL_HYPERCUBE
+  PATH
+  UNKNOWN
+  FRAME
+  SLICE
+  POINT
+}
+
+type ContinousScanView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  direction: ScanDirection!
+}
+
+enum ScanDirection {
+  ROW_COLUMN_SLICE
+  COLUMN_ROW_SLICE
+  SLICE_ROW_COLUMN
+  ROW_COLUMN_SLICE_SNAKE
+  COLUMN_ROW_SLICE_SNAKE
+  SLICE_ROW_COLUMN_SNAKE
+}
+
+input ContinousScanViewFilter {
+  isGlobal: Boolean
+  provenance: ProvenanceFilter
+  AND: ContinousScanViewFilter
+  OR: ContinousScanViewFilter
+  direction: ContinousScanDirection
+}
+
+enum ContinousScanDirection {
+  ROW_COLUMN_SLICE
+  COLUMN_ROW_SLICE
+  SLICE_ROW_COLUMN
+  ROW_COLUMN_SLICE_SNAKE
+  COLUMN_ROW_SLICE_SNAKE
+  SLICE_ROW_COLUMN_SNAKE
+}
+
+type WellPositionView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  well: MultiWellPlate
+  row: Int
+  column: Int
+}
+
+type MultiWellPlate {
+  id: ID!
+  views(filters: WellPositionViewFilter, pagination: OffsetPaginationInput): [WellPositionView!]!
+  name: String
+  description: String
+  rows: Int
+  columns: Int
+}
+
+input WellPositionViewFilter {
+  isGlobal: Boolean
+  provenance: ProvenanceFilter
+  AND: WellPositionViewFilter
+  OR: WellPositionViewFilter
+  well: MultiWellPlateFilter
+  row: Int
+  column: Int
+}
+
+input MultiWellPlateFilter {
+  ids: [ID!]
+  search: String
+  id: ID
+  name: StrFilterLookup
+  AND: MultiWellPlateFilter
+  OR: MultiWellPlateFilter
+}
+
+type AcquisitionView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  description: String
+  acquiredAt: DateTime
+  operator: User
+}
+
+type RGBView implements View {
+  image: Image!
+  zMin: Int
+  zMax: Int
+  xMin: Int
+  xMax: Int
+  yMin: Int
+  yMax: Int
+  tMin: Int
+  tMax: Int
+  cMin: Int
+  cMax: Int
+  isGlobal: Boolean!
+
+  """The accessor"""
+  accessor: [String!]!
+  id: ID!
+  context: RGBContext!
+  rScale: Float!
+  gScale: Float!
+  bScale: Float!
+  fullColour(format: ColorFormat = RGB): String!
+}
+
+type RGBContext {
+  id: ID!
+  name: String!
+  views: [RGBView!]!
+  pinned: Boolean!
+}
+
+enum ColorFormat {
+  RGB
+  HSL
+}
+
+input FluorophoreFilter {
+  id: ID
+  emissionWavelength: IntFilterLookup
+  excitationWavelength: IntFilterLookup
+  provenance: ProvenanceFilter
+  search: String
+  ids: [ID!]
+  AND: FluorophoreFilter
+  OR: FluorophoreFilter
+}
+
+input AntibodyFilter {
+  ids: [ID!]
+  search: String
+  id: ID
+  name: StrFilterLookup
+  AND: AntibodyFilter
+  OR: AntibodyFilter
+}
+
+input RGBContextFilter {
+  ids: [ID!]
+  search: String
+  id: ID
+  provenance: ProvenanceFilter
+  AND: RGBContextFilter
+  OR: RGBContextFilter
+}
+
+type Table {
+  id: ID!
+  name: String!
+  origins(filters: ImageFilter, order: ImageOrder, pagination: OffsetPaginationInput): [Image!]!
+  store: ParquetStore!
+}
+
+type ParquetStore {
+  id: ID!
+  path: String!
+  bucket: String!
+  key: String!
+}
+
+type Mutation {
+  relateToDataset(
+    """Input data for `relateToDataset` mutation"""
+    input: RelateToDatasetInput!
+  ): Image!
+  requestUpload(input: RequestUploadInput!): Credentials!
+
+  """Request upload credentials for a given key"""
+  requestAccess(input: RequestAccessInput!): AccessCredentials!
+  requestTableUpload(input: RequestTableUploadInput!): Credentials!
+  requestTableAccess(input: RequestTableAccessInput!): AccessCredentials!
+  requestFileUpload(input: RequestFileUploadInput!): Credentials!
+  requestFileAccess(input: RequestFileAccessInput!): AccessCredentials!
+  createAffineTransformationView(input: AffineTransformationViewInput!): AffineTransformationView!
+  fromArrayLike(input: FromArrayLikeInput!): Image!
+  pinImage(input: PinImageInput!): Image!
+  updateImage(input: UpdateImageInput!): Image!
+  fromParquetLike(input: FromParquetLike!): Table!
+  fromFileLike(input: FromFileLike!): File!
+  createChannel(input: ChannelInput!): Channel!
+  pinChannel(input: PinChannelInput!): Channel!
+  ensureChannel(input: ChannelInput!): Channel!
+  deleteChannel(input: DeleteChannelInput!): ID!
+  createStage(input: StageInput!): Stage!
+  pinStage(input: PinStageInput!): Stage!
+  deleteStage(input: DeleteStageInput!): ID!
+  createRgbContext(input: RGBContextInput!): RGBContext!
+  deleteRgbContext(input: DeleteRGBContextInput!): ID!
+  createDataset(input: CreateDatasetInput!): Dataset!
+  updateDataset(input: ChangeDatasetInput!): Dataset!
+  revertDataset(input: RevertInput!): Dataset!
+  pinDataset(input: PinDatasetInput!): Dataset!
+  deleteDataset(input: DeleteDatasetInput!): ID!
+  putDatasetsInDataset(input: AssociateInput!): Dataset!
+  releaseDatasetsFromDataset(input: DesociateInput!): Dataset!
+  putImagesInDataset(input: AssociateInput!): Dataset!
+  releaseImagesFromDataset(input: DesociateInput!): Dataset!
+  putFilesInDataset(input: AssociateInput!): Dataset!
+  releaseFilesFromDataset(input: DesociateInput!): Dataset!
+  createFluorophore(input: FluorophoreInput!): Fluorophore!
+  ensureFluorophore(input: FluorophoreInput!): Fluorophore!
+  pinFluorophore(input: PinFluorophoreInput!): Fluorophore!
+  deleteFluorophore(input: DeleteFluorophoreInput!): ID!
+  createMultiWellPlate(input: MultiWellPlateInput!): MultiWellPlate!
+  ensureMultiWellPlate(input: MultiWellPlateInput!): MultiWellPlate!
+  pinMultiWellPlate(input: PintMultiWellPlateInput!): MultiWellPlate!
+  deleteMultiWellPlate(input: DeleteMultiWellInput!): ID!
+  ensureAntibody(input: AntibodyInput!): Antibody!
+  createAntibody(input: AntibodyInput!): Antibody!
+  pinAntibody(input: PinAntibodyInput!): Antibody!
+  deleteAntibody(input: DeleteAntibodyInput!): ID!
+  createViewCollection(input: ViewCollectionInput!): ViewCollection!
+  pinViewCollection(input: PinViewCollectionInput!): ViewCollection!
+  deleteViewCollection(input: DeleteViewCollectionInput!): ID!
+  createEra(input: EraInput!): Era!
+  pinEra(input: PinEraInput!): Era!
+  deleteEra(input: DeleteEraInput!): ID!
+  createLabelView(input: LabelViewInput!): LabelView!
+  createTimepointView(input: TimepointViewInput!): TimepointView!
+  createOpticsView(input: OpticsViewInput!): OpticsView!
+  createRgbView(input: RGBViewInput!): RGBView!
+  createChannelView(input: ChannelViewInput!): ChannelView!
+  createWellPositionView(input: WellPositionViewInput!): WellPositionView!
+  createContinousScanView(input: ContinousScanViewInput!): ContinousScanView!
+  deleteAffineTransformationView(input: DeleteViewInput!): ID!
+  deleteChannelView(input: DeleteViewInput!): ID!
+  deleteTimepointView(input: DeleteViewInput!): ID!
+  deleteOpticsView(input: DeleteViewInput!): ID!
+  deleteRgbView(input: DeleteViewInput!): ID!
+  deleteView(input: DeleteViewInput!): ID!
+  pinView(input: PinViewInput!): View!
+  createInstrument(input: InstrumentInput!): Instrument!
+  deleteInstrument(input: DeleteInstrumentInput!): ID!
+  pinInstrument(input: PinInstrumentInput!): Instrument!
+  ensureInstrument(input: InstrumentInput!): Instrument!
+  createObjective(input: ObjectiveInput!): Objective!
+  deleteObjective(input: DeleteObjectiveInput!): ID!
+  pinObjective(input: PinObjectiveInput!): Objective!
+  ensureObjective(input: ObjectiveInput!): Objective!
+  createCamera(input: CameraInput!): Camera!
+  deleteCamera(input: DeleteCameraInput!): ID!
+  pinCamera(input: PinCameraInput!): Camera!
+  ensureCamera(input: CameraInput!): Camera!
+  createSnapshot(input: SnaphotInput!): Snapshot!
+  deleteSnapshot(input: DeleteSnaphotInput!): ID!
+  pinSnapshot(input: PinSnapshotInput!): Snapshot!
+}
+
+input RelateToDatasetInput {
+  id: ID!
+  other: ID!
+}
+
+"""
+Temporary Credentials for a file upload that can be used by a Client (e.g. in a python datalayer)
+"""
+type Credentials {
+  status: String!
+  accessKey: String!
+  secretKey: String!
+  sessionToken: String!
+  datalayer: String!
+  bucket: String!
+  key: String!
+  store: String!
+}
+
+input RequestUploadInput {
+  key: String!
+  datalayer: String!
+}
+
+"""
+Temporary Credentials for a file download that can be used by a Client (e.g. in a python datalayer)
+"""
+type AccessCredentials {
+  accessKey: String!
+  secretKey: String!
+  sessionToken: String!
+  bucket: String!
+  key: String!
+  path: String!
+}
+
+input RequestAccessInput {
+  store: ID!
+  duration: Int = null
+}
+
+input RequestTableUploadInput {
+  key: String!
+  datalayer: String!
+}
+
+input RequestTableAccessInput {
+  store: ID!
+  duration: Int
+}
+
+input RequestFileUploadInput {
+  key: String!
+  datalayer: String!
+}
+
+input RequestFileAccessInput {
+  store: ID!
+  duration: Int
+}
+
+input AffineTransformationViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  stage: ID = null
+  affineMatrix: FourByFourMatrix!
+  image: ID!
+}
+
+input FromArrayLikeInput {
+  name: String!
+  array: ArrayLike!
+  origins: [ID!] = null
+  dataset: ID = null
+  channelViews: [PartialChannelViewInput!] = null
+  transformationViews: [PartialAffineTransformationViewInput!] = null
+  acquisitionViews: [PartialAcquisitionViewInput!] = null
+  labelViews: [PartialLabelViewInput!] = null
+  rgbViews: [PartialRGBViewInput!] = null
+  timepointViews: [PartialTimepointViewInput!] = null
+  opticsViews: [PartialOpticsViewInput!] = null
+  tags: [String!] = null
+}
+
+"""
+The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer
+"""
+scalar ArrayLike
+
+input PartialChannelViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  channel: ID!
+}
+
+input PartialAffineTransformationViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  stage: ID = null
+  affineMatrix: FourByFourMatrix!
+}
+
+input PartialAcquisitionViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  description: String = null
+  acquiredAt: DateTime = null
+  operator: ID = null
+}
+
+input PartialLabelViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  fluorophore: ID = null
+  primaryAntibody: ID = null
+  secondaryAntibody: ID = null
+}
+
+input PartialRGBViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  context: ID = null
+  rScale: Float!
+  gScale: Float!
+  bScale: Float!
+}
+
+input PartialTimepointViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  era: ID = null
+  msSinceStart: Milliseconds = null
+  indexSinceStart: Int = null
+}
+
+input PartialOpticsViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  instrument: ID = null
+  objective: ID = null
+  camera: ID = null
+}
+
+input PinImageInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input UpdateImageInput {
+  id: ID!
+  tags: [String!] = null
+  name: String = null
+}
+
+input FromParquetLike {
+  name: String!
+  dataframe: ParquetLike!
+  origins: [ID!] = null
+  dataset: ID = null
+}
+
+"""
+The `ParquetLike` scalar type represents a reference to a parquet objected stored previously created by the user on a datalayer
+"""
+scalar ParquetLike
+
+input FromFileLike {
+  name: String!
+  file: FileLike!
+  origins: [ID!] = null
+  dataset: ID = null
+}
+
+"""
+The `FileLike` scalar type represents a reference to a big file storage previously created by the user n a datalayer
+"""
+scalar FileLike
+
+input ChannelInput {
+  name: String!
+}
+
+input PinChannelInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input DeleteChannelInput {
+  id: ID!
+}
+
+input StageInput {
+  name: String!
+  instrument: ID = null
+}
+
+input PinStageInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input DeleteStageInput {
+  id: ID!
+}
+
+input RGBContextInput {
+  name: String = null
+}
+
+input DeleteRGBContextInput {
+  id: ID!
+}
+
+input CreateDatasetInput {
+  name: String!
+}
+
+input ChangeDatasetInput {
+  name: String!
+  id: ID!
+}
+
+input RevertInput {
+  id: ID!
+  historyId: ID!
+}
+
+input PinDatasetInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input DeleteDatasetInput {
+  id: ID!
+}
+
+input AssociateInput {
+  selfs: [ID!]!
+  other: ID!
+}
+
+input DesociateInput {
+  selfs: [ID!]!
+  other: ID!
+}
+
+input FluorophoreInput {
+  name: String!
+  emissionWavelength: Micrometers = null
+  excitationWavelength: Micrometers = null
+}
+
+input PinFluorophoreInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input DeleteFluorophoreInput {
+  id: ID!
+}
+
+input MultiWellPlateInput {
+  name: String!
+  columns: Int = null
+  rows: Int = null
+}
+
+input PintMultiWellPlateInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input DeleteMultiWellInput {
+  id: ID!
+}
+
+input AntibodyInput {
+  name: String!
+  epitope: String = null
+}
+
+input PinAntibodyInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input DeleteAntibodyInput {
+  id: ID!
+}
+
+type ViewCollection {
+  id: ID!
+  name: String!
+  views: [View!]!
+  history(pagination: OffsetPaginationInput): [History!]!
+  affineTransformationViews(filters: AffineTransformationViewFilter, pagination: OffsetPaginationInput): [AffineTransformationView!]!
+  labelViews: [LabelView!]!
+  channelViews: [ChannelView!]!
+}
+
+input ViewCollectionInput {
+  name: String!
+}
+
+input PinViewCollectionInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input DeleteViewCollectionInput {
+  id: ID!
+}
+
+input EraInput {
+  name: String!
+  begin: DateTime = null
+}
+
+input PinEraInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input DeleteEraInput {
+  id: ID!
+}
+
+input LabelViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  fluorophore: ID = null
+  primaryAntibody: ID = null
+  secondaryAntibody: ID = null
+  image: ID!
+}
+
+input TimepointViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  era: ID = null
+  msSinceStart: Milliseconds = null
+  indexSinceStart: Int = null
+  image: ID!
+}
+
+input OpticsViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  instrument: ID = null
+  objective: ID = null
+  camera: ID = null
+  image: ID!
+}
+
+input RGBViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  context: ID = null
+  rScale: Float!
+  gScale: Float!
+  bScale: Float!
+  image: ID!
+}
+
+input ChannelViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  channel: ID!
+  image: ID!
+}
+
+input WellPositionViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  well: ID = null
+  row: Int = null
+  column: Int = null
+  image: ID!
+}
+
+input ContinousScanViewInput {
+  collection: ID = null
+  zMin: Int = null
+  zMax: Int = null
+  xMin: Int = null
+  xMax: Int = null
+  yMin: Int = null
+  yMax: Int = null
+  tMin: Int = null
+  tMax: Int = null
+  cMin: Int = null
+  cMax: Int = null
+  direction: ScanDirection!
+  image: ID!
+}
+
+input DeleteViewInput {
+  id: ID!
+}
+
+input PinViewInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input InstrumentInput {
+  serialNumber: String!
+  manufacturer: String = null
+  name: String = null
+  model: String = null
+}
+
+input DeleteInstrumentInput {
+  id: ID!
+}
+
+input PinInstrumentInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input ObjectiveInput {
+  serialNumber: String!
+  name: String = null
+  na: Float = null
+  magnification: Float = null
+  immersion: String = null
+}
+
+input DeleteObjectiveInput {
+  id: ID!
+}
+
+input PinObjectiveInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input CameraInput {
+  serialNumber: String!
+  name: String = null
+  model: String = null
+  bitDepth: Int = null
+  sensorSizeX: Int = null
+  sensorSizeY: Int = null
+  pixelSizeX: Micrometers = null
+  pixelSizeY: Micrometers = null
+  manufacturer: String = null
+}
+
+input DeleteCameraInput {
+  id: ID!
+}
+
+input PinCameraInput {
+  id: ID!
+  pin: Boolean!
+}
+
+input SnaphotInput {
+  file: Upload!
+  image: ID!
+}
+
+scalar Upload
+
+input DeleteSnaphotInput {
+  id: ID!
+}
+
+input PinSnapshotInput {
+  id: ID!
+  pin: Boolean!
+}
+
+type Subscription {
+  historyEvents(user: String!): Image!
+}

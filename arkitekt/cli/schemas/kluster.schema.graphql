@@ -1,0 +1,109 @@
+"""Make string uppercase"""
+directive @upper on FIELD
+
+directive @replace(old: String!, new: String!) on FIELD
+
+"""Make get stuff uppercase"""
+directive @relation(on: String!) on FIELD
+
+type Query {
+  """Return all dask clusters"""
+  daskClusters(filters: ClusterFilter = null, pagination: OffsetPaginationInput = null): [DaskCluster!]!
+
+  """Return a dask cluster by id"""
+  daskCluster(id: ID!): DaskCluster!
+
+  """Return the currently logged in user"""
+  me: User!
+}
+
+""" A dask cluster"""
+type DaskCluster {
+  """The name of the dask cluster"""
+  name: String!
+
+  """The id of the dask cluster"""
+  id: ID!
+
+  """A link to the dashboard for the dask cluster. Relative to the proxy."""
+  dashboardLink: String!
+
+  """A link to the scheduler for the dask cluster. Relative to the proxy."""
+  schedulerAddress: String!
+
+  """When the dask cluster was created"""
+  startTime: DateTime
+
+  """When the dask cluster was stopped"""
+  stopTime: DateTime
+
+  """The status of the dask cluster"""
+  status: DaskClusterState!
+
+  """The options used to create the dask cluster"""
+  options: UntypedOptions!
+
+  """The tags for the dask cluster (currently fake)"""
+  tags: [String!]!
+
+  """The user who created the dask cluster"""
+  security: Security
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+"""The state of a dask cluster"""
+enum DaskClusterState {
+  PENDING
+  RUNNING
+  STOPPING
+  STOPPED
+  FAILED
+}
+
+"""
+UntypedOptions represents an untyped options object returned by the Dask Gateway API.
+"""
+scalar UntypedOptions
+
+""" A security object for a dask cluster"""
+type Security {
+  tlsKey: String!
+  tlsCert: String!
+}
+
+"""Filter for Dask Clusters"""
+input ClusterFilter {
+  ids: [ID!] = null
+  search: String = null
+}
+
+input OffsetPaginationInput {
+  offset: Int! = 0
+  limit: Int! = -1
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type User {
+  id: ID!
+  sub: String!
+
+  """Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."""
+  username: String!
+  email: String!
+  password: String!
+}
+
+type Mutation {
+  """Create a new dask cluster on a bridge server"""
+  createDaskCluster(input: CreateClusterInput!): DaskCluster!
+
+  """Stop a dask cluster"""
+  stopDaskCluster(id: ID!): ID!
+}
+
+"""Create a dask cluster input"""
+input CreateClusterInput {
+  name: String!
+}

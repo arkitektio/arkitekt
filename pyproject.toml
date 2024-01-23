@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "arkitekt"
-version = "0.7.0a7"
+version = "0.7.0a8"
 description = "client for the arkitekt platform"
 authors = ["jhnnsrs <jhnnsrs@gmail.com>"]
 license = "MIT"
@@ -21,7 +21,7 @@ kluster = { version = ">=0.0.3", python = "^3.9", optional = true }
 
 rich-click = { version = ">=1.6.1", optional = true }
 watchfiles = { version = ">=0.18.1", optional = true }
-turms = { version = ">=0.4.2", python = "^3.9", optional = true }
+turms = { version = ">=0.5.0", python = "^3.9", optional = true }
 semver = { version = ">=3.0.1", optional = true }
 dokker = ">=0.1.20"
 

@@ -1,0 +1,92 @@
+"""Make string uppercase"""
+directive @upper on FIELD
+
+directive @replace(old: String!, new: String!) on FIELD
+
+"""Make get stuff uppercase"""
+directive @relation(on: String!) on FIELD
+
+type Query {
+  omeroUsers: [OmeroUser!]!
+  projects(filters: ProjectFilter = null, pagination: OffsetPaginationInput = null): [Project!]!
+  me: User!
+  project(id: ID!): Project!
+  image(id: ID!): Image!
+  dataset(id: ID!): Dataset!
+  datasets(filters: DatasetFilter = null, pagination: OffsetPaginationInput = null): Dataset!
+  images(filters: ImageFilter = null, pagination: OffsetPaginationInput = null): Image!
+}
+
+type OmeroUser {
+  id: ID!
+  omeroPassword: String!
+  omeroUsername: String!
+  user: User!
+}
+
+type User {
+  id: ID!
+  sub: String!
+  username: String!
+  email: String!
+  password: String!
+  omeroUser: OmeroUser
+}
+
+type Project {
+  id: String!
+  name: String!
+  tags: [String!]!
+  description: String!
+  datasets: [Dataset!]!
+}
+
+type Dataset {
+  id: String!
+  name: String!
+  description: String!
+  tags: [String!]!
+  images: [Image!]!
+}
+
+type Image {
+  name: String!
+  description: String!
+  tags: [String!]!
+  id: String!
+  acquisitionDate: DateTime
+  originalFile: String
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+input ProjectFilter {
+  ids: [ID!]
+  search: String
+}
+
+input OffsetPaginationInput {
+  offset: Int! = 0
+  limit: Int! = -1
+}
+
+input DatasetFilter {
+  ids: [ID!]
+  search: String
+}
+
+input ImageFilter {
+  ids: [ID!]
+  search: String
+}
+
+type Mutation {
+  ensureOmeroUser(input: OmerUserInput!): OmeroUser!
+  deleteMe: User!
+}
+
+input OmerUserInput {
+  username: String!
+  password: String!
+}

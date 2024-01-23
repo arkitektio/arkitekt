@@ -1,0 +1,356 @@
+"""The root Query"""
+type Query {
+  hello: String
+  void: String
+
+  "Get a single feature by ID\n\n    Returns a single feature by ID. If the user does not have access\n    to the feature, an error will be raised.\n    "
+  containers(
+    """The status to search by (defaults to running)"""
+    status: [ContainerStatus]
+
+    """Search for a container by whale"""
+    search: String
+  ): [Container]
+
+  "Get a single docker by ID\n\n    Returns a single feature by ID. If the user does not have access\n    to the feature, an error will be raised.\n    "
+  container(
+    """The Container ID"""
+    id: ID!
+  ): Container
+
+  "Get a single docker by ID\n\n    Returns a single feature by ID. If the user does not have access\n    to the feature, an error will be raised.\n    "
+  containerFor(
+    """The Whale ID"""
+    whale: ID!
+
+    """The Instance ID"""
+    instance: String
+  ): Container
+
+  "Get a single feature by ID\n\n    Returns a single feature by ID. If the user does not have access\n    to the feature, an error will be raised.\n    "
+  networks(
+    """The ID to search by"""
+    name: String
+
+    """The limit of the query"""
+    limit: Int
+
+    """The IDs to search by"""
+    values: [ID]
+  ): [Network]
+  mynetworks: [Network]
+
+  "Get a single feature by ID\n\n    Returns a single feature by ID. If the user does not have access\n    to the feature, an error will be raised.\n    "
+  deployments(
+    search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Deployment]
+
+  "Get a single docker by ID\n\n    Returns a single feature by ID. If the user does not have access\n    to the feature, an error will be raised.\n    "
+  deployment(
+    """The Container ID"""
+    id: ID!
+  ): Deployment
+  githubRepos(
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [GithubRepo]
+
+  """Get information on your Docker Template"""
+  githubRepo(
+    """The Whale ID"""
+    id: ID
+
+    """The tag of the repository e.g jhnnsrs/port:main"""
+    tag: String
+  ): GithubRepo
+  whales(
+    search: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Whale]
+
+  """Get information on your Docker Template"""
+  whale(
+    """The Whale ID"""
+    id: ID
+
+    """The Template ID"""
+    template: ID
+  ): Whale
+}
+
+type Container {
+  id: ID!
+  name: String
+  image: Image
+  labels: GenericScalar
+  attrs: GenericScalar
+  whale: Whale
+  status: ContainerStatus
+  logs(stdout: Boolean, stderr: Boolean, tail: Int, since: String, timestamps: Boolean, follow: Boolean, until: String): String
+  network: Network
+  runtime: DockerRuntime
+}
+
+type Image {
+  id: String!
+  attrs: GenericScalar
+  labels: GenericScalar
+  tags: [String]
+}
+
+"""
+The `GenericScalar` scalar type represents a generic
+GraphQL scalar value that could be:
+String, Boolean, Int, Float, List or Object.
+"""
+scalar GenericScalar
+
+type Whale {
+  """"""
+  id: ID!
+
+  """"""
+  deployment: Deployment!
+
+  """"""
+  url: String!
+
+  """"""
+  clientId: String!
+
+  """"""
+  token: String
+
+  """"""
+  createdAt: DateTime!
+  pulled: Boolean
+  latestPull: DateTime
+  containers: [Container]
+  latestEvent: WhaleEvent
+}
+
+type Deployment {
+  """"""
+  id: ID!
+
+  """"""
+  deploymentId: String!
+
+  """"""
+  buildId: String!
+
+  """"""
+  flavour: String!
+  selectors: GenericScalar
+
+  """"""
+  manifest: Manifest!
+
+  """"""
+  repo: GithubRepo!
+
+  """"""
+  image: String!
+
+  """"""
+  builder: String!
+  definitions: GenericScalar
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  deployedAt: DateTime
+
+  """"""
+  whales: [Whale!]!
+}
+
+type Manifest {
+  """"""
+  id: ID!
+  version: String!
+  identifier: String!
+  scopes: [String]!
+  requirements: GenericScalar
+  logo: String
+
+  """The original logo url"""
+  originalLogo: String
+
+  """"""
+  entrypoint: String!
+
+  """"""
+  deployments: [Deployment!]!
+}
+
+type GithubRepo {
+  """"""
+  id: ID!
+
+  """"""
+  repo: String!
+
+  """"""
+  user: String!
+
+  """"""
+  branch: String!
+
+  """"""
+  createdAt: DateTime!
+
+  """"""
+  deployments: [Deployment!]!
+  readme: String
+}
+
+"""
+The `DateTime` scalar type represents a DateTime
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar DateTime
+
+type WhaleEvent {
+  pull: PullEvent
+  up: UpEvent
+  whale: ID
+}
+
+type PullEvent {
+  progress: Float
+  status: PullProgressStatus
+}
+
+"""Docker pull progress status."""
+enum PullProgressStatus {
+  PULLING
+  PULLED
+}
+
+type UpEvent {
+  container: ID
+}
+
+enum ContainerStatus {
+  CREATED
+  RESTARTING
+  RUNNING
+  REMOVING
+  PAUSED
+  EXITED
+  DEAD
+}
+
+type Network {
+  name: String
+  id: String!
+  driver: String
+  scope: String
+  ipam: GenericScalar
+  internal: Boolean
+  containers: [Container]
+  options: GenericScalar
+  labels: GenericScalar
+}
+
+"""Docker runtime."""
+enum DockerRuntime {
+  NVIDIA
+  RUNC
+}
+
+"""The root Mutation"""
+type Mutation {
+  runWhale(id: ID!, instance: String, network: ID): Whale
+  createWhale(clientId: String!, deployment: ID!, faktEndpoint: String, token: String!): Whale
+  deleteWhale(
+    """The ID of the deletable Whale"""
+    id: ID
+  ): DeleteWhaleReturn
+  pullWhale(
+    """The ID of the deletabssle Whale"""
+    id: ID
+  ): PullWhaleReturn
+  purgeWhale(
+    """The ID of the deletabssle Whale"""
+    id: ID
+  ): Whale
+  stopContainer(id: ID!): Container
+  restartContainer(id: ID!): Container
+  removeContainer(id: ID!): Container
+  scanRepo(id: ID!): ScanRepoReturn
+  createGithubRepo(
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    branch: String!
+
+    """The Repo of the Docker (Repo on Dockerhub)"""
+    repo: String!
+
+    """The User of the Docker (Username on Github)"""
+    user: String!
+  ): GithubRepo
+  deleteGithubRepo(
+    """The ID of the deletable Whale"""
+    id: ID
+  ): DeleteGithubRepoReturn
+  deleteDeployment(
+    """The ID of the deletable Whale"""
+    id: ID
+  ): DeleteDeploymentReturn
+}
+
+type DeleteWhaleReturn {
+  """Hallo"""
+  id: ID
+}
+
+type PullWhaleReturn {
+  """Hallo"""
+  id: ID
+}
+
+type ScanRepoReturn {
+  status: String
+  message: String
+  repo: GithubRepo
+  deployments: [Deployment]
+}
+
+type DeleteGithubRepoReturn {
+  """Hallo"""
+  id: ID
+}
+
+type DeleteDeploymentReturn {
+  """Hallo"""
+  id: ID
+}
+
+"""The root Subscriptions"""
+type Subscription {
+  containerUpdateSubscription(id: ID): ContainerEvent
+  whalesEvent(id: ID): WhaleEvent
+}
+
+type ContainerEvent {
+  up: UpEvent
+}

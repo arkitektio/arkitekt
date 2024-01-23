@@ -675,10 +675,13 @@ type Widget {
   choices: [Choice]
 
   """Max value for int widget"""
-  max: Int
+  max: Float
 
   """Max value for int widget"""
-  min: Int
+  min: Float
+
+  """Max value for int widget"""
+  step: Float
 
   """Placeholder for any widget"""
   placeholder: String
@@ -696,13 +699,14 @@ type Widget {
 type Choice {
   value: Any!
   label: String!
+  description: String
 }
 
 type ReturnWidget {
   """type"""
   kind: String!
 
-  """Do we have a possible"""
+  """The graphql query for this port"""
   query: String
 
   """The dependencies of this port"""
@@ -1272,7 +1276,6 @@ input NodeInput {
   description: String
   kind: String
   implementation: ReactiveImplementationModelInput
-  documentation: String
   position: PositionInput!
   defaults: GenericScalar
   extra: GenericScalar
@@ -1369,10 +1372,13 @@ input WidgetInput {
   choices: [ChoiceInput]
 
   """Max value for int widget"""
-  max: Int
+  max: Float
 
   """Max value for int widget"""
-  min: Int
+  min: Float
+
+  """Max value for int widget"""
+  step: Float
 
   """Placeholder for any widget"""
   placeholder: String
@@ -1390,6 +1396,7 @@ input WidgetInput {
 input ChoiceInput {
   value: Any!
   label: String!
+  description: String
 }
 
 input ReturnWidgetInput {
@@ -1587,17 +1594,16 @@ type ArkitektNode implements FlowNode & FlowNodeCommons & RetriableNode {
   position: Position!
   parentNode: ID
   typename: String!
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
   maxRetries: Int!
   retryDelay: Int!
   hash: String!
-  name: String
-  description: String
   kind: String!
   mapStrategy: MapStrategy!
   allowLocal: Boolean!
@@ -1608,11 +1614,12 @@ type ArkitektNode implements FlowNode & FlowNodeCommons & RetriableNode {
 }
 
 interface FlowNodeCommons {
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
 }
 
@@ -1637,17 +1644,16 @@ type ArkitektFilterNode implements FlowNode & FlowNodeCommons & RetriableNode {
   position: Position!
   parentNode: ID
   typename: String!
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
   maxRetries: Int!
   retryDelay: Int!
   hash: String!
-  name: String
-  description: String
   kind: String!
   mapStrategy: MapStrategy!
   allowLocal: Boolean!
@@ -1662,18 +1668,17 @@ type LocalNode implements FlowNode & FlowNodeCommons & RetriableNode {
   position: Position!
   parentNode: ID
   typename: String!
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
   maxRetries: Int!
   retryDelay: Int!
   hash: String!
   interface: String!
-  name: String
-  description: String
   kind: String!
   mapStrategy: MapStrategy!
   allowLocal: Boolean!
@@ -1687,14 +1692,14 @@ type GraphNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
   hash: String!
-  name: String
 }
 
 type ArgNode implements FlowNode & FlowNodeCommons {
@@ -1702,11 +1707,12 @@ type ArgNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
 }
 
@@ -1715,11 +1721,12 @@ type KwargNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
 }
 
@@ -1728,11 +1735,12 @@ type ReturnNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
 }
 
@@ -1741,11 +1749,12 @@ type ReactiveNode implements FlowNode & FlowNodeCommons {
   position: Position!
   parentNode: ID
   typename: String!
+  name: String!
   instream: [[Port]]!
   outstream: [[Port]]!
   constream: [[Port]]!
   constants: GenericScalar
-  documentation: String
+  description: String!
   defaults: GenericScalar
   implementation: ReactiveImplementationModelInput!
 }

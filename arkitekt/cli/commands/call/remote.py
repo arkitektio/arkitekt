@@ -18,10 +18,6 @@ async def call_app(
     arg,
 ):
     async with app:
-        run_task = asyncio.create_task(app.rekuest.run())
-
-        app.rekuest.agent.definition_registry.definitions
-
         async with arkiuse(
             hash=hash,
             postman=app.rekuest.postman,
@@ -29,12 +25,7 @@ async def call_app(
             print(arg)
             print(await a.aassign(kwargs=arg))
 
-        run_task.cancel()
-
-        try:
-            await run_task
-        except asyncio.CancelledError:
-            pass
+        
 
 
 @click.command("prod")
@@ -66,10 +57,11 @@ async def call_app(
     type=str,
 )
 def remote(ctx, entrypoint=None, builder=None, args=None, hash=str, **builder_kwargs):
-    """Runs the app in production mode
+    """ALlows you to run a get the output of a node in a remote app.
 
-    \n
-    You can specify the builder to use with the --builder flag. By default, the easy builder is used, which is designed to be easy to use and to get started with.
+    This is useful for debugging and testing. In this mode the app itself will not
+    be run, so local nodes cannot be called. Only nodes that are availabble on your
+    arkitekt server can be called.
 
     """
 

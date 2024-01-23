@@ -2236,8 +2236,32 @@ type Stage {
   """A comma-separated list of tags."""
   tags: [String]
 
-  """"""
-  positions: [Position!]!
+  """Derived Images from this Image"""
+  positions(
+    """Filter by pinned"""
+    pinned: Boolean
+
+    """Created through which app"""
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """Filter by values"""
+    ids: [ID]
+    stage: ID
+
+    """Search for substring of name"""
+    name: String
+
+    """Query limit"""
+    limit: Int
+
+    """Query offset"""
+    offset: Int
+  ): [Position]
 
   """Is the table pinned by the active user"""
   pinned: Boolean

@@ -53,6 +53,12 @@ type Query {
 
     """The excluded values"""
     limit: Int
+
+    """The excluded values"""
+    latest: Boolean
+
+    """The excluded values"""
+    onlyMine: Boolean
   ): [Assignation]
   assignations(
     """Filter by values"""
@@ -73,12 +79,13 @@ type Query {
     offset: Int
   ): [Assignation]
   requests(
+    instanceId: String!
+
     """The excluded values"""
     exclude: [AssignationStatusInput]
 
     """The included values"""
     filter: [AssignationStatusInput]
-    identifier: String = "default"
   ): [Assignation]
   mytodos(
     """The excluded values"""
@@ -110,9 +117,16 @@ type Query {
     """The query node"""
     hash: String
 
+    """The reservation that is linked to this node"""
+    reservation: ID
+
+    """The reservation that is linked to this node"""
+    assignation: ID
+
     """Get node for a template (overrides the others)"""
     template: ID
   ): Node
+  demandednodes(inputPortDemands: [PortDemandInput], outputPortDemands: [PortDemandInput]): [Node]
   allnodes(
     """Filter by values"""
     ids: [ID]
@@ -141,6 +155,9 @@ type Query {
     """Currently Templated"""
     templated: Boolean
 
+    """Ordering"""
+    order: String
+
     """Query limit"""
     limit: Int
 
@@ -166,13 +183,17 @@ type Query {
     filter: [ReservationStatusInput]
   ): [Reservation]
   reservations(
+    instanceId: String!
+
     """The excluded values"""
     exclude: [ReservationStatusInput]
 
     """The included values"""
     filter: [ReservationStatusInput]
-    identifier: String = "default"
+    inputPortDemands: [PortDemandInput]
+    outputPortDemands: [PortDemandInput]
     nodeInterfaces: [String]
+    templateParams: [TemplateParamInput]
   ): [Reservation]
   repository(
     """The query node"""
@@ -237,11 +258,17 @@ type Query {
     offset: Int
   ): [Template]
   reservableTemplates(
+    """
+    The template to reserve (This will assert if the template is truly reservable)
+    """
+    template: ID
+
     """The node provisions"""
     node: ID
 
     """The hash of the template"""
     hash: String
+    templateParams: [TemplateParamInput]
   ): [Template]
   structure(
     """The query node"""
@@ -728,6 +755,9 @@ type Node {
 
   """The hash of the Node (completely unique)"""
   hash: String!
+
+  """"""
+  createdAt: DateTime!
   args: [Port]
   returns: [Port]
 
@@ -875,6 +905,7 @@ enum PortKind {
   DICT
   FLOAT
   UNION
+  DATE
 }
 
 type Effect {
@@ -1427,6 +1458,9 @@ enum AssignationStatus {
   """Pending"""
   PENDING
 
+  """Bound"""
+  BOUND
+
   """Acknowledged"""
   ACKNOWLEDGED
 
@@ -1714,6 +1748,9 @@ enum AssignationStatusInput {
   """Pending"""
   PENDING
 
+  """Bound"""
+  BOUND
+
   """Acknowledged"""
   ACKNOWLEDGED
 
@@ -1898,6 +1935,28 @@ and its functional signature.
 """
 scalar QString
 
+input PortDemandInput {
+  at: Int
+  key: String
+  kind: PortKindInput
+  identifier: String
+  nullable: Boolean
+  variants: [PortDemandInput]
+  child: PortDemandInput
+}
+
+enum PortKindInput {
+  INT
+  STRING
+  STRUCTURE
+  LIST
+  BOOL
+  DICT
+  FLOAT
+  UNION
+  DATE
+}
+
 """An enumeration."""
 enum NodeKindInput {
   """Generator"""
@@ -1957,6 +2016,11 @@ enum ReservationStatusInput {
 
   """Critical (Reservation failed with an Critical Error)"""
   CRITICAL
+}
+
+input TemplateParamInput {
+  key: String!
+  value: GenericScalar
 }
 
 type Structure {
@@ -2177,13 +2241,11 @@ type Mutation {
   reserve(
     allowAutoRequest: Boolean
 
-    """A unique identifier"""
-    appGroup: ID = "default"
-
     """bindings"""
     binds: ReserveBindsInput
     hash: String
     imitate: ID
+    instanceId: ID!
     node: ID
 
     """Additional Params"""
@@ -2193,6 +2255,7 @@ type Mutation {
     persist: Boolean = true
     provision: ID
     reference: String
+    template: ID
     title: String
   ): Reservation
   slate(
@@ -2536,17 +2599,6 @@ input ChildPortInput {
   returnWidget: ReturnWidgetInput
 }
 
-enum PortKindInput {
-  INT
-  STRING
-  STRUCTURE
-  LIST
-  BOOL
-  DICT
-  FLOAT
-  UNION
-}
-
 input AnnotationInput {
   """The kind of annotation"""
   kind: AnnotationKind!
@@ -2600,11 +2652,14 @@ input WidgetInput {
   """The dependencies of this port"""
   choices: [ChoiceInput]
 
-  """Max value for int widget"""
-  max: Int
+  """Max value for slider widget"""
+  max: Float
 
-  """Max value for int widget"""
-  min: Int
+  """Min value for slider widget"""
+  min: Float
+
+  """Step value for slider widget"""
+  step: Float
 
   """Placeholder for any widget"""
   placeholder: String
@@ -2717,11 +2772,11 @@ input ReserveParamsInput {
 }
 
 type UnprovideReturn {
-  id: ID
+  id: ID!
 }
 
 type UnreserveResult {
-  id: ID
+  id: ID!
 }
 
 type Tell {
@@ -2810,11 +2865,11 @@ type Subscription {
   ): AssignationsEvent
   requests(
     """The log level for alterations"""
-    identifier: String!
+    instanceId: String!
   ): AssignationsEvent
   todos(
     """The reference of this todos"""
-    identifier: String!
+    instanceId: String!
   ): TodoEvent
   mytodos: TodoEvent
   provision(
@@ -2846,7 +2901,7 @@ type Subscription {
   ): ReservationsEvent
   reservations(
     """The reference of this waiter"""
-    identifier: String!
+    instanceId: String!
 
     """The reference of the provision (if we want to only listen to this)"""
     provision: String
@@ -2862,6 +2917,10 @@ type Subscription {
     """The Id of the node you are intereset in"""
     id: ID!
   ): Node
+  templates(
+    """The params to filter by"""
+    templateParams: [TemplateParamInput]
+  ): TemplateEvent
 
   "My Mentions\n\n    Returns an event of a new mention for the user if the user \n    was mentioned in a comment.\n    "
   mymentions: MentionEvent
@@ -2934,6 +2993,12 @@ type NodeEvent {
   created: Node
   deleted: ID
   updated: Node
+}
+
+type TemplateEvent {
+  created: Template
+  deleted: ID
+  updated: Template
 }
 
 type MentionEvent {
@@ -3036,10 +3101,13 @@ type SliderWidget implements Widget {
   kind: String!
 
   """A Complex description"""
-  min: Int
+  min: Float
 
   """A Complex description"""
-  max: Int
+  max: Float
+
+  """A Complex description"""
+  step: Float
 }
 
 type StringWidget implements Widget {

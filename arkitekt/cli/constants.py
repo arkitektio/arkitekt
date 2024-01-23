@@ -54,8 +54,8 @@ def compile_templates() -> List[str]:
     ]
 
 
-def compile_versions() -> List[str]:
-    z = build_relative_dir("versions")
+def compile_services() -> List[str]:
+    z = build_relative_dir("schemas")
     return [
         os.path.basename(f).split(".")[0]
         for f in os.listdir(z)
