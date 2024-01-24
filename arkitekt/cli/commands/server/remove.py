@@ -17,20 +17,20 @@ from .utils import compile_options
     type=click.Choice(compile_options()),
 )
 @click.pass_context
-def down(
+def remove(
     ctx: Context,
     name: Optional[str] = None,
 ) -> None:
     """
-    Down a deployment
+    Remove a deployment
 
     Removing a deployment will stop all containers and call docker compose down
     on the project. This will remove all containers and networks created by the
-    deployment. The deployment will still be available in the .dokker folder
-    However (depending on your settings) data that was stored in volumes managed
-    by the deployment will be removed.
+    deployment. As opposed to the down command, the deployment will also be
+    removed from the .dokker folder, and all data stored in volumes managed by
+    the deployment will be removed.
 
-    If you want to simple Stop the deployment, use the stop command instead.
+    This step is irreversible, so use with caution.
 
     """
     if not name:
@@ -49,8 +49,12 @@ def down(
     )
 
     deployment = Deployment(project=project, logger=PrintLogger())
+
     with deployment:
-        deployment.down()
         print("Shutting down...")
+        deployment.down()
+
+        print("Removing...")
+        deployment.remove()
 
     print("Done")

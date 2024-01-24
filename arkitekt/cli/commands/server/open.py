@@ -9,7 +9,7 @@ from .utils import compile_options
 from rich.table import Table
 from rich.live import Live
 from arkitekt.cli.vars import get_console
-
+import webbrowser
 
 DEFAULT_REPO_URL = (
     "https://raw.githubusercontent.com/jhnnsrs/konstruktor/master/repo/channels.json"
@@ -24,16 +24,17 @@ DEFAULT_REPO_URL = (
     required=False,
     type=click.Choice(compile_options()),
 )
+@click.argument("services", nargs=-1, required=False)
 @click.pass_context
-def up(
+def open(
     ctx: Context,
     name: Optional[str] = None,
+    services: list[str] = None,
 ) -> None:
     """
-    Ups a deployment
+    Opens a service in the browser
 
-    Up starts your deployment. This will create all containers and networks
-    needed for your deployment. If you have not run arkitekt server init
+    This will open the service in the browser. If you have not run arkitekt server init
     before, this will fail.
 
 
@@ -47,24 +48,19 @@ def up(
 
         name = options[0]
 
-    print(f"Running {name}")
-
     project = DokkerProject(
         name=name,
     )
 
     console = get_console(ctx)
 
-    logger = PrintLogger(print_function=lambda x: console.log(x))
+    deployment = Deployment(project=project)
 
-    deployment = Deployment(project=project, logger=logger)
+    if not services:
+        services = ["orkestrator"]
 
     with deployment:
-        port = deployment.inspect().find_service("lok").get_label("arkitekt.link")
-
-        status = console.status(
-            f"[bold green]Running on the Lok Server Port {port} Press Ctrl+c once to cancel..."
-        )
-
-        with status:
-            x = deployment.up(detach=False)
+        for service in services:
+            link = deployment.inspect().find_service(service).get_label("arkitekt.link")
+            console.print(f"Opening {service} at [link={link}]{link}[/link]")
+            webbrowser.open(link)

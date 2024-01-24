@@ -2,6 +2,10 @@ import rich_click as click
 from .init import init
 from .up import up
 from .down import down
+from .inspect import inspect
+from .remove import remove
+from .open import open
+from .stop import stop
 from click import Context
 
 
@@ -23,3 +27,7 @@ def server(ctx: Context) -> None:
 server.add_command(init, "init")
 server.add_command(up, "up")
 server.add_command(down, "down")
+server.add_command(remove, "remove")
+server.add_command(inspect, "inspect")
+server.add_command(open, "open")
+server.add_command(stop, "stop")

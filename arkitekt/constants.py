@@ -1,3 +1,3 @@
-KONSTRUKTOR_URL = (
-    "https://raw.githubusercontent.com/jhnnsrs/konstruktor/master/repo/channels.json"
+REPO_URL = (
+    "https://arkitekt.live/repo.json"
 )

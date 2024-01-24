@@ -7,7 +7,7 @@ def compile_options() -> List[str]:
 
     All deployments in the .arkitekt/deployments folder
     """
-    deployments = os.path.join(os.getcwd(), ".arkitekt", "deployments")
+    deployments = os.path.join(os.getcwd(), ".dokker")
 
     available_deployments = []
 
@@ -19,3 +19,15 @@ def compile_options() -> List[str]:
             available_deployments.append(deployment)
 
     return available_deployments
+
+
+def build_server_path(name: str) -> str:
+    """Builds the path to the server
+
+    Args:
+        name (str): The name of the server
+
+    Returns:
+        str: The path to the server
+    """
+    return os.path.join(os.getcwd(), ".arkitekt", "servers", name)

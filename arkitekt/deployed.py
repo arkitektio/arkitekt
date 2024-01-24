@@ -7,7 +7,7 @@ from arkitekt.apps.types import EasyApp
 from arkitekt.builders import easy
 from dokker.projects.contrib.konstruktor import KonstruktorProject
 from typing import Optional
-from arkitekt.constants import KONSTRUKTOR_URL
+from arkitekt.constants import REPO_URL
 
 
 class ArkitektDeployment(Deployment):
@@ -15,7 +15,7 @@ class ArkitektDeployment(Deployment):
 
 
 def build_deployment(
-    channel: str, name: Optional[str] = None, repo_url: str = KONSTRUKTOR_URL
+    channel: str, name: Optional[str] = None, repo_url: str = REPO_URL
 ) -> ArkitektDeployment:
     """Builds a deploymen of kluster for testing
 
@@ -31,9 +31,8 @@ def build_deployment(
     """
     project = KonstruktorProject(
         channel=channel,
-        repo_url=repo_url,
+        repo=repo_url,
         name=name,
-        base_dir=os.path.join(os.getcwd(), ".arkitekt", "deployments"),
     )
 
     deployment = ArkitektDeployment(project=project)
@@ -43,7 +42,6 @@ def build_deployment(
         timeout=5,
         max_retries=10,
     )
-    deployment.health_on_enter = True
     return deployment
 
 

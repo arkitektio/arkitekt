@@ -6,6 +6,14 @@ from dokker.deployment import Deployment
 from typing import Optional
 import os
 from .utils import compile_options
+from rich.table import Table
+from rich.live import Live
+from arkitekt.cli.vars import get_console
+import json
+
+DEFAULT_REPO_URL = (
+    "https://raw.githubusercontent.com/jhnnsrs/konstruktor/master/repo/channels.json"
+)
 
 
 @click.command()
@@ -17,20 +25,17 @@ from .utils import compile_options
     type=click.Choice(compile_options()),
 )
 @click.pass_context
-def down(
+def inspect(
     ctx: Context,
     name: Optional[str] = None,
 ) -> None:
     """
-    Down a deployment
+    Inspect a deployment
 
-    Removing a deployment will stop all containers and call docker compose down
-    on the project. This will remove all containers and networks created by the
-    deployment. The deployment will still be available in the .dokker folder
-    However (depending on your settings) data that was stored in volumes managed
-    by the deployment will be removed.
-
-    If you want to simple Stop the deployment, use the stop command instead.
+    Inspect helps you find information about a deployment. It will show you
+    information about the containers, networks and volumes created by the
+    deployment. If you have not run arkitekt server init before, this will
+    fail.
 
     """
     if not name:
@@ -42,15 +47,13 @@ def down(
 
         name = options[0]
 
-    print(f"Running {name}")
-
     project = DokkerProject(
         name=name,
     )
 
-    deployment = Deployment(project=project, logger=PrintLogger())
-    with deployment:
-        deployment.down()
-        print("Shutting down...")
+    console = get_console(ctx)
 
-    print("Done")
+    deployment = Deployment(project=project)
+
+    with deployment:
+        print(json.dumps(deployment.inspect().dict(), indent=4))
