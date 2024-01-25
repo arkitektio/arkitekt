@@ -206,12 +206,22 @@ async def run_dev(
         if future.cancelled():
             return
         else:
-            try:
-                raise future.exception()
-            except Exception:
-                console.print_exception()
-                panel = Panel("Error running App", style="bold red", border_style="red")
+            has_exception = future.exception()
+
+            if not has_exception:
+                panel = Panel(
+                    "App finished running", style="bold yellow", border_style="yellow"
+                )
                 console.print(panel)
+            else:
+                try:
+                    raise has_exception
+                except Exception:
+                    console.print_exception()
+                    panel = Panel(
+                        "Error running App", style="bold red", border_style="red"
+                    )
+                    console.print(panel)
 
     try:
         app: App = builder_func(
