@@ -1,0 +1,70 @@
+"""Make string uppercase"""
+directive @upper on FIELD
+
+directive @replace(old: String!, new: String!) on FIELD
+
+"""Make get stuff uppercase"""
+directive @relation(on: String!) on FIELD
+
+type Query {
+  omeroUsers: [NotionIntegration!]!
+  databases(filters: ProjectFilter = null, pagination: OffsetPaginationInput = null): [Database!]!
+  users(filters: ProjectFilter = null, pagination: OffsetPaginationInput = null): [NotionUser!]!
+  me: User!
+  database(id: ID!): NotionUser!
+  user(id: ID!): Database!
+}
+
+type NotionIntegration {
+  id: ID!
+  notionToken: String!
+  user: User!
+}
+
+type User {
+  id: ID!
+  sub: String!
+  username: String!
+  email: String!
+  password: String!
+  integrations: [NotionIntegration!]!
+}
+
+type Database {
+  id: String!
+  createdTime: DateTime!
+  title: String!
+  description: String!
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+input ProjectFilter {
+  ids: [ID!]
+  search: String
+}
+
+input OffsetPaginationInput {
+  offset: Int! = 0
+  limit: Int! = -1
+}
+
+type NotionUser {
+  type: String!
+  person: Person
+  id: String!
+}
+
+type Person {
+  email: String
+}
+
+type Mutation {
+  ensureIntegration(input: EnsureIntegration!): NotionIntegration!
+}
+
+input EnsureIntegration {
+  token: String!
+  workspace: String!
+}

@@ -1,0 +1,515 @@
+"""Make string uppercase"""
+directive @upper on FIELD
+
+directive @replace(old: String!, new: String!) on FIELD
+
+"""Make get stuff uppercase"""
+directive @relation(on: String!) on FIELD
+
+""" A selector is a way to select a release"""
+interface Selector {
+  type: String!
+  required: Boolean!
+}
+
+""" A selector is a way to select a release"""
+type CudaSelector implements Selector {
+  type: String!
+  required: Boolean!
+
+  """The minimum compute capability"""
+  computeCapability: String!
+}
+
+""" A selector is a way to select a release"""
+type CPUSelector implements Selector {
+  type: String!
+  required: Boolean!
+  min: Int!
+  frequency: Int
+}
+
+type SliderAssignWidget implements AssignWidget {
+  kind: AssignWidgetKind!
+  min: Int
+  max: Int
+}
+
+interface AssignWidget {
+  kind: AssignWidgetKind!
+}
+
+enum AssignWidgetKind {
+  SEARCH
+  CHOICE
+  SLIDER
+  CUSTOM
+  STRING
+}
+
+type ChoiceAssignWidget implements AssignWidget {
+  kind: AssignWidgetKind!
+  choices: [Choice!]
+}
+
+type Choice {
+  label: String!
+  value: String!
+  description: String
+}
+
+type SearchAssignWidget implements AssignWidget {
+  kind: AssignWidgetKind!
+  query: String!
+  ward: String!
+}
+
+type CustomReturnWidget implements ReturnWidget {
+  kind: ReturnWidgetKind!
+  hook: String!
+  ward: String!
+}
+
+interface ReturnWidget {
+  kind: ReturnWidgetKind!
+}
+
+enum ReturnWidgetKind {
+  CHOICE
+  CUSTOM
+}
+
+type ChoiceReturnWidget implements ReturnWidget {
+  kind: ReturnWidgetKind!
+  choices: [Choice!]
+}
+
+type StringAssignWidget implements AssignWidget {
+  kind: AssignWidgetKind!
+  placeholder: String!
+  asParagraph: Boolean!
+}
+
+type CustomAssignWidget implements AssignWidget {
+  kind: AssignWidgetKind!
+  hook: String!
+  ward: String!
+}
+
+type CustomEffect implements Effect {
+  dependencies: [EffectDependency!]!
+  kind: String!
+  hook: String!
+  ward: String!
+}
+
+interface Effect {
+  dependencies: [EffectDependency!]!
+  kind: String!
+}
+
+type EffectDependency {
+  condition: LogicalCondition!
+  key: String!
+  value: String!
+}
+
+enum LogicalCondition {
+  IS
+  IS_NOT
+  IN
+}
+
+type MessageEffect implements Effect {
+  dependencies: [EffectDependency!]!
+  kind: String!
+  message: String!
+}
+
+type Query {
+  """Return all dask clusters"""
+  githubRepo(id: ID!): GithubRepo!
+
+  """Return all dask clusters"""
+  definition(id: ID!): Definition!
+
+  """Return all dask clusters"""
+  release(id: ID!): Release!
+
+  """Return all dask clusters"""
+  flavour(id: ID!): Flavour!
+
+  """Return the currently logged in user"""
+  me: User!
+
+  """Return the currently logged in user"""
+  bestFlavour(release: ID!, environment: EnvironmentInput!): Flavour!
+  flavours: [Flavour!]!
+  releases: [Release!]!
+  githubRepos(filters: GithubRepoFilter, pagination: OffsetPaginationInput): [GithubRepo!]!
+  definitions(pagination: OffsetPaginationInput): [Definition!]!
+  pods: [Pod!]!
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type GithubRepo {
+  id: ID!
+  name: String!
+  repo: String!
+  branch: String!
+  user: String!
+  flavours: [Flavour!]!
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type Flavour {
+  id: ID!
+  name: String!
+  description: String!
+  logo: String
+  originalLogo: String
+  entrypoint: String!
+  image: String!
+  release: Release!
+  deployments: [Deployment!]!
+  selectors: [Selector!]!
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type Release {
+  id: ID!
+  version: String!
+  app: App!
+  scopes: [String!]!
+  logo: String
+
+  """The original logo url"""
+  originalLogo: String
+  entrypoint: String!
+  flavours: [Flavour!]!
+
+  """Is this release deployed"""
+  installed: Boolean!
+
+  """Is this release deployed"""
+  deployments: [Deployment!]!
+
+  """Is this release deployed"""
+  description: String!
+
+  """Is this release deployed"""
+  colour: String!
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type App {
+  id: ID!
+  identifier: String!
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type Deployment {
+  id: ID!
+  flavour: Flavour!
+  installer: User!
+  apiToken: String!
+  backend: Backend!
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type User {
+  id: ID!
+  sub: String!
+
+  """Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only."""
+  username: String!
+  email: String!
+  password: String!
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type Backend {
+  id: ID!
+  user: User!
+  client: Client!
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type Client {
+  id: ID!
+  identifier: String!
+}
+
+"""
+Nodes are abstraction of RPC Tasks. They provide a common API to deal with creating tasks.
+
+See online Documentation
+"""
+type Definition {
+  id: ID!
+
+  """The hash of the Node (completely unique)"""
+  hash: NodeHash!
+
+  """The cleartext name of this Node"""
+  name: String!
+
+  """The kind of this Node. e.g. is it a function or a generator?"""
+  kind: NodeKind!
+
+  """A description for the Node"""
+  description: String
+
+  """The collections this Node belongs to"""
+  collections: [Collection!]!
+
+  """The flavours this Definition belongs to"""
+  flavours: [Flavour!]!
+
+  """
+  The scope of this Node. e.g. does the data it needs or produce live only in the scope of this Node or is it global or does it bridge data?
+  """
+  scope: NodeScope!
+
+  """The users that have pinned the position"""
+  isTestFor(pagination: OffsetPaginationInput): [Definition!]!
+
+  """The users that have pinned the position"""
+  tests(pagination: OffsetPaginationInput): [Definition!]!
+
+  """The protocols this Node implements (e.g. Predicate)"""
+  protocols: [Protocol!]!
+  definedAt: DateTime!
+
+  """Inputs for this Node"""
+  args: [Port!]!
+
+  """Outputs for this Node"""
+  returns: [Port!]!
+}
+
+"""
+The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer
+"""
+scalar NodeHash
+
+enum NodeKind {
+  FUNCTION
+  GENERATOR
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type Collection {
+  id: ID!
+
+  """The name of this Collection"""
+  name: String!
+
+  """A description for the Collection"""
+  description: String!
+  definedAt: DateTime!
+}
+
+"""Date with time (isoformat)"""
+scalar DateTime
+
+enum NodeScope {
+  GLOBAL
+  LOCAL
+  BRIDGE_GLOBAL_TO_LOCAL
+  BRIDGE_LOCAL_TO_GLOBAL
+}
+
+input OffsetPaginationInput {
+  offset: Int! = 0
+  limit: Int! = -1
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type Protocol {
+  id: ID!
+
+  """The name of this Protocol"""
+  name: String!
+
+  """A description for the Protocol"""
+  description: String!
+}
+
+type Port {
+  key: String!
+  scope: PortScope!
+  label: String
+  kind: PortKind!
+  description: String
+  identifier: Identifier
+  nullable: Boolean!
+  effects: [Effect!]
+  default: AnyDefault
+  variants: [ChildPort!]
+  assignWidget: AssignWidget
+  returnWidget: ReturnWidget
+  child: ChildPort
+  groups: [String!]
+}
+
+enum PortScope {
+  GLOBAL
+  LOCAL
+}
+
+enum PortKind {
+  INT
+  STRING
+  STRUCTURE
+  LIST
+  BOOL
+  DICT
+  FLOAT
+  DATE
+  UNION
+}
+
+"""
+The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer
+"""
+scalar Identifier
+
+"""
+The `ArrayLike` scalar type represents a reference to a store previously created by the user n a datalayer
+"""
+scalar AnyDefault
+
+type ChildPort {
+  label: String
+  scope: PortScope!
+  kind: PortKind!
+  child: ChildPort
+  identifier: Identifier
+  nullable: Boolean!
+  default: AnyDefault
+  variants: [ChildPort!]
+  assignWidget: AssignWidget
+  returnWidget: ReturnWidget
+}
+
+"""Which environment do you want to match against?"""
+input EnvironmentInput {
+  containerType: ContainerType!
+}
+
+"""The state of a dask cluster"""
+enum ContainerType {
+  APPTAINER
+  DOCKER
+}
+
+"""Filter for Dask Clusters"""
+input GithubRepoFilter {
+  ids: [ID!] = null
+  search: String = null
+}
+
+"""A user of the bridge server. Maps to an authentikate user"""
+type Pod {
+  id: ID!
+  flavour: Flavour!
+  backend: Backend!
+  deployment: Deployment!
+  latestLogDump: LogDump!
+  podId: String!
+  status: PodStatus!
+}
+
+"""The logs of a pod"""
+type LogDump {
+  id: ID!
+  pod: Pod!
+  logs: String!
+  createdAt: DateTime!
+}
+
+"""The state of a dask cluster"""
+enum PodStatus {
+  PENDING
+  RUNNING
+  STOPPING
+  STOPPED
+  FAILED
+  UNKOWN
+}
+
+type Mutation {
+  """Create a new dask cluster on a bridge server"""
+  scanRepo(input: ScanRepoInput!): GithubRepo!
+
+  """Create a new Github repository on a bridge server"""
+  createGithubRepo(input: CreateGithupRepoInput!): GithubRepo!
+
+  """Create a new dask cluster on a bridge server"""
+  createDeployment(input: CreateDeploymentInput!): Deployment!
+
+  """Create a new dask cluster on a bridge server"""
+  updateDeployment(input: UpdateDeploymentInput!): Deployment!
+
+  """Create a new dask cluster on a bridge server"""
+  createPod(input: CreatePodInput!): Pod!
+
+  """Create a new dask cluster on a bridge server"""
+  updatePod(input: UpdatePodInput!): Pod!
+}
+
+"""Create a dask cluster input"""
+input ScanRepoInput {
+  id: String!
+}
+
+"""Create a new Github repository input"""
+input CreateGithupRepoInput {
+  name: String!
+  user: String!
+  branch: String!
+  repo: String!
+  autoScan: Boolean = true
+}
+
+"""Create a new Github repository input"""
+input CreateDeploymentInput {
+  instanceId: ID!
+  flavour: ID!
+  pulled: Boolean = false
+}
+
+"""Create a new Github repository input"""
+input UpdateDeploymentInput {
+  deployment: ID!
+  status: PodStatus!
+}
+
+"""Create a new Github repository input"""
+input CreatePodInput {
+  deployment: ID!
+  instanceId: String!
+}
+
+"""Create a new Github repository input"""
+input UpdatePodInput {
+  pod: ID!
+  status: PodStatus!
+}
+
+type Subscription {
+  """Create a new dask cluster on a bridge server"""
+  pod(podId: ID!): PodUpdateMessage!
+
+  """Create a new dask cluster on a bridge server"""
+  pods: PodUpdateMessage!
+}
+
+"""An update on a pod"""
+type PodUpdateMessage {
+  id: String!
+  status: String!
+  created: Boolean!
+  progress: Int
+}

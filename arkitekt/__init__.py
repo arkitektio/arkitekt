@@ -37,7 +37,7 @@ except ImportError as e:
 
 try:
     from rekuest_next.register import register as register_next
-except ImportError:
+except ImportError as e:
     register_next = missing_install("rekuest_next", e)
 
 from .builders import easy, publicqt, jupy, scheduler, next

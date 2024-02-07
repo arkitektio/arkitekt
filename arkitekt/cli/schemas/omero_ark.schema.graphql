@@ -62,8 +62,8 @@ type Image {
 scalar DateTime
 
 input ProjectFilter {
-  ids: [ID!]
-  search: String
+  ids: [ID!] = null
+  search: String = null
 }
 
 input OffsetPaginationInput {
@@ -72,21 +72,29 @@ input OffsetPaginationInput {
 }
 
 input DatasetFilter {
-  ids: [ID!]
-  search: String
+  ids: [ID!] = null
+  search: String = null
 }
 
 input ImageFilter {
-  ids: [ID!]
-  search: String
+  ids: [ID!] = null
+  search: String = null
 }
 
 type Mutation {
-  ensureOmeroUser(input: OmerUserInput!): OmeroUser!
+  ensureOmeroUser(input: OmeroUserInput!): OmeroUser!
   deleteMe: User!
+  createProject(input: CreateProjectInput!): Project!
 }
 
-input OmerUserInput {
+input OmeroUserInput {
   username: String!
   password: String!
+  host: String = "omeroserver"
+  port: Int = 4064
+}
+
+input CreateProjectInput {
+  name: String!
+  description: String = null
 }

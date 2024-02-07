@@ -13,16 +13,13 @@ def build_arkitekt_qt_app(
     parent: Any = None,
     settings: Any = None,
 ):
-    if settings is None:
-        try:
-            from koil.composition.qt import QtPedanticKoil
-            from qtpy import QtCore
+    try:
+        from koil.composition.qt import QtPedanticKoil
+        from qtpy import QtCore
 
-            settings = QtCore.QSettings()
-        except ImportError as e:
-            raise InstallModuleException(
-                "Please install qtpy to use arkitekt_qt"
-            ) from e
+        settings = settings or QtCore.QSettings()
+    except ImportError as e:
+        raise InstallModuleException("Please install qtpy to use arkitekt_qt") from e
 
     try:
         from arkitekt.apps.service.fakts_qt import build_arkitekt_qt_fakts
