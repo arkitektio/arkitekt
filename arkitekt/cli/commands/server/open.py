@@ -3,7 +3,7 @@ from click import Context
 from dokker.projects.dokker import DokkerProject
 from dokker.loggers.print import PrintLogger
 from dokker.deployment import Deployment
-from typing import Optional
+from typing import Optional, List
 import os
 from .utils import compile_options
 from rich.table import Table
@@ -29,7 +29,7 @@ DEFAULT_REPO_URL = (
 def open(
     ctx: Context,
     name: Optional[str] = None,
-    services: list[str] = None,
+    services: List[str] = None,
 ) -> None:
     """
     Opens a service in the browser
