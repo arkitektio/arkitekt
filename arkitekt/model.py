@@ -1,3 +1,5 @@
+""" Models for Arkitekt. Thiese include extensiosn for the Fakts Manifest and the User model."""
+
 from pydantic import BaseModel, Field
 from typing import List, Optional
 

@@ -9,6 +9,7 @@ import os
 import sys
 import inspect
 from rekuest.definition.registry import get_default_definition_registry
+from rekuest.agents.hooks import get_default_hook_registry
 from typing import MutableSet, Tuple, Any, Set
 from arkitekt.cli.ui import construct_changes_group, construct_app_group
 from arkitekt.cli.commands.run.utils import import_builder
@@ -147,6 +148,7 @@ def reset_structure() -> None:
     """Resets the default defintiion rgistry and all
     regitered nodes"""
     get_default_definition_registry().definitions.clear()
+    get_default_hook_registry().reset()
 
 
 def is_entrypoint_change(

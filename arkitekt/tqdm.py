@@ -1,3 +1,6 @@
+""" Small extension to tqdm that reports progress to arkitekt through the
+assignation context"""
+
 from tqdm import tqdm as _tqdm
 from rekuest.actors.vars import current_assignation_helper
 
