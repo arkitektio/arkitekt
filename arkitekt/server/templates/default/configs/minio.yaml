@@ -1,0 +1,19 @@
+buckets:
+  - name: flussmedia
+  - name: lokmedia
+  - name: lokmedia
+  - name: lokmedia
+  - name: zarr
+  - name: parquet
+  - name: mikromedia
+  - name: lokmedia
+  - name: portmedia
+  - name: mikromedianew
+  - name: zarrnew
+  - name: parquetnew
+users: {% for bucket in setup.get_buckets() %}
+  - access_key: {{bucket.access_key}}
+    name: {{bucket.name}}
+    policies:
+      - readwrite
+    secret_key: {{bucket.secret_key}}{% endfor %}

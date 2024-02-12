@@ -8,6 +8,10 @@ from arkitekt.builders import easy
 from dokker.projects.contrib.konstruktor import KonstruktorProject
 from typing import Optional
 from arkitekt.constants import REPO_URL
+from arkitekt.server.setup import Setup
+from arkitekt.server.utils import build_relative_dir
+from dokker.projects.contrib.setup import SetupProject
+from typing import Dict, Any, TypeVar
 
 
 class ArkitektDeployment(Deployment):
@@ -65,7 +69,20 @@ class DeployedArkitekt(Composition):
     app: EasyApp
 
 
-def deployed(channel: str, *args, **kwargs) -> DeployedArkitekt:
+
+def tempproject(name: str) -> SetupProject:
+
+    return SetupProject(
+        template_dir=build_relative_dir("templates","default"), 
+        project_name=name,
+        setup_class=Setup,
+    )
+
+
+
+T = TypeVar("T", bound="BaseModel")
+
+def deployment(project: T) -> Deployment[T]:
     """Create a deployed kluster
 
     A deployed kluster is a composition of a deployment of the
@@ -83,10 +100,6 @@ def deployed(channel: str, *args, **kwargs) -> DeployedArkitekt:
         The deployed kluster instance (Composition)
     """
 
-    url = "localhost:8000"
-    # TODO: Retrieve the url from the deployment
-
-    return DeployedArkitekt(
-        deployment=build_deployment(channel),
-        app=easy(*args, url=url, **kwargs),
+    return Deployment(
+        project=project,
     )

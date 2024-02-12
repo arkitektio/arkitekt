@@ -5,34 +5,29 @@ import asyncio
 from typing import Optional
 import os
 from arkitekt.cli.vars import get_console
-
+from arkitekt.deployed import deployment
 DEFAULT_REPO_URL = "https://arkitekt.live/repo.json"
+
+
+def create_nested_dict_from_dict(paths_values_dict):
+    final_dict = {}
+    for path, value in paths_values_dict.items():
+        keys = path.split(".")
+        current_level = final_dict
+        for key in keys[:-1]:
+            if key not in current_level:
+                current_level[key] = {}
+            current_level = current_level[key]
+        current_level[keys[-1]] = value
+    return final_dict
 
 
 @click.command()
 @click.option(
-    "--repo-url",
-    help="The repo to use",
-    default=DEFAULT_REPO_URL,
-    prompt="What repo do you want to use?",
-)
-@click.option(
-    "--channel",
-    help="The channel to use",
-    default="beta",
-    prompt="What channel do you want to use?",
-)
-@click.option(
     "--name",
     help="The name of the deployment",
-    default=None,
-    required=False,
-)
-@click.option(
-    "--overwrite",
-    help="Should we overwrite the old deployment?",
-    default=False,
-    is_flag=True,
+    default="default",
+    required=True,
 )
 @click.option(
     "--setup",
@@ -42,14 +37,19 @@ DEFAULT_REPO_URL = "https://arkitekt.live/repo.json"
     type=(str, str),
     multiple=True,
 )
+@click.option(
+    "--overwrite",
+    "-o",
+    "overwrite",
+    help="Overwrite the existing deployment",
+    is_flag=True,
+)
 @click.pass_context
 def init(
     ctx: Context,
-    channel: str,
-    repo_url: str,
-    overwrite: bool = False,
     setup: Optional[list] = None,
     name: Optional[str] = None,
+    overwrite: Optional[bool] = False,
 ) -> None:
     """
     Initializes a new server
@@ -58,17 +58,18 @@ def init(
 
     extra_content = dict(setup or [])
 
-    project = KonstruktorProject(
-        channel=channel,
-        repo=RemoteRepo(url=repo_url),
-        reinit_if_exists=overwrite,
-        name=name,
-        extra_context=extra_content,
-    )
+    console = get_console(ctx)
 
-    try:
-        asyncio.run(project.ainititialize())
-        get_console(ctx).print("Done :)")
-    except Exception as e:
-        get_console(ctx).print_exception()
-        raise click.ClickException("Failed to initialize project") from e
+    defaults = create_nested_dict_from_dict(extra_content)
+    with deployment(name, ) as d:
+
+        with d.watch_logs("lok"):
+            d.check_health()
+
+
+        if overwrite:
+            console.print("Removing old deployment")
+            d.remove()
+
+        d.initialize(**defaults)
+

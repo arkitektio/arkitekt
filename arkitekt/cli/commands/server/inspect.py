@@ -10,6 +10,7 @@ from rich.table import Table
 from rich.live import Live
 from arkitekt.cli.vars import get_console
 import json
+from arkitekt.deployed import deployment
 
 DEFAULT_REPO_URL = (
     "https://raw.githubusercontent.com/jhnnsrs/konstruktor/master/repo/channels.json"
@@ -47,13 +48,11 @@ def inspect(
 
         name = options[0]
 
-    project = DokkerProject(
-        name=name,
-    )
+    with deployment(name) as d:
 
-    console = get_console(ctx)
+        console = get_console(ctx)
 
-    deployment = Deployment(project=project)
 
-    with deployment:
-        print(json.dumps(deployment.inspect().dict(), indent=4))
+        with deployment:
+            print(json.dumps(d.inspect().dict(), indent=4))
+            print(json.dumps(d.get_config().dict(), indent=4))

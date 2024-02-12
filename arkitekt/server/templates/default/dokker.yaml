@@ -1,0 +1,3 @@
+out:
+  lok_port: {{setup.lok.port}}
+  orkestrator_port: {{setup.orkestrator.port}}

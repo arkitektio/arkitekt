@@ -1,0 +1,269 @@
+version: '3.7'
+
+services:
+  db:
+    environment:
+      POSTGRES_MULTIPLE_DATABASES: {% for db in setup.get_db_names() %}{{db}}{% if not loop.last %}, {% endif %}{% endfor %}
+      POSTGRES_PASSWORD: {{setup.postgres_password}}
+      POSTGRES_USER: {{setup.postgres_user}}
+    image: jhnnsrs/daten:next
+    labels:
+      - "arkitekt.{{setup.name}}.service=db"
+  rabbitmq:
+    command: rabbitmq-server
+    image: jhnnsrs/mister:fancy
+    labels:
+      - "arkitekt.{{setup.name}}.service=rabbitmq"
+      - "arkitekt.service=rabbitmq"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=The backbone for task assignment"
+  redis:
+    image: redis:latest
+    labels:
+      - "arkitekt.{{setup.name}}.service=redis"
+      - "arkitekt.service=redis"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=A real-time communication layer between the services"
+  initc:
+    depends_on:
+      minio:
+        condition: service_started
+    environment:
+      MINIO_HOST: http://minio:9000
+      MINIO_ROOT_PASSWORD: {{setup.minio_root_password}}
+      MINIO_ROOT_USER: {{setup.minio_root_user}}
+    image: jhnnsrs/init:paper
+    volumes:
+    - ./configs/minio.yaml:/workspace/config.yaml
+  minio:
+    command: server /data  --console-address ":9001"
+    environment:
+      MINIO_ROOT_PASSWORD: {{setup.minio_root_password}}
+      MINIO_ROOT_USER: {{setup.minio_root_user}}
+    image: minio/minio:RELEASE.2023-02-10T18-48-39Z
+    ports:
+    - {{setup.minio.port}}:9000
+    - {{setup.minio.port + 1}}:9001
+    labels:
+      - "arkitekt.{{setup.name}}.service=s3"
+      - "arkitekt.service=s3"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=The binary storage for all your data"
+      - "arkitekt.link=http://localhost:{{setup.minio.port + 1}}"{% if setup.lok.enabled %}    
+  lok:
+    depends_on:
+    - redis
+    - db
+    image: jhnnsrs/lok:paper
+    command: bash run-debug.sh
+    ports:
+    - {{setup.lok.port}}:80
+    volumes:
+    - ./configs/lok.yaml:/workspace/config.yaml
+    - ./fakts:/workspace/fakts
+    labels:
+      - "arkitekt.{{setup.name}}.service=lok"
+      - "arkitekt.service=lok"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=The configuration and authorization endpoint for apps and users"
+      - "arkitekt.link=http://localhost:{{setup.lok.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.lok.port}}/ht"{% endif %}{% if setup.lok_next.enabled %} 
+  lok_next:
+    depends_on:
+    - redis
+    - db
+    image: jhnnsrs/lok:next
+    command: bash run-debug.sh
+    ports:
+    - {{setup.lok_next.port}}:80
+    volumes:
+    - ./configs/lok_next.yaml:/workspace/config.yaml
+    - ./compositions:/workspace/compositions
+    labels:
+      - "arkitekt.{{setup.name}}.service=lok"
+      - "arkitekt.service=lok"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=The configuration and authorization endpoint for apps and users"
+      - "arkitekt.link=http://localhost:{{setup.lok_next.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.lok_next.port}}/ht"{% endif %}{% if setup.orkestrator.enabled %}       
+  orkestrator:
+    image: jhnnsrs/orkestrator:paper
+    ports:
+      - {{setup.orkestrator.port}}:80
+    labels:
+      - "arkitekt.{{setup.name}}.service=orkestrator"
+      - "arkitekt.service=orkestrator"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=The interaction layer between the user and the system."
+      - "arkitekt.link=http://localhost:{{setup.orkestrator.port}}"{% endif %}{% if setup.fluss.enabled %}
+  fluss:
+    depends_on:
+    - redis
+    - db
+    image: jhnnsrs/fluss:paper
+    ports:
+    - {{setup.fluss.port}}:80
+    volumes:
+    - ./configs/fluss.yaml:/workspace/config.yaml
+    labels:
+      - "arkitekt.{{setup.name}}.service=fluss"
+      - "arkitekt.service=fluss"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=The savepoint for all of your workflows"
+      - "arkitekt.link=http://localhost:{{setup.fluss.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.fluss.port}}/ht"{% endif %}{% if setup.mikro.enabled %}
+  mikro:
+    depends_on:
+    - redis
+    - db
+    - minio
+    image: jhnnsrs/mikro:paper
+    command: bash run-debug.sh
+    ports:
+    - {{setup.mikro.port}}:80
+    volumes:
+    - ./configs/mikro.yaml:/workspace/config.yaml
+    labels:
+      - "arkitekt.{{setup.name}}.service=mikro"
+      - "arkitekt.service=mikro"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=Hosting your microscopy data and metadata"
+      - "arkitekt.healthz=http://localhost:{{setup.mikro.port}}/ht"
+      - "arkitekt.link=http://localhost:{{setup.mikro.port}}"{% endif %}{% if setup.port.enabled %}
+  port:
+    depends_on:
+    - lok
+    - db
+    - redis
+    image: jhnnsrs/port:paper
+    command: bash run.sh
+    ports:
+    - {{setup.port.port}}:80
+    volumes:
+      - ./configs/port.yaml:/workspace/config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "arkitekt.{{setup.name}}.service=port"
+      - "arkitekt.service=port"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=Managing docker containers and their configuration"
+      - "arkitekt.link=http://localhost:{{setup.port.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.port.port}}/ht"
+  portbridge:
+    depends_on:
+    - lok
+    - db
+    - redis
+    image: jhnnsrs/port:paper
+    command: bash run-worker.sh
+    volumes:
+      - ./configs/port.yaml:/workspace/config.yaml
+      - /var/run/docker.sock:/var/run/docker.sock
+    labels:
+      - "arkitekt.{{setup.name}}.service=portbridge"
+      - "arkitekt.description=A asynchronous worker for port"{% endif %}{% if setup.rekuest.enabled %}
+  rekuest:
+    depends_on:
+    - redis
+    - db
+    - rabbitmq
+    image: jhnnsrs/rekuest:paper
+    ports:
+    - {{setup.rekuest.port}}:80
+    volumes:
+    - ./configs/rekuest.yaml:/workspace/config.yaml
+    labels:
+      - "arkitekt.{{setup.name}}.service=rekuest"
+      - "arkitekt.service=rekuest"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=The repository for all of the functionality in your lab"
+      - "arkitekt.link=http://localhost:{{setup.rekuest.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.rekuest.port}}/ht"{% endif %}{% if setup.omero_ark.enabled %}
+  omero_ark:
+    depends_on:
+    - redis
+    - db
+    - minio
+    image: jhnnsrs/omero-ark:paper
+    command: bash run-debug.sh
+    ports:
+    - {{setup.omero_ark.port}}:80
+    volumes:
+    - ./configs/omero_ark.yaml:/workspace/config.yaml
+    labels:
+      - "arkitekt.{{setup.name}}.service=omero-ark"
+      - "arkitekt.service=omero_ark"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=Hosting your microscopy data and metadata"
+      - "arkitekt.link=http://localhost:{{setup.omero_ark.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.omero_ark.port}}/ht"{% endif %}{% if setup.kluster.enabled %}
+  kluster:
+    depends_on:
+    - redis
+    - db
+    - minio
+    image: jhnnsrs/kluster:paper
+    command: bash run-debug.sh
+    ports:
+    - {{setup.kluster.port}}:80
+    volumes:
+    - ./configs/kluster.yaml:/workspace/config.yaml
+    labels:
+      - "arkitekt.{{setup.name}}.service=kluster"
+      - "arkitekt.service=kluster"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=Lets you spin up clusters"
+      - "arkitekt.link=http://localhost:{{setup.kluster.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.kluster.port}}/ht"{% endif %}{% if setup.omero_server.enabled %}
+  omero_database:
+    image: "postgres:11"
+    environment:
+      POSTGRES_USER: {{setup.omero_server.postgres_user}}
+      POSTGRES_DB:  {{setup.omero_server.postgres_db}}
+      POSTGRES_PASSWORD:  {{setup.omero_server.postgres_password}}
+  omeroserver:
+    image: "openmicroscopy/omero-server:5"
+    environment:
+      CONFIG_omero_db_host: omero_database
+      CONFIG_omero_db_user: {{setup.omero_server.postgres_user}}
+      CONFIG_omero_db_pass: {{setup.omero_server.postgres_password}}
+      CONFIG_omero_db_name: {{setup.omero_server.postgres_db}}
+      ROOTPASS: {{setup.omero_server.root_password}}
+    ports:
+      - "{{setup.omero_server.unsecure_port}}:4063"
+      - "{{setup.omero_server.secure_port}}:4064"
+    labels:
+      - "arkitekt.{{setup.name}}.service=omero_server"
+      - "arkitekt.service=omero_server"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=Lets you spin up clusters"
+      - "arkitekt.link=http://localhost:{{setup.omero_server.secure_port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.omero_server.secure_port}}/ht"{% endif %}{% if setup.omero_web.enabled %}
+  omeroweb:
+    image: "openmicroscopy/omero-web-standalone:5"
+    environment:
+      OMEROHOST: omeroserver
+    ports:
+      - "{{setup.omero_web.port}}:4080"
+    labels:
+      - "arkitekt.{{setup.name}}.service=omero_web"
+      - "arkitekt.service=omero_web"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=Lets you spin up clusters"
+      - "arkitekt.link=http://localhost:{{setup.omero_web.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.omero_web.port}}/ht"{% endif %}{% if setup.kluster_gateway.enabled %}
+  kluster_gateway:
+    image: jhnnsrs/kluster-gateway:paper
+    ports:
+    - {{setup.kluster_gateway.port}}:8000
+    volumes:
+    - ./configs/gateway.yaml:/workspace/config.yaml
+    labels:
+      - "arkitekt.{{setup.name}}.service=kluster-gateway"
+      - "arkitekt.service=kluster-gateway"
+      - "arkitekt.deployment={{setup.name}}"
+      - "arkitekt.description=Interact with your dask-cluster"
+      - "arkitekt.link=http://localhost:{{setup.kluster_gateway.port}}"
+      - "arkitekt.healthz=http://localhost:{{setup.kluster_gateway.port}}/ht"
+  {% endif %}
+    

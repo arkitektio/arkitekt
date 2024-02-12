@@ -9,6 +9,8 @@ from .utils import compile_options
 from rich.table import Table
 from rich.live import Live
 from arkitekt.cli.vars import get_console
+from arkitekt.deployed import deployment
+import webbrowser
 
 
 DEFAULT_REPO_URL = (
@@ -47,24 +49,26 @@ def up(
 
         name = options[0]
 
-    print(f"Running {name}")
+    with deployment(name) as d:
+        d.up(detach=True)
 
-    project = DokkerProject(
-        name=name,
-    )
+        t = d.get_config()
 
-    console = get_console(ctx)
+        orkestrator_link = f'http://127.0.0.1:{t.orkestrator.port}/?endpoint=localhost:{t.lok.port}'
 
-    logger = PrintLogger(print_function=lambda x: console.log(x))
+        table = Table(title="Deployment")
+        table.add_column("Name")
+        table.add_column("Value")
+        table.add_row("Name", t.name)
+        table.add_row("LokServer", "http://localhost:" + str(t.lok.port))
+        table.add_row("Orkestrator", orkestrator_link)
 
-    deployment = Deployment(project=project, logger=logger)
+        
 
-    with deployment:
-        port = deployment.inspect().find_service("lok").get_label("arkitekt.link")
+        console = get_console(ctx)
+        console.print("Deployment is up and running")
+        console.print(table)
+        webbrowser.open(orkestrator_link)
 
-        status = console.status(
-            f"[bold green]Running on the Lok Server Port {port} Press Ctrl+c once to cancel..."
-        )
 
-        with status:
-            x = deployment.up(detach=False)
+

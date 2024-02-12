@@ -4,6 +4,7 @@ from .up import up
 from .down import down
 from .inspect import inspect
 from .remove import remove
+from .pull import pull
 from .open import open
 from .stop import stop
 from click import Context
@@ -31,3 +32,4 @@ server.add_command(remove, "remove")
 server.add_command(inspect, "inspect")
 server.add_command(open, "open")
 server.add_command(stop, "stop")
+server.add_command(pull, "pull")

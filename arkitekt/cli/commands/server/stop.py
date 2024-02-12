@@ -6,6 +6,7 @@ from dokker.deployment import Deployment
 from typing import Optional
 import os
 from .utils import compile_options
+from arkitekt.deployed import deployment
 
 
 @click.command()
@@ -41,16 +42,6 @@ def stop(
 
         name = options[0]
 
-    print(f"Stopping {name}")
+    with deployment(name) as d:
 
-    project = DokkerProject(
-        name=name,
-    )
-
-    deployment = Deployment(project=project, logger=PrintLogger())
-
-    with deployment:
-        print("Shutting down...")
-        deployment.stop()
-
-    print("Done")
+        d.stop()

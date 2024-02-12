@@ -1,0 +1,51 @@
+self:
+  name: "{{ '{{deployment_name}}' }}"{% if setup.fluss.enabled %}  
+fluss:
+  endpoint_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"fluss" if request.host == "lok" else request.host + ":' + setup.fluss.port|string + '"}}/graphql' }}"
+  healthz: "{{ '{{"https" if request.is_secure else "http" }}://{{"fluss" if request.host == "lok" else request.host + ":' + setup.fluss.port|string + '"}}/ht' }}"
+  ws_endpoint_url: "{{ '{{"wss" if request.is_secure else "ws" }}://{{"fluss" if request.host == "lok" else request.host + ":' + setup.fluss.port|string + '"}}/graphql' }}"{% endif %}{% if setup.lok.enabled %}    
+lok:
+  base_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"lok" if request.host == "lok" else request.host + ":' + setup.lok.port|string + '"}}/o' }}"
+  userinfo_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"lok" if request.host == "lok" else request.host + ":' + setup.lok.port|string + '"}}/o/userinfo' }}"
+  endpoint_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"lok" if request.host == "lok" else request.host + ":' + setup.lok.port|string + '"}}/graphql' }}"
+  healthz: "{{ '{{"https" if request.is_secure else "http" }}://{{"lok" if request.host == "lok" else request.host + ":' + setup.lok.port|string + '"}}/ht' }}"
+  secure: false
+  ws_endpoint_url: "{{ '{{"wss" if request.is_secure else "ws" }}://{{"lok" if request.host == "lok" else request.host + ":' + setup.lok.port|string + '"}}/graphql' }}"
+  client_id: "{{ '{{client.client_id}}' }}"
+  client_secret: "{{ '{{client.client_secret}}' }}"
+  grant_type: "{{ '{{client.authorization_grant_type}}' }}"
+  name: "{{ '{{client.name}}' }}"
+  scopes:
+    {{ '{% for item in manifest.scopes %}
+      - {{item}}
+    {% endfor %}'}}{% endif %}{% if setup.mikro.enabled %}    
+mikro:
+  endpoint_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"mikro" if request.host == "lok" else request.host + ":' + setup.mikro.port|string + '"}}/graphql' }}"
+  healthz: "{{ '{{"https" if request.is_secure else "http" }}://{{"mikro" if request.host == "lok" else request.host + ":' + setup.mikro.port|string + '"}}/ht' }}"
+  ws_endpoint_url: "{{ '{{"wss" if request.is_secure else "ws" }}://{{"mikro" if request.host == "lok" else request.host + ":' + setup.mikro.port|string + '"}}/graphql' }}"{% endif %}{% if setup.minio.enabled %}    
+minio:
+  endpoint_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"minio:9000" if request.host == "lok" else request.host + ":' + setup.minio.port|string + '"}}' }}"
+  secure: false{% endif %}{% if setup.port.enabled %}    
+port:
+  endpoint_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"port" if request.host == "lok" else request.host + ":' + setup.port.port|string + '"}}/graphql' }}"
+  healthz: "{{ '{{"https" if request.is_secure else "http" }}://{{"port" if request.host == "lok" else request.host + ":' + setup.port.port|string + '"}}/ht' }}"
+  ws_endpoint_url: "{{ '{{"wss" if request.is_secure else "ws" }}://{{"port" if request.host == "lok" else request.host + ":' + setup.port.port|string + '"}}/graphql' }}"{% endif %}{% if setup.rekuest.enabled %}    
+rekuest:
+  agent:
+    endpoint_url: "{{ '{{"wss" if request.is_secure else "ws" }}://{{"rekuest" if request.host == "lok" else request.host + ":' + setup.rekuest.port|string + '"}}/agi' }}"
+  endpoint_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"rekuest" if request.host == "lok" else request.host + ":' + setup.rekuest.port|string + '"}}/graphql' }}"
+  healthz: "{{ '{{"https" if request.is_secure else "http" }}://{{"rekuest" if request.host == "lok" else request.host + ":' + setup.rekuest.port|string + '"}}/ht' }}"
+  ws_endpoint_url: "{{ '{{"wss" if request.is_secure else "ws" }}://{{"rekuest" if request.host == "lok" else request.host + ":' + setup.rekuest.port|string + '"}}/graphql' }}"{% endif %}{% if setup.omero_ark.enabled %}    
+omero_ark:
+  endpoint_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"omero_ark" if request.host == "lok" else request.host + ":' + setup.omero_ark.port|string + '"}}/graphql' }}"
+  healthz: "{{ '{{"https" if request.is_secure else "http" }}://{{"omero_ark" if request.host == "lok" else request.host + ":' + setup.omero_ark.port|string + '"}}/ht' }}"
+  ws_endpoint_url: "{{ '{{"wss" if request.is_secure else "ws" }}://{{"omero_ark" if request.host == "lok" else request.host + ":' + setup.omero_ark.port|string + '"}}/graphql' }}"{% endif %}{% if setup.kluster.enabled %}    
+kluster:
+  endpoint_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"kluster" if request.host == "lok" else request.host + ":' + setup.kluster.port|string + '"}}/graphql' }}"
+  healthz: "{{ '{{"https" if request.is_secure else "http" }}://{{"kluster" if request.host == "lok" else request.host + ":' + setup.kluster.port|string + '"}}/ht' }}"
+  ws_endpoint_url: "{{ '{{"wss" if request.is_secure else "ws" }}://{{"kluster" if request.host == "lok" else request.host + ":' + setup.kluster.port|string + '"}}/graphql' }}"
+  gateway_url: "{{ '{{"https" if request.is_secure else "http" }}://{{"kluster_gateway" if request.host == "lok" else request.host + ":' + setup.kluster_gateway.port|string + '"}}' }}"{% endif %}{% if setup.omero_server.enabled %}    
+omero:
+  host: "{{ '{{"omero_server" if request.host == "lok" else request.host }}'}}"
+  port: {{setup.omero_server.secure_port|string }}{% endif %}
+

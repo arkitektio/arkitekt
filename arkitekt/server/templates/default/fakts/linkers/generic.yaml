@@ -1,0 +1,6 @@
+name: "All non internal host"
+template: generic
+priority: 0
+filters:
+  - method: host_is_not
+    value: unallowed

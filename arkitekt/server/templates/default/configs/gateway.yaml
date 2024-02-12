@@ -1,0 +1,4 @@
+lok:
+  issuer: lok
+  key_type: RS256
+  public_key: {{setup.jwt_key_pair.public_key}}

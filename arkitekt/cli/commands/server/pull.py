@@ -18,20 +18,19 @@ from arkitekt.deployed import deployment
     type=click.Choice(compile_options()),
 )
 @click.pass_context
-def remove(
+def pull(
     ctx: Context,
     name: Optional[str] = None,
 ) -> None:
     """
-    Remove a deployment
+    Pull a deployment
 
-    Removing a deployment will stop all containers and call docker compose down
-    on the project. This will remove all containers and networks created by the
-    deployment. As opposed to the down command, the deployment will also be
-    removed from the .dokker folder, and all data stored in volumes managed by
-    the deployment will be removed.
+    Stopping a deployment will stop all containers and call docker compose stop
+    on the project. This will stop all containers and networks created by the
+    deployment. The deployment will still be available in the .dokker folder
 
-    This step is irreversible, so use with caution.
+    This should not be confused with the down command, which will remove all
+    containers and remove all networks created by the deployment.
 
     """
     if not name:
@@ -44,6 +43,5 @@ def remove(
         name = options[0]
 
     with deployment(name) as d:
-        d.remove()
 
-    print("Done")
+        d.pull()

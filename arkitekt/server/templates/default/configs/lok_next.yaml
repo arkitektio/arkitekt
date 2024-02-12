@@ -1,0 +1,92 @@
+activation_days: 7
+apps:
+  - identifier: github.io.jhnnsrs.mikroj
+    version: 0.0.1
+    scopes: 
+      - read
+      - write
+    clients:
+      - kind: website
+        token: 293j40239j4023023n09nwrree30d9n203nf03f
+        redirect_uris: 
+          - http://localhost:8090
+        tenant: {{setup.admin_username}}
+        composition: generic
+  - identifier: github.io.jhnnsrs.orkestrator
+    version: 0.0.1
+    scopes: 
+      - read
+      - write
+    clients:
+      - kind: website
+        token: 293j40239j4055523ffff023n09nwff4523423430d9n203nf03f
+        redirect_uris: 
+          - http://localhost:{{setup.orkestrator.port}}
+          - http://localhost:{{setup.orkestrator.port}}/callback
+          - http://127.0.0.1/callback
+          - http://127.0.0.1/
+        tenant: {{setup.admin_username}}
+        composition: generic
+        public: true
+db:
+  db_name:  {{setup.lok_next.db_name}}
+  engine: django.db.backends.postgresql
+  host: db
+  password: {{setup.postgres_password}}
+  port: 5432
+  username: {{setup.postgres_user}}
+deployment:
+  name: {{setup.name}}
+django:
+  admin:
+    password: {{setup.admin_password}}
+    username: {{setup.admin_username}}
+  debug: false
+  hosts:
+    - "*"
+  secret_key: {{setup.lok_next.django_secret_key}}
+groups: {% for group in setup.groups %}
+  - name: {{ group.name }}
+    description: {{ group.description }}{% endfor %}
+minio:
+  access_key: {{setup.lok_next.bucket.access_key}}
+  buckets:
+    media: lokmedia
+  host: minio
+  port: "9000"
+  protocol: http
+  secret_key: {{setup.lok_next.bucket.secret_key}}
+private_key:  |
+  {{ setup.jwt_key_pair.private_key|indent(2) }}
+public_key: {{setup.jwt_key_pair.public_key}}
+lok:
+  issuer: lok
+  key_type: RS256
+  public_key: {{setup.jwt_key_pair.public_key}}{% if setup.static_tokens %}
+  static_tokens: {% for token, user in setup.static_tokens.items() %}
+    {{token}}: 
+      sub: {{user.sub}}{% endfor %}{% endif %}
+redis:
+  host: redis
+  port: 6379
+scopes:
+  can_assign: Can Assign Nodes
+  can_create: Can Create Nodes
+  can_create_identifier: Can create new identifier for the platform
+  can_forward_bounce:
+    Can reserve and assign to Nodes mimicking other Users (only
+    backend and admin)
+  can_provide: Can Provide Nodes
+  can_template: Can Template Nodes
+  introspection: Introspect the Token scope
+  provider: Can act as a provider
+  read: Reading all of your Data
+  write: Writing to all of your Data
+  read_starred: Reading all of your shared Data
+token_expire_seconds: 604800
+users: {% for user in setup.users %}
+  - username: {{ user.username }}
+    password: {{ user.password }}
+    groups: {% for group in user.groups %}
+      - {{group}} {% endfor %}{% endfor %}
+

@@ -1,0 +1,164 @@
+activation_days: 7
+apps:
+  - client_id: snfoinosinefsef
+    client_secret: 9noinfpuisenfpsiuenfpiosenfiusef
+    client_type: public
+    grant_type: authorization-code
+    identifier: github.io.jhnnsrs.orkestrator
+    name: orkestrator
+    redirect_uris:
+      - http://127.0.0.1/
+      - http://127.0.0.1/callback
+      - http://localhost:{{setup.orkestrator.port}}/callback
+      - http://localhost:{{setup.orkestrator.port}}/
+    scopes:
+      - read
+      - write
+      - openid
+    tenant: {{setup.admin_username}}
+    version: "0.0.1"
+    token: 293j40239j4023023n039j30sdofins3n09nw30d9n203nf03fsdfseoinsoeinfosein
+  - client_id: soinfosienfsfosefghsegfisnefoisneofinsef
+    client_secret: soinfoefsefssdfienfoisnefoisneofinsef
+    client_type: public
+    grant_type: authorization-code
+    identifier: github.io.jhnnsrs.doks
+    name: doks
+    redirect_uris:
+      - http://127.0.0.1/
+      - https://arkitekt.live
+      - https://arkitekt.live/callback
+    scopes:
+      - read
+      - write
+      - openid
+    tenant: {{setup.admin_username}}
+    version: latest
+    token: 293j40239j4023023n09nw3oinfinoifnsoifnosineoifnsef0d9n203nf03f
+  - client_id: soinfosienfoaswdasdasdisnefoisneofinsef
+    client_secret: soinfosiengeesegegfoisnefoisneofinsef
+    client_type: public
+    grant_type: authorization-code
+    identifier: github.io.jhnnsrs.mikromanager
+    name: MikroManager
+    redirect_uris:
+      - http://127.0.0.1/
+    scopes:
+      - read
+      - write
+      - openid
+    tenant: {{setup.admin_username}}
+    version: latest
+    token: 304n03940p39m4f09o304fo9m0394mf039n4f039n4f093n4f
+  - client_id: soinfosienfoissgsegsegtbsynefoisneofinsef
+    client_secret: soinfosienfoissdfsdfnefoisneofinsef
+    client_type: public
+    grant_type: authorization-code
+    identifier: github.io.jhnnsrs.mikro-napari
+    name: napari
+    redirect_uris:
+      - http://127.0.0.1/
+    scopes:
+      - read
+      - write
+      - openid
+    tenant: {{setup.admin_username}}
+    version: latest
+    token: 093j4093n4f09m3094mf09m309mf09mf094n09enf09n23
+  - client_id: sdfsfshrhsdbse4gsrgs4rgdrgsrdgedrg
+    client_secret: ffesefnoweirnw9oinr0wnrosienfoin
+    client_type: public
+    grant_type: authorization-code
+    identifier: github.io.jhnnsrs.mikroj
+    name: mikroj
+    redirect_uris:
+      - http://127.0.0.1/
+    scopes:
+      - read
+      - openid
+    tenant: {{setup.admin_username}}
+    version: v0.0.1
+    token: 0394mr039m4f093m40f90934nf09n309m2039d029n3f092n3f0293fn
+  - client_id: fsefgsdfoina9oiwendaosinaswdaw
+    client_secret: ffesefnoweirnw9fesoienfspieounfspoeinoinr0wnrosienfoin
+    client_type: public
+    grant_type: authorization-code
+    identifier: github.io.jhnnsrs.gucker
+    name: gucker
+    redirect_uris:
+      - http://127.0.0.1/
+    scopes:
+      - read
+      - openid
+    tenant: {{setup.admin_username}}
+    version: latest
+    token: 2039rn0293md02m3f0pm2p30omr02oin3f0ß92m30f9n2039fn2039fn
+  - client_id: fsdfsefsesef234234e2fd3dasdasd
+    client_secret: ffesefnoweirnw9fesoienfspie23423sasdasdounfspoeinoinr0wnrosienfoin
+    client_type: public
+    grant_type: authorization-code
+    identifier: github.io.jhnnsrs.mikro-manager
+    name: mikro-manager
+    redirect_uris:
+      - http://127.0.0.1/
+    scopes:
+      - read
+      - openid
+    tenant: {{setup.admin_username}}
+    version: "0.0.1"
+    token: 4234234234u9381892huin9s8nef98n398nw398n29384n234
+db:
+  db_name:  {{setup.lok.db_name}}
+  engine: django.db.backends.postgresql
+  host: db
+  password: {{setup.postgres_password}}
+  port: 5432
+  username: {{setup.postgres_user}}
+deployment:
+  name: {{setup.name}}
+django:
+  admin:
+    password: {{setup.admin_password}}
+    username: {{setup.admin_username}}
+  debug: false
+  hosts:
+    - "*"
+  secret_key: {{setup.lok.django_secret_key}}
+groups: {% for group in setup.groups %}
+  - name: {{ group.name }}
+    description: {{ group.description }}{% endfor %}
+minio:
+  access_key: {{setup.lok.bucket.access_key}}
+  buckets:
+    media: lokmedia
+  host: minio
+  port: "9000"
+  protocol: http
+  secret_key: {{setup.lok.bucket.secret_key}}
+private_key:  |
+  {{ setup.jwt_key_pair.private_key|indent(2) }}
+public_key: {{setup.jwt_key_pair.public_key}}
+redis:
+  host: redis
+  port: 6379
+scopes:
+  can_assign: Can Assign Nodes
+  can_create: Can Create Nodes
+  can_create_identifier: Can create new identifier for the platform
+  can_forward_bounce:
+    Can reserve and assign to Nodes mimicking other Users (only
+    backend and admin)
+  can_provide: Can Provide Nodes
+  can_template: Can Template Nodes
+  introspection: Introspect the Token scope
+  provider: Can act as a provider
+  read: Reading all of your Data
+  write: Writing to all of your Data
+  read_starred: Reading all of your shared Data
+token_expire_seconds: 604800
+users: {% for user in setup.users %}
+  - username: {{ user.username }}
+    password: {{ user.password }}
+    groups: {% for group in user.groups %}
+      - {{group}} {% endfor %}{% endfor %}
+

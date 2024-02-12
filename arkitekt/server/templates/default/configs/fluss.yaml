@@ -1,0 +1,33 @@
+db:
+  db_name: {{setup.fluss.db_name}}
+  engine: django.db.backends.postgresql
+  host: db
+  password: {{setup.postgres_password}}
+  port: 5432
+  username: {{setup.postgres_user}}
+django:
+  admin:
+    password: {{setup.admin_password}}
+    username: {{setup.admin_username}}
+  debug: false
+  hosts:
+  - '*'
+  secret_key: {{setup.fluss.django_secret_key}}
+lok:
+  issuer: lok
+  key_type: RS256
+  public_key: {{setup.jwt_key_pair.public_key}}{% if setup.static_tokens %}
+  static_tokens: {% for token, user in setup.static_tokens.items() %}
+    {{token}}: 
+      sub: {{user.sub}}{% endfor %}{% endif %}
+minio:
+  access_key: {{setup.fluss.bucket.access_key}}
+  buckets:
+   media: flussmedia
+  host: minio
+  port: '9000'
+  protocol: http
+  secret_key: {{setup.fluss.bucket.secret_key}}
+redis:
+  host: redis
+  port: 6379
