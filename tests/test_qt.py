@@ -29,8 +29,8 @@ class QtArkitektWidget(QtWidgets.QWidget):
         self.app.fakts.get("fakts")
 
 
-@pytest.mark.skip
 @pytest.mark.qt
+@pytest.mark.skip(reason="This test is not working. Without user interaction, the test will not work.")
 def test_qteasy(qtbot):
     widget = QtArkitektWidget()
     qtbot.addWidget(widget)
