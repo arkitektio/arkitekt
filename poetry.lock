@@ -2873,6 +2873,7 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [extras]
 all = ["fluss", "mikro", "reaktion", "rekuest", "rich-click", "semver", "turms", "unlok", "watchfiles"]
 cli = ["rekuest", "rich-click", "semver", "turms", "watchfiles"]
+extended = ["fluss", "kluster", "mikro", "omero-ark", "reaktion", "rekuest", "rich-click", "semver", "turms", "unlok", "watchfiles"]
 fluss = ["fluss"]
 kluster = ["kluster"]
 mikro = ["mikro"]
@@ -2886,4 +2887,4 @@ unlok = ["unlok"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.8"
-content-hash = "c502d540985750df86bffbc9100e05e6cade1d138f5a8ce0753024de68ec51a4"
+content-hash = "6b2ebdf25092c58a117a0aeb022bfcbf04e702726b0d27bb4d72fae51e88027e"
