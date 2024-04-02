@@ -18,6 +18,7 @@ def easy(
     headless: bool = False,
     log_level: str = "ERROR",
     token: Optional[str] = None,
+    redeem_token: Optional[str] = None,
     no_cache: bool = False,
     instance_id: str = "main",
     register_reaktion: bool = True,
@@ -115,6 +116,7 @@ def easy(
         instance_id=instance_id,
         token=token,
         enforce=enforce,
+        redeem_token=redeem_token,
     )
 
     if register_reaktion:

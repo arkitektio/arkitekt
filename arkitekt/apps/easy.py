@@ -1,7 +1,7 @@
 from arkitekt.model import Manifest
 from .types import EasyApp
 from arkitekt.apps.fallbacks import ImportException
-from arkitekt.apps.service.fakts import build_arkitekt_fakts, build_arkitekt_token_fakts
+from arkitekt.apps.service.fakts import build_arkitekt_fakts, build_arkitekt_token_fakts, build_arkitekt_redeem_fakts
 from arkitekt.apps.service.herre import build_arkitekt_herre
 from typing import Optional, List
 
@@ -13,21 +13,36 @@ def build_arkitekt_easy_app(
     headless: bool = False,
     instance_id: Optional[str] = None,
     token: Optional[str] = None,
+    redeem_token: Optional[str] = None,
     enforce: Optional[List[str]] = None,
 ):
-    fakts = (
-        build_arkitekt_fakts(
-            manifest=manifest, url=url, no_cache=no_cache, headless=headless
+    
+    if token and redeem_token:
+        raise ValueError("Cannot provide both token and redeem_token")
+    
+    if redeem_token:
+        fakts = build_arkitekt_redeem_fakts(
+            manifest=manifest,
+            redeem_token=redeem_token,
+            url=url,
+            no_cache=no_cache,
+            headless=headless,
         )
-        if not token
-        else build_arkitekt_token_fakts(
+    elif token:
+        fakts = build_arkitekt_token_fakts(
             manifest=manifest,
             token=token,
             url=url,
             no_cache=no_cache,
             headless=headless,
         )
-    )
+    else:
+        fakts = build_arkitekt_fakts(
+            manifest=manifest, url=url, no_cache=no_cache, headless=headless
+        )
+
+
+
     herre = build_arkitekt_herre(fakts=fakts)
 
     try:

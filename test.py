@@ -1,31 +1,24 @@
 "hallo"
-from arkitekt.deployed import deployed
+from arkitekt import easy, register_next
 
 
-composition = deployed("paper", "com.example.test")
+
+x = easy("johannes", redeem_token="fuckthisshit", url="localhost:8010")
 
 
-@composition.app.rekuest.register()
-def test(hallo: str) -> str:
+
+@register_next
+def hallo(value: int = 3) -> None:
     """Hallo
-
-    Prints hallo
-
-    Args:
-        hallo (str): Hallo string
-
-    Returns:
-        str: Hallo
+    
+    Hallo is what you have been looking for
+    
     """
     print(hallo)
-    return "test"
 
 
-with composition:
+with x:
+    x.get_fak
+    x.rekuest_next.run()
 
-    
 
-
-    print(composition.deployment.project.compose_files)
-
-    print("hello")

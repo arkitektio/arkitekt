@@ -8,6 +8,7 @@ from fakts.grants.remote.demanders.cache import CacheTokenStore
 from fakts.grants.remote.demanders.static import StaticDemander
 from fakts.grants.remote.demanders.device_code import DeviceCodeDemander
 from fakts.grants.remote.claimers.post import ClaimEndpointClaimer
+from fakts.grants.remote.demanders.redeem import RedeemDemander
 from arkitekt.model import Manifest
 
 
@@ -66,6 +67,21 @@ def build_arkitekt_token_fakts(
     return ArkitektFakts(
         grant=RemoteGrant(
             demander=StaticDemander(token=token),
+            discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
+            claimer=ClaimEndpointClaimer(),
+        )
+    )
+
+def build_arkitekt_redeem_fakts(
+    manifest: Manifest,
+    redeem_token: str,
+    url,
+    no_cache: Optional[bool] = False,
+    headless=False,
+):
+    return ArkitektFakts(
+        grant=RemoteGrant(
+            demander=RedeemDemander(token=redeem_token, manifest=manifest),
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
             claimer=ClaimEndpointClaimer(),
         )
