@@ -66,7 +66,7 @@ async def call_app(
 @click.option(
     "--url",
     help="The fakts url for connection",
-    default="http://localhost:8000",
+    default="http://localhost:11000",
     envvar="FAKTS_URL",
 )
 @with_builder

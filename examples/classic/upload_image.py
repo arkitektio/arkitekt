@@ -16,7 +16,6 @@
 
 """
 
-
 from arkitekt import easy
 from mikro.api.schema import from_xarray
 import xarray as xr
@@ -24,7 +23,7 @@ import numpy as np
 
 app = easy("upload_test")
 # Create a new app with the name "upload_test", we here use the
-# default url "http://localhost:8000", adjust this if you are running
+# default url "http://localhost:11000", adjust this if you are running
 # the server on a different port or host ()
 
 

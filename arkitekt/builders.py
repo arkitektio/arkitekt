@@ -14,7 +14,7 @@ def easy(
     version: str = "0.0.1",
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
-    url: str = "http://localhost:8000",
+    url: str = "http://localhost:11000",
     headless: bool = False,
     log_level: str = "ERROR",
     token: Optional[str] = None,
@@ -53,7 +53,7 @@ def easy(
         The scopes, that this apps requires, will default to standard scopes, by default None
     url : str, optional
         The fakts server that will be used to configure this app, in a default Arkitekt deployment this
-        is the address of the "Lok Service" (which provides the Fakts API), by default "http://localhost:8000"
+        is the address of the "Lok Service" (which provides the Fakts API), by default "http://localhost:11000"
         Will be overwritten by the FAKTS_URL environment variable
     headless : bool, optional
         Should we run in headless, mode, e.g printing necessary interaction into the console (will forexample
@@ -140,7 +140,7 @@ def next(
     version: str = "latest",
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
-    url: str = "http://localhost:8000",
+    url: str = "http://localhost:11000",
     headless: bool = False,
     log_level: str = "ERROR",
     token: Optional[str] = None,
@@ -183,7 +183,7 @@ def next(
         The scopes, that this apps requires, will default to standard scopes, by default None
     url : str, optional
         The fakts server that will be used to configure this app, in a default Arkitekt deployment this
-        is the address of the "Lok Service" (which provides the Fakts API), by default "http://localhost:8000"
+        is the address of the "Lok Service" (which provides the Fakts API), by default "http://localhost:11000"
         Will be overwritten by the FAKTS_URL environment variable
     headless : bool, optional
         Should we run in headless, mode, e.g printing necessary interaction into the console (will forexample
@@ -264,7 +264,7 @@ def jupy(
     version: str = "0.0.1",
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
-    url: str = "http://localhost:8000",
+    url: str = "http://localhost:11000",
     headless: bool = False,
     log_level: str = "ERROR",
     token: Optional[str] = None,
@@ -316,7 +316,7 @@ def jupy(
         The scopes, that this apps requires, will default to standard scopes, by default None
     url : str, optional
         The fakts server that will be used to configure this app, in a default Arkitekt deployment this
-        is the address of the "Lok Service" (which provides the Fakts API), by default "http://localhost:8000"
+        is the address of the "Lok Service" (which provides the Fakts API), by default "http://localhost:11000"
         Will be overwritten by the FAKTS_URL environment variable
     headless : bool, optional
         Should we run in headless, mode, e.g printing necessary interaction into the console (will forexample
@@ -388,7 +388,7 @@ def port(**kwargs):
     Args:
         identifier (str): The apps identifier
         version (str, optiosnal): The apps verion. Defaults to "latest".
-        url (_type_, optional): The app configuration url. Defaults to "http://localhost:8000/f/".
+        url (_type_, optional): The app configuration url. Defaults to "http://localhost:11000/f/".
         headless (bool, optional): Do not open a browser window. Defaults to False.
         allow_sync_in_async (bool, optional): Should we allow the creation of a sync interface in an async loop (necessary for a sync interface in jupyter). Defaults to True.
 
@@ -410,7 +410,7 @@ def scheduler(
     version: str = "latest",
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
-    url: str = "http://localhost:8000",
+    url: str = "http://localhost:11000",
     headless: bool = False,
     log_level: str = "ERROR",
     token: Optional[str] = None,
@@ -425,7 +425,7 @@ def scheduler(
     Args:
         identifier (str): The apps identifier
         version (str, optional): The apps verion. Defaults to "latest".
-        url (_type_, optional): The app configuration url. Defaults to "http://localhost:8000/f/".
+        url (_type_, optional): The app configuration url. Defaults to "http://localhost:11000/f/".
         headless (bool, optional): Do not open a browser window. Defaults to False.
         allow_sync_in_async (bool, optional): Should we allow the creation of a sync interface in an async loop (necessary for a sync interface in jupyter). Defaults to True.
 
@@ -481,7 +481,7 @@ def publicqt(
     version: str = "latest",
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
-    url: str = "http://localhost:8000",
+    url: str = "http://localhost:11000",
     headless: bool = False,
     log_level: str = "ERROR",
     token: Optional[str] = None,
@@ -578,9 +578,9 @@ def publicscheduleqt(
     manifest = Manifest(
         version=version,
         identifier=identifier,
-        scopes=scopes + ["openid"]
-        if scopes
-        else ["openid"],  # we need openid to get the user info
+        scopes=(
+            scopes + ["openid"] if scopes else ["openid"]
+        ),  # we need openid to get the user info
         logo=logo,
     )
 

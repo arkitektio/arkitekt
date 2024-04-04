@@ -37,7 +37,7 @@ def build_deployment(
 
     deployment = ArkitektDeployment(project=project)
     deployment.add_health_check(
-        url="http://localhost:8000/ht",
+        url="http://localhost:11000/ht",
         service="lok",
         timeout=5,
         max_retries=10,
@@ -83,7 +83,7 @@ def deployed(channel: str, *args, **kwargs) -> DeployedArkitekt:
         The deployed kluster instance (Composition)
     """
 
-    url = "localhost:8000"
+    url = "localhost:11000"
     # TODO: Retrieve the url from the deployment
 
     return DeployedArkitekt(

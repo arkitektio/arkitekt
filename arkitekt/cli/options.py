@@ -8,7 +8,7 @@ with_fakts_url = click.option(
     "--url",
     "-u",
     help="The fakts url for connection",
-    default="http://localhost:8000",
+    default="http://localhost:11000",
     envvar="FAKTS_URL",
 )
 

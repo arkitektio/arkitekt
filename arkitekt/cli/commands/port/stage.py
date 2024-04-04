@@ -9,7 +9,7 @@ from arkitekt.cli.io import get_builds
 @click.option("--build", help="The build to use", type=str, default=None)
 @click.option("--flavour", "-f", help="The flavour to use", default="vanilla")
 @click.option(
-    "--url", "-u", help="The fakts server to use", type=str, default="localhost:8000"
+    "--url", "-u", help="The fakts server to use", type=str, default="localhost:11000"
 )
 @click.option(
     "--builder", help="The builder to use", type=str, default="arkitekt.builders.easy"
