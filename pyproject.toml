@@ -10,7 +10,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = "^3.8"
 herre = ">=0.4.3"
-fakts = ">=0.4.1"
+fakts = ">=0.4.2"
 rekuest = { version = ">=0.2.29", optional = true }
 mikro = { version = ">=0.3.95", optional = true }
 mikro-next = { version = ">=0.1.6", python = "^3.10", optional = true }
