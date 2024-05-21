@@ -1,7 +1,10 @@
 from arkitekt.model import Manifest
 from .types import NextApp
 from arkitekt.apps.fallbacks import ImportException
-from arkitekt.apps.service.fakts_next import build_arkitekt_fakts_next
+from arkitekt.apps.service.fakts_next import (
+    build_arkitekt_fakts_next,
+    build_arkitekt_redeem_fakts_next,
+)
 from arkitekt.apps.service.herre import build_arkitekt_herre
 
 
@@ -13,14 +16,24 @@ def build_next_app(
     instance_id=None,
     token=None,
     app_kind="development",
+    redeem_token=None,
 ):
-    fakts = build_arkitekt_fakts_next(
-        manifest=manifest,
-        url=url,
-        no_cache=no_cache,
-        headless=headless,
-        client_kind=app_kind,
-    )
+    if redeem_token:
+        fakts = build_arkitekt_redeem_fakts_next(
+            manifest=manifest,
+            redeem_token=redeem_token,
+            url=url,
+            no_cache=no_cache,
+            headless=headless,
+        )
+    else:
+        fakts = build_arkitekt_fakts_next(
+            manifest=manifest,
+            url=url,
+            no_cache=no_cache,
+            headless=headless,
+            client_kind=app_kind,
+        )
 
     herre = build_arkitekt_herre(fakts=fakts)
 
@@ -34,10 +47,11 @@ def build_next_app(
         rekuest = ImportException(import_exception=e, install_library="rekuest_next")
 
     try:
-        from arkitekt.apps.mikro_next import build_arkitekt_mikro_next
+        from arkitekt.apps.service.mikro_next import build_arkitekt_mikro_next
 
         mikro = build_arkitekt_mikro_next(fakts=fakts, herre=herre)
     except ImportError as e:
+        raise e
         mikro = ImportException(import_exception=e, install_library="mikro_next")
 
     try:
@@ -48,11 +62,12 @@ def build_next_app(
         unlok = ImportException(import_exception=e, install_library="unlok")
 
     try:
-        from arkitekt.apps.service.fluss import build_arkitekt_fluss
+        from arkitekt.apps.service.fluss_next import build_arkitekt_fluss
 
         fluss = build_arkitekt_fluss(herre=herre, fakts=fakts)
     except ImportError as e:
-        fluss = ImportException(import_exception=e, install_library="fluss")
+        raise e
+        fluss = ImportException(import_exception=e, install_library="fluss_next")
 
     try:
         from arkitekt.apps.service.omero_ark import build_arkitekt_omero_ark

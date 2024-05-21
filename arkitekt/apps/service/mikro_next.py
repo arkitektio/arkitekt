@@ -60,7 +60,7 @@ class ArkitektMikroNext(MikroNext):
 
 
 def build_arkitekt_mikro_next(herre: Herre, fakts: Fakts):
-    datalayer = FaktsDataLayer(fakts_group="minio", fakts=fakts)
+    datalayer = FaktsDataLayer(fakts_group="datalayer", fakts=fakts)
 
     return ArkitektMikroNext(
         rath=MikroNextRath(
@@ -70,8 +70,8 @@ def build_arkitekt_mikro_next(herre: Herre, fakts: Fakts):
                     datalayer=datalayer,
                 ),
                 split=SplitLink(
-                    left=FaktsAIOHttpLink(fakts_group="mikro_next", fakts=fakts),
-                    right=FaktsGraphQLWSLink(fakts_group="mikro_next", fakts=fakts),
+                    left=FaktsAIOHttpLink(fakts_group="mikro", fakts=fakts),
+                    right=FaktsGraphQLWSLink(fakts_group="mikro", fakts=fakts),
                     split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
                 ),
             )

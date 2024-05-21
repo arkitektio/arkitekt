@@ -29,8 +29,8 @@ def build_arkitekt_rekuest_next(
         link=RekuestNextLinkComposition(
             auth=HerreAuthLink(herre=herre),
             split=SplitLink(
-                left=FaktsAIOHttpLink(fakts_group="rekuest_next", fakts=fakts),
-                right=FaktsGraphQLWSLink(fakts_group="rekuest_next", fakts=fakts),
+                left=FaktsAIOHttpLink(fakts_group="rekuest", fakts=fakts),
+                right=FaktsGraphQLWSLink(fakts_group="rekuest", fakts=fakts),
                 split=lambda o: o.node.operation != OperationType.SUBSCRIPTION,
             ),
         )
@@ -40,7 +40,7 @@ def build_arkitekt_rekuest_next(
         rath=rath,
         agent=BaseAgent(
             transport=ArkitektWebsocketAgentTransport(
-                fakts_group="rekuest_next.agent", fakts=fakts, herre=herre
+                fakts_group="rekuest.agent", fakts=fakts, herre=herre
             ),
             instance_id=instance_id,
             rath=rath,
@@ -49,5 +49,5 @@ def build_arkitekt_rekuest_next(
             rath=rath,
             instance_id=instance_id,
         ),
-        healthz=FaktsHealthz(fakts_group="rekuest_next", fakts=fakts),
+        healthz=FaktsHealthz(fakts_group="rekuest", fakts=fakts),
     )

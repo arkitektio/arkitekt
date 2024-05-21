@@ -40,6 +40,11 @@ def build_default_requirements() -> dict[str, Requirement]:
             description="An instance of Arkitekt Fluss to make requests to the user's data",
             optional=True,
         ),
+        "datalayer": Requirement(
+            service="live.arkitekt.datalayer",
+            description="An instance of Arkitekt Datalayer to make requests to the user's data",
+            optional=False,
+        ),
     }
 
 

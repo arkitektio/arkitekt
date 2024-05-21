@@ -149,6 +149,7 @@ def next(
     no_cache: bool = False,
     instance_id: str = "main",
     register_reaktion: bool = False,
+    redeem_token: Optional[str] = None,
     app_kind: str = "development",
 ) -> NextApp:
     """Creates a next app
@@ -246,6 +247,7 @@ def next(
         instance_id=instance_id,
         token=token,
         app_kind=app_kind,
+        redeem_token=redeem_token,
     )
 
     if register_reaktion:

@@ -4,11 +4,12 @@ depending on the builder used.
 
 This module imports all the apps and their types
 and sets them as attributes on the App class, if they are available.
-If they are not available, they are set to Any, so that we can add 
+If they are not available, they are set to Any, so that we can add
 an import exception to the app.
 
 
 """
+
 from koil.composition import Composition
 from typing import TYPE_CHECKING
 from arkitekt.model import Manifest
@@ -64,6 +65,10 @@ try:
 except ImportError:
     ArkitektFluss = ImportException  # type: ignore
 try:
+    from arkitekt.apps.service.fluss_next import ArkitektFluss as ArkitektFlussNext
+except ImportError:
+    ArkitektFlussNext = ImportException  # type: ignore
+try:
     from arkitekt.apps.service.unlok import ArkitektUnlok
 except ImportError:
     ArkitektUnlok = ImportException  # type: ignore
@@ -99,6 +104,7 @@ if TYPE_CHECKING:
     from arkitekt.apps.service.herre_qt import ArkitektHerreQt
     from arkitekt.apps.service.kluster import ArkitektKluster
     from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
+    from arkitekt.apps.service.fluss_next import ArkitektFluss as ArkitektFlussNext
 
 
 class App(Composition):
@@ -137,7 +143,7 @@ class NextApp(Composition):
     herre: ArkitektHerre
     rekuest: ArkitektRekuestNext
     mikro: ArkitektMikroNext
-    fluss: ArkitektFluss
+    fluss: ArkitektFlussNext
     unlok: ArkitektUnlok
     omero_ark: ArkitektOmeroArk
     kluster: ArkitektKluster
