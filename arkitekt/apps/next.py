@@ -83,12 +83,20 @@ def build_next_app(
     except ImportError as e:
         kluster = ImportException(import_exception=e, install_library="kluster")
 
+    try:
+        from arkitekt.apps.service.kabinet import build_arkitekt_kabinet
+
+        kabinet = build_arkitekt_kabinet(herre=herre, fakts=fakts)
+    except ImportError as e:
+        kabinet = ImportException(import_exception=e, install_library="kluster")
+
     return NextApp(
         manifest=manifest,
         fakts=fakts,
         herre=herre,
         rekuest=rekuest,
         mikro=mikro,
+        kabinet=kabinet,
         unlok=unlok,
         fluss=fluss,
         kluster=kluster,

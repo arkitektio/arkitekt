@@ -1,15 +1,14 @@
-""" Models for Arkitekt. Thiese include extensiosn for the Fakts Manifest and the User model."""
+"""Models for Arkitekt. Thiese include extensiosn for the Fakts Manifest and the User model."""
 
 from pydantic import BaseModel, Field
 from typing import List, Optional
-
 
 
 class Requirement(BaseModel):
     service: str
     """ The service is the service that will be used to fill the key, it will be used to find the correct instance. It needs to fullfill
     the reverse domain naming scheme"""
-    optional: bool = False 
+    optional: bool = False
     """ The optional flag indicates if the requirement is optional or not. Users should be able to use the client even if the requirement is not met. """
     description: Optional[str] = None
     """ The description is a human readable description of the requirement. Will be show to the user when asking for the requirement."""
@@ -25,10 +24,14 @@ def build_default_requirements() -> dict[str, Requirement]:
             service="live.arkitekt.rekuest",
             description="An instance of Arkitekt Rekuest to assign to nodes",
         ),
+        "kabinet": Requirement(
+            service="live.arkitekt.kabinet",
+            description="An instance of Arkitekt Kabinet to retrieve nodes from",
+        ),
         "mikro": Requirement(
             service="live.arkitekt.mikro",
             description="An instance of Arkitekt Mikro to make requests to the user's data",
-             optional=True,
+            optional=True,
         ),
         "fluss": Requirement(
             service="live.arkitekt.fluss",
@@ -46,8 +49,6 @@ def build_default_requirements() -> dict[str, Requirement]:
             optional=False,
         ),
     }
-
-
 
 
 class Manifest(BaseModel):
@@ -73,7 +74,9 @@ class Manifest(BaseModel):
     """ Scopes that this app should request from the user """
     logo: Optional[str]
     """ A URL to the logo of the app TODO: We should enforce this to be a http URL as local paths won't work """
-    requirements: Optional[dict[str, Requirement]] = Field(default_factory=build_default_requirements)
+    requirements: Optional[dict[str, Requirement]] = Field(
+        default_factory=build_default_requirements
+    )
     """ Requirements that this app has TODO: What are the requirements? """
 
     class Config:

@@ -139,7 +139,7 @@ def easy(
 
 def next(
     identifier: str,
-    version: str = "latest",
+    version: str = "0.0.1",
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     url: str = "http://localhost:11000",

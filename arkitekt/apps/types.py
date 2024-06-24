@@ -76,7 +76,10 @@ try:
     from arkitekt.apps.service.omero_ark import ArkitektOmeroArk
 except ImportError:
     ArkitektOmeroArk = ImportException  # type: ignore
-
+try:
+    from arkitekt.apps.service.kabinet import ArkitektKabinet
+except ImportError:
+    ArkitektKabinet = ImportException  # type: ignore
 
 try:
     from arkitekt.apps.service.fakts import ArkitektFakts
@@ -103,6 +106,7 @@ if TYPE_CHECKING:
     from arkitekt.apps.service.rekuest_next import ArkitektRekuestNext
     from arkitekt.apps.service.herre_qt import ArkitektHerreQt
     from arkitekt.apps.service.kluster import ArkitektKluster
+    from arkitekt.apps.service.kabinet import ArkitektKabinet
     from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
     from arkitekt.apps.service.fluss_next import ArkitektFluss as ArkitektFlussNext
 
@@ -140,6 +144,7 @@ class NextApp(Composition):
 
     manifest: Manifest
     fakts: ArkitektFaktsNext
+    kabinet: ArkitektKabinet
     herre: ArkitektHerre
     rekuest: ArkitektRekuestNext
     mikro: ArkitektMikroNext

@@ -37,6 +37,8 @@ except ImportError as e:
 
 try:
     from rekuest_next.register import register as register_next
+    from rekuest_next.agents.hooks import background as background_next
+    from rekuest_next.agents.hooks import startup as startup_next
 except ImportError as e:
     register_next = missing_install("rekuest_next", e)
 
