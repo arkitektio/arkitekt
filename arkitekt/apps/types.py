@@ -10,13 +10,13 @@ an import exception to the app.
 
 """
 
-from koil.composition import Composition
-from typing import TYPE_CHECKING
-from arkitekt.model import Manifest
-from arkitekt.apps.fallbacks import ImportException
-
 import logging
+from typing import TYPE_CHECKING
 
+from koil.composition import Composition
+
+from arkitekt.apps.fallbacks import ImportException
+from arkitekt.model import Manifest
 
 logger = logging.getLogger(__name__)
 
@@ -93,22 +93,28 @@ except ImportError:
     ArkitektFaktsNext = ImportException  # type: ignore
 
 
+try:
+    from arkitekt.apps.service.unlok_next import ArkitektUnlok as ArkitektUnlokNext
+except ImportError:
+    ArkitektUnlokNext = ImportException  # type: ignore
+
+
 if TYPE_CHECKING:
     from arkitekt.apps.service.fakts import ArkitektFakts
     from arkitekt.apps.service.fakts_next import ArkitektFaktsNext
-    from arkitekt.apps.service.rekuest import ArkitektRekuest
-    from arkitekt.apps.service.omero_ark import ArkitektOmeroArk
+    from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
+    from arkitekt.apps.service.fluss import ArkitektFluss
+    from arkitekt.apps.service.fluss_next import ArkitektFluss as ArkitektFlussNext
     from arkitekt.apps.service.herre import ArkitektHerre
+    from arkitekt.apps.service.herre_qt import ArkitektHerreQt
+    from arkitekt.apps.service.kabinet import ArkitektKabinet
+    from arkitekt.apps.service.kluster import ArkitektKluster
     from arkitekt.apps.service.mikro import ArkitektMikro
     from arkitekt.apps.service.mikro_next import ArkitektMikroNext
-    from arkitekt.apps.service.fluss import ArkitektFluss
-    from arkitekt.apps.service.unlok import ArkitektUnlok
+    from arkitekt.apps.service.omero_ark import ArkitektOmeroArk
+    from arkitekt.apps.service.rekuest import ArkitektRekuest
     from arkitekt.apps.service.rekuest_next import ArkitektRekuestNext
-    from arkitekt.apps.service.herre_qt import ArkitektHerreQt
-    from arkitekt.apps.service.kluster import ArkitektKluster
-    from arkitekt.apps.service.kabinet import ArkitektKabinet
-    from arkitekt.apps.service.fakts_qt import ArkitektFaktsQt
-    from arkitekt.apps.service.fluss_next import ArkitektFluss as ArkitektFlussNext
+    from arkitekt.apps.service.unlok import ArkitektUnlok
 
 
 class App(Composition):
@@ -149,7 +155,7 @@ class NextApp(Composition):
     rekuest: ArkitektRekuestNext
     mikro: ArkitektMikroNext
     fluss: ArkitektFlussNext
-    unlok: ArkitektUnlok
+    unlok: ArkitektUnlokNext
     omero_ark: ArkitektOmeroArk
     kluster: ArkitektKluster
 

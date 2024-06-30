@@ -1,11 +1,12 @@
-from arkitekt.model import Manifest
-from .types import NextApp
 from arkitekt.apps.fallbacks import ImportException
 from arkitekt.apps.service.fakts_next import (
     build_arkitekt_fakts_next,
     build_arkitekt_redeem_fakts_next,
 )
 from arkitekt.apps.service.herre import build_arkitekt_herre
+from arkitekt.model import Manifest
+
+from .types import NextApp
 
 
 def build_next_app(
@@ -55,16 +56,17 @@ def build_next_app(
         mikro = ImportException(import_exception=e, install_library="mikro_next")
 
     try:
-        from arkitekt.apps.service.unlok import build_arkitekt_unlok
-
-        unlok = build_arkitekt_unlok(herre=herre, fakts=fakts)
-    except ImportError as e:
-        unlok = ImportException(import_exception=e, install_library="unlok")
-
-    try:
         from arkitekt.apps.service.fluss_next import build_arkitekt_fluss
 
         fluss = build_arkitekt_fluss(herre=herre, fakts=fakts)
+    except ImportError as e:
+        raise e
+        fluss = ImportException(import_exception=e, install_library="fluss_next")
+
+    try:
+        from arkitekt.apps.service.unlok_next import build_arkitekt_unlok_next
+
+        unlok = build_arkitekt_unlok_next(herre=herre, fakts=fakts)
     except ImportError as e:
         raise e
         fluss = ImportException(import_exception=e, install_library="fluss_next")
