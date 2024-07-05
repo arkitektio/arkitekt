@@ -539,7 +539,6 @@ def publicqt(
         instance_id=instance_id,
         settings=settings,
     )
-    print("Entering", parent)
     app.enter()  # This will start the event loop and attach the event handlers
     return app
 
