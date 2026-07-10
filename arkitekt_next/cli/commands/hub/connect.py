@@ -4,10 +4,7 @@ import rich_click as click
 from rich.table import Table
 
 from arkitekt_next.cli.vars import get_console
-from arkitekt_next.cli.commands._server_common import (
-    HUB_CONFIG_FILENAME,
-    resolve_path,
-)
+from arkitekt_next.cli.commands._server_common import resolve_path
 
 
 @click.command()
@@ -53,11 +50,12 @@ def connect(ctx, path, server, no_browser, timeout, no_resolve, resolve_timeout,
         discover_host_candidates,
         register_hub,
     )
+    from arkitekt_next.server.deployments import DEPLOYMENTS
     from arkitekt_next.server.utils import load_profile_yaml
 
     console = get_console(ctx)
     target = resolve_path(ctx, path)
-    config_path = target / HUB_CONFIG_FILENAME
+    config_path = target / DEPLOYMENTS["hub"].filename
 
     try:
         config, _backend = load_profile_yaml(str(config_path), HubConfig)

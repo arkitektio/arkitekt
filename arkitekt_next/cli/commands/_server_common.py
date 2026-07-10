@@ -1,33 +1,55 @@
-"""Shared helpers for the server-deployment CLI groups (`hub`, `coord`, `hubinator`).
+"""Shared helpers for the server-deployment CLI groups (`hub`, `coord`, `hubinator`,
+`engine`).
 
-Each group drives the migrated ``arkitekt_next.server`` library but now with its
-OWN deep, standalone profile schema and its OWN config file:
+Each group drives the migrated ``arkitekt_next.server`` library. The per-kind coupling
+(name, config filename, config class, generator, wizard) lives in the single
+:data:`arkitekt_next.server.deployments.DEPLOYMENTS` registry; the helpers here are the
+generic ``init``/``up`` machinery parameterized by a :class:`DeploymentKind`:
 
-- ``hub``       -> ``HubConfig``            -> ``hub_config.yaml``       -> ``write_hub_files``
-- ``coord``     -> ``CoordConfig``          -> ``coord_config.yaml``     -> ``write_coord_files``
-- ``hubinator`` -> ``ArkitektServerConfig`` -> ``hubinator_config.yaml`` -> ``write_virtual_config_files``
+- :func:`select_config`  -- wizard-or-default config selection (shared by hub/coord/hubinator)
+- :func:`finalize`       -- apply an optional template, then write the profile YAML
+- :func:`make_up_command`-- build the generic ``up`` command (identical across all kinds)
 
-An ``init`` command writes the profile to YAML; an ``up`` command regenerates the
-docker-compose stack (services + auth wiring) from it and runs ``docker compose up``.
-The YAML writing and the compose/up flow are shared here and parameterized by the
-(filename, schema, generator) triple.
+The registry transitively imports the ``server`` extra, so it is imported **only inside
+function bodies** here (and the CLI callbacks), keeping the base CLI importable without
+the extra.
 """
 
+import importlib.util
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Callable, Type
+from typing import Any, Callable, Type, TYPE_CHECKING
 
 import rich_click as click
 from pydantic import BaseModel
 
 from arkitekt_next.cli.vars import get_console, get_work_dir
 
-#: Per-profile on-disk config filenames.
-HUB_CONFIG_FILENAME = "hub_config.yaml"
-COORD_CONFIG_FILENAME = "coord_config.yaml"
-HUBINATOR_CONFIG_FILENAME = "hubinator_config.yaml"
-ENGINE_CONFIG_FILENAME = "engine_config.yaml"
+if TYPE_CHECKING:
+    from arkitekt_next.server.deployments import DeploymentKind
+
+#: Third-party deps that live in the optional ``server`` extra. Every one is
+#: lazy-imported inside a server command callback, so the base CLI loads fine
+#: without them; we only need them once a server subcommand actually runs. Names
+#: are the import module names (``python-slugify`` imports as ``slugify``).
+_SERVER_DEPS = ("cryptography", "inquirer", "ifaddr", "slugify", "dokker")
+
+
+def require_server_deps() -> None:
+    """Raise a friendly ``ClickException`` if the ``server`` extra isn't installed.
+
+    Call this at the top of a server command group's callback. Click only runs the
+    group callback when a subcommand is invoked (not for ``--help``), so help output
+    stays dependency-free while e.g. ``hub init`` is guarded.
+    """
+    missing = [dep for dep in _SERVER_DEPS if importlib.util.find_spec(dep) is None]
+    if missing:
+        raise click.ClickException(
+            "The server deployment stack needs extra dependencies "
+            f"({', '.join(missing)}). Install them with:\n\n"
+            "    pip install 'arkitekt-next[server]'"
+        )
 
 
 def resolve_path(ctx, path: str | None) -> Path:
@@ -117,3 +139,60 @@ def compose_and_up(
             f"Failed to start the stack (is Docker running?): {e}"
         )
     console.print("[bold green]✓ Deployment is up.[/bold green]")
+
+
+def select_config(
+    spec: "DeploymentKind", console, *, wizard: bool, template: str | None, use_default: bool
+) -> Any:
+    """Pick the starting config: run the interactive wizard, or a bare default.
+
+    The wizard runs when explicitly requested (``--wizard``) or when no template was
+    given, unless ``--default`` was passed. This one formula is correct for all three
+    wizard kinds: ``hubinator`` looks like it uses a simpler rule only because its
+    ``--template`` defaults to ``"default"`` (never ``None``), which collapses this to
+    ``wizard and not use_default``.
+    """
+    run_wizard = (wizard or template is None) and not use_default
+    if run_wizard:
+        if spec.wizard is None:  # defensive: only engine has no wizard, and it never calls this
+            raise click.ClickException(f"The {spec.name} deployment has no interactive wizard.")
+        return spec.wizard(console)
+    return spec.config_cls()
+
+
+def finalize(
+    ctx, target: Path, config: BaseModel, spec: "DeploymentKind", *, template: str | None, backend: str
+) -> Path:
+    """Apply an optional template, then write the profile YAML for ``spec``."""
+    if template is not None:
+        from arkitekt_next.server.templates import apply_template
+
+        config = apply_template(config, template)
+    return write_profile(ctx, target, config, filename=spec.filename, kind=spec.name, backend=backend)
+
+
+def make_up_command(kind_name: str, *, help: str) -> click.Command:
+    """Build the generic ``up`` command for a deployment kind.
+
+    Identical across all kinds: load the profile, regenerate the compose/config files,
+    then ``docker compose up``. The per-kind (filename, config class, generator) is
+    resolved lazily from the registry inside the callback so this factory stays free of
+    the ``server`` extra at import time.
+    """
+
+    @click.command("up", help=help)
+    @click.argument("path", required=False)
+    @click.pass_context
+    def up(ctx, path) -> None:
+        from arkitekt_next.server.deployments import DEPLOYMENTS
+
+        spec = DEPLOYMENTS[kind_name]
+        compose_and_up(
+            ctx,
+            resolve_path(ctx, path),
+            filename=spec.filename,
+            model_cls=spec.config_cls,
+            generator=spec.generator,
+        )
+
+    return up

@@ -3,10 +3,11 @@ import rich_click as click
 from arkitekt_next.cli.docs import COORD_DOCS, help_epilog
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import (
-    COORD_CONFIG_FILENAME,
-    compose_and_up,
+    finalize,
+    make_up_command,
+    require_server_deps,
     resolve_path,
-    write_profile,
+    select_config,
 )
 
 
@@ -20,6 +21,7 @@ def coord(ctx) -> None:
     services and no deployer -- point one or more `hub`s at it via their
     `--coord-server`.
     """
+    require_server_deps()
 
 
 @coord.command()
@@ -43,46 +45,27 @@ def init(ctx, path, template, wizard, use_default, port, ssl_port, backend) -> N
     organizations. Passing a `--template` or `--default` skips all questioning
     and uses defaults.
     """
-    from arkitekt_next.server.config import CoordConfig
-    from arkitekt_next.server.templates import apply_template
-    from arkitekt_next.server.wizard import prompt_coord_config
+    from arkitekt_next.server.deployments import DEPLOYMENTS
 
+    spec = DEPLOYMENTS["coord"]
     console = get_console(ctx)
     target = resolve_path(ctx, path)
 
-    # No template chosen -> interactive wizard, unless --default accepts the defaults.
-    run_wizard = (wizard or template is None) and not use_default
-    config = prompt_coord_config(console) if run_wizard else CoordConfig()
+    config = select_config(spec, console, wizard=wizard, template=template, use_default=use_default)
 
     if port is not None:
         config.gateway.exposed_http_port = port
     if ssl_port is not None:
         config.gateway.exposed_https_port = ssl_port
 
-    if template is not None:
-        config = apply_template(config, template)
-
     console.print(
         f"Creating [bold]coordinator[/bold] ({template or 'wizard'}) with Lok + Kontrol "
         f"at [cyan]{target}[/cyan]..."
     )
-    write_profile(
-        ctx, target, config, filename=COORD_CONFIG_FILENAME, kind="coord", backend=backend
-    )
+    finalize(ctx, target, config, spec, template=template, backend=backend)
 
 
-@coord.command()
-@click.argument("path", required=False)
-@click.pass_context
-def up(ctx, path) -> None:
-    """Compose the coordinator (Lok + auth wiring) and run `docker compose up`."""
-    from arkitekt_next.server.config import CoordConfig
-    from arkitekt_next.server.diff import write_coord_files
-
-    compose_and_up(
-        ctx,
-        resolve_path(ctx, path),
-        filename=COORD_CONFIG_FILENAME,
-        model_cls=CoordConfig,
-        generator=write_coord_files,
-    )
+coord.add_command(
+    make_up_command("coord", help="Compose the coordinator (Lok + auth wiring) and run `docker compose up`."),
+    "up",
+)

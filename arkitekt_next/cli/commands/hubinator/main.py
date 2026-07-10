@@ -3,11 +3,12 @@ import rich_click as click
 from arkitekt_next.cli.docs import HUBINATOR_DOCS, help_epilog
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import (
-    HUBINATOR_CONFIG_FILENAME,
-    compose_and_up,
+    finalize,
+    make_up_command,
+    require_server_deps,
     resolve_path,
+    select_config,
     set_enabled_services,
-    write_profile,
 )
 
 
@@ -21,6 +22,7 @@ def hubinator(ctx) -> None:
     a deployer. This is the all-in-one deployment the standalone arkitekt-server
     tool produced by default. Use `hubinator init` then `hubinator up`.
     """
+    require_server_deps()
 
 
 @hubinator.command()
@@ -46,14 +48,13 @@ def hubinator(ctx) -> None:
 @click.pass_context
 def init(ctx, path, template, wizard, use_default, services, rekuest_server, port, ssl_port, backend) -> None:
     """Initialize a full hub+coordinator configuration."""
-    from arkitekt_next.server.config import ArkitektServerConfig
-    from arkitekt_next.server.templates import apply_template
-    from arkitekt_next.server.wizard import prompt_config
+    from arkitekt_next.server.deployments import DEPLOYMENTS
 
+    spec = DEPLOYMENTS["hubinator"]
     console = get_console(ctx)
     target = resolve_path(ctx, path)
 
-    config = prompt_config(console) if (wizard and not use_default) else ArkitektServerConfig()
+    config = select_config(spec, console, wizard=wizard, template=template, use_default=use_default)
 
     if services:
         set_enabled_services(config, services)
@@ -71,34 +72,17 @@ def init(ctx, path, template, wizard, use_default, services, rekuest_server, por
     config.rekuest_server = rekuest_server
     config.rekuest.enabled = rekuest_server == "local"
 
-    config = apply_template(config, template)
-
     console.print(
         f"Creating [bold]hubinator[/bold] ({template}) full stack (hub + coordinator) "
         f"at [cyan]{target}[/cyan]..."
     )
-    write_profile(
-        ctx,
-        target,
-        config,
-        filename=HUBINATOR_CONFIG_FILENAME,
-        kind="hubinator",
-        backend=backend,
-    )
+    finalize(ctx, target, config, spec, template=template, backend=backend)
 
 
-@hubinator.command()
-@click.argument("path", required=False)
-@click.pass_context
-def up(ctx, path) -> None:
-    """Compose the full stack (services + coordinator + auth) and run `docker compose up`."""
-    from arkitekt_next.server.config import ArkitektServerConfig
-    from arkitekt_next.server.diff import write_virtual_config_files
-
-    compose_and_up(
-        ctx,
-        resolve_path(ctx, path),
-        filename=HUBINATOR_CONFIG_FILENAME,
-        model_cls=ArkitektServerConfig,
-        generator=write_virtual_config_files,
-    )
+hubinator.add_command(
+    make_up_command(
+        "hubinator",
+        help="Compose the full stack (services + coordinator + auth) and run `docker compose up`.",
+    ),
+    "up",
+)

@@ -3,10 +3,10 @@ import rich_click as click
 from arkitekt_next.cli.docs import ENGINE_DOCS, help_epilog
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import (
-    ENGINE_CONFIG_FILENAME,
-    compose_and_up,
+    finalize,
+    make_up_command,
+    require_server_deps,
     resolve_path,
-    write_profile,
 )
 
 
@@ -20,6 +20,7 @@ def engine(ctx) -> None:
     containers on its behalf. Only the `hubinator` bundles a deployer inline;
     everywhere else you run an engine. Use `engine init` then `engine up`.
     """
+    require_server_deps()
 
 
 @engine.command()
@@ -34,10 +35,13 @@ def engine(ctx) -> None:
 def init(ctx, path, url, redeem_token, network, organization, instance_id, backend) -> None:
     """Initialize a standalone engine (deployer) configuration."""
     from arkitekt_next.server.config import EngineConfig
+    from arkitekt_next.server.deployments import DEPLOYMENTS
 
+    spec = DEPLOYMENTS["engine"]
     console = get_console(ctx)
     target = resolve_path(ctx, path)
 
+    # Engine has no wizard or templates -- build the default config and apply options.
     config = EngineConfig()
     if url is not None:
         config.url = url
@@ -54,23 +58,10 @@ def init(ctx, path, url, redeem_token, network, organization, instance_id, backe
         f"Creating [bold]engine[/bold] (deployer) connecting to [cyan]{config.url}[/cyan] "
         f"at [cyan]{target}[/cyan]..."
     )
-    write_profile(
-        ctx, target, config, filename=ENGINE_CONFIG_FILENAME, kind="engine", backend=backend
-    )
+    finalize(ctx, target, config, spec, template=None, backend=backend)
 
 
-@engine.command()
-@click.argument("path", required=False)
-@click.pass_context
-def up(ctx, path) -> None:
-    """Compose the engine (deployer) and run `docker compose up`."""
-    from arkitekt_next.server.config import EngineConfig
-    from arkitekt_next.server.diff import write_engine_files
-
-    compose_and_up(
-        ctx,
-        resolve_path(ctx, path),
-        filename=ENGINE_CONFIG_FILENAME,
-        model_cls=EngineConfig,
-        generator=write_engine_files,
-    )
+engine.add_command(
+    make_up_command("engine", help="Compose the engine (deployer) and run `docker compose up`."),
+    "up",
+)

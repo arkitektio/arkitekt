@@ -3,11 +3,12 @@ import rich_click as click
 from arkitekt_next.cli.docs import HUB_DOCS, help_epilog
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import (
-    HUB_CONFIG_FILENAME,
-    compose_and_up,
+    finalize,
+    make_up_command,
+    require_server_deps,
     resolve_path,
+    select_config,
     set_enabled_services,
-    write_profile,
 )
 from arkitekt_next.cli.commands.hub.connect import connect
 
@@ -24,6 +25,7 @@ def hub(ctx) -> None:
     register the hub's services with an organization. If you also want to run the
     coordinator locally, use `hubinator` instead.
     """
+    require_server_deps()
 
 
 @hub.command()
@@ -63,16 +65,13 @@ def init(ctx, path, template, wizard, use_default, services, coord_server, rekue
     A hub never asks about organizations or users -- only about the local
     servers/services. Explicit options override the wizard/template defaults.
     """
-    from arkitekt_next.server.config import HubConfig
-    from arkitekt_next.server.templates import apply_template
-    from arkitekt_next.server.wizard import prompt_hub_config
+    from arkitekt_next.server.deployments import DEPLOYMENTS
 
+    spec = DEPLOYMENTS["hub"]
     console = get_console(ctx)
     target = resolve_path(ctx, path)
 
-    # No template chosen -> interactive wizard, unless --default accepts the defaults.
-    run_wizard = (wizard or template is None) and not use_default
-    config = prompt_hub_config(console) if run_wizard else HubConfig()
+    config = select_config(spec, console, wizard=wizard, template=template, use_default=use_default)
 
     # Explicit CLI options override wizard/template defaults (only when provided).
     if services:
@@ -87,33 +86,15 @@ def init(ctx, path, template, wizard, use_default, services, coord_server, rekue
     if ssl_port is not None:
         config.gateway.exposed_https_port = ssl_port
 
-    if template is not None:
-        config = apply_template(config, template)
-
     console.print(
         f"Creating [bold]hub[/bold] ({template or 'wizard'}) trusting coordinator "
         f"[cyan]{config.coord_server}[/cyan] at [cyan]{target}[/cyan]..."
     )
-    write_profile(
-        ctx, target, config, filename=HUB_CONFIG_FILENAME, kind="hub", backend=backend
-    )
+    finalize(ctx, target, config, spec, template=template, backend=backend)
 
 
-@hub.command()
-@click.argument("path", required=False)
-@click.pass_context
-def up(ctx, path) -> None:
-    """Compose the hub (services + auth wiring) and run `docker compose up`."""
-    from arkitekt_next.server.config import HubConfig
-    from arkitekt_next.server.diff import write_hub_files
-
-    compose_and_up(
-        ctx,
-        resolve_path(ctx, path),
-        filename=HUB_CONFIG_FILENAME,
-        model_cls=HubConfig,
-        generator=write_hub_files,
-    )
-
-
+hub.add_command(
+    make_up_command("hub", help="Compose the hub (services + auth wiring) and run `docker compose up`."),
+    "up",
+)
 hub.add_command(connect, "connect")
