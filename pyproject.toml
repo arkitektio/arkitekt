@@ -8,7 +8,6 @@ readme = "README.md"
 license = "MIT"
 dependencies = [
     "fakts-next>=4.1.0",
-    "dokker>=2.6.0",
     "koil>=3.3.2",
     "rath>=3.12.0",
     "click>=8.2.0",
@@ -20,19 +19,26 @@ dependencies = [
     "turms>=1.0.1",
     "platformdirs>=4.5.0",
     "py-machineid>=0.8.1",
-    # Server deployment stack (migrated from the arkitekt-server package): used by
-    # the `hub`, `coord` and `hubinator` CLI groups to generate docker-compose
-    # deployments. See arkitekt_next/server/.
+    # Used eagerly by the base CLI (config/manifest/plugin IO), so it stays core.
+    # The rest of the former "server deployment stack" now lives in the `server`
+    # optional extra (see below).
     "pyyaml>=6.0.2",
-    "python-slugify>=8.0.4",
-    "cryptography>=45.0.5",
-    "inquirer>=3.4.0",
-    "ifaddr>=0.2.0",
 ]
 
 [project.optional-dependencies]
 cli = [
     "turms>=1.0.1",
+]
+# Server deployment stack (migrated from the arkitekt-server package): used by the
+# `hub`, `coord`, `hubinator` and `engine` CLI groups to generate docker-compose
+# deployments. Every dep here is lazy-imported inside those command callbacks, so
+# the base client/CLI works without it. See arkitekt_next/server/.
+server = [
+    "cryptography>=45.0.5",
+    "inquirer>=3.4.0",
+    "ifaddr>=0.2.0",
+    "python-slugify>=8.0.4",
+    "dokker>=2.6.0",
 ]
 alpaka = [
     "alpaka>=1.0.0",
@@ -62,17 +68,14 @@ unlok = [
     "unlok-next>=1.3.1",
 ]
 all = [
+    # Self-referential extras keep `all` complete without duplicating (and drifting)
+    # version pins. Bundles every service client plus the `cli` (turms) and `server`
+    # stacks.
+    "arkitekt-next[cli,server,mikro,kabinet,elektro,fluss,reaktion,unlok]",
     "rich-click>=1.6.1",
     "watchfiles>=0.18.1",
-    "turms>=1.0.1",
     "semver>=3.0.1",
-    "reaktion-next>=0.4.1",
     "rekuest-next>=2.1.0",
-    "mikro-next>=2.1.0",
-    "kabinet>=1.0.3",
-    "fluss-next>=1.0.0",
-    "elektro>=2.0.0",
-    "unlok-next>=1.3.1",
 ]
 extended = [
     "kraph>=0.5.1",
