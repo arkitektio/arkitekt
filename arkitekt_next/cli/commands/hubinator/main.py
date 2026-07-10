@@ -1,6 +1,7 @@
-import rich_click as click
+from typing import Annotated, List, Optional
 
-from arkitekt_next.cli.docs import HUBINATOR_DOCS, help_epilog
+import typer
+
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import (
     finalize,
@@ -11,42 +12,60 @@ from arkitekt_next.cli.commands._server_common import (
     set_enabled_services,
 )
 
-
-@click.group(epilog=help_epilog(HUBINATOR_DOCS))
-@click.pass_context
-def hubinator(ctx) -> None:
-    """Run the full stack: a hub AND a local coordinator in one deployment.
+hubinator = typer.Typer(
+    no_args_is_help=True,
+    help="""Run the full stack: a hub AND a local coordinator in one deployment.
 
     A hubinator is a self-contained Arkitekt instance -- the data/compute
     services plus a local Lok coordinator (with Kontrol frontend) and, optionally,
     a deployer. This is the all-in-one deployment the standalone arkitekt-server
     tool produced by default. Use `hubinator init` then `hubinator up`.
-    """
+    """,
+)
+
+
+@hubinator.callback()
+def _root(ctx: typer.Context) -> None:
     require_server_deps()
 
 
-@hubinator.command()
-@click.argument("path", required=False)
-@click.option("--template", "-t", default="default", help="Config template (stable, dev, default, minimal).")
-@click.option("--wizard", "-w", is_flag=True, help="Run the interactive configuration wizard.")
-@click.option("--default", "-d", "use_default", is_flag=True, help="Accept all defaults (skip the wizard, no prompts).")
-@click.option(
-    "--service",
-    "-s",
-    "services",
-    multiple=True,
-    help="Enable exactly these services (repeatable). Defaults to the template's selection.",
-)
-@click.option(
-    "--rekuest-server",
-    default="local",
-    help="Rekuest (provenance) server host ('local' runs rekuest as a core dependency).",
-)
-@click.option("--port", type=int, default=None, help="Exposed HTTP port.")
-@click.option("--ssl-port", type=int, default=None, help="Exposed HTTPS port.")
-@click.option("--backend", default="docker", help="Deployment backend (docker, podman, kubernetes).")
-@click.pass_context
-def init(ctx, path, template, wizard, use_default, services, rekuest_server, port, ssl_port, backend) -> None:
+def init(
+    ctx: typer.Context,
+    path: Annotated[Optional[str], typer.Argument()] = None,
+    template: Annotated[
+        str,
+        typer.Option("--template", "-t", help="Config template (stable, dev, default, minimal)."),
+    ] = "default",
+    wizard: Annotated[
+        bool,
+        typer.Option("--wizard", "-w", help="Run the interactive configuration wizard."),
+    ] = False,
+    use_default: Annotated[
+        bool,
+        typer.Option("--default", "-d", help="Accept all defaults (skip the wizard, no prompts)."),
+    ] = False,
+    services: Annotated[
+        List[str],
+        typer.Option(
+            "--service",
+            "-s",
+            help="Enable exactly these services (repeatable). Defaults to the template's selection.",
+        ),
+    ] = [],
+    rekuest_server: Annotated[
+        str,
+        typer.Option(
+            "--rekuest-server",
+            help="Rekuest (provenance) server host ('local' runs rekuest as a core dependency).",
+        ),
+    ] = "local",
+    port: Annotated[Optional[int], typer.Option("--port", help="Exposed HTTP port.")] = None,
+    ssl_port: Annotated[Optional[int], typer.Option("--ssl-port", help="Exposed HTTPS port.")] = None,
+    backend: Annotated[
+        str,
+        typer.Option("--backend", help="Deployment backend (docker, podman, kubernetes)."),
+    ] = "docker",
+) -> None:
     """Initialize a full hub+coordinator configuration."""
     from arkitekt_next.server.deployments import DEPLOYMENTS
 
@@ -79,10 +98,5 @@ def init(ctx, path, template, wizard, use_default, services, rekuest_server, por
     finalize(ctx, target, config, spec, template=template, backend=backend)
 
 
-hubinator.add_command(
-    make_up_command(
-        "hubinator",
-        help="Compose the full stack (services + coordinator + auth) and run `docker compose up`.",
-    ),
-    "up",
-)
+hubinator.command("init")(init)
+hubinator.command("up")(make_up_command("hubinator"))

@@ -1,11 +1,11 @@
 import asyncio
+from typing import Annotated
 from pydantic import BaseModel
-import rich_click as click
+import typer
 from importlib import import_module
 from arkitekt_next.app.app import App
 from arkitekt_next.cli.commands.app.run.utils import import_builder
 from arkitekt_next.cli.vars import get_console, get_manifest
-from arkitekt_next.cli.options import with_builder
 import json
 import os
 
@@ -13,28 +13,16 @@ from arkitekt_next.constants import DEFAULT_ARKITEKT_URL
 from rekuest_next.app import get_default_app_registry
 
 
-@click.command("prod")
-@click.pass_context
-@click.option(
-    "--pretty",
-    "-p",
-    help="Should we just output json?",
-    is_flag=True,
-    default=False,
-)
-@click.option(
-    "--machine-readable",
-    "-mr",
-    help="Should we just output json?",
-    is_flag=True,
-    default=False,
-)
 def implementations(
-    ctx,
-    pretty: bool,
-    machine_readable: bool,
-    builder: str = "arkitekt_next.builders.easy",
-    url: str = DEFAULT_ARKITEKT_URL,
+    ctx: typer.Context,
+    pretty: Annotated[
+        bool,
+        typer.Option("--pretty", "-p", help="Should we just output json?"),
+    ] = False,
+    machine_readable: Annotated[
+        bool,
+        typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
+    ] = False,
 ):
     """Runs the app in production mode
 
@@ -42,6 +30,8 @@ def implementations(
     You can specify the builder to use with the --builder flag. By default, the easy builder is used, which is designed to be easy to use and to get started with.
 
     """
+    builder: str = "arkitekt_next.builders.easy"
+    url: str = DEFAULT_ARKITEKT_URL
 
     manifest = get_manifest(ctx)
     console = get_console(ctx)

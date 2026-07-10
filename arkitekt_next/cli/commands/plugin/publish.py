@@ -1,16 +1,14 @@
-import rich_click as click
+from typing import Annotated, Optional
+import typer
 import subprocess
-from .utils import search_username_in_docker_info
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.interactive import require_interactive
 from arkitekt_next.cli.vars import get_console
-from .types import Build
 from rich.panel import Panel
-from .io import get_builds, get_deployments, generate_deployment
-from click import Context
 import uuid
 
 
-def check_if_build_already_deployed(build: Build) -> None:
+def check_if_build_already_deployed(build: "Build") -> None:
     """Checks if a manifest has already been deployed. If it has, it raises a click.ClickException.
 
     Parameters
@@ -23,6 +21,8 @@ def check_if_build_already_deployed(build: Build) -> None:
     click.ClickException
         A click exception if the manifest has already been deployed
     """
+    from .io import get_deployments
+
     config = get_deployments()
     for deployment in config.app_images:
         if (
@@ -30,18 +30,26 @@ def check_if_build_already_deployed(build: Build) -> None:
             and deployment.manifest.version == build.manifest.version
             and deployment.flavour_name == build.flavour
         ):
-            raise click.ClickException(
+            cli_error(
                 f"Deployment of {build.manifest.identifier}/{build.manifest.version} in the {build.flavour} flavour already exists."
                 + " You cannot deploy a build twice for the same version and flavour"
             )
 
 
-@click.command()
-@click.option("--build", help="The build run to use", type=str, default=None)
-@click.option("--tag", help="The tag to use")
-@click.pass_context
-def publish(ctx: Context, build: str, tag: str) -> None:
+def publish(
+    ctx: typer.Context,
+    build: Annotated[
+        Optional[str],
+        typer.Option("--build", help="The build run to use"),
+    ] = None,
+    tag: Annotated[
+        Optional[str],
+        typer.Option("--tag", help="The tag to use"),
+    ] = None,
+) -> None:
     """Deploys aa previous build to dockerhub"""
+    from .utils import search_username_in_docker_info
+    from .io import get_builds, generate_deployment
 
     console = get_console(ctx)
 
@@ -50,7 +58,7 @@ def publish(ctx: Context, build: str, tag: str) -> None:
     builds = get_builds(selected_run=build)
 
     if len(builds) == 0:
-        raise click.ClickException("Could not find any builds")
+        cli_error("Could not find any builds")
 
     docker_info = subprocess.check_output(["docker", "info"]).decode("utf-8")
     username = search_username_in_docker_info(docker_info)
@@ -59,13 +67,13 @@ def publish(ctx: Context, build: str, tag: str) -> None:
             "Providing a docker username",
             hint="Log in to docker (so `docker info` reports a username) to run non-interactively.",
         )
-        username = click.prompt(
+        username = typer.prompt(
             "Could not find username in docker info. Please provide your docker username"
         )
 
     for build_id, build_model in builds.items():
         if build_model.manifest.version == "dev":
-            raise click.ClickException(
+            cli_error(
                 "You cannot deploy a dev version. Please run `arkitekt_next version` first to set a version"
             )
 
@@ -76,7 +84,7 @@ def publish(ctx: Context, build: str, tag: str) -> None:
                 "Choosing a docker tag",
                 hint="Pass --tag to set the tag non-interactively.",
             )
-            tag = click.prompt(
+            tag = typer.prompt(
                 "The tag to use",
                 default=f"{username}/{build_model.manifest.identifier}:{build_model.manifest.version}-{build_model.flavour}",
             )
@@ -86,12 +94,12 @@ def publish(ctx: Context, build: str, tag: str) -> None:
 
         docker_run = subprocess.run(["docker", "tag", build_model.build_id, tag])
         if docker_run.returncode != 0:
-            raise click.ClickException("Could not retag docker container")
+            cli_error("Could not retag docker container")
 
         console.print(md)
         docker_run = subprocess.run(["docker", "push", tag])
         if docker_run.returncode != 0:
-            raise click.ClickException("Could not push docker container")
+            cli_error("Could not push docker container")
 
         generate_deployment(
             deployment_run,

@@ -1,6 +1,7 @@
-import rich_click as click
+from typing import Annotated, List, Optional
 
-from arkitekt_next.cli.docs import HUB_DOCS, help_epilog
+import typer
+
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import (
     finalize,
@@ -12,11 +13,9 @@ from arkitekt_next.cli.commands._server_common import (
 )
 from arkitekt_next.cli.commands.hub.connect import connect
 
-
-@click.group(epilog=help_epilog(HUB_DOCS))
-@click.pass_context
-def hub(ctx) -> None:
-    """Run a hub: a stack of Arkitekt services WITHOUT a local coordinator.
+hub = typer.Typer(
+    no_args_is_help=True,
+    help="""Run a hub: a stack of Arkitekt services WITHOUT a local coordinator.
 
     A hub bundles the data/compute services (rekuest, mikro, fluss, ...) and
     trusts an external coordination (auth) server for identity. It manages no
@@ -24,42 +23,63 @@ def hub(ctx) -> None:
     the config, `hub up` to compose and start the stack, and `hub connect` to
     register the hub's services with an organization. If you also want to run the
     coordinator locally, use `hubinator` instead.
-    """
+    """,
+)
+
+
+@hub.callback()
+def _root(ctx: typer.Context) -> None:
     require_server_deps()
 
 
-@hub.command()
-@click.argument("path", required=False)
-@click.option(
-    "--template",
-    "-t",
-    default=None,
-    help="Config template (stable, dev, default, minimal). If omitted, the interactive wizard runs instead.",
-)
-@click.option("--wizard", "-w", is_flag=True, help="Force the interactive configuration wizard.")
-@click.option("--default", "-d", "use_default", is_flag=True, help="Accept all defaults (skip the wizard, no prompts).")
-@click.option(
-    "--service",
-    "-s",
-    "services",
-    multiple=True,
-    help="Enable exactly these services (repeatable). Defaults to the template's selection.",
-)
-@click.option(
-    "--coord-server",
-    default=None,
-    help="External coordination (auth) server whose JWKS the services trust.",
-)
-@click.option(
-    "--rekuest-server",
-    default=None,
-    help="Rekuest (provenance) server host ('local' runs rekuest as a core dependency).",
-)
-@click.option("--port", type=int, default=None, help="Exposed HTTP port.")
-@click.option("--ssl-port", type=int, default=None, help="Exposed HTTPS port.")
-@click.option("--backend", default="docker", help="Deployment backend (docker, podman, kubernetes).")
-@click.pass_context
-def init(ctx, path, template, wizard, use_default, services, coord_server, rekuest_server, port, ssl_port, backend) -> None:
+def init(
+    ctx: typer.Context,
+    path: Annotated[Optional[str], typer.Argument()] = None,
+    template: Annotated[
+        Optional[str],
+        typer.Option(
+            "--template",
+            "-t",
+            help="Config template (stable, dev, default, minimal). If omitted, the interactive wizard runs instead.",
+        ),
+    ] = None,
+    wizard: Annotated[
+        bool,
+        typer.Option("--wizard", "-w", help="Force the interactive configuration wizard."),
+    ] = False,
+    use_default: Annotated[
+        bool,
+        typer.Option("--default", "-d", help="Accept all defaults (skip the wizard, no prompts)."),
+    ] = False,
+    services: Annotated[
+        List[str],
+        typer.Option(
+            "--service",
+            "-s",
+            help="Enable exactly these services (repeatable). Defaults to the template's selection.",
+        ),
+    ] = [],
+    coord_server: Annotated[
+        Optional[str],
+        typer.Option(
+            "--coord-server",
+            help="External coordination (auth) server whose JWKS the services trust.",
+        ),
+    ] = None,
+    rekuest_server: Annotated[
+        Optional[str],
+        typer.Option(
+            "--rekuest-server",
+            help="Rekuest (provenance) server host ('local' runs rekuest as a core dependency).",
+        ),
+    ] = None,
+    port: Annotated[Optional[int], typer.Option("--port", help="Exposed HTTP port.")] = None,
+    ssl_port: Annotated[Optional[int], typer.Option("--ssl-port", help="Exposed HTTPS port.")] = None,
+    backend: Annotated[
+        str,
+        typer.Option("--backend", help="Deployment backend (docker, podman, kubernetes)."),
+    ] = "docker",
+) -> None:
     """Initialize a hub configuration (services, no local coordinator).
 
     A hub never asks about organizations or users -- only about the local
@@ -93,8 +113,6 @@ def init(ctx, path, template, wizard, use_default, services, coord_server, rekue
     finalize(ctx, target, config, spec, template=template, backend=backend)
 
 
-hub.add_command(
-    make_up_command("hub", help="Compose the hub (services + auth wiring) and run `docker compose up`."),
-    "up",
-)
-hub.add_command(connect, "connect")
+hub.command("init")(init)
+hub.command("up")(make_up_command("hub"))
+hub.command("connect")(connect)

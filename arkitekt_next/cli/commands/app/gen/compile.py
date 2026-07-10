@@ -1,18 +1,20 @@
-import rich_click as click
-import os
+from typing import List, Optional
+
+import typer
+
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.vars import get_work_dir
 
 
-@click.command()
-@click.argument("projects", default=None, required=False, nargs=-1)
-@click.option(
-    "--config",
-    help="The config to use",
-    type=click.Path(exists=True),
-    default=None,
-)
-@click.pass_context
-def compile(ctx, projects, config: click.Path):
+def compile(
+    ctx: typer.Context,
+    projects: Optional[List[str]] = typer.Argument(None),
+    config: Optional[str] = typer.Option(
+        None,
+        "--config",
+        help="The config to use",
+    ),
+) -> None:
     """Genererate the code of a project"
 
     Uses a previously generated graphql-config.yaml file to generate the code for a or multiple projects.
@@ -27,7 +29,7 @@ def compile(ctx, projects, config: click.Path):
 
     config = config or scan_folder_for_single_config(app_directory)
     if not config:
-        raise click.ClickException(
+        cli_error(
             f"No config file found. Please run `arkitekt_next gen init` in {app_directory} to create a default config file or specify a config file with the --config flag"
         )
 
@@ -38,7 +40,7 @@ def compile(ctx, projects, config: click.Path):
         }
 
     if not parsing_projects:
-        raise click.ClickException(
+        cli_error(
             f"No projects found with the name '{projects}'. Available Projects: {', '.join(parsing_projects.keys())}"
         )
 

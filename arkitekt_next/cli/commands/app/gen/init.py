@@ -1,34 +1,76 @@
 from importlib import import_module
 import os
 import shutil
-from click import ClickException
-import rich_click as click
-from arkitekt_next.cli.options import (
-    with_documents,
-    with_graphql_config,
-    with_api_path,
-    with_boring,
-    with_choose_services,
-    with_schemas,
-    with_seperate_document_dirs,
-)
+from typing import Annotated, List, Optional
+
+import click
+import typer
 import yaml
+
+from arkitekt_next.cli.constants import compile_services
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.interactive import require_interactive
+from arkitekt_next.cli.ui import construct_codegen_welcome_panel
 from arkitekt_next.cli.utils import build_relative_dir
 from arkitekt_next.cli.vars import get_console, get_manifest, get_work_dir
 from arkitekt_next.service_registry import get_default_service_registry
 
 
-@click.command()
-@with_seperate_document_dirs
-@with_boring
-@with_choose_services
-@with_graphql_config
-@with_api_path
-@with_schemas
-@with_documents
-@click.pass_context
-def init(ctx, boring, services, config, documents, schemas, path, seperate_doc_dirs):
+def check_services(value: List[str]) -> List[str]:
+    """Validate the chosen services against the dynamically compiled service list."""
+    available = compile_services()
+    for service in value:
+        if service not in available:
+            raise typer.BadParameter(
+                f"{service!r} is not one of {', '.join(available)}."
+            )
+    return value
+
+
+def init(
+    ctx: typer.Context,
+    boring: Annotated[
+        bool,
+        typer.Option("--boring", help="Should we skip the welcome message?"),
+    ] = False,
+    services: Annotated[
+        List[str],
+        typer.Option(
+            "--services",
+            "-s",
+            help="The services to create the codegen for",
+            callback=check_services,
+        ),
+    ] = [],
+    config: Annotated[
+        str,
+        typer.Option("--config", "-c", help="The name of the configuration file"),
+    ] = "graphql.config.yaml",
+    documents: Annotated[
+        bool,
+        typer.Option("--documents", "-d", help="With documents"),
+    ] = True,
+    schemas: Annotated[
+        bool,
+        typer.Option("--schemas", help="Should we copy the schemas"),
+    ] = True,
+    path: Annotated[
+        Optional[str],
+        typer.Option(
+            "--path",
+            "-p",
+            help="The path of the api to be generated (default: api). Prompted if omitted.",
+        ),
+    ] = None,
+    seperate_doc_dirs: Annotated[
+        bool,
+        typer.Option(
+            "--seperate-doc-dirs",
+            "-sd",
+            help="Should we generate seperate dirs for the documents?",
+        ),
+    ] = False,
+) -> None:
     """Initialize code generation for the arkitekt_next app
 
     Code generation for API's is done with the help of GraphQL Code Generation
@@ -38,9 +80,14 @@ def init(ctx, boring, services, config, documents, schemas, path, seperate_doc_d
     generate the code.
 
     """
-    manifest = get_manifest(ctx)
     console = get_console(ctx)
-    
+
+    # Welcome panel side-effect (previously the --boring option callback).
+    if not boring:
+        console.print(construct_codegen_welcome_panel())
+
+    manifest = get_manifest(ctx)
+
     entrypoint = manifest.entrypoint
 
     with console.status("Loading entrypoint module..."):
@@ -50,18 +97,18 @@ def init(ctx, boring, services, config, documents, schemas, path, seperate_doc_d
             console.print(f"Could not find entrypoint module {entrypoint}")
             raise e
 
-    
-    
+
+
     app_directory = get_work_dir(ctx)
 
     # --path is prompted only when omitted; guard so a non-TTY run never blocks
-    # on click's option prompt (default is used as the prompt pre-fill).
+    # on the option prompt (default is used as the prompt pre-fill).
     if path is None:
         require_interactive(
             "Choosing the api output path",
             hint="Pass --path to set it non-interactively (default: api).",
         )
-        path = click.prompt(
+        path = typer.prompt(
             "Where should we generate the api? (relative to the current directory)",
             default="api",
         )
@@ -105,12 +152,12 @@ def init(ctx, boring, services, config, documents, schemas, path, seperate_doc_d
             "`app gen init`",
             hint="Remove or move the existing GraphQL config to run non-interactively.",
         )
-        if click.confirm(
+        if typer.confirm(
             f"GraphQL Config file already exists. Do you want to merge your choices?"
         ):
             file = yaml.load(open(config, "r"), Loader=yaml.FullLoader)
             projects = file.get("projects", {})
-            click.echo(
+            typer.echo(
                 f"Merging {','.join(chosen_services.keys())} in {','.join(projects.keys())}..."
             )
 
@@ -131,7 +178,7 @@ def init(ctx, boring, services, config, documents, schemas, path, seperate_doc_d
                     "`app gen init`",
                     hint="Remove the existing project to run non-interactively.",
                 )
-                if not click.confirm("Do you want to overwrite it?"):
+                if not typer.confirm("Do you want to overwrite it?"):
                     continue
 
             has_done_something = True
@@ -169,9 +216,9 @@ def init(ctx, boring, services, config, documents, schemas, path, seperate_doc_d
             projects[key] = project
 
         except Exception as e:
-            raise ClickException(
+            cli_error(
                 f"Failed to initialize project for {key}. Error: {e}"
-            ) from e
+            )
 
     if has_done_something:
         graph_config_path = os.path.join(app_directory, config)

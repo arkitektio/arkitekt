@@ -1,45 +1,68 @@
-import rich_click as click
+from typing import Annotated, Optional
+import typer
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.interactive import require_interactive
 from arkitekt_next.cli.vars import get_work_dir
 from arkitekt_next.utils import create_arkitekt_next_folder
 import os
-import yaml
-from .types import Flavour
-from kabinet.api.schema import SelectorInput
 
 
-@click.group()
-def selector():
-    """Manage selectors"""
-    pass
+selector = typer.Typer(no_args_is_help=True, help="Manage selectors")
 
 
-@selector.command(name="add")
-@click.argument("flavour")
-@click.option("--kind", "-k", help="The kind of selector", default=None)
-@click.option("--api-version", "-av", help="The api version of the selector", default=None)
-@click.option("--api-thing", "-at", help="The api thing of the selector", default=None)
-@click.option("--one-api-version", "-oav", help="The one api version of the selector", default=None)
-@click.option("--cuda-cores", "-cc", help="The cuda cores of the selector", default=None, type=int)
-@click.option("--frequency", "-fr", help="The frequency of the selector", default=None, type=int)
-@click.option("--memory", "-m", help="The memory of the selector", default=None, type=int)
-@click.pass_context
-def add_selector(ctx, flavour, kind, api_version, api_thing, one_api_version, cuda_cores, frequency, memory):
+def add_selector(
+    ctx: typer.Context,
+    flavour: Annotated[str, typer.Argument()],
+    kind: Annotated[
+        Optional[str],
+        typer.Option("--kind", "-k", help="The kind of selector"),
+    ] = None,
+    api_version: Annotated[
+        Optional[str],
+        typer.Option("--api-version", "-av", help="The api version of the selector"),
+    ] = None,
+    api_thing: Annotated[
+        Optional[str],
+        typer.Option("--api-thing", "-at", help="The api thing of the selector"),
+    ] = None,
+    one_api_version: Annotated[
+        Optional[str],
+        typer.Option(
+            "--one-api-version", "-oav", help="The one api version of the selector"
+        ),
+    ] = None,
+    cuda_cores: Annotated[
+        Optional[int],
+        typer.Option("--cuda-cores", "-cc", help="The cuda cores of the selector"),
+    ] = None,
+    frequency: Annotated[
+        Optional[int],
+        typer.Option("--frequency", "-fr", help="The frequency of the selector"),
+    ] = None,
+    memory: Annotated[
+        Optional[int],
+        typer.Option("--memory", "-m", help="The memory of the selector"),
+    ] = None,
+) -> None:
     """Add a new selector to a flavour."""
+    import yaml
+    from kabinet.api.schema import SelectorInput
+    from .types import Flavour
+
     work_dir = get_work_dir(ctx)
     arkitekt_next_folder = create_arkitekt_next_folder(base_dir=work_dir)
     flavour_folder = os.path.join(arkitekt_next_folder, "flavours", flavour)
     config_file = os.path.join(flavour_folder, "config.yaml")
 
     if not os.path.exists(config_file):
-        raise click.ClickException(f"Flavour {flavour} does not exist")
+        cli_error(f"Flavour {flavour} does not exist")
 
     if kind is None:
         require_interactive(
             "Choosing a selector kind",
             hint="Pass --kind to set it non-interactively.",
         )
-        kind = click.prompt("The kind of selector")
+        kind = typer.prompt("The kind of selector")
 
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
@@ -61,4 +84,7 @@ def add_selector(ctx, flavour, kind, api_version, api_thing, one_api_version, cu
     with open(config_file, "w") as f:
         yaml.dump(fl.model_dump(), f)
 
-    click.echo(f"Added selector {new_selector} to flavour {flavour}")
+    typer.echo(f"Added selector {new_selector} to flavour {flavour}")
+
+
+selector.command("add")(add_selector)

@@ -1,15 +1,14 @@
 """The ``arkitekt-next plugin init`` command: scaffold a plugin flavour."""
 
 from importlib.metadata import version
+from typing import Annotated, Optional
 from arkitekt_next.cli.constants import compile_dockerfiles
-from arkitekt_next.cli.commands.plugin.types import Flavour
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.interactive import require_interactive
 from arkitekt_next.cli.utils import build_relative_dir
-import rich_click as click
-from click import Context
+import typer
 from arkitekt_next.cli.vars import get_console, get_manifest, get_work_dir
 from arkitekt_next.utils import create_arkitekt_next_folder, create_devcontainer_file
-import yaml
 from rich.panel import Panel
 
 try:
@@ -68,51 +67,60 @@ def _detect_template(work_dir: str, manifest_package_manager: str) -> str:
     return "vanilla"
 
 
-@click.command()
-@click.option("--flavour", "-f", help="The flavour to use", default="vanilla")
-@click.option(
-    "--description",
-    "-d",
-    help="The description for this flavour to use",
-    default="This is a vanilla flavour",
-)
-@click.option(
-    "--overwrite",
-    "-o",
-    help="Should we overwrite the existing Dockerfile?",
-    is_flag=True,
-    default=False,
-)
-@click.option(
-    "--template",
-    "-t",
-    help="The dockerfile template to use",
-    default=None,
-    type=click.Choice(compile_dockerfiles()),
-)
-@click.option(
-    "--devcontainer",
-    "-dc",
-    help="Shouwld we create a devcontainer.json file?",
-    is_flag=True,
-    default=False,
-)
-@click.option(
-    "--arkitekt-version",
-    "-av",
-    help="Which Arkitekt-version should we use to mount in the container?",
-    default=None,
-    type=str,
-)
-@click.pass_context
+def _validate_template(value: Optional[str]) -> Optional[str]:
+    """Validate ``--template`` against the dockerfile templates available at call time."""
+    if value is None:
+        return value
+    choices = compile_dockerfiles()
+    if value not in choices:
+        raise typer.BadParameter(
+            f"{value!r} is not one of {', '.join(choices)}."
+        )
+    return value
+
+
 def init(
-    ctx: Context,
-    description: str,
-    overwrite: bool,
-    flavour: str,
-    template: str,
-    devcontainer: bool,
-    arkitekt_version: str = None,
+    ctx: typer.Context,
+    flavour: Annotated[
+        str, typer.Option("--flavour", "-f", help="The flavour to use")
+    ] = "vanilla",
+    description: Annotated[
+        str,
+        typer.Option(
+            "--description", "-d", help="The description for this flavour to use"
+        ),
+    ] = "This is a vanilla flavour",
+    overwrite: Annotated[
+        bool,
+        typer.Option(
+            "--overwrite", "-o", help="Should we overwrite the existing Dockerfile?"
+        ),
+    ] = False,
+    template: Annotated[
+        Optional[str],
+        typer.Option(
+            "--template",
+            "-t",
+            help="The dockerfile template to use",
+            callback=_validate_template,
+        ),
+    ] = None,
+    devcontainer: Annotated[
+        bool,
+        typer.Option(
+            "--devcontainer",
+            "-dc",
+            help="Shouwld we create a devcontainer.json file?",
+        ),
+    ] = False,
+    arkitekt_version: Annotated[
+        Optional[str],
+        typer.Option(
+            "--arkitekt-version",
+            "-av",
+            help="Which Arkitekt-version should we use to mount in the container?",
+        ),
+    ] = None,
 ) -> None:
     """Initialize a plugin flavour for this app.
 
@@ -120,13 +128,15 @@ def init(
     ``.arkitekt_next/flavours/<flavour>`` so the app can be built and deployed as
     an Arkitekt plugin. Must be run inside an initialized app directory.
     """
+    import yaml
+    from arkitekt_next.cli.commands.plugin.types import Flavour
 
     work_dir = get_work_dir(ctx)
     arkitekt_next_folder = create_arkitekt_next_folder(base_dir=work_dir)
 
     flavour_folder = os.path.join(arkitekt_next_folder, "flavours", flavour)
     if os.path.exists(flavour_folder) and not overwrite:
-        raise click.ClickException(
+        cli_error(
             f"The flavour {flavour} does already exist. Please initialize a different flavour or use the --overwrite flag"
         )
     else:
@@ -150,7 +160,7 @@ def init(
         package_version = arkitekt_version or version("arkitekt_next")
         print(f"Detected Arkitekt Package version: {package_version}")
     except Exception:
-        raise click.ClickException(
+        cli_error(
             "Could not detect the Arkitekt package version (maybe you are running a dev version). Please provide it with the --arkitekt-version flag"
         )
 
@@ -174,7 +184,7 @@ def init(
             "Choosing whether to create a devcontainer.json",
             hint="Pass --devcontainer to create it non-interactively.",
         )
-    if devcontainer or click.confirm("Do you want to create a devcontainer.json file?"):
+    if devcontainer or typer.confirm("Do you want to create a devcontainer.json file?"):
         create_devcontainer_file(manifest, flavour, dockerfile)
 
     panel = Panel(

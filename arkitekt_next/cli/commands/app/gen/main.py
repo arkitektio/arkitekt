@@ -1,12 +1,18 @@
-import rich_click as click
+import importlib.util
+
+import typer
+
+from arkitekt_next.cli.errors import cli_error
 from .watch import watch
 from .compile import compile
 from .init import init
-from arkitekt_next.cli.docs import GEN_DOCS, help_epilog
 
 
-@click.group(epilog=help_epilog(GEN_DOCS))
-def gen():
+gen = typer.Typer(no_args_is_help=True)
+
+
+@gen.callback()
+def gen_callback(ctx: typer.Context) -> None:
     """Codegeneration tools for ArkitektNext Apps (requires turms)
 
     Code generation for API's is done with the help of GraphQL Code Generation
@@ -17,14 +23,12 @@ def gen():
     for development.
 
     """
-    try:
-        pass
-    except ImportError as e:
-        raise click.ClickException(
-            "Turms is not installed. Please install turms first before using the arkitekt_next codegen."
-        ) from e
+    if importlib.util.find_spec("turms") is None:
+        cli_error(
+            "Turms is not installed. Install it with: pip install 'arkitekt-next[cli]'"
+        )
 
 
-gen.add_command(watch, "watch")
-gen.add_command(compile, "compile")
-gen.add_command(init, "init")
+gen.command("watch")(watch)
+gen.command("compile")(compile)
+gen.command("init")(init)

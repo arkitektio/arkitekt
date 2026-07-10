@@ -1,7 +1,7 @@
 import contextvars
 import os
 from rich.console import Console
-import rich_click as click
+from .errors import cli_error
 from .types import Manifest
 
 
@@ -17,7 +17,7 @@ def get_console(ctx) -> Console:
     try:
         return ctx.obj["console"]
     except LookupError:
-        raise click.ClickException(
+        cli_error(
             "No Current Console. Probably you are not running this command from the CLI."
         )
 
@@ -31,7 +31,7 @@ def get_manifest(ctx) -> Manifest:
     try:
         return ctx.obj["manifest"]
     except LookupError:
-        raise click.ClickException(
+        cli_error(
             "No manifest found. You need to run the `arkitekt_next init` command first."
         )
 

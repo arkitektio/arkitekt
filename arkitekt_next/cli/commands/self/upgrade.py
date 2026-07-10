@@ -5,6 +5,7 @@ and upgrades the outdated ones using the project's package manager (``uv`` or
 ``pip``).
 """
 
+import enum
 import sys
 import json
 import shutil
@@ -12,12 +13,13 @@ import subprocess
 import urllib.error
 import urllib.request
 from importlib.metadata import version as installed_version, PackageNotFoundError
-from typing import List, Optional, Tuple
+from typing import Annotated, List, Optional, Tuple
 
-import rich_click as click
+import typer
 import semver
 from rich.table import Table
 
+from arkitekt_next.cli.errors import cli_error, confirm_or_abort
 from arkitekt_next.cli.interactive import require_interactive
 from arkitekt_next.cli.vars import get_console, get_work_dir
 from arkitekt_next.cli.commands.app.init.main import get_default_package_manager
@@ -26,7 +28,14 @@ from .constants import ARKITEKT_PACKAGES
 PYPI_JSON_URL = "https://pypi.org/pypi/{name}/json"
 
 
-def _resolve_package_manager(ctx, package_manager: Optional[str]) -> str:
+class PackageManager(str, enum.Enum):
+    """The package managers supported by ``self upgrade``."""
+
+    pip = "pip"
+    uv = "uv"
+
+
+def _resolve_package_manager(ctx, package_manager: Optional[PackageManager]) -> str:
     """Resolve which package manager to use.
 
     Explicit ``--package-manager`` wins, otherwise fall back to the loaded
@@ -34,7 +43,7 @@ def _resolve_package_manager(ctx, package_manager: Optional[str]) -> str:
     detect (``uv`` if available, else ``pip``).
     """
     if package_manager:
-        return package_manager
+        return package_manager.value
 
     manifest = ctx.obj.get("manifest") if ctx.obj else None
     if manifest is not None:
@@ -91,21 +100,20 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
     """
     if manager == "uv":
         if not shutil.which("uv"):
-            raise click.ClickException(
+            cli_error(
                 "uv is not installed. Please install uv or choose --package-manager pip."
             )
         if not yes:
             require_interactive("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
-            click.confirm(
+            confirm_or_abort(
                 "Upgrade ALL project dependencies with `uv sync --upgrade`?",
-                abort=True,
             )
         command = ["uv", "sync", "--upgrade"]
         console.print(f"Running: {' '.join(command)}", style="cyan")
         try:
             subprocess.run(command, check=True, cwd=get_work_dir(ctx))
         except subprocess.CalledProcessError as e:
-            raise click.ClickException(f"Failed to upgrade dependencies (exit code {e.returncode}).")
+            cli_error(f"Failed to upgrade dependencies (exit code {e.returncode}).")
         console.print("Successfully upgraded all project dependencies. 🚀", style="green")
         return
 
@@ -119,7 +127,7 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
         )
         outdated_names = [entry["name"] for entry in json.loads(proc.stdout or "[]")]
     except (subprocess.CalledProcessError, ValueError) as e:
-        raise click.ClickException(f"Could not determine outdated packages via pip: {e}")
+        cli_error(f"Could not determine outdated packages via pip: {e}")
 
     if not outdated_names:
         console.print("Everything is up to date. 🎉", style="green")
@@ -128,48 +136,51 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
     console.print(f"{len(outdated_names)} outdated package(s): {', '.join(outdated_names)}")
     if not yes:
         require_interactive("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
-        click.confirm(f"Upgrade all {len(outdated_names)} package(s) with pip?", abort=True)
+        confirm_or_abort(f"Upgrade all {len(outdated_names)} package(s) with pip?")
 
     command = [sys.executable, "-m", "pip", "install", "--upgrade", *outdated_names]
     console.print(f"Running: {' '.join(command)}", style="cyan")
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
-        raise click.ClickException(f"Failed to upgrade dependencies (exit code {e.returncode}).")
+        cli_error(f"Failed to upgrade dependencies (exit code {e.returncode}).")
     console.print("Successfully upgraded all project dependencies. 🚀", style="green")
 
 
-@click.command()
-@click.option(
-    "--package-manager",
-    "-pm",
-    type=click.Choice(["pip", "uv"]),
-    default=None,
-    help="The package manager to use for the upgrade. Defaults to the project manifest's package manager, or auto-detected (uv if available, else pip).",
-)
-@click.option(
-    "--all",
-    "-a",
-    "upgrade_all",
-    is_flag=True,
-    default=False,
-    help="Upgrade ALL dependencies of the current project, not just the Arkitekt ecosystem packages.",
-)
-@click.option(
-    "--yes",
-    "-y",
-    is_flag=True,
-    default=False,
-    help="Skip the confirmation prompt and upgrade immediately.",
-)
-@click.option(
-    "--pre",
-    is_flag=True,
-    default=False,
-    help="Allow upgrading to pre-release versions.",
-)
-@click.pass_context
-def upgrade(ctx, package_manager: Optional[str], upgrade_all: bool, yes: bool, pre: bool) -> None:
+def upgrade(
+    ctx: typer.Context,
+    package_manager: Annotated[
+        Optional[PackageManager],
+        typer.Option(
+            "--package-manager",
+            "-pm",
+            help="The package manager to use for the upgrade. Defaults to the project manifest's package manager, or auto-detected (uv if available, else pip).",
+        ),
+    ] = None,
+    upgrade_all: Annotated[
+        bool,
+        typer.Option(
+            "--all",
+            "-a",
+            help="Upgrade ALL dependencies of the current project, not just the Arkitekt ecosystem packages.",
+        ),
+    ] = False,
+    yes: Annotated[
+        bool,
+        typer.Option(
+            "--yes",
+            "-y",
+            help="Skip the confirmation prompt and upgrade immediately.",
+        ),
+    ] = False,
+    pre: Annotated[
+        bool,
+        typer.Option(
+            "--pre",
+            help="Allow upgrading to pre-release versions.",
+        ),
+    ] = False,
+) -> None:
     """Upgrade the installed Arkitekt SDK packages to their latest PyPI version.
 
     Checks [link=https://pypi.org]PyPI[/link] for the latest version of every
@@ -222,16 +233,15 @@ def upgrade(ctx, package_manager: Optional[str], upgrade_all: bool, yes: bool, p
 
     if not yes:
         require_interactive("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
-        click.confirm(
+        confirm_or_abort(
             f"Upgrade {len(outdated)} package(s) using {manager}?",
-            abort=True,
         )
 
     packages = [name for name, _, _ in outdated]
 
     if manager == "uv":
         if not shutil.which("uv"):
-            raise click.ClickException(
+            cli_error(
                 "uv is not installed. Please install uv or choose another package manager with --package-manager pip."
             )
         command = ["uv", "add", "--upgrade", *packages]
@@ -244,7 +254,7 @@ def upgrade(ctx, package_manager: Optional[str], upgrade_all: bool, yes: bool, p
     try:
         subprocess.run(command, check=True, cwd=cwd)
     except subprocess.CalledProcessError as e:
-        raise click.ClickException(
+        cli_error(
             f"Failed to upgrade packages (exit code {e.returncode})."
         )
 

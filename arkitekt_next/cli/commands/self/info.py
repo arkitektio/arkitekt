@@ -10,7 +10,7 @@ import shutil
 import sys
 from importlib.metadata import version as installed_version, PackageNotFoundError
 
-import rich_click as click
+import typer
 from rich.table import Table
 
 from arkitekt_next.cli.vars import get_console, get_work_dir
@@ -33,9 +33,7 @@ def _which_version(executable: str, args: list[str]) -> str:
         return path
 
 
-@click.command()
-@click.pass_context
-def info(ctx) -> None:
+def info(ctx: typer.Context) -> None:
     """Print environment diagnostics for the Arkitekt CLI.
 
     Shows the installed CLI version, the Python interpreter, the available

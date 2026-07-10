@@ -1,6 +1,7 @@
-import rich_click as click
+from typing import Annotated, Optional
 
-from arkitekt_next.cli.docs import COORD_DOCS, help_epilog
+import typer
+
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import (
     finalize,
@@ -10,35 +11,49 @@ from arkitekt_next.cli.commands._server_common import (
     select_config,
 )
 
-
-@click.group(epilog=help_epilog(COORD_DOCS))
-@click.pass_context
-def coord(ctx) -> None:
-    """Run a coordinator: the standalone Lok auth server + Kontrol frontend.
+coord = typer.Typer(
+    no_args_is_help=True,
+    help="""Run a coordinator: the standalone Lok auth server + Kontrol frontend.
 
     A coordinator issues identity (OIDC/JWKS via Lok) and serves the Kontrol web
     frontend that clients and hubs authenticate against. It runs no data/compute
     services and no deployer -- point one or more `hub`s at it via their
     `--coord-server`.
-    """
+    """,
+)
+
+
+@coord.callback()
+def _root(ctx: typer.Context) -> None:
     require_server_deps()
 
 
-@coord.command()
-@click.argument("path", required=False)
-@click.option(
-    "--template",
-    "-t",
-    default=None,
-    help="Config template (stable, dev, default, minimal). If omitted, the interactive wizard runs and asks whether to set up organizations.",
-)
-@click.option("--wizard", "-w", is_flag=True, help="Force the interactive configuration wizard.")
-@click.option("--default", "-d", "use_default", is_flag=True, help="Accept all defaults (skip the wizard, no prompts).")
-@click.option("--port", type=int, default=None, help="Exposed HTTP port.")
-@click.option("--ssl-port", type=int, default=None, help="Exposed HTTPS port.")
-@click.option("--backend", default="docker", help="Deployment backend (docker, podman, kubernetes).")
-@click.pass_context
-def init(ctx, path, template, wizard, use_default, port, ssl_port, backend) -> None:
+def init(
+    ctx: typer.Context,
+    path: Annotated[Optional[str], typer.Argument()] = None,
+    template: Annotated[
+        Optional[str],
+        typer.Option(
+            "--template",
+            "-t",
+            help="Config template (stable, dev, default, minimal). If omitted, the interactive wizard runs and asks whether to set up organizations.",
+        ),
+    ] = None,
+    wizard: Annotated[
+        bool,
+        typer.Option("--wizard", "-w", help="Force the interactive configuration wizard."),
+    ] = False,
+    use_default: Annotated[
+        bool,
+        typer.Option("--default", "-d", help="Accept all defaults (skip the wizard, no prompts)."),
+    ] = False,
+    port: Annotated[Optional[int], typer.Option("--port", help="Exposed HTTP port.")] = None,
+    ssl_port: Annotated[Optional[int], typer.Option("--ssl-port", help="Exposed HTTPS port.")] = None,
+    backend: Annotated[
+        str,
+        typer.Option("--backend", help="Deployment backend (docker, podman, kubernetes)."),
+    ] = "docker",
+) -> None:
     """Initialize a coordinator configuration (Lok + Kontrol only).
 
     With no `--template`, the interactive wizard runs and asks whether to set up
@@ -65,7 +80,5 @@ def init(ctx, path, template, wizard, use_default, port, ssl_port, backend) -> N
     finalize(ctx, target, config, spec, template=template, backend=backend)
 
 
-coord.add_command(
-    make_up_command("coord", help="Compose the coordinator (Lok + auth wiring) and run `docker compose up`."),
-    "up",
-)
+coord.command("init")(init)
+coord.command("up")(make_up_command("coord"))

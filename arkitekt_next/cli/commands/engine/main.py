@@ -1,6 +1,7 @@
-import rich_click as click
+from typing import Annotated, Optional
 
-from arkitekt_next.cli.docs import ENGINE_DOCS, help_epilog
+import typer
+
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import (
     finalize,
@@ -9,30 +10,51 @@ from arkitekt_next.cli.commands._server_common import (
     resolve_path,
 )
 
-
-@click.group(epilog=help_epilog(ENGINE_DOCS))
-@click.pass_context
-def engine(ctx) -> None:
-    """Run a standalone engine: a deployer in its own docker-compose.
+engine = typer.Typer(
+    no_args_is_help=True,
+    help="""Run a standalone engine: a deployer in its own docker-compose.
 
     An engine is just a deployer running on its own. It connects to an existing
     Arkitekt deployment (a hub, coord or hubinator) and orchestrates app
     containers on its behalf. Only the `hubinator` bundles a deployer inline;
     everywhere else you run an engine. Use `engine init` then `engine up`.
-    """
+    """,
+)
+
+
+@engine.callback()
+def _root(ctx: typer.Context) -> None:
     require_server_deps()
 
 
-@engine.command()
-@click.argument("path", required=False)
-@click.option("--url", default=None, help="Gateway URL of the Arkitekt deployment to connect to.")
-@click.option("--redeem-token", default=None, help="Redeem token issued by the target deployment.")
-@click.option("--network", default=None, help="Docker network to join (the target deployment's internal network).")
-@click.option("--organization", default=None, help="Organization the deployer acts on behalf of.")
-@click.option("--instance-id", default=None, help="Instance ID for the deployer.")
-@click.option("--backend", default="docker", help="Deployment backend (docker, podman, kubernetes).")
-@click.pass_context
-def init(ctx, path, url, redeem_token, network, organization, instance_id, backend) -> None:
+def init(
+    ctx: typer.Context,
+    path: Annotated[Optional[str], typer.Argument()] = None,
+    url: Annotated[
+        Optional[str],
+        typer.Option("--url", help="Gateway URL of the Arkitekt deployment to connect to."),
+    ] = None,
+    redeem_token: Annotated[
+        Optional[str],
+        typer.Option("--redeem-token", help="Redeem token issued by the target deployment."),
+    ] = None,
+    network: Annotated[
+        Optional[str],
+        typer.Option("--network", help="Docker network to join (the target deployment's internal network)."),
+    ] = None,
+    organization: Annotated[
+        Optional[str],
+        typer.Option("--organization", help="Organization the deployer acts on behalf of."),
+    ] = None,
+    instance_id: Annotated[
+        Optional[str],
+        typer.Option("--instance-id", help="Instance ID for the deployer."),
+    ] = None,
+    backend: Annotated[
+        str,
+        typer.Option("--backend", help="Deployment backend (docker, podman, kubernetes)."),
+    ] = "docker",
+) -> None:
     """Initialize a standalone engine (deployer) configuration."""
     from arkitekt_next.server.config import EngineConfig
     from arkitekt_next.server.deployments import DEPLOYMENTS
@@ -61,7 +83,5 @@ def init(ctx, path, url, redeem_token, network, organization, instance_id, backe
     finalize(ctx, target, config, spec, template=None, backend=backend)
 
 
-engine.add_command(
-    make_up_command("engine", help="Compose the engine (deployer) and run `docker compose up`."),
-    "up",
-)
+engine.command("init")(init)
+engine.command("up")(make_up_command("engine"))

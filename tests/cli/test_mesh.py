@@ -12,7 +12,7 @@ from types import SimpleNamespace
 from unittest.mock import patch
 
 import pytest
-import rich_click as click
+import typer
 from click.testing import CliRunner
 
 from arkitekt_next.cli.main import cli
@@ -468,7 +468,7 @@ class _FakeSession:
         return _FakeResp(self._payload)
 
 
-def test_mesh_poll_times_out_when_never_authorized():
+def test_mesh_poll_times_out_when_never_authorized(capsys):
     """`_mesh_poll` raises (does not spin forever) once its deadline passes."""
     import itertools
 
@@ -481,10 +481,11 @@ def test_mesh_poll_times_out_when_never_authorized():
     with patch(f"{MESH}.time.monotonic", side_effect=lambda: next(clock)), patch(
         "aiohttp.ClientSession", return_value=_FakeSession({"status": "pending"})
     ):
-        with pytest.raises(click.ClickException) as exc:
+        # cli_error prints to stderr, then raises typer.Exit(1).
+        with pytest.raises(typer.Exit):
             asyncio.run(_mesh_poll("http://fakts.example/challenge", "CH", timeout=1))
 
-    assert "not authorized within" in str(exc.value)
+    assert "not authorized within" in capsys.readouterr().err
 
 
 def test_tailscale_up_timeout_surfaces_clean_error():

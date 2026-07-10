@@ -11,10 +11,10 @@ dependencies = [
     "koil>=3.3.2",
     "rath>=3.12.0",
     "click>=8.2.0",
+    "typer>=0.15.0",
     "rekuest-next>=2.1.0",
     "kabinet>=1.0.3",
     "semver>=3.0.4",
-    "rich-click>=1.8.8",
     "watchfiles>=1.0.5",
     "turms>=1.0.1",
     "platformdirs>=4.5.0",
@@ -72,7 +72,7 @@ all = [
     # version pins. Bundles every service client plus the `cli` (turms) and `server`
     # stacks.
     "arkitekt-next[cli,server,mikro,kabinet,elektro,fluss,reaktion,unlok]",
-    "rich-click>=1.6.1",
+    "typer>=0.15.0",
     "watchfiles>=0.18.1",
     "semver>=3.0.1",
     "rekuest-next>=2.1.0",

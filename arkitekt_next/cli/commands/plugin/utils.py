@@ -4,7 +4,7 @@ import os
 import yaml
 from .types import Flavour
 from arkitekt_next.cli.vars import get_console
-import rich_click as click
+from arkitekt_next.cli.errors import cli_error
 
 
 def search_username_in_docker_info(docker_info: str):
@@ -28,17 +28,17 @@ def validate_flavours(flavours_folder: str, only: Optional[str]):
 
                 except Exception as e:
                     get_console().print_exception()
-                    raise click.ClickException(f"Flavour {dir_name} is invalid") from e
+                    cli_error(f"Flavour {dir_name} is invalid")
 
                 try:
                     flavour.check_relative_paths(dir)
                 except Exception as e:
-                    raise click.ClickException(
+                    cli_error(
                         f"Relative Paths in Flavour {dir_name} are invalid. {e}"
-                    ) from e
+                    )
 
             else:
-                raise click.ClickException(
+                cli_error(
                     f"Flavour {dir_name} is invalid. No config.yaml file found"
                 )
 

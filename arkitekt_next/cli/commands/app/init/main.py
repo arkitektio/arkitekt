@@ -1,18 +1,21 @@
-import rich_click as click
+import enum
 import os
 import shutil
 import subprocess
-from arkitekt_next.cli.constants import compile_scopes, compile_templates
-from arkitekt_next.cli.interactive import require_interactive
-from arkitekt_next.cli.utils import build_relative_dir
 from getpass import getuser
-from arkitekt_next.cli.types import Manifest
-from arkitekt_next.cli.vars import get_console, get_work_dir
+from typing import Annotated, List, Optional
+
+import typer
 import semver
-from arkitekt_next.cli.io import write_manifest, load_manifest
-from arkitekt_next.cli.docs import INIT_DOCS, help_epilog
 from rich.panel import Panel
-from typing import Optional, List
+
+from arkitekt_next.cli.constants import compile_scopes, compile_templates
+from arkitekt_next.cli.errors import cli_error, confirm_or_abort
+from arkitekt_next.cli.interactive import require_interactive
+from arkitekt_next.cli.io import load_manifest, write_manifest
+from arkitekt_next.cli.types import Manifest
+from arkitekt_next.cli.utils import build_relative_dir
+from arkitekt_next.cli.vars import get_console, get_work_dir
 
 
 #: Non-interactive escape hatch surfaced when `app init` needs to prompt.
@@ -25,103 +28,130 @@ def get_default_package_manager():
     return "pip"
 
 
-@click.command(epilog=help_epilog(INIT_DOCS))
-@click.argument("path", type=click.Path(), default=".", required=False)
-@click.option(
-    "--overwrite-manifest",
-    "-om",
-    help="Should we overwrite the existing manifest if it already exists?",
-    is_flag=True,
-    default=False,
-)
-@click.option(
-    "--template",
-    "-t",
-    help="The template to use. You can choose from a variety of preconfigured templates. They are just starting points and can be changed later.",
-    type=click.Choice(compile_templates()),
-    default="simple",
-)
-@click.option(
-    "--identifier",
-    "-i",
-    help="The identifier of your app. This will be used to identify your app in the ArkitektNext ecosystem. It should be unique and should follow the [link=https://en.wikipedia.org/wiki/Reverse_domain_name_notation]reverse domain name notation[/link] (example: com.example.myapp)",
-    required=False,
-)
-@click.option(
-    "--version",
-    "-v",
-    help="The version of your app. Needs to follow [link=https://semver.org/]semantic versioning[/link].",
-    default="0.0.1",
-)
-@click.option(
-    "--author",
-    help="The author of your app. This will be shown to users of your app",
-    required=False,
-    default=None,
-)
-@click.option(
-    "--logo",
-    help="Which logo to use for this app, needs to be a valid url",
-    required=False,
-)
-@click.option(
-    "--entrypoint",
-    "-e",
-    help="The entrypoint of your app. This will be the name of the python file. Omit the .py ending",
-    required=False,
-    default=None,
-)
-@click.option(
-    "--overwrite-app",
-    "-oa",
-    help="Do you want to overwrite the app file if it exists?",
-    is_flag=True,
-    default=False,
-)
-@click.option(
-    "--scopes",
-    "-s",
-    help="The scopes of the app. You can choose multiple for your app. For a list of scopes, run `arkitekt_next manifest scopes available`",
-    type=click.Choice(compile_scopes()),
-    multiple=True,
-    default=["read"],
-)
-@click.option(
-    "--package-manager",
-    "-pm",
-    help="The package manager to use. If uv is selected, it will initialize a project with uv.",
-    type=click.Choice(["pip", "uv"]),
-    default=get_default_package_manager,
-)
-@click.option(
-    "--yes",
-    "-y",
-    help="Automatically accept defaults",
-    is_flag=True,
-    default=False,
-)
-@click.option(
-    "--with-extra",
-    help="The extras to install with arkitekt-next. Defaults to all.",
-    multiple=True,
-    default=["all"],
-)
-@click.pass_context
-def init(
-    ctx,
-    path: str,
-    identifier: str,
-    version: str,
-    author: str,
-    logo: Optional[str],
-    scopes: List[str],
-    template: str,
-    entrypoint: str,
-    overwrite_manifest: bool,
-    overwrite_app: bool,
-    package_manager: str,
-    yes: bool,
-    with_extra: List[str],
+class PackageManager(str, enum.Enum):
+    """The package managers supported by ``app init``."""
+
+    pip = "pip"
+    uv = "uv"
+
+
+def _validate_template(value: str) -> str:
+    valid = compile_templates()
+    if value not in valid:
+        raise typer.BadParameter(
+            f"'{value}' is not one of {', '.join(valid)}."
+        )
+    return value
+
+
+def _validate_scopes(value: List[str]) -> List[str]:
+    valid = compile_scopes()
+    for scope in value:
+        if scope not in valid:
+            raise typer.BadParameter(
+                f"'{scope}' is not one of {', '.join(valid)}."
+            )
+    return value
+
+
+def init_command(
+    ctx: typer.Context,
+    path: Annotated[str, typer.Argument()] = ".",
+    identifier: Annotated[
+        Optional[str],
+        typer.Option(
+            "--identifier",
+            "-i",
+            help="The identifier of your app. This will be used to identify your app in the ArkitektNext ecosystem. It should be unique and should follow the [link=https://en.wikipedia.org/wiki/Reverse_domain_name_notation]reverse domain name notation[/link] (example: com.example.myapp)",
+        ),
+    ] = None,
+    version: Annotated[
+        str,
+        typer.Option(
+            "--version",
+            "-v",
+            help="The version of your app. Needs to follow [link=https://semver.org/]semantic versioning[/link].",
+        ),
+    ] = "0.0.1",
+    author: Annotated[
+        Optional[str],
+        typer.Option(
+            "--author",
+            help="The author of your app. This will be shown to users of your app",
+        ),
+    ] = None,
+    logo: Annotated[
+        Optional[str],
+        typer.Option(
+            "--logo",
+            help="Which logo to use for this app, needs to be a valid url",
+        ),
+    ] = None,
+    scopes: Annotated[
+        List[str],
+        typer.Option(
+            "--scopes",
+            "-s",
+            help="The scopes of the app. You can choose multiple for your app. For a list of scopes, run `arkitekt_next manifest scopes available`",
+            callback=_validate_scopes,
+        ),
+    ] = ["read"],
+    template: Annotated[
+        str,
+        typer.Option(
+            "--template",
+            "-t",
+            help="The template to use. You can choose from a variety of preconfigured templates. They are just starting points and can be changed later.",
+            callback=_validate_template,
+        ),
+    ] = "simple",
+    entrypoint: Annotated[
+        Optional[str],
+        typer.Option(
+            "--entrypoint",
+            "-e",
+            help="The entrypoint of your app. This will be the name of the python file. Omit the .py ending",
+        ),
+    ] = None,
+    overwrite_manifest: Annotated[
+        bool,
+        typer.Option(
+            "--overwrite-manifest",
+            "-om",
+            help="Should we overwrite the existing manifest if it already exists?",
+        ),
+    ] = False,
+    overwrite_app: Annotated[
+        bool,
+        typer.Option(
+            "--overwrite-app",
+            "-oa",
+            help="Do you want to overwrite the app file if it exists?",
+        ),
+    ] = False,
+    package_manager: Annotated[
+        Optional[PackageManager],
+        typer.Option(
+            "--package-manager",
+            "-pm",
+            help="The package manager to use. If uv is selected, it will initialize a project with uv.",
+        ),
+    ] = None,
+    yes: Annotated[
+        bool,
+        typer.Option(
+            "--yes",
+            "-y",
+            help="Automatically accept defaults",
+        ),
+    ] = False,
+    with_extra: Annotated[
+        List[str],
+        typer.Option(
+            "--with-extra",
+            help="The extras to install with arkitekt-next. Defaults to all.",
+        ),
+    ] = ["all"],
 ):
     """Initializes an ArkitektNext app
 
@@ -132,6 +162,9 @@ def init(
     of templates.
 
     """
+
+    # Resolve at runtime (not at import) so auto-detection respects the current env.
+    package_manager = package_manager.value if package_manager is not None else get_default_package_manager()
 
     console = get_console(ctx)
     parent_work_dir = get_work_dir(ctx)
@@ -149,25 +182,25 @@ def init(
             identifier = default_identifier
         else:
             require_interactive("`app init`", hint=_INIT_HINT)
-            identifier = click.prompt("Your app identifier", default=default_identifier)
+            identifier = typer.prompt("Your app identifier", default=default_identifier)
 
     if not author:
         if yes:
             author = getuser()
         else:
             require_interactive("`app init`", hint=_INIT_HINT)
-            author = click.prompt("Your name", default=getuser())
+            author = typer.prompt("Your name", default=getuser())
 
     if not entrypoint:
         if yes:
             entrypoint = "app"
         else:
             require_interactive("`app init`", hint=_INIT_HINT)
-            entrypoint = click.prompt("Your app file", default="app")
+            entrypoint = typer.prompt("Your app file", default="app")
 
     if not semver.Version.is_valid(version):
         if yes:
-            raise click.ClickException(
+            cli_error(
                 f"Invalid version: {version}. ArkitektNext versions need to follow semver."
             )
         else:
@@ -176,7 +209,7 @@ def init(
                 get_console(ctx).print(
                     "ArkitektNext versions need to follow [link=https://semver.org]semver[/link]. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
                 )
-                version = click.prompt(
+                version = typer.prompt(
                     "The version of your app",
                     default="0.0.1",
                 )
@@ -187,10 +220,10 @@ def init(
             should_overwrite = True
         else:
             require_interactive("`app init`", hint=_INIT_HINT)
-            should_overwrite = click.confirm(
-                f"Another ArkitektNext app {existing_manifest.to_console_string()} exists already at {work_dir}?. Do you want to overwrite?",
-                abort=True,
+            confirm_or_abort(
+                f"Another ArkitektNext app {existing_manifest.to_console_string()} exists already at {work_dir}?. Do you want to overwrite?"
             )
+            should_overwrite = True
         if not should_overwrite:
             ctx.abort()
 
@@ -206,7 +239,7 @@ def init(
 
     if package_manager == "uv":
         if not shutil.which("uv"):
-            raise click.ClickException(
+            cli_error(
                 "uv is not installed. Please install uv or choose another package manager."
             )
 
@@ -239,7 +272,7 @@ def init(
             should_overwrite = True
         else:
             require_interactive("`app init`", hint=_INIT_HINT)
-            should_overwrite = click.confirm(
+            should_overwrite = typer.confirm(
                 "Entrypoint File already exists. Do you want to overwrite?"
             )
         if should_overwrite:
@@ -257,3 +290,7 @@ def init(
         style="green",
     )
     console.print(md)
+
+
+init = typer.Typer(help=init_command.__doc__)
+init.command()(init_command)

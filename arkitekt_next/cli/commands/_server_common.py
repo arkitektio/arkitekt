@@ -19,11 +19,12 @@ import importlib.util
 import os
 import shutil
 from pathlib import Path
-from typing import Any, Callable, Type, TYPE_CHECKING
+from typing import Annotated, Any, Callable, Optional, Type, TYPE_CHECKING
 
-import rich_click as click
+import typer
 from pydantic import BaseModel
 
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.vars import get_console, get_work_dir
 
 if TYPE_CHECKING:
@@ -37,15 +38,15 @@ _SERVER_DEPS = ("cryptography", "inquirer", "ifaddr", "slugify", "dokker")
 
 
 def require_server_deps() -> None:
-    """Raise a friendly ``ClickException`` if the ``server`` extra isn't installed.
+    """Raise a friendly error if the ``server`` extra isn't installed.
 
-    Call this at the top of a server command group's callback. Click only runs the
+    Call this at the top of a server command group's callback. Typer only runs the
     group callback when a subcommand is invoked (not for ``--help``), so help output
     stays dependency-free while e.g. ``hub init`` is guarded.
     """
     missing = [dep for dep in _SERVER_DEPS if importlib.util.find_spec(dep) is None]
     if missing:
-        raise click.ClickException(
+        cli_error(
             "The server deployment stack needs extra dependencies "
             f"({', '.join(missing)}). Install them with:\n\n"
             "    pip install 'arkitekt-next[server]'"
@@ -71,7 +72,7 @@ def set_enabled_services(config, services) -> None:
     wanted = set(services)
     unknown = wanted - set(SERVICE_REGISTRY)
     if unknown:
-        raise click.ClickException(
+        cli_error(
             f"Unknown service(s): {', '.join(sorted(unknown))}. "
             f"Available: {', '.join(sorted(SERVICE_REGISTRY))}"
         )
@@ -113,7 +114,7 @@ def compose_and_up(
     try:
         config, _backend = load_profile_yaml(str(config_path), model_cls)
     except FileNotFoundError:
-        raise click.ClickException(
+        cli_error(
             f"No configuration found at {config_path}. Run the matching `init` command first."
         )
 
@@ -124,7 +125,7 @@ def compose_and_up(
     # Docker is missing we point the user at the ready-to-run files instead of failing
     # opaquely.
     if not shutil.which("docker"):
-        raise click.ClickException(
+        cli_error(
             "Docker is not installed, but it is required to start the stack with `up`.\n"
             "The deployment files were generated in "
             f"{path} — install Docker (https://docs.docker.com/get-docker/) and run "
@@ -135,7 +136,7 @@ def compose_and_up(
     try:
         compose_up(path)
     except Exception as e:  # pragma: no cover - surfaced to the user
-        raise click.ClickException(
+        cli_error(
             f"Failed to start the stack (is Docker running?): {e}"
         )
     console.print("[bold green]✓ Deployment is up.[/bold green]")
@@ -155,7 +156,7 @@ def select_config(
     run_wizard = (wizard or template is None) and not use_default
     if run_wizard:
         if spec.wizard is None:  # defensive: only engine has no wizard, and it never calls this
-            raise click.ClickException(f"The {spec.name} deployment has no interactive wizard.")
+            cli_error(f"The {spec.name} deployment has no interactive wizard.")
         return spec.wizard(console)
     return spec.config_cls()
 
@@ -171,19 +172,21 @@ def finalize(
     return write_profile(ctx, target, config, filename=spec.filename, kind=spec.name, backend=backend)
 
 
-def make_up_command(kind_name: str, *, help: str) -> click.Command:
-    """Build the generic ``up`` command for a deployment kind.
+def make_up_command(kind_name: str) -> Callable[..., None]:
+    """Build the generic ``up`` command function for a deployment kind.
 
     Identical across all kinds: load the profile, regenerate the compose/config files,
     then ``docker compose up``. The per-kind (filename, config class, generator) is
-    resolved lazily from the registry inside the callback so this factory stays free of
-    the ``server`` extra at import time.
+    resolved lazily from the registry inside the body so this factory stays free of
+    the ``server`` extra at import time. The returned function has no decorator; the
+    group ``main.py`` registers it via ``<group>_app.command("up")(make_up_command(...))``.
     """
 
-    @click.command("up", help=help)
-    @click.argument("path", required=False)
-    @click.pass_context
-    def up(ctx, path) -> None:
+    def up(
+        ctx: typer.Context,
+        path: Annotated[Optional[str], typer.Argument()] = None,
+    ) -> None:
+        """Compose the deployment (services + auth wiring) and run `docker compose up`."""
         from arkitekt_next.server.deployments import DEPLOYMENTS
 
         spec = DEPLOYMENTS[kind_name]

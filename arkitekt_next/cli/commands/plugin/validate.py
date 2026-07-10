@@ -1,14 +1,18 @@
-import rich_click as click
-from click import Context
+from typing import Annotated, Optional
+import typer
 from arkitekt_next.cli.vars import get_console, get_work_dir
-from .io import get_flavours
 
 
-@click.command()
-@click.option("--flavour", "-f", help="Validate only this flavour.", default=None)
-@click.pass_context
-def validate(ctx: Context, flavour: str) -> None:
+def validate(
+    ctx: typer.Context,
+    flavour: Annotated[
+        Optional[str],
+        typer.Option("--flavour", "-f", help="Validate only this flavour."),
+    ] = None,
+) -> None:
     """Validates all Dockerfiles and flavour configs for this app."""
+    from .io import get_flavours
+
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)
 
@@ -17,4 +21,4 @@ def validate(ctx: Context, flavour: str) -> None:
     for name in flavours:
         console.print(f"[green]✓[/green] Flavour [bold]{name}[/bold] is valid")
 
-    click.echo("All flavours are valid")
+    typer.echo("All flavours are valid")

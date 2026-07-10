@@ -1,26 +1,38 @@
-import rich_click as click
+from typing import Annotated, List
+
+import typer
 from rich.table import Table
 from rich.panel import Panel
 from rich.console import Group
 from arkitekt_next.cli.vars import get_console, get_manifest, get_work_dir
 from arkitekt_next.cli.constants import compile_scopes
 from arkitekt_next.cli.io import write_manifest
+from arkitekt_next.cli.errors import cli_error
 
 
-@click.group("scopes")
-@click.pass_context
-def scopes_group(ctx):
-    """Inspect, add and remove scopes for this arkitekt-next app."""
-    pass
+scopes_group = typer.Typer(
+    no_args_is_help=True,
+    help="""Inspect, add and remove scopes for this arkitekt-next app.""",
+)
 
 
-@scopes_group.command("add")
-@click.argument("SCOPE", nargs=-1, type=click.Choice(compile_scopes()))
-@click.pass_context
-def add_scopes(ctx, scope):
+def _validate_scopes(value: List[str]) -> List[str]:
+    available = compile_scopes()
+    for scope in value or []:
+        if scope not in available:
+            raise typer.BadParameter(
+                f"{scope!r} is not one of {list(available)}."
+            )
+    return value
+
+
+def add_scopes(
+    ctx: typer.Context,
+    scope: Annotated[List[str], typer.Argument(callback=_validate_scopes)] = None,
+) -> None:
     """Add one or more scopes to this app."""
     if not scope:
-        raise click.ClickException("Please provide at least one scope")
+        cli_error("Please provide at least one scope")
 
     manifest = get_manifest(ctx)
     console = get_console(ctx)
@@ -29,13 +41,13 @@ def add_scopes(ctx, scope):
     console.print(f"Scopes updated to {manifest.scopes}")
 
 
-@scopes_group.command("remove")
-@click.argument("SCOPE", nargs=-1, type=click.Choice(compile_scopes()))
-@click.pass_context
-def remove_scopes(ctx, scope):
+def remove_scopes(
+    ctx: typer.Context,
+    scope: Annotated[List[str], typer.Argument(callback=_validate_scopes)] = None,
+) -> None:
     """Remove one or more scopes from this app."""
     if not scope:
-        raise click.ClickException("Please provide at least one scope to remove")
+        cli_error("Please provide at least one scope to remove")
 
     manifest = get_manifest(ctx)
     console = get_console(ctx)
@@ -44,9 +56,7 @@ def remove_scopes(ctx, scope):
     console.print(f"Scopes updated to {manifest.scopes}")
 
 
-@scopes_group.command("list")
-@click.pass_context
-def list_scopes(ctx):
+def list_scopes(ctx: typer.Context) -> None:
     """List currently active scopes for this app."""
     manifest = get_manifest(ctx)
     console = get_console(ctx)
@@ -65,9 +75,7 @@ def list_scopes(ctx):
     ))
 
 
-@scopes_group.command("available")
-@click.pass_context
-def list_available(ctx):
+def list_available(ctx: typer.Context) -> None:
     """List all scopes available in the platform."""
     console = get_console(ctx)
 
@@ -83,3 +91,9 @@ def list_available(ctx):
         border_style="green",
         style="white",
     ))
+
+
+scopes_group.command("add")(add_scopes)
+scopes_group.command("remove")(remove_scopes)
+scopes_group.command("list")(list_scopes)
+scopes_group.command("available")(list_available)

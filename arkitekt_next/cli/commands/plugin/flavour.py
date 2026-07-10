@@ -1,13 +1,14 @@
-import rich_click as click
+import typer
+
 # `flavour add` reuses the plugin `init` scaffolder.
 from .init import init
 
-@click.group()
-def flavour():
-    """
+flavour = typer.Typer(
+    no_args_is_help=True,
+    help="""
     Manage flavours
-    """
-    pass
+    """,
+)
 
 # Register init as add
-flavour.add_command(init, name="add")
+flavour.command("add")(init)

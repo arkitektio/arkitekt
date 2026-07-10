@@ -1,15 +1,20 @@
-import rich_click as click
-import os
+from typing import Optional
+
+import typer
+
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.vars import get_work_dir
 
 
-@click.command()
-@click.argument("project", default=None, required=False)
-@click.option(
-    "--config", help="The config to use", type=click.Path(exists=True), default=None
-)
-@click.pass_context
-def watch(ctx, project, config):
+def watch(
+    ctx: typer.Context,
+    project: Optional[str] = typer.Argument(None),
+    config: Optional[str] = typer.Option(
+        None,
+        "--config",
+        help="The config to use",
+    ),
+) -> None:
     """Watch your projects documents and automatically generate code when they change
 
     This command will watch all the projects in your config file and automatically
@@ -23,7 +28,7 @@ def watch(ctx, project, config):
 
     config = config or scan_folder_for_single_config(app_directory)
     if not config:
-        raise click.ClickException(
+        cli_error(
             f"No config file found. Please run `arkitekt_next gen init` in {app_directory} to create a default config file or specify a config file with the --config flag"
         )
 

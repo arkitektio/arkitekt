@@ -7,31 +7,33 @@ package of the Arkitekt ecosystem.
 import platform
 import sys
 from importlib.metadata import version as installed_version, PackageNotFoundError
+from typing import Annotated
 
-import rich_click as click
+import typer
 from rich.table import Table
 
 from arkitekt_next.cli.vars import get_console
 from .constants import ARKITEKT_PACKAGES
 
 
-@click.command()
-@click.option(
-    "--all",
-    "-a",
-    "show_all",
-    is_flag=True,
-    default=False,
-    help="Show the version of every installed Arkitekt ecosystem package.",
-)
-@click.option(
-    "--plain",
-    is_flag=True,
-    default=False,
-    help="Print just the arkitekt-next version string (useful for scripts).",
-)
-@click.pass_context
-def version(ctx, show_all: bool, plain: bool) -> None:
+def version(
+    ctx: typer.Context,
+    show_all: Annotated[
+        bool,
+        typer.Option(
+            "--all",
+            "-a",
+            help="Show the version of every installed Arkitekt ecosystem package.",
+        ),
+    ] = False,
+    plain: Annotated[
+        bool,
+        typer.Option(
+            "--plain",
+            help="Print just the arkitekt-next version string (useful for scripts).",
+        ),
+    ] = False,
+) -> None:
     """Show the installed Arkitekt CLI version.
 
     Prints the installed `arkitekt-next` version (and the Python it runs on). Use
@@ -47,7 +49,7 @@ def version(ctx, show_all: bool, plain: bool) -> None:
 
     if plain:
         # Bypass rich formatting so the output is a clean, parseable string.
-        click.echo(own)
+        typer.echo(own)
         return
 
     console.print(f"[bold]arkitekt-next[/bold] [green]{own}[/green]")

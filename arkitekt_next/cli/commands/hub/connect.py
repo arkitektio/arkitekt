@@ -1,40 +1,53 @@
 """``arkitekt-next hub connect`` -- register a hub's services with an organization."""
 
-import rich_click as click
+from typing import Annotated, Optional
+
+import typer
 from rich.table import Table
 
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.cli.commands._server_common import resolve_path
 
 
-@click.command()
-@click.argument("path", required=False)
-@click.option(
-    "--server",
-    default=None,
-    help="Organization coordination (Lok) server to connect to. Defaults to the hub's coord_server.",
-)
-@click.option("--no-browser", is_flag=True, help="Do not open the authorization page in a browser.")
-@click.option("--timeout", type=float, default=120.0, help="Seconds to wait for authorization.")
-@click.option(
-    "--no-resolve",
-    is_flag=True,
-    help="Do not reverse-resolve DNS host names for discovered IPs.",
-)
-@click.option(
-    "--resolve-timeout",
-    type=float,
-    default=2.0,
-    help="Seconds to wait for each reverse-DNS lookup before giving up on it.",
-)
-@click.option(
-    "--all-hosts",
-    "-a",
-    is_flag=True,
-    help="Advertise every discovered host without prompting for a selection.",
-)
-@click.pass_context
-def connect(ctx, path, server, no_browser, timeout, no_resolve, resolve_timeout, all_hosts) -> None:
+def connect(
+    ctx: typer.Context,
+    path: Annotated[Optional[str], typer.Argument()] = None,
+    server: Annotated[
+        Optional[str],
+        typer.Option(
+            "--server",
+            help="Organization coordination (Lok) server to connect to. Defaults to the hub's coord_server.",
+        ),
+    ] = None,
+    no_browser: Annotated[
+        bool,
+        typer.Option("--no-browser", help="Do not open the authorization page in a browser."),
+    ] = False,
+    timeout: Annotated[
+        float,
+        typer.Option("--timeout", help="Seconds to wait for authorization."),
+    ] = 120.0,
+    no_resolve: Annotated[
+        bool,
+        typer.Option("--no-resolve", help="Do not reverse-resolve DNS host names for discovered IPs."),
+    ] = False,
+    resolve_timeout: Annotated[
+        float,
+        typer.Option(
+            "--resolve-timeout",
+            help="Seconds to wait for each reverse-DNS lookup before giving up on it.",
+        ),
+    ] = 2.0,
+    all_hosts: Annotated[
+        bool,
+        typer.Option(
+            "--all-hosts",
+            "-a",
+            help="Advertise every discovered host without prompting for a selection.",
+        ),
+    ] = False,
+) -> None:
     """Connect this hub to an organization.
 
     Inspects the machine's current host addresses, builds a hub advertising each
@@ -60,7 +73,7 @@ def connect(ctx, path, server, no_browser, timeout, no_resolve, resolve_timeout,
     try:
         config, _backend = load_profile_yaml(str(config_path), HubConfig)
     except FileNotFoundError:
-        raise click.ClickException(
+        cli_error(
             f"No hub configuration found at {config_path}. Run `hub init` first."
         )
 
@@ -71,7 +84,7 @@ def connect(ctx, path, server, no_browser, timeout, no_resolve, resolve_timeout,
         resolve_names=not no_resolve, resolve_timeout=resolve_timeout
     )
     if not candidates:
-        raise click.ClickException(
+        cli_error(
             "Could not discover any routable host addresses to advertise."
         )
 
@@ -102,20 +115,20 @@ def connect(ctx, path, server, no_browser, timeout, no_resolve, resolve_timeout,
             ]
         )
         if answer is None:
-            raise click.Abort()
+            raise typer.Abort()
         selected = set(answer.get("hosts", []))
         hosts = [c.value for c in candidates if c.value in selected]
     else:
         hosts = [c.value for c in candidates]
 
     if not hosts:
-        raise click.ClickException("No hosts selected to advertise.")
+        cli_error("No hosts selected to advertise.")
 
     console.print(f"Advertising [bold]{len(hosts)}[/bold] host(s): [cyan]{', '.join(hosts)}[/cyan]")
 
     request = build_hub(config, hosts)
     if not request.hub.instances:
-        raise click.ClickException(
+        cli_error(
             "No enabled services to advertise. Enable services in the hub config first."
         )
 
@@ -134,7 +147,7 @@ def connect(ctx, path, server, no_browser, timeout, no_resolve, resolve_timeout,
             )
         )
     except Exception as e:  # pragma: no cover - surfaced to the user
-        raise click.ClickException(f"Failed to register with {server}: {e}")
+        cli_error(f"Failed to register with {server}: {e}")
 
     console.print(f"Authorize this connection at: [link={configure_url}]{configure_url}[/link]")
     if completed:

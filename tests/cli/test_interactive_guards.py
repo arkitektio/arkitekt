@@ -11,7 +11,7 @@ import tempfile
 from unittest.mock import patch
 
 import pytest
-import rich_click as click
+import typer
 from click.testing import CliRunner
 
 from arkitekt_next.cli.interactive import require_interactive
@@ -25,12 +25,13 @@ def test_require_interactive_is_noop_when_tty():
         require_interactive("Something", hint="do X")  # must not raise
 
 
-def test_require_interactive_raises_when_not_tty():
+def test_require_interactive_raises_when_not_tty(capsys):
     with patch(INTERACTIVE, return_value=False):
-        with pytest.raises(click.ClickException) as exc:
+        # cli_error prints the guidance to stderr, then raises typer.Exit(1).
+        with pytest.raises(typer.Exit):
             require_interactive("The wizard", hint="Pass --template instead.")
 
-    message = str(exc.value)
+    message = capsys.readouterr().err
     assert "The wizard" in message
     assert "Pass --template instead." in message
 

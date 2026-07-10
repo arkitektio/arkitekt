@@ -1,6 +1,17 @@
+from enum import Enum
 from importlib import import_module
 from typing import Callable
 from arkitekt_next.app.app import App
+
+
+class LogLevel(str, Enum):
+    """The logging levels accepted by the run commands."""
+
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
 
 
 def import_builder(builder: str) -> Callable[..., App]:

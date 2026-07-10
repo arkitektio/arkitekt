@@ -1,29 +1,30 @@
-import rich_click as click
+from typing import Annotated, Optional
+import typer
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.vars import get_manifest
 import subprocess
-from click import Context
-from .io import get_builds
 from arkitekt_next.constants import DEFAULT_ARKITEKT_URL
 
 
-@click.command()
-@click.option("--build", help="The build to use", type=str, default=None)
-@click.option("--flavour", "-f", help="The flavour to use", default="vanilla")
-@click.option(
-    "--url",
-    "-u",
-    help="The fakts_next server to use",
-    type=str,
-    default=DEFAULT_ARKITEKT_URL,
-)
-@click.option(
-    "--builder",
-    help="The builder to use",
-    type=str,
-    default="arkitekt_next.builders.easy",
-)
-@click.pass_context
-def stage(ctx: Context, build: str, url: str, flavour: str, builder: str) -> None:
+def stage(
+    ctx: typer.Context,
+    build: Annotated[
+        Optional[str],
+        typer.Option("--build", help="The build to use"),
+    ] = None,
+    flavour: Annotated[
+        str,
+        typer.Option("--flavour", "-f", help="The flavour to use"),
+    ] = "vanilla",
+    url: Annotated[
+        str,
+        typer.Option("--url", "-u", help="The fakts_next server to use"),
+    ] = DEFAULT_ARKITEKT_URL,
+    builder: Annotated[
+        str,
+        typer.Option("--builder", help="The builder to use"),
+    ] = "arkitekt_next.builders.easy",
+) -> None:
     """Stages the latest Build for testing
 
     Stages the current build for testing. This will create a temporary staged version
@@ -32,13 +33,14 @@ def stage(ctx: Context, build: str, url: str, flavour: str, builder: str) -> Non
 
 
     """
+    from .io import get_builds
 
     get_manifest(ctx)
 
     builds = get_builds(build)
 
     if len(builds) == 0:
-        raise click.ClickException("Could not find any builds")
+        cli_error("Could not find any builds")
 
     if len(builds) > 1:
         try:
@@ -46,7 +48,7 @@ def stage(ctx: Context, build: str, url: str, flavour: str, builder: str) -> Non
                 build for build in builds.values() if build.flavour == flavour
             )
         except StopIteration:
-            raise click.ClickException(
+            cli_error(
                 f"Could not find a build for flavour {flavour}. Please run `arkitekt_next port build` "
                 + "first to build the flavour"
             )
@@ -59,9 +61,9 @@ def stage(ctx: Context, build: str, url: str, flavour: str, builder: str) -> Non
         + build_model.build_arkitekt_next_command(url)
     )
 
-    click.echo(f"Staging build {build} with flavour {flavour} against {url}")
-    click.echo("Running command: " + " ".join(command))
+    typer.echo(f"Staging build {build} with flavour {flavour} against {url}")
+    typer.echo("Running command: " + " ".join(command))
 
     subprocess.run(" ".join(command), shell=True)
 
-    raise click.ClickException("Docker container exited")
+    cli_error("Docker container exited")

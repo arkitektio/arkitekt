@@ -1,15 +1,13 @@
 import sys
-import rich_click as click
+from typing import Annotated
+from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.vars import get_console, get_manifest, get_work_dir
 import os
 from rich.panel import Panel
 import subprocess
 import uuid
 
-from kabinet.api.schema import RequirementInput
-from .io import generate_build, get_flavours
-from click import Context
-from .types import Flavour, InspectionInput
+import typer
 import json
 from typing import Any, Dict, List, Optional
 from arkitekt_next.constants import DEFAULT_ARKITEKT_URL
@@ -25,14 +23,14 @@ class InspectionError(Exception):
     pass
 
 
-def build_flavour(flavour_name: str, flavour: Flavour, work_dir: str) -> str:
+def build_flavour(flavour_name: str, flavour: "Flavour", work_dir: str) -> str:
     """Builds a flavour to a Docker image and returns the build_id (tag)."""
     build_id = str(uuid.uuid4())
     relative_dir = os.path.join(".arkitekt_next", "flavours", flavour_name, "")
     command = flavour.generate_build_command(build_id, relative_dir)
     docker_run = subprocess.run(" ".join(command), shell=True, cwd=work_dir)
     if docker_run.returncode != 0:
-        raise click.ClickException("Could not build docker container")
+        cli_error("Could not build docker container")
     return build_id
 
 
@@ -95,10 +93,10 @@ def inspect_all(build_id: str, url: str) -> Dict[str, Any]:
 
         if process.returncode != 0:
             if "ModuleNotFoundError" in result:
-                raise click.ClickException(
+                cli_error(
                     "Missing a module in the container. Make sure all dependencies are installed."
                 )
-            raise click.ClickException(
+            cli_error(
                 "Running `arkitekt-next inspect all` inside the container failed."
             )
 
@@ -118,7 +116,7 @@ def inspect_all(build_id: str, url: str) -> Dict[str, Any]:
         raise InspectionError(f"An error occurred: {combined}") from e
 
 
-def inspect_requirements(build_id: str) -> List[RequirementInput]:
+def inspect_requirements(build_id: str) -> "List[RequirementInput]":
     try:
         result = subprocess.run(
             ["docker", "run", build_id, "arkitekt-next", "inspect", "requirements", "-mr"],
@@ -145,42 +143,41 @@ def inspect_requirements(build_id: str) -> List[RequirementInput]:
         raise InspectionError(f"An error occurred: {combined}") from e
 
 
-def inspect_build(build_id: str, url: str) -> InspectionInput:
+def inspect_build(build_id: str, url: str) -> "InspectionInput":
+    from .types import InspectionInput
+
     size, size_root_fs = inspect_docker_container(build_id)
     runtime = inspect_all(build_id, url)
     print("Runtime inspection result:", runtime)
     return InspectionInput(size=size, **runtime)
 
 
-@click.command()
-@click.option(
-    "--flavour", "-f",
-    help="The flavour to build. By default all flavours are built.",
-    default=None,
-    required=False,
-)
-@click.option(
-    "--no-inspect", "-n",
-    help="Skip inspection of the app.",
-    is_flag=True,
-    default=False,
-)
-@click.option(
-    "--tag", "-t",
-    help="Tag the build with a specific tag.",
-    type=str,
-    default=None,
-    required=False,
-)
-@click.option(
-    "--url", "-u",
-    help="The fakts-next server to use.",
-    type=str,
-    default=DEFAULT_ARKITEKT_URL,
-)
-@click.pass_context
-def build(ctx: Context, flavour: str, no_inspect: bool, tag: Optional[str], url: str) -> None:
+def build(
+    ctx: typer.Context,
+    flavour: Annotated[
+        Optional[str],
+        typer.Option(
+            "--flavour",
+            "-f",
+            help="The flavour to build. By default all flavours are built.",
+        ),
+    ] = None,
+    no_inspect: Annotated[
+        bool,
+        typer.Option("--no-inspect", "-n", help="Skip inspection of the app."),
+    ] = False,
+    tag: Annotated[
+        Optional[str],
+        typer.Option("--tag", "-t", help="Tag the build with a specific tag."),
+    ] = None,
+    url: Annotated[
+        str,
+        typer.Option("--url", "-u", help="The fakts-next server to use."),
+    ] = DEFAULT_ARKITEKT_URL,
+) -> None:
     """Builds the arkitekt-next app to Docker."""
+    from .io import generate_build, get_flavours
+
     manifest = get_manifest(ctx)
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)

@@ -1,12 +1,10 @@
 from importlib import import_module
 import inspect as pyinspect
-import rich_click as click
+import typer
 
 from arkitekt_next.cli.ui import construct_leaking_group
 from arkitekt_next.cli.vars import get_console, get_manifest
 from rich.panel import Panel
-
-import rich_click as click
 
 
 def inspect_dangerous_variables(module_path):
@@ -51,9 +49,7 @@ def scan_module(module_path):
     return inspect_dangerous_variables(module_path)
 
 
-@click.command()
-@click.pass_context
-def variables(ctx):
+def variables(ctx: typer.Context):
     """Scans your arkitekt_next app for unsafe variables
 
     When designing an ArkitektNext app, you should not have variables in your

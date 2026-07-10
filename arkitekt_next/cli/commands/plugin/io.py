@@ -22,7 +22,7 @@ from kabinet.api.schema import (
 
 import yaml
 import json
-import rich_click as click
+from arkitekt_next.cli.errors import cli_error
 
 
 def get_flavours(base_dir: Optional[str] = None, select: Optional[str] = None) -> Dict[str, Flavour]:
@@ -31,7 +31,7 @@ def get_flavours(base_dir: Optional[str] = None, select: Optional[str] = None) -
     flavours_folder = os.path.join(arkitekt_next_folder, "flavours")
 
     if not os.path.exists(flavours_folder):
-        raise click.ClickException(
+        cli_error(
             "Could not find the flavours folder. Please run `arkitekt-next plugin init` first"
         )
 
@@ -46,7 +46,7 @@ def get_flavours(base_dir: Optional[str] = None, select: Optional[str] = None) -
 
         config_path = os.path.join(dir_path, "config.yaml")
         if not os.path.exists(config_path):
-            raise click.ClickException(
+            cli_error(
                 f"Flavour {dir_name} is invalid: no config.yaml found"
             )
 
@@ -57,9 +57,9 @@ def get_flavours(base_dir: Optional[str] = None, select: Optional[str] = None) -
             flavour.check_relative_paths(dir_path)
             flavours[dir_name] = flavour
         except Exception as e:
-            raise click.ClickException(
+            cli_error(
                 f"Could not load flavour {dir_name}: config.yaml is invalid"
-            ) from e
+            )
 
     return flavours
 
@@ -70,7 +70,7 @@ def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = Non
     config_file = os.path.join(path, "builds.yaml")
 
     if not os.path.exists(config_file):
-        raise click.ClickException(
+        cli_error(
             "Could not find any builds. Please run `arkitekt-next app kabinet build` first"
         )
 

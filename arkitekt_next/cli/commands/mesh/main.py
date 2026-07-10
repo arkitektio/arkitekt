@@ -18,15 +18,15 @@ import subprocess
 import time
 import webbrowser
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Annotated, Any, Dict, List, Optional, Tuple
 
-import rich_click as click
+import typer
 from rich.panel import Panel
 
-from arkitekt_next.cli.docs import MESH_DOCS, help_epilog
+from arkitekt_next.cli.errors import cli_error, confirm_or_abort
 from arkitekt_next.cli.interactive import require_interactive
-from arkitekt_next.cli.options import with_fakts_next_url
 from arkitekt_next.cli.vars import get_console
+from arkitekt_next.constants import DEFAULT_ARKITEKT_URL
 
 #: Where to point users who do not have tailscale installed yet.
 TAILSCALE_INSTALL_URL = "https://tailscale.com/download"
@@ -94,7 +94,7 @@ async def _fetch_well_known(url: str) -> Dict[str, Any]:
                 last_error = e
                 continue
 
-    raise click.ClickException(
+    cli_error(
         f"Could not read the well-known Fakts document from '{url}'. "
         f"Is a Fakts server running there? ({last_error})"
     )
@@ -109,7 +109,7 @@ def _extract_mesh_endpoints(data: Dict[str, Any], url: str) -> Dict[str, Optiona
     start_url = data.get("mesh_device_code_start")
     challenge_url = data.get("mesh_challenge_url")
     if not start_url or not challenge_url:
-        raise click.ClickException(
+        cli_error(
             f"The Fakts server at '{url}' does not support the mesh device-code flow "
             f"(its well-known document is missing 'mesh_device_code_start' / "
             f"'mesh_challenge_url'). This deployment cannot enroll machines this way."
@@ -136,14 +136,14 @@ async def _mesh_start(start_url: str, payload: Dict[str, Any]) -> Tuple[str, str
         ) as resp:
             if resp.status != 200:
                 body = await resp.text()
-                raise click.ClickException(
+                cli_error(
                     f"Could not start the mesh device-code flow at {start_url} "
                     f"(status {resp.status}). {body[:200]}"
                 )
             result = await resp.json(content_type=None)
 
     if result.get("status") != "granted":
-        raise click.ClickException(
+        cli_error(
             "The Fakts server refused to start a mesh join: "
             f"{result.get('error', 'unknown error')}."
         )
@@ -168,7 +168,7 @@ async def _mesh_poll(challenge_url: str, challenge: str, timeout: int) -> Dict[s
             ) as resp:
                 if resp.status != 200:
                     body = await resp.text()
-                    raise click.ClickException(
+                    cli_error(
                         f"Could not poll the mesh challenge at {challenge_url} "
                         f"(status {resp.status}). {body[:200]}"
                     )
@@ -179,7 +179,7 @@ async def _mesh_poll(challenge_url: str, challenge: str, timeout: int) -> Dict[s
                 return result
             if status in ("pending", "waiting"):
                 if time.monotonic() - start_time > timeout:
-                    raise click.ClickException(
+                    cli_error(
                         f"The mesh join was not authorized within {timeout} seconds. "
                         f"Ask an organization member to approve it, or retry with a "
                         f"longer --expiration."
@@ -187,19 +187,19 @@ async def _mesh_poll(challenge_url: str, challenge: str, timeout: int) -> Dict[s
                 await asyncio.sleep(POLL_INTERVAL_SECONDS)
                 continue
             if status == "denied":
-                raise click.ClickException(
+                cli_error(
                     "The mesh join request was denied by the authorizer."
                 )
             if status == "expired":
-                raise click.ClickException(
+                cli_error(
                     "The mesh join request expired before it was authorized."
                 )
             if status == "error":
-                raise click.ClickException(
+                cli_error(
                     "The mesh challenge reported an error: "
                     f"{result.get('error', 'unknown error')}."
                 )
-            raise click.ClickException(f"Unexpected mesh challenge status: {status!r}.")
+            cli_error(f"Unexpected mesh challenge status: {status!r}.")
 
 
 def _build_configure_url(base: Optional[str], code: str) -> Optional[str]:
@@ -273,7 +273,7 @@ def _ensure_tailscale_installed(console) -> None:
         "— on Linux you can run:"
     )
     console.print("    curl -fsSL https://tailscale.com/install.sh | sh", style="cyan")
-    raise click.ClickException(
+    cli_error(
         "tailscale is required for the `mesh` commands. See "
         f"{TAILSCALE_INSTALL_URL} to install it."
     )
@@ -302,12 +302,12 @@ def _run_tailscale(console, args: List[str]) -> None:
     try:
         result = subprocess.run(command, timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
     except FileNotFoundError:
-        raise click.ClickException(
+        cli_error(
             "Could not find the 'tailscale' binary. Please install tailscale first "
             f"(see {TAILSCALE_INSTALL_URL})."
         )
     except subprocess.TimeoutExpired:
-        raise click.ClickException(
+        cli_error(
             f"'{' '.join(_redact(command))}' did not finish within "
             f"{TAILSCALE_UP_TIMEOUT_SECONDS}s and was aborted. Check `tailscale status` "
             "and that tailscaled is healthy."
@@ -327,18 +327,18 @@ def _run_tailscale(console, args: List[str]) -> None:
     try:
         sudo_result = subprocess.run(sudo_command, timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
     except FileNotFoundError:
-        raise click.ClickException(
+        cli_error(
             "Could not find the 'sudo' binary to retry with elevated privileges."
         )
     except subprocess.TimeoutExpired:
-        raise click.ClickException(
+        cli_error(
             f"'{' '.join(_redact(sudo_command))}' did not finish within "
             f"{TAILSCALE_UP_TIMEOUT_SECONDS}s and was aborted. Check `tailscale status` "
             "and that tailscaled is healthy."
         )
 
     if sudo_result.returncode != 0:
-        raise click.ClickException(
+        cli_error(
             f"'{' '.join(_redact(sudo_command))}' failed "
             f"(exit code {sudo_result.returncode})."
         )
@@ -368,7 +368,7 @@ def _ensure_tailscaled_installed(console) -> str:
         f"[link={TAILSCALE_INSTALL_URL}]{TAILSCALE_INSTALL_URL}[/link] — the "
         "`tailscaled` daemon is required for `mesh proxy`."
     )
-    raise click.ClickException(
+    cli_error(
         f"tailscaled is required for `mesh proxy`. See {TAILSCALE_INSTALL_URL}."
     )
 
@@ -424,21 +424,20 @@ def _bring_up_via_socket(
             return
         time.sleep(delay)
     if timed_out:
-        raise click.ClickException(
+        cli_error(
             f"`tailscale up` did not finish within {TAILSCALE_UP_TIMEOUT_SECONDS}s "
             "and was aborted. The userspace tailscaled may be wedged."
         )
     detail = (last.stderr or last.stdout or "").strip() if last else ""
-    raise click.ClickException(
+    cli_error(
         "Could not bring the mesh proxy up "
         f"(`tailscale up` kept failing). {detail[:200]}"
     )
 
 
-@click.group(epilog=help_epilog(MESH_DOCS))
-@click.pass_context
-def mesh(ctx) -> None:
-    """Join this machine to the Arkitekt WireGuard mesh via tailscale.
+mesh = typer.Typer(
+    no_args_is_help=True,
+    help="""Join this machine to the Arkitekt WireGuard mesh via tailscale.
 
     An Arkitekt deployment can front its services with a private WireGuard mesh
     (an ionscale tailnet). Use `mesh join` to enroll this machine (an org member
@@ -449,49 +448,8 @@ def mesh(ctx) -> None:
     These commands drive the local `tailscale` binary (falling back to `sudo` when
     elevated privileges are required), so tailscale must be installed first --
     see https://tailscale.com/download.
-    """
-
-
-def _join_options(func):
-    """Stack the shared device-code join options onto ``join`` and ``proxy``."""
-    func = with_fakts_next_url(func)
-    func = click.option(
-        "--name",
-        "-n",
-        "machine_name",
-        default=None,
-        help="Requested machine name (a hint; defaults to this host's hostname). "
-        "The authorizer may edit it.",
-    )(func)
-    func = click.option(
-        "--description",
-        default=None,
-        help="Human-readable purpose, shown on the authorization page.",
-    )(func)
-    func = click.option(
-        "--ephemeral",
-        is_flag=True,
-        default=False,
-        help="Request an ephemeral node (advisory; the authorizer decides the key type).",
-    )(func)
-    func = click.option(
-        "--tag",
-        "tags",
-        multiple=True,
-        help="Requested ionscale ACL tag (repeatable; advisory).",
-    )(func)
-    func = click.option(
-        "--expiration",
-        type=int,
-        default=600,
-        help="How long the join code stays valid, in seconds (default 600).",
-    )(func)
-    func = click.option(
-        "--open-browser/--no-open-browser",
-        default=True,
-        help="Open the authorization page in a browser (default: open).",
-    )(func)
-    return func
+    """,
+)
 
 
 def _device_code_join(
@@ -523,30 +481,73 @@ def _device_code_join(
 
     key = granted.get("ionscale_auth_key")
     if not key:
-        raise click.ClickException(
+        cli_error(
             "The mesh server authorized the join but returned no auth key."
         )
     coord = granted.get("ionscale_coord_url") or endpoints.get("coord_url")
     if not coord:
-        raise click.ClickException(
+        cli_error(
             "The mesh server authorized the join but returned no coordination URL."
         )
     hostname = granted.get("machine_name") or machine_name
     return key, coord, hostname
 
 
-@mesh.command()
-@_join_options
-@click.pass_context
 def join(
-    ctx,
-    url: str,
-    machine_name: Optional[str],
-    description: Optional[str],
-    ephemeral: bool,
-    tags: Tuple[str, ...],
-    expiration: int,
-    open_browser: bool,
+    ctx: typer.Context,
+    url: Annotated[
+        str,
+        typer.Option(
+            "--url",
+            "-u",
+            help="The fakts_next url for connection",
+            envvar="FAKTS_URL",
+        ),
+    ] = DEFAULT_ARKITEKT_URL,
+    machine_name: Annotated[
+        Optional[str],
+        typer.Option(
+            "--name",
+            "-n",
+            help="Requested machine name (a hint; defaults to this host's hostname). "
+            "The authorizer may edit it.",
+        ),
+    ] = None,
+    description: Annotated[
+        Optional[str],
+        typer.Option(
+            "--description",
+            help="Human-readable purpose, shown on the authorization page.",
+        ),
+    ] = None,
+    ephemeral: Annotated[
+        bool,
+        typer.Option(
+            "--ephemeral",
+            help="Request an ephemeral node (advisory; the authorizer decides the key type).",
+        ),
+    ] = False,
+    tags: Annotated[
+        List[str],
+        typer.Option(
+            "--tag",
+            help="Requested ionscale ACL tag (repeatable; advisory).",
+        ),
+    ] = [],
+    expiration: Annotated[
+        int,
+        typer.Option(
+            "--expiration",
+            help="How long the join code stays valid, in seconds (default 600).",
+        ),
+    ] = 600,
+    open_browser: Annotated[
+        bool,
+        typer.Option(
+            "--open-browser/--no-open-browser",
+            help="Open the authorization page in a browser (default: open).",
+        ),
+    ] = True,
 ) -> None:
     """Join the mesh via the device-code flow (a human authorizes this machine).
 
@@ -580,10 +581,13 @@ def join(
     )
 
 
-@mesh.command()
-@click.option("--yes", "-y", is_flag=True, default=False, help="Skip the confirmation prompt.")
-@click.pass_context
-def leave(ctx, yes: bool) -> None:
+def leave(
+    ctx: typer.Context,
+    yes: Annotated[
+        bool,
+        typer.Option("--yes", "-y", help="Skip the confirmation prompt."),
+    ] = False,
+) -> None:
     """Leave the mesh: disconnect and deregister this node (`tailscale logout`).
 
     This logs the node out of the tailnet, so a fresh `mesh join` (with a new
@@ -598,35 +602,80 @@ def leave(ctx, yes: bool) -> None:
             "[bold yellow]Warning:[/bold yellow] this deregisters the node from the "
             "mesh; reconnecting requires a fresh `mesh join` authorization."
         )
-        click.confirm("Log out of the mesh?", abort=True)
+        confirm_or_abort("Log out of the mesh?")
 
     _run_tailscale(console, ["logout"])
 
 
-@mesh.command()
-@_join_options
-@click.option(
-    "--listen",
-    default=DEFAULT_PROXY_LISTEN,
-    help=f"Local HTTP proxy listen address (default {DEFAULT_PROXY_LISTEN}).",
-)
-@click.option(
-    "--socks5-listen",
-    default=None,
-    help="Also expose a SOCKS5 proxy on this address (e.g. localhost:1080).",
-)
-@click.pass_context
 def proxy(
-    ctx,
-    url: str,
-    machine_name: Optional[str],
-    description: Optional[str],
-    ephemeral: bool,
-    tags: Tuple[str, ...],
-    expiration: int,
-    open_browser: bool,
-    listen: str,
-    socks5_listen: Optional[str],
+    ctx: typer.Context,
+    url: Annotated[
+        str,
+        typer.Option(
+            "--url",
+            "-u",
+            help="The fakts_next url for connection",
+            envvar="FAKTS_URL",
+        ),
+    ] = DEFAULT_ARKITEKT_URL,
+    machine_name: Annotated[
+        Optional[str],
+        typer.Option(
+            "--name",
+            "-n",
+            help="Requested machine name (a hint; defaults to this host's hostname). "
+            "The authorizer may edit it.",
+        ),
+    ] = None,
+    description: Annotated[
+        Optional[str],
+        typer.Option(
+            "--description",
+            help="Human-readable purpose, shown on the authorization page.",
+        ),
+    ] = None,
+    ephemeral: Annotated[
+        bool,
+        typer.Option(
+            "--ephemeral",
+            help="Request an ephemeral node (advisory; the authorizer decides the key type).",
+        ),
+    ] = False,
+    tags: Annotated[
+        List[str],
+        typer.Option(
+            "--tag",
+            help="Requested ionscale ACL tag (repeatable; advisory).",
+        ),
+    ] = [],
+    expiration: Annotated[
+        int,
+        typer.Option(
+            "--expiration",
+            help="How long the join code stays valid, in seconds (default 600).",
+        ),
+    ] = 600,
+    open_browser: Annotated[
+        bool,
+        typer.Option(
+            "--open-browser/--no-open-browser",
+            help="Open the authorization page in a browser (default: open).",
+        ),
+    ] = True,
+    listen: Annotated[
+        str,
+        typer.Option(
+            "--listen",
+            help=f"Local HTTP proxy listen address (default {DEFAULT_PROXY_LISTEN}).",
+        ),
+    ] = DEFAULT_PROXY_LISTEN,
+    socks5_listen: Annotated[
+        Optional[str],
+        typer.Option(
+            "--socks5-listen",
+            help="Also expose a SOCKS5 proxy on this address (e.g. localhost:1080).",
+        ),
+    ] = None,
 ) -> None:
     """Join the mesh and run a local HTTP proxy into it (userspace networking).
 
@@ -656,7 +705,7 @@ def proxy(
     try:
         proc = subprocess.Popen(daemon_command)
     except FileNotFoundError:
-        raise click.ClickException(
+        cli_error(
             f"Could not launch 'tailscaled' at {tailscaled_path}."
         )
 
@@ -697,10 +746,10 @@ def proxy(
             proc.kill()
 
 
-@mesh.command()
-@click.argument("domain", required=False)
-@click.pass_context
-def cert(ctx, domain: Optional[str]) -> None:
+def cert(
+    ctx: typer.Context,
+    domain: Annotated[Optional[str], typer.Argument()] = None,
+) -> None:
     """Fetch a TLS certificate for this node via `tailscale cert`.
 
     With no DOMAIN, tailscale issues a certificate for this node's own MagicDNS
@@ -713,3 +762,9 @@ def cert(ctx, domain: Optional[str]) -> None:
     if domain:
         args.append(domain)
     _run_tailscale(console, args)
+
+
+mesh.command("join")(join)
+mesh.command("leave")(leave)
+mesh.command("proxy")(proxy)
+mesh.command("cert")(cert)

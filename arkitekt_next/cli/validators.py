@@ -1,13 +1,12 @@
 import semver
-from .errors import ValidationError
-import rich_click as click
+from .errors import ValidationError, cli_error
 
 
 def is_valid_semver(param: str, loaded=False) -> semver.VersionInfo:
     """Checks if the param is a valid semver version and returns it as a semver object"""
     if not semver.Version.is_valid(param):
         if loaded:
-            raise click.ClickException(
+            cli_error(
                 "Manifest version incorrect, please update your manifest to a valid semver version  [link=https://semver.org]semver[/link]."
             )
 

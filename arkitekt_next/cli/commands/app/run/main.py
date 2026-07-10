@@ -1,13 +1,8 @@
-import rich_click as click
-from .dev import dev
-from .prod import prod
-from arkitekt_next.cli.docs import RUN_DOCS, help_epilog
+import typer
 
-
-@click.group(epilog=help_epilog(RUN_DOCS))
-@click.pass_context
-def run(ctx):
-    """Runs your arkitekt_next app
+run = typer.Typer(
+    no_args_is_help=True,
+    help="""Runs your arkitekt_next app
 
     Running your app locally is the first step to developing your app. You can run your app in
     development mode, which will automatically reload your app when you change the code, or in
@@ -16,8 +11,11 @@ def run(ctx):
 
 
 
-    """
+    """,
+)
 
+from .dev import dev
+from .prod import prod
 
-run.add_command(dev, "dev")
-run.add_command(prod, "prod")
+run.command("dev")(dev)
+run.command("prod")(prod)

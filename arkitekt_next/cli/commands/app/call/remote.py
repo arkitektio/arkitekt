@@ -1,14 +1,7 @@
-from click import Context
-import rich_click as click
-from arkitekt_next.cli.options import (
-    with_builder,
-    with_token,
-    with_headless,
-    get_console,
-    get_manifest,
-    with_log_level,
-    with_skip_cache,
-)
+from enum import Enum
+from typing import Annotated, List, Optional
+import typer
+from arkitekt_next.cli.vars import get_console, get_manifest
 import asyncio
 from arkitekt_next.cli.ui import construct_run_panel
 from importlib import import_module
@@ -17,6 +10,14 @@ from arkitekt_next.cli.ui import construct_run_panel
 from importlib import import_module
 from arkitekt_next.cli.utils import import_builder
 from arkitekt_next.constants import DEFAULT_ARKITEKT_URL
+
+
+class LogLevel(str, Enum):
+    DEBUG = "DEBUG"
+    INFO = "INFO"
+    WARNING = "WARNING"
+    ERROR = "ERROR"
+    CRITICAL = "CRITICAL"
 
 
 async def call_app(
@@ -28,35 +29,76 @@ async def call_app(
         raise NotImplementedError("This is not implemented yet")
 
 
-@click.command("prod")
-@click.option(
-    "--url",
-    help="The fakts_next url for connection",
-    default=DEFAULT_ARKITEKT_URL,
-    envvar="FAKTS_URL",
-)
-@with_builder
-@with_token
-@with_headless
-@with_log_level
-@with_skip_cache
-@click.pass_context
-@click.option(
-    "--arg",
-    "-a",
-    "args",
-    help="Key Value pairs for the setup",
-    type=(str, str),
-    multiple=True,
-)
-@click.option(
-    "--hash",
-    "-h",
-    help="The hash of the node to run",
-    type=str,
-)
 def remote(
-    ctx: Context, entrypoint=None, builder=None, args=None, hash=str, **builder_kwargs
+    ctx: typer.Context,
+    url: Annotated[
+        str,
+        typer.Option(
+            "--url",
+            help="The fakts_next url for connection",
+            envvar="FAKTS_URL",
+        ),
+    ] = DEFAULT_ARKITEKT_URL,
+    builder: Annotated[
+        str,
+        typer.Option(
+            "--builder",
+            "-b",
+            help="The builder for this run",
+            envvar="ARKITEKT_BUILDER",
+        ),
+    ] = "arkitekt_next.builders.easy",
+    token: Annotated[
+        Optional[str],
+        typer.Option(
+            "--token",
+            "-t",
+            help="The token for the fakts_next instance",
+            envvar="FAKTS_TOKEN",
+        ),
+    ] = None,
+    headless: Annotated[
+        bool,
+        typer.Option(
+            "--headless",
+            help="Should we start headless",
+            envvar="ARKITEKT_HEADLESS",
+        ),
+    ] = False,
+    log_level: Annotated[
+        LogLevel,
+        typer.Option(
+            "--log-level",
+            "-l",
+            help="The logging level to use",
+            envvar="ARKITEKT_LOG_LEVEL",
+        ),
+    ] = LogLevel.ERROR,
+    no_cache: Annotated[
+        bool,
+        typer.Option(
+            "--no-cache",
+            "-nc",
+            help="Should we skip the cache",
+            envvar="ARKITEKT_NO_CACHE",
+        ),
+    ] = False,
+    args: Annotated[
+        List[str],
+        typer.Option(
+            "--arg",
+            "-a",
+            help="Key Value pairs for the setup",
+        ),
+    ] = [],
+    hash: Annotated[
+        Optional[str],
+        typer.Option(
+            "--hash",
+            "-h",
+            help="The hash of the node to run",
+        ),
+    ] = None,
 ):
     """ALlows you to run a get the output of a node in a remote app.
 
@@ -68,9 +110,17 @@ def remote(
 
     manifest = get_manifest(ctx)
     console = get_console(ctx)
-    entrypoint = entrypoint or manifest.entrypoint
+    entrypoint = manifest.entrypoint
 
     kwargs = dict(args or [])
+
+    builder_kwargs = {
+        "url": url,
+        "token": token,
+        "headless": headless,
+        "log_level": log_level.value,
+        "no_cache": no_cache,
+    }
 
     builder = import_builder(builder)
 

@@ -1,13 +1,11 @@
-import rich_click as click
+import typer
 from rich.table import Table
 from rich.panel import Panel
 from rich.console import Group
 from arkitekt_next.cli.vars import get_manifest, get_console
 
 
-@click.command()
-@click.pass_context
-def inspect(ctx) -> None:
+def inspect(ctx: typer.Context) -> None:
     """Inspect the [i]current[/i] manifest of this app
 
     The manifest is used to describe the app and its rights (scopes) and requirements, to be run on the platform.

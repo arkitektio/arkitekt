@@ -8,7 +8,6 @@ from arkitekt_next.cli.types import (
 )
 import yaml
 import json
-import rich_click as click
 
 
 def load_manifest_yaml(path: str) -> Manifest:

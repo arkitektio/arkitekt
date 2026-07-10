@@ -1,24 +1,22 @@
-import rich_click as click
-from .variables import variables
-from .implementations import implementations
-from .requirements import requirements
-from .all import all
-from arkitekt_next.cli.docs import INSPECT_DOCS, help_epilog
+import typer
 
-
-@click.group(epilog=help_epilog(INSPECT_DOCS))
-@click.pass_context
-def inspect(ctx):
-    """Inspects your arkitekt_next app
+inspect = typer.Typer(
+    no_args_is_help=True,
+    help="""Inspects your arkitekt_next app
 
     Inspects various parts of your arkitekt_next app. This is useful for debugging
     and development. It also represents methods that are called by the arkitekt_next
     server when you run your app in production mode.
 
-    """
+    """,
+)
 
+from .variables import variables
+from .implementations import implementations
+from .requirements import requirements
+from .all import all
 
-inspect.add_command(all, "all")
-inspect.add_command(variables, "variables")
-inspect.add_command(requirements, "requirements")
-inspect.add_command(implementations, "implementations")
+inspect.command("all")(all)
+inspect.command("variables")(variables)
+inspect.command("requirements")(requirements)
+inspect.command("implementations")(implementations)

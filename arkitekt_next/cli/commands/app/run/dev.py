@@ -3,7 +3,6 @@ from functools import partial
 from importlib import import_module, reload
 import asyncio
 
-from click import Context
 from watchfiles import awatch, Change
 from rich.panel import Panel
 from rich.console import Console
@@ -14,23 +13,13 @@ import inspect
 from pathlib import Path
 from rekuest_next.app import AppRegistry
 from rekuest_next.agents.hooks.registry import get_default_hook_registry
-from typing import MutableSet, Tuple, Any, Set
+from typing import Annotated, MutableSet, Optional, Tuple, Any, Set
+import typer
 from arkitekt_next.cli.ui import construct_changes_group, construct_app_group
-from arkitekt_next.cli.commands.app.run.utils import import_builder, run_app
+from arkitekt_next.cli.commands.app.run.utils import import_builder, run_app, LogLevel
 from arkitekt_next.cli.types import Manifest
 from arkitekt_next.app.app import App
-import rich_click as click
-from arkitekt_next.cli.options import (
-    with_fakts_next_url,
-    with_builder,
-    with_token,
-    with_force,
-    with_headless,
-    with_log_level,
-    with_redeem_token,
-    with_skip_cache,
-    with_version,
-)
+from arkitekt_next.constants import DEFAULT_ARKITEKT_URL
 from arkitekt_next.cli.vars import get_console, get_manifest
 
 
@@ -338,29 +327,104 @@ async def run_dev(
             console.print(panel)
 
 
-@click.command()
-@with_fakts_next_url
-@with_builder
-@with_token
-@with_force
-@with_redeem_token
-@with_headless
-@with_log_level
-@with_skip_cache
-@with_version
-@click.option(
-    "--deep",
-    help="Should we check the whole directory for changes and reload them when changes?",
-    is_flag=True,
-)
-@click.option(
-    "--reauth",
-    help="Should we check the whole directory for changes and reload them when changes?",
-    is_flag=True,
-)
-@click.argument("entrypoint", required=False)
-@click.pass_context
-def dev(ctx: Context, entrypoint: str, **kwargs):
+def dev(
+    ctx: typer.Context,
+    entrypoint: Annotated[Optional[str], typer.Argument()] = None,
+    url: Annotated[
+        str,
+        typer.Option(
+            "--url",
+            "-u",
+            help="The fakts_next url for connection",
+            envvar="FAKTS_URL",
+        ),
+    ] = DEFAULT_ARKITEKT_URL,
+    builder: Annotated[
+        str,
+        typer.Option(
+            "--builder",
+            "-b",
+            help="The builder for this run",
+            envvar="ARKITEKT_BUILDER",
+        ),
+    ] = "arkitekt_next.builders.easy",
+    token: Annotated[
+        Optional[str],
+        typer.Option(
+            "--token",
+            "-t",
+            help="The token for the fakts_next instance",
+            envvar="FAKTS_TOKEN",
+        ),
+    ] = None,
+    force: Annotated[
+        bool,
+        typer.Option(
+            "--force",
+            "-f",
+            help="Force registration, kicking any existing connection for this agent and taking over",
+            envvar="ARKITEKT_FORCE",
+        ),
+    ] = False,
+    redeem_token: Annotated[
+        Optional[str],
+        typer.Option(
+            "--redeem-token",
+            "-r",
+            help="The redeem token used to authenticate against the fakts_next instance",
+            envvar="FAKTS_REDEEM_TOKEN",
+        ),
+    ] = None,
+    headless: Annotated[
+        bool,
+        typer.Option(
+            "--headless",
+            help="Should we start headless",
+            envvar="ARKITEKT_HEADLESS",
+        ),
+    ] = False,
+    log_level: Annotated[
+        LogLevel,
+        typer.Option(
+            "--log-level",
+            "-l",
+            help="The logging level to use",
+            envvar="ARKITEKT_LOG_LEVEL",
+        ),
+    ] = LogLevel.ERROR,
+    no_cache: Annotated[
+        bool,
+        typer.Option(
+            "--no-cache",
+            "-nc",
+            help="Should we skip the cache",
+            envvar="ARKITEKT_NO_CACHE",
+        ),
+    ] = False,
+    version: Annotated[
+        Optional[str],
+        typer.Option(
+            "--version",
+            "-v",
+            help="Override the version of the app",
+            envvar="ARKITEKT_VERSION",
+        ),
+    ] = None,
+    deep: Annotated[
+        bool,
+        typer.Option(
+            "--deep",
+            help="Should we check the whole directory for changes and reload them when changes?",
+        ),
+    ] = False,
+    reauth: Annotated[
+        bool,
+        typer.Option(
+            "--reauth",
+            help="Should we check the whole directory for changes and reload them when changes?",
+        ),
+    ] = False,
+) -> None:
     """Runs the app in dev mode (with hot reloading)
 
     Running the app in dev mode will automatically reload the app when changes are detected.
@@ -370,4 +434,21 @@ def dev(ctx: Context, entrypoint: str, **kwargs):
     manifest = get_manifest(ctx)
     console = get_console(ctx)
 
-    asyncio.run(run_dev(console, manifest, entrypoint=entrypoint, **kwargs))
+    asyncio.run(
+        run_dev(
+            console,
+            manifest,
+            entrypoint=entrypoint,
+            url=url,
+            builder=builder,
+            token=token,
+            force=force,
+            redeem_token=redeem_token,
+            headless=headless,
+            log_level=log_level.value,
+            no_cache=no_cache,
+            version=version,
+            deep=deep,
+            reauth=reauth,
+        )
+    )
