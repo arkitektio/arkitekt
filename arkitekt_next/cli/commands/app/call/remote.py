@@ -95,7 +95,6 @@ def remote(
         Optional[str],
         typer.Option(
             "--hash",
-            "-h",
             help="The hash of the node to run",
         ),
     ] = None,

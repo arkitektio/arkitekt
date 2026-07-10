@@ -1,7 +1,7 @@
 {
     "name": "com.test.app vanilla Devcontainer",
     "build": {
-        "dockerfile": "../../../../../../../tmp/pytest-of-jhnnsrs/pytest-13/test_kabinet_init_work_dir0/.arkitekt_next/flavours/vanilla/Dockerfile",
+        "dockerfile": "../../../../../../../tmp/pytest-of-jhnnsrs/pytest-14/test_kabinet_init_work_dir0/.arkitekt_next/flavours/vanilla/Dockerfile",
         "context": "../.."
     },
     "runArgs": [
