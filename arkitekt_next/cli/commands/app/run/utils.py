@@ -1,17 +1,12 @@
-from enum import Enum
 from importlib import import_module
 from typing import Callable
 from arkitekt_next.app.app import App
 
+# Re-exported for backwards compatibility; the canonical definition now lives in
+# `arkitekt_next.cli.options` alongside the shared option aliases.
+from arkitekt_next.cli.options import LogLevel
 
-class LogLevel(str, Enum):
-    """The logging levels accepted by the run commands."""
-
-    DEBUG = "DEBUG"
-    INFO = "INFO"
-    WARNING = "WARNING"
-    ERROR = "ERROR"
-    CRITICAL = "CRITICAL"
+__all__ = ["LogLevel", "import_builder", "run_app"]
 
 
 def import_builder(builder: str) -> Callable[..., App]:

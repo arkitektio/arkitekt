@@ -16,7 +16,19 @@ from rekuest_next.agents.hooks.registry import get_default_hook_registry
 from typing import Annotated, MutableSet, Optional, Tuple, Any, Set
 import typer
 from arkitekt_next.cli.ui import construct_changes_group, construct_app_group
-from arkitekt_next.cli.commands.app.run.utils import import_builder, run_app, LogLevel
+from arkitekt_next.cli.commands.app.run.utils import import_builder, run_app
+from arkitekt_next.cli.options import (
+    LogLevel,
+    UrlOption,
+    BuilderOption,
+    TokenOption,
+    RedeemTokenOption,
+    ForceOption,
+    HeadlessOption,
+    LogLevelOption,
+    NoCacheOption,
+    VersionOption,
+)
 from arkitekt_next.cli.types import Manifest
 from arkitekt_next.app.app import App
 from arkitekt_next.constants import DEFAULT_ARKITEKT_URL
@@ -330,86 +342,15 @@ async def run_dev(
 def dev(
     ctx: typer.Context,
     entrypoint: Annotated[Optional[str], typer.Argument()] = None,
-    url: Annotated[
-        str,
-        typer.Option(
-            "--url",
-            "-u",
-            help="The fakts_next url for connection",
-            envvar="FAKTS_URL",
-        ),
-    ] = DEFAULT_ARKITEKT_URL,
-    builder: Annotated[
-        str,
-        typer.Option(
-            "--builder",
-            "-b",
-            help="The builder for this run",
-            envvar="ARKITEKT_BUILDER",
-        ),
-    ] = "arkitekt_next.builders.easy",
-    token: Annotated[
-        Optional[str],
-        typer.Option(
-            "--token",
-            "-t",
-            help="The token for the fakts_next instance",
-            envvar="FAKTS_TOKEN",
-        ),
-    ] = None,
-    force: Annotated[
-        bool,
-        typer.Option(
-            "--force",
-            "-f",
-            help="Force registration, kicking any existing connection for this agent and taking over",
-            envvar="ARKITEKT_FORCE",
-        ),
-    ] = False,
-    redeem_token: Annotated[
-        Optional[str],
-        typer.Option(
-            "--redeem-token",
-            "-r",
-            help="The redeem token used to authenticate against the fakts_next instance",
-            envvar="FAKTS_REDEEM_TOKEN",
-        ),
-    ] = None,
-    headless: Annotated[
-        bool,
-        typer.Option(
-            "--headless",
-            help="Should we start headless",
-            envvar="ARKITEKT_HEADLESS",
-        ),
-    ] = False,
-    log_level: Annotated[
-        LogLevel,
-        typer.Option(
-            "--log-level",
-            "-l",
-            help="The logging level to use",
-            envvar="ARKITEKT_LOG_LEVEL",
-        ),
-    ] = LogLevel.ERROR,
-    no_cache: Annotated[
-        bool,
-        typer.Option(
-            "--no-cache",
-            "-nc",
-            help="Should we skip the cache",
-            envvar="ARKITEKT_NO_CACHE",
-        ),
-    ] = False,
-    version: Annotated[
-        Optional[str],
-        typer.Option(
-            "--version",
-            "-v",
-            help="Override the version of the app",
-            envvar="ARKITEKT_VERSION",
-        ),
-    ] = None,
+    url: UrlOption = DEFAULT_ARKITEKT_URL,
+    builder: BuilderOption = "arkitekt_next.builders.easy",
+    token: TokenOption = None,
+    force: ForceOption = False,
+    redeem_token: RedeemTokenOption = None,
+    headless: HeadlessOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
+    no_cache: NoCacheOption = False,
+    version: VersionOption = None,
     deep: Annotated[
         bool,
         typer.Option(
