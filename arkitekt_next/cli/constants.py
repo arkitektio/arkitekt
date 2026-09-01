@@ -10,7 +10,7 @@ def compile_scopes() -> List[str]:
 
 
 def compile_builders():
-    return ["arkitekt_next.builders.easy", "arkitekt_next.builders.port"]
+    return ["arkitekt_next.builders.easy"]
 
 
 def compile_runtimes():

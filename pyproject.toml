@@ -20,25 +20,14 @@ dependencies = [
     "platformdirs>=4.5.0",
     "py-machineid>=0.8.1",
     # Used eagerly by the base CLI (config/manifest/plugin IO), so it stays core.
-    # The rest of the former "server deployment stack" now lives in the `server`
-    # optional extra (see below).
     "pyyaml>=6.0.2",
+    # The mesh commands drive the well-known/device-code flow over aiohttp.
+    "aiohttp>=3.9",
 ]
 
 [project.optional-dependencies]
 cli = [
     "turms>=2.0.0",
-]
-# Server deployment stack (migrated from the arkitekt-server package): used by the
-# `hub`, `coord`, `hubinator` and `engine` CLI groups to generate docker-compose
-# deployments. Every dep here is lazy-imported inside those command callbacks, so
-# the base client/CLI works without it. See arkitekt_next/server/.
-server = [
-    "cryptography>=45.0.5",
-    "inquirer>=3.4.0",
-    "ifaddr>=0.2.0",
-    "python-slugify>=8.0.4",
-    "dokker>=2.6.0",
 ]
 alpaka = [
     "alpaka>=1.0.0",
@@ -69,9 +58,8 @@ unlok = [
 ]
 all = [
     # Self-referential extras keep `all` complete without duplicating (and drifting)
-    # version pins. Bundles every service client plus the `cli` (turms) and `server`
-    # stacks.
-    "arkitekt-next[cli,server,mikro,kabinet,elektro,fluss,reaktion,unlok]",
+    # version pins. Bundles every service client plus the `cli` (turms) stack.
+    "arkitekt-next[cli,mikro,kabinet,elektro,fluss,reaktion,unlok]",
     "typer>=0.15.0",
     "watchfiles>=0.18.1",
     "semver>=3.0.1",
@@ -87,9 +75,6 @@ build = ["uv>=0.7.12"]
 [project.scripts]
 arkitekt-next = "arkitekt_next.cli.main:cli"
 
-[project.entry-points.pytest11]
-arkitekt_next = "arkitekt_next.pytest"
-
 [tool.uv]
 dev-dependencies = [
     "autoflake>=1.7.7,<2",
@@ -101,7 +86,6 @@ dev-dependencies = [
     "mikro-next>=2.1.0",
     "python-semantic-release>=9.21.1",
     "qtpy>=2.4.3",
-    "dokker>=2.7",
     "numpy>=1,<2",
     "rekuest-next>=0.13.1",
     "kabinet>=1.0.1",

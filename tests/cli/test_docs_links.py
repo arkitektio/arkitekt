@@ -46,10 +46,7 @@ def test_help_epilog_renders_a_link():
         ["app", "call"],
         # Top-level groups.
         ["plugin"],
-        ["hub"],
-        ["coord"],
         ["mesh"],
-        ["hubinator"],
         ["self"],
     ],
 )

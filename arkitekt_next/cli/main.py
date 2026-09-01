@@ -10,41 +10,23 @@ except ImportError:
 
 from arkitekt_next.cli.app import cli_app
 from arkitekt_next.cli.docs import (
-    COORD_DOCS,
-    ENGINE_DOCS,
-    HUB_DOCS,
-    HUBINATOR_DOCS,
     MESH_DOCS,
     PLUGIN_DOCS,
     SELF_DOCS,
     help_epilog,
 )
 from arkitekt_next.cli.commands.app.main import app
-from arkitekt_next.cli.commands.deployments.main import GROUPS as DEPLOYMENT_GROUPS
 from arkitekt_next.cli.commands.mesh.main import mesh
 from arkitekt_next.cli.commands.self.main import self_group
 from arkitekt_next.cli.commands.plugin.main import plugin
-
-#: Hosted docs page per deployment group, for the `--help` epilogue.
-DEPLOYMENT_DOCS = {
-    "hub": HUB_DOCS,
-    "coord": COORD_DOCS,
-    "hubinator": HUBINATOR_DOCS,
-    "engine": ENGINE_DOCS,
-}
 
 # Mount every group onto the Typer root, then build the public click entry point
 # (project.scripts -> arkitekt_next.cli.main:cli). The root callback in cli/app.py seeds
 # ctx.obj, which propagates to every subcommand. Per-group `epilog` re-adds the hosted
 # docs link to each `--help` (the `app` group sets its own; its subgroups get theirs in
-# app/main.py).
+# app/main.py). Server construction and deployment live in konstruktor
+# (https://github.com/arkitektio/konstruktor), not here.
 cli_app.add_typer(app, name="app")
-
-# The four deployment groups are generated from the DEPLOYMENTS registry rather than
-# hand-written, but they stay top-level: `arkitekt-next hub`, `arkitekt-next coord`, ...
-for _kind, _group in DEPLOYMENT_GROUPS.items():
-    cli_app.add_typer(_group, name=_kind, epilog=help_epilog(DEPLOYMENT_DOCS[_kind]))
-
 cli_app.add_typer(mesh, name="mesh", epilog=help_epilog(MESH_DOCS))
 cli_app.add_typer(self_group, name="self", epilog=help_epilog(SELF_DOCS))
 cli_app.add_typer(plugin, name="plugin", epilog=help_epilog(PLUGIN_DOCS))

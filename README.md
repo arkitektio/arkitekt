@@ -103,22 +103,21 @@ code and the app reloads automatically. When you are ready for production, use `
 
 ## The CLI
 
-`arkitekt-next` is **the** command line for all things Arkitekt — one tool across
-the whole platform lifecycle. It absorbed the standalone `arkitekt-server` tool,
-so the same binary that builds your apps also stands up a deployment:
+`arkitekt-next` is the command line for building and running Arkitekt apps.
+Standing up an Arkitekt server is the job of
+[konstruktor](https://github.com/arkitektio/konstruktor):
 
 | Command group | What it does |
 | --- | --- |
 | `app` | Build, run and deploy apps from your Python code — scaffold (`init`), run locally (`run dev`/`run prod`), generate typed clients (`gen`), manage the manifest, inspect, and call functions. |
 | `plugin` | Containerize your app into flavours and publish it as a deployable plugin. |
-| `hub` · `coord` · `hubinator` · `engine` | Run the server — the data/compute services, an auth coordinator, the full all-in-one stack, or a standalone deployer. |
 | `mesh` | Join this machine to the deployment's private WireGuard mesh. |
 | `self` | Manage your Arkitekt install — upgrade the SDK, print versions, dump diagnostics. |
 
 ```bash
 arkitekt-next app init         # scaffold an app
 arkitekt-next app run dev      # run it with hot reloading
-arkitekt-next hubinator init   # stand up an all-in-one server to run it against
+konstruktor hub create         # stand up a server to run it against (separate tool)
 ```
 
 See the full reference in **[docs/cli.md](docs/cli.md)**.

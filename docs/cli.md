@@ -1,20 +1,19 @@
 # The Arkitekt Next CLI
 
-`arkitekt-next` is **the** command line for all things Arkitekt. A single tool now
-spans the whole lifecycle of the platform — it absorbed the standalone
-`arkitekt-server` tool, so you no longer reach for a second binary to stand up a
-deployment:
+`arkitekt-next` is the command line for building and running Arkitekt **apps**:
 
 - **Build apps** from your Python code — scaffold, run, generate typed clients,
   and call functions (`app`).
 - **Package plugins** — containerize an app into flavours and publish it
   (`plugin`).
-- **Run the server** — bring up the data/compute services, an auth coordinator,
-  or the full stack (`hub`, `coord`, `hubinator`, `engine`).
 - **Join the mesh** — enroll a machine in the private WireGuard network that
   fronts a deployment (`mesh`).
 - **Manage your install** — upgrade the SDK, print versions, dump diagnostics
   (`self`).
+
+Standing up an Arkitekt **server** (hub, coordinator, engine) is the job of
+[konstruktor](https://github.com/arkitektio/konstruktor) — the CLI and desktop
+app for creating and managing deployments.
 
 This page is a reference for the available command groups. Every command and
 sub-command also ships with `--help`, so you can always discover the exact flags
@@ -23,7 +22,7 @@ from the terminal:
 ```bash
 arkitekt-next --help
 arkitekt-next app --help
-arkitekt-next hub init --help
+arkitekt-next mesh join --help
 arkitekt-next app manifest version --help
 ```
 
@@ -38,10 +37,6 @@ documentation. Those links live as constants in
 | :--- | :--- | :--- |
 | `app` | Build, run and deploy apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli/app> |
 | `plugin` | Containerize an app into flavours and publish it. | <https://arkitekt.live/docs/cli/plugin> |
-| `hub` | Run a stack of Arkitekt services trusting an external coordinator. | <https://arkitekt.live/docs/cli/hub> |
-| `coord` | Run a coordinator: the Lok auth server + Kontrol frontend. | <https://arkitekt.live/docs/cli/coord> |
-| `hubinator` | Run the full stack — a hub **and** a local coordinator. | <https://arkitekt.live/docs/cli/hubinator> |
-| `engine` | Run a standalone deployer that orchestrates app containers. | <https://arkitekt.live/docs/cli/engine> |
 | `mesh` | Join this machine to the deployment's WireGuard mesh. | <https://arkitekt.live/docs/cli/mesh> |
 | `self` | Manage the Arkitekt CLI / SDK installation itself. | <https://arkitekt.live/docs/cli/self> |
 
@@ -49,7 +44,7 @@ documentation. Those links live as constants in
 
 | Option | Description |
 | :--- | :--- |
-| `--work-dir`, `-w` | The working directory. Defaults to the current directory. The `app` group reads and writes the `.arkitekt_next` project folder relative to this directory; the server groups (`hub`, `coord`, `hubinator`, `engine`) read and write their deployment config here. Either way you can operate on a project without `cd`-ing into it. |
+| `--work-dir`, `-w` | The working directory. Defaults to the current directory. The `app` group reads and writes the `.arkitekt_next` project folder relative to this directory, so you can operate on a project without `cd`-ing into it. |
 
 ```bash
 # Operate on a project located elsewhere without changing directories
@@ -59,9 +54,7 @@ arkitekt-next --work-dir ./my-app app manifest inspect
 > **Note:** The `app` group operates on a scaffolded app project. Every `app`
 > subcommand except `app init` expects an initialized app; it will create the
 > `.arkitekt_next` folder if needed and load the manifest from the working
-> directory. The server groups (`hub`, `coord`, `hubinator`, `engine`) do **not**
-> need an app project — they read and write their own deployment config profile
-> instead.
+> directory.
 
 ---
 
@@ -318,163 +311,6 @@ accepts `--kind`/`-k` (e.g. `cuda`) plus quantitative selectors such as
 
 ---
 
-# Server deployment
-
-These groups stand up an Arkitekt deployment. They were migrated from the
-standalone `arkitekt-server` tool, so the whole platform is now driven from one
-CLI. None of them need an app project — each `init` writes a deployment config
-profile into the working directory, and each `up` composes that profile and
-starts it.
-
-All four groups are generated from one registry, so they share the same
-lifecycle:
-
-| Command | What it does |
-| :--- | :--- |
-| `init` | Write the deployment config profile (the source of truth). |
-| `up` | Regenerate the compose/config files from the profile, then start the stack. Pass `--wait` to block until every service is healthy. |
-| `down` | Stop the stack and remove its containers. Volumes are **kept** unless you pass `--volumes`. |
-| `logs` | Stream service logs (`logs lok`, or all services by default; `--no-follow`, `--tail N`). |
-| `status` | Show each service's published port and health. Not available for `engine`, which deploys no gateway. |
-
-Because `up` regenerates from the profile every time, editing the profile YAML
-and re-running `up` is how you apply a configuration change.
-
-## Which one do I run?
-
-An Arkitekt deployment is made of a few roles. Pick the group that matches how
-much of the stack you want this machine to run:
-
-| Group | Runs the services? | Runs the coordinator (Lok auth + Kontrol)? | Runs a deployer? | Use it when… |
-| :--- | :--- | :--- | :--- | :--- |
-| `coord` | ✗ | ✓ | ✗ | You want a standalone identity/auth server that hubs and clients authenticate against. |
-| `hub` | ✓ | ✗ (trusts an external `coord`) | ✗ | You want the data/compute services but let another machine handle identity. |
-| `hubinator` | ✓ | ✓ | optional | You want a self-contained, all-in-one instance (the default the old `arkitekt-server` produced). |
-| `engine` | ✗ | ✗ | ✓ | You want a standalone deployer that orchestrates app containers on behalf of an existing deployment. |
-
-The common shape is `init` (write config) then `up` (compose and start):
-
-```bash
-arkitekt-next hubinator init      # or: hub / coord / engine
-arkitekt-next hubinator up --wait # start, and block until healthy
-arkitekt-next hubinator status    # what is running, and is it healthy?
-arkitekt-next hubinator logs lok  # follow one service's logs
-arkitekt-next hubinator down      # stop it again (keeps your data)
-```
-
-Every `init` accepts `--backend` (`docker`, `podman`, `kubernetes`) and, where
-relevant, `--port` / `--ssl-port` to set the exposed HTTP/HTTPS ports.
-
-## `hubinator` — Full stack (hub + coordinator)
-
-A self-contained Arkitekt instance: the data/compute services **plus** a local
-Lok coordinator (with the Kontrol frontend) and, optionally, a deployer. This is
-the all-in-one deployment the standalone `arkitekt-server` tool produced by
-default.
-
-```bash
-arkitekt-next hubinator init                 # default template
-arkitekt-next hubinator init --wizard        # interactive configuration
-arkitekt-next hubinator init --template dev  # stable | dev | default | minimal
-arkitekt-next hubinator up
-```
-
-| Option (on `init`) | Description |
-| :--- | :--- |
-| `--template`, `-t` | Config template: `stable`, `dev`, `default`, `minimal`. Defaults to `default`. |
-| `--wizard`, `-w` | Run the interactive configuration wizard. |
-| `--default`, `-d` | Accept all defaults (skip the wizard, no prompts). |
-| `--service`, `-s` | Enable exactly these services (repeatable). Defaults to the template's selection. |
-| `--rekuest-server` | Rekuest (provenance) server host. `local` (default) runs rekuest as a core dependency. |
-| `--port` / `--ssl-port` | Exposed HTTP / HTTPS port. |
-| `--backend` | Deployment backend (`docker`, `podman`, `kubernetes`). |
-
-📖 <https://arkitekt.live/docs/cli/hubinator>
-
-## `hub` — Services trusting an external coordinator
-
-Bundles the data/compute services (rekuest, mikro, fluss, …) but runs **no** local
-coordinator — it trusts an external coordination (auth) server for identity. It
-manages no organizations or users and ships no deployer.
-
-```bash
-arkitekt-next hub init --coord-server https://auth.example.org
-arkitekt-next hub up
-arkitekt-next hub connect      # register the hub's services with an organization
-```
-
-| Option (on `init`) | Description |
-| :--- | :--- |
-| `--template`, `-t` | Config template (`stable`, `dev`, `default`, `minimal`). Omit to run the wizard. |
-| `--wizard`, `-w` | Force the interactive configuration wizard. |
-| `--default`, `-d` | Accept all defaults (skip the wizard). |
-| `--service`, `-s` | Enable exactly these services (repeatable). |
-| `--coord-server` | External coordination (auth) server whose JWKS the services trust. |
-| `--rekuest-server` | Rekuest (provenance) server host (`local` runs rekuest as a core dependency). |
-| `--port` / `--ssl-port` | Exposed HTTP / HTTPS port. |
-| `--backend` | Deployment backend (`docker`, `podman`, `kubernetes`). |
-
-`hub connect` inspects the machine's host addresses, advertises each enabled hub
-service, and registers them with an organization's coordination server (opening a
-browser to authorize). Useful options: `--server` (override the coordinator),
-`--all-hosts`/`-a` (advertise every discovered host without prompting),
-`--no-browser`, and `--timeout`.
-
-📖 <https://arkitekt.live/docs/cli/hub>
-
-## `coord` — Coordinator (Lok auth + Kontrol)
-
-Runs just the coordinator: the Lok auth server (OIDC/JWKS identity) and the
-Kontrol web frontend that clients and hubs authenticate against. It runs no
-data/compute services and no deployer — point one or more `hub`s at it via their
-`--coord-server`.
-
-```bash
-arkitekt-next coord init             # runs the wizard (asks about organizations)
-arkitekt-next coord init --default   # accept defaults, no prompts
-arkitekt-next coord up
-```
-
-| Option (on `init`) | Description |
-| :--- | :--- |
-| `--template`, `-t` | Config template (`stable`, `dev`, `default`, `minimal`). Omit to run the wizard. |
-| `--wizard`, `-w` | Force the interactive configuration wizard. |
-| `--default`, `-d` | Accept all defaults (skip the wizard). |
-| `--port` / `--ssl-port` | Exposed HTTP / HTTPS port. |
-| `--backend` | Deployment backend (`docker`, `podman`, `kubernetes`). |
-
-With no `--template`, the wizard runs and asks whether to set up organizations.
-
-📖 <https://arkitekt.live/docs/cli/coord>
-
-## `engine` — Standalone deployer
-
-An engine is a deployer running on its own docker-compose. It connects to an
-existing Arkitekt deployment (a `hub`, `coord` or `hubinator`) and orchestrates
-app containers on its behalf. Only the `hubinator` bundles a deployer inline;
-everywhere else you run an engine.
-
-```bash
-arkitekt-next engine init \
-  --url https://my-deployment.example.org \
-  --redeem-token <token> \
-  --network arkitekt_default
-arkitekt-next engine up
-```
-
-| Option (on `init`) | Description |
-| :--- | :--- |
-| `--url` | Gateway URL of the Arkitekt deployment to connect to. |
-| `--redeem-token` | Redeem token issued by the target deployment. |
-| `--network` | Docker network to join (the target deployment's internal network). |
-| `--organization` | Organization the deployer acts on behalf of. |
-| `--instance-id` | Instance ID for the deployer. |
-| `--backend` | Deployment backend (`docker`, `podman`, `kubernetes`). |
-
-📖 <https://arkitekt.live/docs/cli/engine>
-
----
-
 # Connectivity
 
 ## `mesh` — Join the WireGuard mesh
@@ -562,77 +398,12 @@ arkitekt-next plugin build
 arkitekt-next plugin publish
 ```
 
-Stand up a self-contained server to run those apps against:
+Stand up a server to run those apps against with
+[konstruktor](https://github.com/arkitektio/konstruktor), then (optionally) join
+a machine to the deployment's mesh:
 
 ```bash
-# 1. Bring up an all-in-one deployment
-arkitekt-next hubinator init --wizard
-arkitekt-next hubinator up
-
-# 2. (Optional) join a machine to the deployment's mesh
+konstruktor hub create
 arkitekt-next mesh join --url http://localhost:8000
 ```
 
----
-
-# Testing against a real server
-
-Installing `arkitekt-next` also installs a pytest plugin, so any project can test
-against a real, throwaway Arkitekt deployment without writing fixture code. The
-fixtures spin up a stack with [dokker](https://github.com/jhnnsrs/dokker), wait
-for it to report healthy, and tear it down (volumes included) afterwards.
-
-```python
-def test_my_app(running_app):
-    """`running_app` is an app already logged in to a running server."""
-    assert running_app.app.services
-```
-
-| Fixture | What you get |
-| :--- | :--- |
-| `arkitekt_server` | A **factory** — call it to boot a stack with the services and kind you want. |
-| `running_server` | A full stack with the default services (`rekuest`, `mikro`, `kabinet`). |
-| `lok_server` | A lok-only stack. Much faster to boot; use it for auth/coordination tests. |
-| `running_app` | An `easy()` app connected to `running_server`, with the device-code login already approved. |
-
-The factory takes the same arguments as `temp_setup`, so a test can ask for
-exactly the stack it needs:
-
-```python
-def test_against_a_coordinator(arkitekt_server):
-    coord = arkitekt_server(kind="coord")           # lok only
-    hub = arkitekt_server(["rekuest"], kind="hub")  # services, no local lok
-```
-
-Requires a running Docker daemon; tests are skipped automatically without one.
-Because booting a stack pulls images and runs migrations, these tests are marked
-`integration` and only run when you ask for them:
-
-```bash
-pytest -m integration
-pytest --arkitekt-channel latest -m integration   # pin the image channel
-```
-
-## Seeing why a failure happened
-
-When an assertion fails mid-request, the client-side error rarely says why.
-Wrapping the assertion in a watcher attaches the relevant container logs to the
-traceback:
-
-```python
-def test_upload(running_app):
-    with running_app.watch("mikro", "minio"):
-        assert upload_something()
-```
-
-## Driving the server as an operator
-
-`server.lok` acts as the human who would normally click through the web UI —
-approving device codes, authorizing hub registrations, or running any Django
-management command inside the lok container:
-
-```python
-def test_hub_registration(lok_server):
-    code = lok_server.lok.pending_hub_codes()[-1]
-    lok_server.lok.approve_hub(code)
-```

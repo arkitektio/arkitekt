@@ -1,11 +1,7 @@
 """Shared Typer option definitions.
 
-Two families live here:
-
-- **Connection options** -- `app run dev|prod|tests` and `app call remote` all take
-  the same fakts/builder options.
-- **Deployment options** -- every `server <kind> init` takes the same
-  template/wizard/port/backend options.
+Connection options: `app run dev|prod` and `app call remote` all take the same
+fakts/builder options.
 
 Defining each once as an `Annotated` alias keeps flags, help, envvars and types
 identical across commands; each command still supplies its own default at the call
@@ -13,7 +9,7 @@ site (e.g. `url: UrlOption = DEFAULT_ARKITEKT_URL`).
 """
 
 from enum import Enum
-from typing import Annotated, List, Optional
+from typing import Annotated, Optional
 
 import typer
 
@@ -130,73 +126,4 @@ VersionOption = Annotated[
         help="Override the version of the app",
         envvar="ARKITEKT_VERSION",
     ),
-]
-
-
-# --- Deployment options (hub / coord / hubinator / engine) -------------------
-# Every deployment group's `init` used to redeclare these with copy-pasted help.
-
-#: Config template to start from. ``None`` (the default everywhere) runs the wizard.
-TemplateOption = Annotated[
-    Optional[str],
-    typer.Option(
-        "--template",
-        "-t",
-        help="Config template (stable, dev, default, minimal). If omitted, the interactive wizard runs instead.",
-    ),
-]
-
-#: Force the interactive wizard even when a template was given.
-WizardOption = Annotated[
-    bool,
-    typer.Option("--wizard", "-w", help="Force the interactive configuration wizard."),
-]
-
-#: Accept every default and ask nothing.
-UseDefaultOption = Annotated[
-    bool,
-    typer.Option("--default", "-d", help="Accept all defaults (skip the wizard, no prompts)."),
-]
-
-#: Repeatable service selection. Only meaningful for kinds carrying data services.
-ServicesOption = Annotated[
-    List[str],
-    typer.Option(
-        "--service",
-        "-s",
-        help="Enable exactly these services (repeatable). Defaults to the template's selection.",
-    ),
-]
-
-#: Exposed HTTP port of the gateway.
-PortOption = Annotated[
-    Optional[int],
-    typer.Option("--port", help="Exposed HTTP port."),
-]
-
-#: Exposed HTTPS port of the gateway.
-SslPortOption = Annotated[
-    Optional[int],
-    typer.Option("--ssl-port", help="Exposed HTTPS port."),
-]
-
-#: Which container backend the generated deployment targets.
-BackendOption = Annotated[
-    str,
-    typer.Option("--backend", help="Deployment backend (docker, podman, kubernetes)."),
-]
-
-#: Rekuest (provenance) server host. ``local`` runs rekuest as a core dependency.
-RekuestServerOption = Annotated[
-    Optional[str],
-    typer.Option(
-        "--rekuest-server",
-        help="Rekuest (provenance) server host ('local' runs rekuest as a core dependency).",
-    ),
-]
-
-#: Optional positional deployment directory; falls back to the global ``--work-dir``.
-PathArgument = Annotated[
-    Optional[str],
-    typer.Argument(help="Deployment directory. Defaults to the global --work-dir."),
 ]

@@ -7,7 +7,6 @@ stdin forever. The autouse ``_assume_interactive`` fixture (see
 patch ``is_interactive`` back to ``False`` to exercise the guard.
 """
 
-import tempfile
 from unittest.mock import patch
 
 import pytest
@@ -34,16 +33,6 @@ def test_require_interactive_raises_when_not_tty(capsys):
     message = capsys.readouterr().err
     assert "The wizard" in message
     assert "Pass --template instead." in message
-
-
-def test_coord_init_wizard_aborts_without_tty():
-    """`coord init` with no template drops into the wizard -> guarded on non-TTY."""
-    runner = CliRunner()
-    with tempfile.TemporaryDirectory() as d, patch(INTERACTIVE, return_value=False):
-        result = runner.invoke(cli, ["--work-dir", d, "coord", "init"])
-
-    assert result.exit_code != 0
-    assert "interactive terminal" in result.output
 
 
 def test_mesh_leave_aborts_without_tty_and_without_yes():

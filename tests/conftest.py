@@ -1,22 +1,36 @@
 """Test configuration for arkitekt-next itself.
 
-The docker-backed fixtures (``arkitekt_server``, ``lok_server``, ``running_app``)
-are **not** defined here: they ship in :mod:`arkitekt_next.pytest`, which pytest
-auto-loads via the ``pytest11`` entry point. Using them from this repo's own suite
-is deliberate -- it means the plugin our users get is the plugin we test.
-
-What stays here is repo-local: CLI runner fixtures and the marker gating.
+Repo-local CLI runner fixtures and the marker gating. Server-backed fixtures are
+gone along with the server-construction code: deployments are konstruktor's job
+(https://github.com/arkitektio/konstruktor).
 """
 
 from __future__ import annotations
 
+import shutil
+import subprocess
+
 import pytest
 from arkitekt_next.cli.main import cli
-from arkitekt_next.pytest.fixtures import AppWithinDeployment, docker_available
 from click.testing import CliRunner
 
-# Re-exported so tests can `from .conftest import AppWithinDeployment`.
-__all__ = ["AppWithinDeployment"]
+
+def docker_available() -> bool:
+    """Return True if a docker CLI and a reachable daemon are present."""
+    if shutil.which("docker") is None:
+        return False
+    try:
+        return (
+            subprocess.run(
+                ["docker", "info"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+            ).returncode
+            == 0
+        )
+    except Exception:
+        return False
 
 
 def pytest_collection_modifyitems(
