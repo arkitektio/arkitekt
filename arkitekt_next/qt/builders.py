@@ -137,6 +137,7 @@ def qt(
             manifest=manifest,
             token=token,
             url=url,
+            no_cache=no_cache,
         )
 
     elif redeem_token:
@@ -144,6 +145,7 @@ def qt(
             manifest=manifest,
             redeem_token=redeem_token,
             url=url,
+            no_cache=no_cache,
         )
     else:
         fakts_next = build_device_code_fakts(

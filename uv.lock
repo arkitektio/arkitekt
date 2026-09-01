@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.11, <4"
 resolution-markers = [
     "python_full_version >= '3.14' and sys_platform == 'win32'",
@@ -370,7 +370,7 @@ provides-extras = ["cli", "server", "alpaka", "kraph", "mikro", "kabinet", "elek
 dev = [
     { name = "alpaka", specifier = ">=1.0.0" },
     { name = "autoflake", specifier = ">=1.7.7,<2" },
-    { name = "dokker", specifier = ">=2.2" },
+    { name = "dokker", specifier = ">=2.7" },
     { name = "elektro", specifier = ">=2.0.0" },
     { name = "fluss-next", specifier = ">=1.0.0" },
     { name = "kabinet", specifier = ">=1.0.1" },
@@ -834,7 +834,7 @@ wheels = [
 
 [[package]]
 name = "dokker"
-version = "2.6.0"
+version = "2.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -842,9 +842,9 @@ dependencies = [
     { name = "koil" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/48/3a/6a4f919e9408f2e0e4a6bd330d81e0640aa6fa3917db9239b175938e2a34/dokker-2.6.0.tar.gz", hash = "sha256:f42ea7424a91a9e0f60fd34905603cec9926121be36e52a3683cd5e200c9bd92", size = 26718, upload-time = "2026-06-29T14:23:59.267Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/a1/b6/a7687fb83885b3c12440e9e7f192196521963803782754fb12f1f9296c61/dokker-2.7.0.tar.gz", hash = "sha256:b2a1d81bac496f2c51436c22cb8d7edc89482d2b79391e14e94af702266e8186", size = 54306, upload-time = "2026-08-13T11:12:34.771Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a8/cb/77fd1c9761935281b815710d9af2c0d582304d03446d83ba2cffcd9b63ab/dokker-2.6.0-py3-none-any.whl", hash = "sha256:3a95502d50066334a8c191ac20390fcee31745956dea3e654f564143904b8e8a", size = 32549, upload-time = "2026-06-29T14:23:58.275Z" },
+    { url = "https://files.pythonhosted.org/packages/82/e4/8fc81630144930430c464ce8b8c2ddfa3cf7aaf9743560214d44120556bd/dokker-2.7.0-py3-none-any.whl", hash = "sha256:d03625bcac0e413c3e60d896a6852615b3b22553cbdd1bda7fb968c919c28be3", size = 62940, upload-time = "2026-08-13T11:12:33.555Z" },
 ]
 
 [[package]]
@@ -1178,7 +1178,7 @@ name = "importlib-metadata"
 version = "9.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "zipp", marker = "python_full_version < '3.12'" },
+    { name = "zipp" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/a9/01/15bb152d77b21318514a96f43af312635eb2500c96b55398d020c93d86ea/importlib_metadata-9.0.0.tar.gz", hash = "sha256:a4f57ab599e6a2e3016d7595cfd72eb4661a5106e787a95bcc90c7105b831efc", size = 56405, upload-time = "2026-03-20T06:42:56.999Z" }
 wheels = [
@@ -1741,10 +1741,10 @@ resolution-markers = [
     "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version >= '3.14'" },
-    { name = "python-dateutil", marker = "python_full_version >= '3.14'" },
-    { name = "pytz", marker = "python_full_version >= '3.14'" },
-    { name = "tzdata", marker = "python_full_version >= '3.14'" },
+    { name = "numpy" },
+    { name = "python-dateutil" },
+    { name = "pytz" },
+    { name = "tzdata" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/33/01/d40b85317f86cf08d853a4f495195c73815fdf205eef3993821720274518/pandas-2.3.3.tar.gz", hash = "sha256:e05e1af93b977f7eafa636d043f9f94c7ee3ac81af99c13508215942e64c993b", size = 4495223, upload-time = "2025-09-29T23:34:51.853Z" }
 wheels = [
@@ -1803,9 +1803,9 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 dependencies = [
-    { name = "numpy", marker = "python_full_version < '3.14'" },
-    { name = "python-dateutil", marker = "python_full_version < '3.14'" },
-    { name = "tzdata", marker = "(python_full_version < '3.14' and sys_platform == 'emscripten') or (python_full_version < '3.14' and sys_platform == 'win32')" },
+    { name = "numpy" },
+    { name = "python-dateutil" },
+    { name = "tzdata", marker = "sys_platform == 'emscripten' or sys_platform == 'win32'" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/f8/87/4341c6252d1c47b08768c3d25ac487362bf403f0313ddae4a2a26c9b1b4c/pandas-3.0.3.tar.gz", hash = "sha256:696a4a00a2a2a35d4e5deb3fc946641b96c944f02230e4f76137fe35d806c4fc", size = 4651414, upload-time = "2026-05-11T18:54:29.21Z" }
 wheels = [

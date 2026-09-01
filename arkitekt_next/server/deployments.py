@@ -32,52 +32,74 @@ from arkitekt_next.server.diff import (
     write_hub_files,
     write_virtual_config_files,
 )
+from arkitekt_next.server.kinds import KINDS, KindMeta
 from arkitekt_next.server import wizard
 
 
 @dataclass(frozen=True)
 class DeploymentKind:
-    """Everything the generic ``init``/``up`` flow needs to drive one deployment kind.
+    """Everything the generic lifecycle flow needs to drive one deployment kind.
 
-    ``name`` doubles as the CLI group name and the on-disk profile ``kind`` marker.
+    The static half (name, filename, help, ``supports_services``, ``bootable``) comes
+    from :data:`arkitekt_next.server.kinds.KINDS` and is exposed here by delegation,
+    so there is exactly one place describing a kind. This class adds only the heavy
+    bindings that require the ``server`` extra: config class, generator, wizard.
+
     ``wizard`` is ``None`` for kinds without an interactive wizard (``engine``).
     """
 
-    name: str
-    filename: str
+    meta: KindMeta
     config_cls: Type[BaseModel]
     generator: Callable[[Path, Any], None]
     wizard: Optional[Callable[..., BaseModel]] = None
-    supports_services: bool = False
+
+    @property
+    def name(self) -> str:
+        """CLI group name and on-disk profile ``kind`` marker."""
+        return self.meta.name
+
+    @property
+    def filename(self) -> str:
+        """Profile YAML filename inside the deployment directory."""
+        return self.meta.filename
+
+    @property
+    def supports_services(self) -> bool:
+        """Whether this kind carries selectable data/compute services."""
+        return self.meta.supports_services
+
+    @property
+    def bootable(self) -> bool:
+        """Whether this kind can be started and health-checked on its own."""
+        return self.meta.bootable
+
+    @property
+    def help(self) -> str:
+        """Help text for the CLI group."""
+        return self.meta.help
 
 
 DEPLOYMENTS: dict[str, DeploymentKind] = {
     "hub": DeploymentKind(
-        name="hub",
-        filename="hub_config.yaml",
+        meta=KINDS["hub"],
         config_cls=HubConfig,
         generator=write_hub_files,
         wizard=wizard.prompt_hub_config,
-        supports_services=True,
     ),
     "coord": DeploymentKind(
-        name="coord",
-        filename="coord_config.yaml",
+        meta=KINDS["coord"],
         config_cls=CoordConfig,
         generator=write_coord_files,
         wizard=wizard.prompt_coord_config,
     ),
     "hubinator": DeploymentKind(
-        name="hubinator",
-        filename="hubinator_config.yaml",
+        meta=KINDS["hubinator"],
         config_cls=ArkitektServerConfig,
         generator=write_virtual_config_files,
         wizard=wizard.prompt_config,
-        supports_services=True,
     ),
     "engine": DeploymentKind(
-        name="engine",
-        filename="engine_config.yaml",
+        meta=KINDS["engine"],
         config_cls=EngineConfig,
         generator=write_engine_files,
         wizard=None,

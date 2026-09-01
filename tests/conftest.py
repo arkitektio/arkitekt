@@ -1,31 +1,22 @@
+"""Test configuration for arkitekt-next itself.
+
+The docker-backed fixtures (``arkitekt_server``, ``lok_server``, ``running_app``)
+are **not** defined here: they ship in :mod:`arkitekt_next.pytest`, which pytest
+auto-loads via the ``pytest11`` entry point. Using them from this repo's own suite
+is deliberate -- it means the plugin our users get is the plugin we test.
+
+What stays here is repo-local: CLI runner fixtures and the marker gating.
+"""
+
 from __future__ import annotations
-from typing import TYPE_CHECKING, Generator
-from dataclasses import dataclass
-import shutil
-import subprocess
+
 import pytest
 from arkitekt_next.cli.main import cli
+from arkitekt_next.pytest.fixtures import AppWithinDeployment, docker_available
 from click.testing import CliRunner
 
-if TYPE_CHECKING:
-    from arkitekt_next.server.dev import ArkitektServer
-    from arkitekt_next.app import App
-
-
-def _docker_available() -> bool:
-    """Return True if a docker CLI and a reachable daemon are present."""
-    if shutil.which("docker") is None:
-        return False
-    try:
-        subprocess.run(
-            ["docker", "info"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=True,
-        )
-        return True
-    except Exception:
-        return False
+# Re-exported so tests can `from .conftest import AppWithinDeployment`.
+__all__ = ["AppWithinDeployment"]
 
 
 def pytest_collection_modifyitems(
@@ -38,8 +29,11 @@ def pytest_collection_modifyitems(
       unless explicitly selected with ``-m integration``;
     - ``needs_docker`` tests — skipped when no docker daemon is reachable, so
       they no-op on macOS/Windows CI runners and dev machines without docker.
+
+    Docker-backed stack tests carry **both** markers: opt-in via ``-m integration``
+    so a bare ``pytest`` stays fast, and a clean skip when there is no daemon.
     """
-    docker_ok = _docker_available()
+    docker_ok = docker_available()
     # `-m integration` selects integration tests; only then do we run them.
     run_integration = "integration" in str(config.getoption("markexpr") or "")
     skip_no_docker = pytest.mark.skip(reason="docker daemon not available")
@@ -134,91 +128,3 @@ def app_runner(app_dir):
     """CliRunner paired with a pre-initialized app directory."""
     runner = CliRunner()
     return runner, app_dir
-
-
-@dataclass
-class AppWithinDeployment:
-    """Dataclass to hold the running Arkitekt server and the connected app."""
-    server: ArkitektServer
-    app: App
-
-
-# Services the upload integration test needs: ``mikro`` provides the image/dataset
-# API, ``rekuest`` is part of the default service registry that ``easy`` negotiates
-# against. ``lok`` is always enabled (see ``REQUIRED_SERVICES``).
-INTEGRATION_SERVICES = ["rekuest", "mikro", "kabinet"]
-
-# lok auto-configures a local hub with this identifier from the default
-# kommunity partners that ``arkitekt-server`` writes into the generated config.
-# ``validatecode`` resolves the device code against it.
-HUB_IDENTIFIER = "localhost"
-
-
-@pytest.fixture(scope="session")
-def lok_server() -> Generator[ArkitektServer, None, None]:
-    """Spin up a lok-only Arkitekt deployment (gateway + lok + infra).
-
-    Much faster to boot than the full ``arkitekt_server`` stack; use it for
-    CLI integration tests that only talk to the coordination server. Control
-    lok through ``lok_server.lok`` (approve device codes, authorize
-    hubs, run management commands).
-    """
-    from arkitekt_next.server.dev import temp_setup
-
-    with temp_setup([], channel="next") as server:
-        setup = server.setup
-        with setup:
-            setup.pull()
-            setup.up()
-            setup.check_health()
-            yield server
-            setup.down()
-
-
-@pytest.fixture(scope="session")
-def arkitekt_server() -> Generator[ArkitektServer, None, None]:
-    """Spin up an ephemeral Arkitekt server with the services needed for tests.
-
-    Uses ``temp_setup`` which writes a throwaway config (anonymous volumes,
-    randomized ports), builds a ``dokker`` testing deployment and pre-registers a
-    health check for every enabled web service. The deployment is started here and
-    torn down on teardown.
-    """
-    from arkitekt_next.server.dev import temp_setup
-
-    with temp_setup(INTEGRATION_SERVICES, channel="next") as server:
-        setup = server.setup
-        with setup:
-            setup.pull()
-            setup.up()
-            setup.check_health()
-            yield server
-            setup.down()
-
-
-@pytest.fixture(scope="session")
-def running_app(
-    arkitekt_server: ArkitektServer,
-) -> Generator[AppWithinDeployment, None, None]:
-    """Connect an ``easy`` app to the running Arkitekt server.
-
-    The device-code login is auto-approved through the lok controller (which
-    runs lok's ``validatecode`` management command inside the container).
-    """
-    from fakts_next.grants.remote import FaktsEndpoint
-    from arkitekt_next import easy
-    from arkitekt_next.service_registry import get_default_service_registry
-
-    async def device_code_hook(endpoint: FaktsEndpoint, device_code: str):
-        await arkitekt_server.lok.avalidate_device_code(
-            device_code, hub=HUB_IDENTIFIER
-        )
-
-    registry = get_default_service_registry()
-    assert registry, "Service registry must be initialized"
-
-    with easy(
-        url=arkitekt_server.gateway_url,
-        device_code_hook=device_code_hook,
-    ) as app:
-        yield AppWithinDeployment(server=arkitekt_server, app=app)

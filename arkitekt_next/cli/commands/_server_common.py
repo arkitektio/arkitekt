@@ -1,14 +1,17 @@
-"""Shared helpers for the server-deployment CLI groups (`hub`, `coord`, `hubinator`,
-`engine`).
+"""Shared helpers for the deployment CLI groups (`hub`, `coord`, `hubinator`, `engine`).
 
 Each group drives the migrated ``arkitekt_next.server`` library. The per-kind coupling
 (name, config filename, config class, generator, wizard) lives in the single
 :data:`arkitekt_next.server.deployments.DEPLOYMENTS` registry; the helpers here are the
-generic ``init``/``up`` machinery parameterized by a :class:`DeploymentKind`:
+generic ``init`` machinery parameterized by a :class:`DeploymentKind`:
 
 - :func:`select_config`  -- wizard-or-default config selection (shared by hub/coord/hubinator)
 - :func:`finalize`       -- apply an optional template, then write the profile YAML
-- :func:`make_up_command`-- build the generic ``up`` command (identical across all kinds)
+- :func:`resolve_path`   -- positional path argument, falling back to ``--work-dir``
+
+The lifecycle verbs (``up``/``down``/``logs``/``status``) are built by factories in
+``cli/commands/deployments/commands.py`` on top of
+:mod:`arkitekt_next.server.lifecycle`.
 
 The registry transitively imports the ``server`` extra, so it is imported **only inside
 function bodies** here (and the CLI callbacks), keeping the base CLI importable without
@@ -17,11 +20,9 @@ the extra.
 
 import importlib.util
 import os
-import shutil
 from pathlib import Path
-from typing import Annotated, Any, Callable, Optional, Type, TYPE_CHECKING
+from typing import Any, TYPE_CHECKING
 
-import typer
 from pydantic import BaseModel
 
 from arkitekt_next.cli.errors import cli_error
@@ -97,51 +98,6 @@ def write_profile(
     return config_path
 
 
-def compose_and_up(
-    ctx,
-    path: Path,
-    *,
-    filename: str,
-    model_cls: Type[BaseModel],
-    generator: Callable[[Path, Any], None],
-) -> None:
-    """Load a profile config, regenerate the compose/config files, then ``docker compose up``."""
-    from arkitekt_next.server.runner import compose_up
-    from arkitekt_next.server.utils import load_profile_yaml
-
-    console = get_console(ctx)
-    config_path = path / filename
-    try:
-        config, _backend = load_profile_yaml(str(config_path), model_cls)
-    except FileNotFoundError:
-        cli_error(
-            f"No configuration found at {config_path}. Run the matching `init` command first."
-        )
-
-    console.print("[blue]Composing deployment (services + auth wiring)...[/blue]")
-    generator(path, config)
-
-    # Docker is only required for `up` — generation above already succeeded, so if
-    # Docker is missing we point the user at the ready-to-run files instead of failing
-    # opaquely.
-    if not shutil.which("docker"):
-        cli_error(
-            "Docker is not installed, but it is required to start the stack with `up`.\n"
-            "The deployment files were generated in "
-            f"{path} — install Docker (https://docs.docker.com/get-docker/) and run "
-            "`docker compose up` there, or re-run this command."
-        )
-
-    console.print("[blue]Starting the stack with `docker compose up`...[/blue]")
-    try:
-        compose_up(path)
-    except Exception as e:  # pragma: no cover - surfaced to the user
-        cli_error(
-            f"Failed to start the stack (is Docker running?): {e}"
-        )
-    console.print("[bold green]✓ Deployment is up.[/bold green]")
-
-
 def select_config(
     spec: "DeploymentKind", console, *, wizard: bool, template: str | None, use_default: bool
 ) -> Any:
@@ -172,30 +128,3 @@ def finalize(
     return write_profile(ctx, target, config, filename=spec.filename, kind=spec.name, backend=backend)
 
 
-def make_up_command(kind_name: str) -> Callable[..., None]:
-    """Build the generic ``up`` command function for a deployment kind.
-
-    Identical across all kinds: load the profile, regenerate the compose/config files,
-    then ``docker compose up``. The per-kind (filename, config class, generator) is
-    resolved lazily from the registry inside the body so this factory stays free of
-    the ``server`` extra at import time. The returned function has no decorator; the
-    group ``main.py`` registers it via ``<group>_app.command("up")(make_up_command(...))``.
-    """
-
-    def up(
-        ctx: typer.Context,
-        path: Annotated[Optional[str], typer.Argument()] = None,
-    ) -> None:
-        """Compose the deployment (services + auth wiring) and run `docker compose up`."""
-        from arkitekt_next.server.deployments import DEPLOYMENTS
-
-        spec = DEPLOYMENTS[kind_name]
-        compose_and_up(
-            ctx,
-            resolve_path(ctx, path),
-            filename=spec.filename,
-            model_cls=spec.config_cls,
-            generator=spec.generator,
-        )
-
-    return up

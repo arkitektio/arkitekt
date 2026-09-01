@@ -25,6 +25,7 @@ from rich.panel import Panel
 
 from arkitekt_next.cli.errors import cli_error, confirm_or_abort
 from arkitekt_next.cli.interactive import require_interactive
+from arkitekt_next.cli.options import UrlOption
 from arkitekt_next.cli.vars import get_console
 from arkitekt_next.constants import DEFAULT_ARKITEKT_URL
 
@@ -495,15 +496,7 @@ def _device_code_join(
 
 def join(
     ctx: typer.Context,
-    url: Annotated[
-        str,
-        typer.Option(
-            "--url",
-            "-u",
-            help="The fakts_next url for connection",
-            envvar="FAKTS_URL",
-        ),
-    ] = DEFAULT_ARKITEKT_URL,
+    url: UrlOption = DEFAULT_ARKITEKT_URL,
     machine_name: Annotated[
         Optional[str],
         typer.Option(

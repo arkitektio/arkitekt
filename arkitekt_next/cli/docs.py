@@ -35,7 +35,7 @@ FLAVOURS_DOCS = f"{DOCS_BASE_URL}/docs/flavours"
 
 
 def help_epilog(url: str) -> str:
-    """Render a rich-click epilogue that links to the hosted docs for a command.
+    """Render a Typer/rich epilogue that links to the hosted docs for a command.
 
     Used as the ``epilog=`` of a command/group so that ``--help`` always points
     the user at the matching page on the hosted documentation.

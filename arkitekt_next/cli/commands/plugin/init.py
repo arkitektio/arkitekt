@@ -110,7 +110,7 @@ def init(
         typer.Option(
             "--devcontainer",
             "-dc",
-            help="Shouwld we create a devcontainer.json file?",
+            help="Should we create a devcontainer.json file?",
         ),
     ] = False,
     arkitekt_version: Annotated[

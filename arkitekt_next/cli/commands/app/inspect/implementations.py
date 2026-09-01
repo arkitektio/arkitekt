@@ -24,11 +24,10 @@ def implementations(
         typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
     ] = False,
 ):
-    """Runs the app in production mode
+    """Inspect the implementations this app registers.
 
-    \n
-    You can specify the builder to use with the --builder flag. By default, the easy builder is used, which is designed to be easy to use and to get started with.
-
+    Builds the app without running it and lists the implementations it would
+    register. Pass --machine-readable to get JSON instead of a table.
     """
     builder: str = "arkitekt_next.builders.easy"
     url: str = DEFAULT_ARKITEKT_URL

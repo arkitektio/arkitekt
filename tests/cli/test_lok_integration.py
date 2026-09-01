@@ -43,16 +43,28 @@ def test_well_known_serves_the_keys_the_cli_relies_on(lok_server):
     for key in (
         "name",
         "version",
-        "claim",
         "base_url",
-        "device_code_start",
-        "challenge_url",
+        "protocol_version",
+        "issuer",
+        "token_endpoint",
+        "device_authorization_endpoint",
     ):
         assert data.get(key), f"well-known document is missing {key!r}: {data}"
 
-    # The advertised endpoints must be absolute URLs (clients POST to them as-is).
-    for key in ("claim", "device_code_start", "challenge_url"):
+    assert data["protocol_version"] == "2", (
+        f"expected fakts protocol v2, got {data['protocol_version']!r}"
+    )
+
+    # The advertised endpoints must be absolute URLs. Deployments sit behind a
+    # script-name prefix, so a client that reconstructs them by concatenating
+    # onto the issuer gets the path wrong.
+    for key in ("token_endpoint", "device_authorization_endpoint"):
         assert data[key].startswith("http"), f"{key!r} is not absolute: {data[key]}"
+
+    # The v1 endpoints are gone; asserting their absence keeps a half-migrated
+    # server from looking healthy.
+    for legacy in ("claim", "device_code_start", "challenge_url", "token_url"):
+        assert legacy not in data, f"{legacy!r} is a protocol v1 endpoint: {data}"
 
 
 # ---------------------------------------------------------------------------

@@ -6,9 +6,11 @@ Covers the three deep, standalone schemas + their dedicated generators, the CLI
 
 import os
 import tempfile
+from contextlib import contextmanager
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
+import pytest
 import yaml
 from click.testing import CliRunner
 
@@ -31,6 +33,29 @@ def _gen(fn, cfg):
     d = Path(tempfile.mkdtemp())
     fn(d, cfg)
     return d
+
+
+@contextmanager
+def _fake_docker():
+    """Run a lifecycle command without a docker daemon.
+
+    The CLI drives docker through ``server.lifecycle.open_deployment``, so stubbing
+    that one seam covers ``up``/``down``/``logs``/``status``. Yields the fake dokker
+    deployment so a test can assert which verb was invoked on it.
+    """
+    deployment = MagicMock()
+    # dokker's Deployment is its own context manager; the CLI must enter it before
+    # calling any sync method (see `test_lifecycle_commands_enter_the_deployment`).
+    deployment.__enter__.return_value = deployment
+    deployment.__exit__.return_value = False
+    with (
+        patch(
+            "arkitekt_next.server.lifecycle.open_deployment",
+            return_value=(deployment, None),
+        ),
+        patch("shutil.which", return_value="/usr/bin/docker"),
+    ):
+        yield deployment
 
 
 def _configs(d: Path):
@@ -174,11 +199,10 @@ def test_engine_init_and_up():
         assert data["kind"] == "engine"
         assert data["config"]["deployer"]["redeem_token"] == "tok"
 
-        with patch("arkitekt_next.server.runner.compose_up") as cu, \
-             patch("shutil.which", return_value="/usr/bin/docker"):
+        with _fake_docker() as deployment:
             result = runner.invoke(cli, ["--work-dir", d, "engine", "up"])
         assert result.exit_code == 0, result.output
-        assert cu.called
+        assert deployment.up.called
         comp = yaml.safe_load(open(os.path.join(d, "docker-compose.yaml")))
         assert list(comp["services"]) == ["deployer"]
 
@@ -187,11 +211,10 @@ def test_coord_up_roundtrips_and_generates_lok_only():
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         runner.invoke(cli, ["--work-dir", d, "coord", "init", "--template", "default"])
-        with patch("arkitekt_next.server.runner.compose_up") as cu, \
-             patch("shutil.which", return_value="/usr/bin/docker"):
+        with _fake_docker() as deployment:
             result = runner.invoke(cli, ["--work-dir", d, "coord", "up"])
         assert result.exit_code == 0, result.output
-        assert cu.called
+        assert deployment.up.called
         assert os.path.exists(os.path.join(d, "configs", "lok.yaml"))
         assert not os.path.exists(os.path.join(d, "configs", "rekuest.yaml"))
 
@@ -200,11 +223,10 @@ def test_hubinator_up_roundtrips_full_stack():
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         runner.invoke(cli, ["--work-dir", d, "hubinator", "init", "--template", "default"])
-        with patch("arkitekt_next.server.runner.compose_up") as cu, \
-             patch("shutil.which", return_value="/usr/bin/docker"):
+        with _fake_docker() as deployment:
             result = runner.invoke(cli, ["--work-dir", d, "hubinator", "up"])
         assert result.exit_code == 0, result.output
-        assert cu.called
+        assert deployment.up.called
         # Full stack: local lok + data services.
         assert os.path.exists(os.path.join(d, "configs", "lok.yaml"))
         assert os.path.exists(os.path.join(d, "configs", "rekuest.yaml"))
@@ -214,13 +236,156 @@ def test_hub_up_generates_and_runs():
     runner = CliRunner()
     with tempfile.TemporaryDirectory() as d:
         runner.invoke(cli, ["--work-dir", d, "hub", "init", "--template", "stable", "--service", "rekuest"])
-        with patch("arkitekt_next.server.runner.compose_up") as cu, \
-             patch("shutil.which", return_value="/usr/bin/docker"):
+        with _fake_docker() as deployment:
             result = runner.invoke(cli, ["--work-dir", d, "hub", "up"])
         assert result.exit_code == 0, result.output
-        assert cu.called
+        assert deployment.up.called
         assert os.path.exists(os.path.join(d, "docker-compose.yaml"))
         assert not os.path.exists(os.path.join(d, "configs", "lok.yaml"))
+
+
+# ---------------------------------------------------------------------------
+# Lifecycle verbs (down / logs / status) and registry-driven group construction
+# ---------------------------------------------------------------------------
+
+
+def test_down_stops_the_deployment_and_keeps_volumes_by_default():
+    """`down` must not destroy the database unless --volumes is passed."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as d:
+        runner.invoke(cli, ["--work-dir", d, "coord", "init", "--template", "default"])
+        with _fake_docker() as deployment:
+            result = runner.invoke(cli, ["--work-dir", d, "coord", "down"])
+        assert result.exit_code == 0, result.output
+        assert deployment.down.called
+        assert deployment.remove_volumes_on_down is False
+
+
+def test_down_with_volumes_opts_into_destroying_data():
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as d:
+        runner.invoke(cli, ["--work-dir", d, "coord", "init", "--template", "default"])
+        with _fake_docker() as deployment:
+            result = runner.invoke(cli, ["--work-dir", d, "coord", "down", "--volumes"])
+        assert result.exit_code == 0, result.output
+        assert deployment.remove_volumes_on_down is True
+
+
+def test_logs_creates_a_watcher_for_the_requested_services():
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as d:
+        runner.invoke(cli, ["--work-dir", d, "coord", "init", "--template", "default"])
+        with _fake_docker() as deployment:
+            result = runner.invoke(
+                cli, ["--work-dir", d, "coord", "logs", "lok", "--no-follow"]
+            )
+        assert result.exit_code == 0, result.output
+        assert deployment.create_watcher.call_args.kwargs["services"] == ["lok"]
+        assert deployment.create_watcher.call_args.kwargs["follow"] is False
+
+
+def test_lifecycle_commands_report_a_missing_deployment():
+    """Running a lifecycle verb before `init` explains what to do."""
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as d:
+        with patch("shutil.which", return_value="/usr/bin/docker"):
+            result = runner.invoke(cli, ["--work-dir", d, "coord", "down"])
+        assert result.exit_code != 0
+        assert "coord init" in result.output
+
+
+def test_engine_has_no_status_command_but_the_others_do():
+    """Only kinds that deploy a gateway can be health-checked.
+
+    An engine is a lone deployer on an external network, so there is no
+    ``/<service>/ht`` route for `status` to probe.
+    """
+    runner = CliRunner()
+    for kind in ("hub", "coord", "hubinator"):
+        assert "status" in runner.invoke(cli, [kind, "--help"]).output
+    assert "status" not in runner.invoke(cli, ["engine", "--help"]).output
+
+
+@pytest.mark.parametrize("verb", ["up", "down", "status"])
+def test_lifecycle_commands_enter_the_deployment(verb):
+    """Sync dokker calls require an active koil context.
+
+    Regression guard: calling ``deployment.up()`` without ``with deployment:``
+    fails at runtime with "No koil context found". Mocks happily accept the call,
+    so the requirement is asserted explicitly here.
+    """
+    runner = CliRunner()
+    with tempfile.TemporaryDirectory() as d:
+        runner.invoke(cli, ["--work-dir", d, "coord", "init", "--template", "default"])
+        with _fake_docker() as deployment:
+            result = runner.invoke(cli, ["--work-dir", d, "coord", verb])
+        assert result.exit_code == 0, result.output
+        assert deployment.__enter__.called, (
+            f"`coord {verb}` must enter the deployment context before calling dokker"
+        )
+
+
+def test_deployments_use_a_teardown_policy_that_keeps_the_stack_running():
+    """`up` must leave the stack running once the command exits.
+
+    dokker's ``local`` policy stops the stack on context exit, which would make
+    ``up`` start and immediately stop it. The CLI needs ``manual``.
+    """
+    from unittest.mock import ANY
+
+    with patch("dokker.local") as local:
+        from arkitekt_next.server.lifecycle import open_deployment
+
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "docker-compose.yaml").write_text("services: {}\n")
+            open_deployment(d, "coord", config=CoordConfig(), with_health=False)
+
+        local.assert_called_once_with(ANY, policy="manual")
+
+
+def test_kind_metadata_matches_the_real_config_schemas():
+    """The declared schema flags must match the actual pydantic models.
+
+    ``create_test_config`` mutates ``deployer`` / ``db`` / ``minio`` / ``gateway``
+    gated on these flags rather than probing with ``hasattr``, so a schema change
+    that is not mirrored here would produce an AttributeError at runtime.
+    """
+    from arkitekt_next.server.deployments import DEPLOYMENTS
+    from arkitekt_next.server.kinds import KINDS
+
+    for name, meta in KINDS.items():
+        fields = set(DEPLOYMENTS[name].config_cls.model_fields)
+        assert meta.has_deployer == ("deployer" in fields), name
+        assert meta.has_storage == ("db" in fields and "minio" in fields), name
+        assert meta.has_gateway == ("gateway" in fields), name
+        # Only a kind with a gateway can route /<service>/ht health checks.
+        assert meta.bootable == meta.has_gateway, name
+
+
+def test_registry_delegates_static_metadata_to_kinds():
+    """``DEPLOYMENTS`` must not redefine what ``KINDS`` already states."""
+    from arkitekt_next.server.deployments import DEPLOYMENTS
+    from arkitekt_next.server.kinds import KINDS
+
+    assert set(DEPLOYMENTS) == set(KINDS)
+    for name, spec in DEPLOYMENTS.items():
+        assert spec.name == KINDS[name].name
+        assert spec.filename == KINDS[name].filename
+        assert spec.help == KINDS[name].help
+
+
+def test_every_registry_kind_is_mounted_as_a_top_level_group():
+    """The CLI groups are generated from the registry, so they must match it."""
+    from arkitekt_next.server.kinds import KINDS
+
+    runner = CliRunner()
+    root = runner.invoke(cli, ["--help"]).output
+    for kind in KINDS:
+        assert kind in root, f"{kind} is in the registry but not mounted"
+        # ... and each one carries the full lifecycle.
+        out = runner.invoke(cli, [kind, "--help"]).output
+        for verb in ("init", "up", "down", "logs"):
+            assert verb in out, f"{kind} is missing `{verb}`"
 
 
 # ---------------------------------------------------------------------------

@@ -20,13 +20,18 @@ from arkitekt_next.cli.docs import (
     help_epilog,
 )
 from arkitekt_next.cli.commands.app.main import app
-from arkitekt_next.cli.commands.hub.main import hub
-from arkitekt_next.cli.commands.coord.main import coord
+from arkitekt_next.cli.commands.deployments.main import GROUPS as DEPLOYMENT_GROUPS
 from arkitekt_next.cli.commands.mesh.main import mesh
-from arkitekt_next.cli.commands.hubinator.main import hubinator
-from arkitekt_next.cli.commands.engine.main import engine
 from arkitekt_next.cli.commands.self.main import self_group
 from arkitekt_next.cli.commands.plugin.main import plugin
+
+#: Hosted docs page per deployment group, for the `--help` epilogue.
+DEPLOYMENT_DOCS = {
+    "hub": HUB_DOCS,
+    "coord": COORD_DOCS,
+    "hubinator": HUBINATOR_DOCS,
+    "engine": ENGINE_DOCS,
+}
 
 # Mount every group onto the Typer root, then build the public click entry point
 # (project.scripts -> arkitekt_next.cli.main:cli). The root callback in cli/app.py seeds
@@ -34,11 +39,13 @@ from arkitekt_next.cli.commands.plugin.main import plugin
 # docs link to each `--help` (the `app` group sets its own; its subgroups get theirs in
 # app/main.py).
 cli_app.add_typer(app, name="app")
-cli_app.add_typer(hub, name="hub", epilog=help_epilog(HUB_DOCS))
-cli_app.add_typer(coord, name="coord", epilog=help_epilog(COORD_DOCS))
+
+# The four deployment groups are generated from the DEPLOYMENTS registry rather than
+# hand-written, but they stay top-level: `arkitekt-next hub`, `arkitekt-next coord`, ...
+for _kind, _group in DEPLOYMENT_GROUPS.items():
+    cli_app.add_typer(_group, name=_kind, epilog=help_epilog(DEPLOYMENT_DOCS[_kind]))
+
 cli_app.add_typer(mesh, name="mesh", epilog=help_epilog(MESH_DOCS))
-cli_app.add_typer(hubinator, name="hubinator", epilog=help_epilog(HUBINATOR_DOCS))
-cli_app.add_typer(engine, name="engine", epilog=help_epilog(ENGINE_DOCS))
 cli_app.add_typer(self_group, name="self", epilog=help_epilog(SELF_DOCS))
 cli_app.add_typer(plugin, name="plugin", epilog=help_epilog(PLUGIN_DOCS))
 

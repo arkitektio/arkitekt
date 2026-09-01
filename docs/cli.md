@@ -323,8 +323,22 @@ accepts `--kind`/`-k` (e.g. `cuda`) plus quantitative selectors such as
 These groups stand up an Arkitekt deployment. They were migrated from the
 standalone `arkitekt-server` tool, so the whole platform is now driven from one
 CLI. None of them need an app project — each `init` writes a deployment config
-profile into the working directory, and each `up` composes that profile and runs
-`docker compose up`.
+profile into the working directory, and each `up` composes that profile and
+starts it.
+
+All four groups are generated from one registry, so they share the same
+lifecycle:
+
+| Command | What it does |
+| :--- | :--- |
+| `init` | Write the deployment config profile (the source of truth). |
+| `up` | Regenerate the compose/config files from the profile, then start the stack. Pass `--wait` to block until every service is healthy. |
+| `down` | Stop the stack and remove its containers. Volumes are **kept** unless you pass `--volumes`. |
+| `logs` | Stream service logs (`logs lok`, or all services by default; `--no-follow`, `--tail N`). |
+| `status` | Show each service's published port and health. Not available for `engine`, which deploys no gateway. |
+
+Because `up` regenerates from the profile every time, editing the profile YAML
+and re-running `up` is how you apply a configuration change.
 
 ## Which one do I run?
 
@@ -342,7 +356,10 @@ The common shape is `init` (write config) then `up` (compose and start):
 
 ```bash
 arkitekt-next hubinator init      # or: hub / coord / engine
-arkitekt-next hubinator up
+arkitekt-next hubinator up --wait # start, and block until healthy
+arkitekt-next hubinator status    # what is running, and is it healthy?
+arkitekt-next hubinator logs lok  # follow one service's logs
+arkitekt-next hubinator down      # stop it again (keeps your data)
 ```
 
 Every `init` accepts `--backend` (`docker`, `podman`, `kubernetes`) and, where
@@ -554,4 +571,68 @@ arkitekt-next hubinator up
 
 # 2. (Optional) join a machine to the deployment's mesh
 arkitekt-next mesh join --url http://localhost:8000
+```
+
+---
+
+# Testing against a real server
+
+Installing `arkitekt-next` also installs a pytest plugin, so any project can test
+against a real, throwaway Arkitekt deployment without writing fixture code. The
+fixtures spin up a stack with [dokker](https://github.com/jhnnsrs/dokker), wait
+for it to report healthy, and tear it down (volumes included) afterwards.
+
+```python
+def test_my_app(running_app):
+    """`running_app` is an app already logged in to a running server."""
+    assert running_app.app.services
+```
+
+| Fixture | What you get |
+| :--- | :--- |
+| `arkitekt_server` | A **factory** — call it to boot a stack with the services and kind you want. |
+| `running_server` | A full stack with the default services (`rekuest`, `mikro`, `kabinet`). |
+| `lok_server` | A lok-only stack. Much faster to boot; use it for auth/coordination tests. |
+| `running_app` | An `easy()` app connected to `running_server`, with the device-code login already approved. |
+
+The factory takes the same arguments as `temp_setup`, so a test can ask for
+exactly the stack it needs:
+
+```python
+def test_against_a_coordinator(arkitekt_server):
+    coord = arkitekt_server(kind="coord")           # lok only
+    hub = arkitekt_server(["rekuest"], kind="hub")  # services, no local lok
+```
+
+Requires a running Docker daemon; tests are skipped automatically without one.
+Because booting a stack pulls images and runs migrations, these tests are marked
+`integration` and only run when you ask for them:
+
+```bash
+pytest -m integration
+pytest --arkitekt-channel latest -m integration   # pin the image channel
+```
+
+## Seeing why a failure happened
+
+When an assertion fails mid-request, the client-side error rarely says why.
+Wrapping the assertion in a watcher attaches the relevant container logs to the
+traceback:
+
+```python
+def test_upload(running_app):
+    with running_app.watch("mikro", "minio"):
+        assert upload_something()
+```
+
+## Driving the server as an operator
+
+`server.lok` acts as the human who would normally click through the web UI —
+approving device codes, authorizing hub registrations, or running any Django
+management command inside the lok container:
+
+```python
+def test_hub_registration(lok_server):
+    code = lok_server.lok.pending_hub_codes()[-1]
+    lok_server.lok.approve_hub(code)
 ```

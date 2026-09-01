@@ -53,10 +53,10 @@ def remote(
         ),
     ] = None,
 ):
-    """ALlows you to run a get the output of a node in a remote app.
+    """Call a node in a remote app and print its output.
 
     This is useful for debugging and testing. In this mode the app itself will not
-    be run, so local nodes cannot be called. Only nodes that are availabble on your
+    be run, so local nodes cannot be called. Only nodes that are available on your
     arkitekt_next server can be called.
 
     """

@@ -15,7 +15,7 @@ def compile(
         help="The config to use",
     ),
 ) -> None:
-    """Genererate the code of a project"
+    """Generate the code of a project.
 
     Uses a previously generated graphql-config.yaml file to generate the code for a or multiple projects.
     If no project is specified, all projects will be generated.

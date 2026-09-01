@@ -1,20 +1,21 @@
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Generator, Literal
+from typing import TYPE_CHECKING, Any, Generator, Literal, cast
 from arkitekt_next.server.diff import (
     write_virtual_config_files,
     write_hub_files,
     write_coord_files,
     write_engine_files,
-    iterate_service,
 )
 from .config import ArkitektServerConfig, HubConfig, CoordConfig, EngineConfig
 from .services import SERVICE_REGISTRY
 from pathlib import Path
-import random
+from pydantic import BaseModel
 from dokker import Deployment, testing
 from dataclasses import dataclass
 
 if TYPE_CHECKING:
+    from dokker import LogWatcher
+
     from arkitekt_next.server.lok import LokController
 
 # Services that are always enabled regardless of the requested selection.
@@ -93,36 +94,76 @@ def create_engine_server(path: Path | str, config: EngineConfig | None = None) -
     write_engine_files(path, config)
 
 
+def free_ports(count: int = 1) -> list[int]:
+    """Ask the OS for ``count`` *distinct* currently-free TCP ports.
+
+    Preferred over picking random numbers in a range: two deployments started at
+    the same time (``pytest-xdist``, or a test running while a dev stack is up)
+    would otherwise collide often enough to be flaky.
+
+    Every socket is held open until all of them are bound -- binding and releasing
+    one at a time lets the OS hand out the same port twice, which would then fail
+    at ``docker compose up``.
+
+    There is still an unavoidable race (the ports are released when this returns
+    and only re-bound when docker starts), but the window is small and far better
+    than a blind ``randint``.
+    """
+    import socket
+    from contextlib import ExitStack
+
+    with ExitStack() as stack:
+        sockets = [
+            stack.enter_context(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+            for _ in range(count)
+        ]
+        for sock in sockets:
+            sock.bind(("", 0))
+        return [int(sock.getsockname()[1]) for sock in sockets]
+
+
 def create_test_config(
     services: list[str] | None = None,
     *,
-    config: ArkitektServerConfig | None = None,
+    kind: str = "hubinator",
+    config: BaseModel | None = None,
     channel: Channel | None = None,
     randomize_ports: bool = True,
-) -> ArkitektServerConfig:
-    """Build an ``ArkitektServerConfig`` suitable for ephemeral/test deployments.
+) -> BaseModel:
+    """Build a deployment config suitable for ephemeral/test deployments.
 
-    This enables only the requested services (plus the always-required ones, see
-    ``REQUIRED_SERVICES``) and disables the rest. It also hardens the config for
-    throwaway use by switching the database and object store to anonymous docker
-    volumes (instead of bind mounts) and randomizing the exposed gateway ports so
-    multiple deployments can run in parallel without clashing.
+    Enables only the requested services (plus the always-required ones, see
+    ``REQUIRED_SERVICES``) and disables the rest. Also hardens the config for
+    throwaway use: the database and object store become anonymous docker volumes
+    rather than bind mounts, and the exposed gateway ports are picked from the
+    free-port pool so several deployments can run side by side.
+
+    The four kinds are genuinely different schemas -- a ``HubConfig`` has no
+    ``deployer`` and no ``lok``, a ``CoordConfig`` has no data services, an
+    ``EngineConfig`` has neither storage nor a gateway -- so every step below is
+    gated on the declared shape in ``KINDS[kind]`` rather than probed with
+    ``hasattr``.
 
     Args:
         services: Identifiers of the services to enable (e.g. ``["rekuest", "mikro"]``).
-            Must be keys of ``SERVICE_REGISTRY``. If ``None``, the config's existing
-            enabled flags are left untouched.
-        config: A base config to mutate. A fresh ``ArkitektServerConfig`` is created
+            Must be keys of ``SERVICE_REGISTRY``, and must exist on this kind's schema.
+            If ``None``, the config's existing enabled flags are left untouched.
+        kind: Deployment kind; a key of ``KINDS``.
+        config: A base config to mutate. A fresh one of the kind's class is created
             if not provided.
         channel: Release channel selecting the service image tag -- ``"next"`` or
             ``"latest"`` retags every Arkitekt service image accordingly. If ``None``
             (the default), each service keeps its configured image/version.
-        randomize_ports: Whether to assign random exposed gateway ports.
+        randomize_ports: Whether to assign free exposed gateway ports.
 
     Returns:
-        The configured ``ArkitektServerConfig``.
+        The configured deployment config.
     """
-    config = config or ArkitektServerConfig()
+    from arkitekt_next.server.deployments import DEPLOYMENTS
+    from arkitekt_next.server.kinds import KINDS
+
+    meta = KINDS[kind]
+    config = config if config is not None else DEPLOYMENTS[kind].config_cls()
 
     if services is not None:
         unknown = set(services) - set(SERVICE_REGISTRY)
@@ -132,37 +173,56 @@ def create_test_config(
                 f"Available services: {sorted(SERVICE_REGISTRY)}"
             )
 
+        # A service can be valid but absent from this kind's schema (asking a coord
+        # for `mikro`, say). That is a test-authoring mistake worth naming.
+        missing = {s for s in services if not hasattr(config, s)}
+        if missing:
+            raise ValueError(
+                f"The '{kind}' deployment has no service(s): {sorted(missing)}. "
+                f"It carries: {sorted(s for s in SERVICE_REGISTRY if hasattr(config, s))}"
+            )
+
         wanted = set(services) | REQUIRED_SERVICES
         for name in SERVICE_REGISTRY:
-            getattr(config, name).enabled = name in wanted
+            service = getattr(config, name, None)
+            if service is not None:
+                service.enabled = name in wanted
 
     if channel is not None:
         # Switch every Arkitekt service image to the requested release channel.
         # Some services (e.g. lovekit) have no configurable image and are skipped.
         for name in SERVICE_REGISTRY:
-            service = getattr(config, name)
-            if getattr(service, "image", None) is not None:
+            service = getattr(config, name, None)
+            if service is not None and getattr(service, "image", None) is not None:
                 service.image = _retag_image(service.image, channel)
+
+    # The four schemas genuinely differ in which blocks they carry, so the presence
+    # of each is asserted by ``KINDS[kind]`` above rather than by the type system.
+    cfg: Any = config
 
     # The deployer needs the docker socket and registers itself against a running
     # gateway; it is irrelevant for service tests and only adds a crash-looping
     # container, so disable it for throwaway deployments.
-    config.deployer.enabled = False
+    if meta.has_deployer:
+        cfg.deployer.enabled = False
 
     # Make sure we are creating volumes not bind mounts, so nothing lingers on disk.
-    config.minio.mount = None
-    config.db.mount = None
+    if meta.has_storage:
+        cfg.minio.mount = None
+        cfg.db.mount = None
 
-    if randomize_ports:
-        config.gateway.exposed_http_port = random.randint(8000, 9000)
-        config.gateway.exposed_https_port = random.randint(9000, 10000)
+    if randomize_ports and meta.has_gateway:
+        # Both in one call, so the two ports cannot come back identical.
+        http_port, https_port = free_ports(2)
+        cfg.gateway.exposed_http_port = http_port
+        cfg.gateway.exposed_https_port = https_port
 
     return config
 
 
 @contextmanager
 def temp_server(
-    config: ArkitektServerConfig | None = None,
+    config: BaseModel | None = None,
 ) -> Generator[Path, None, None]:
     """
     Create a temporary server configuration using the provided config.
@@ -182,7 +242,8 @@ def temp_server(
     """
     import tempfile
 
-    config = create_test_config(config=config)
+    # ``temp_server`` predates the kind-aware API and only ever built the full stack.
+    config = cast(ArkitektServerConfig, create_test_config(config=config))
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
@@ -204,9 +265,11 @@ class ArkitektServer:
             ...
     """
 
-    config: ArkitektServerConfig
+    config: BaseModel
     deployment: Deployment
     path: Path
+    #: Which deployment kind was generated (a key of ``KINDS``).
+    kind: str = "hubinator"
 
     @property
     def setup(self) -> Deployment:
@@ -217,10 +280,32 @@ class ArkitektServer:
     def enabled_services(self) -> list[str]:
         """Identifiers of the services actually deployed (enabled and deployable).
 
-        Mirrors ``diff.iterate_service`` -- e.g. ``lovekit`` is enabled by default
-        but has no image and is not deployed, so it is not listed here.
+        Kind-agnostic -- e.g. ``lovekit`` is enabled by default but has no image and
+        is not deployed, so it is never listed; a coord lists only ``lok``.
         """
-        return [service.get_identifier() for service in iterate_service(self.config)]
+        from arkitekt_next.server.lifecycle import health_services
+
+        return [service.get_identifier() for service in health_services(self.config)]
+
+    def watch(self, *services: str) -> "LogWatcher":
+        """Capture ``services``' container logs for the duration of a ``with`` block.
+
+        When an assertion inside the block fails, dokker appends those logs to the
+        traceback. Without it a failing integration test reports only the symptom
+        ("got 500") and none of the server-side reason::
+
+            with server.watch("mikro", "lok"):
+                assert upload_something()
+
+        Passing no service names watches every deployed web service.
+        """
+        names = list(services) if services else self.enabled_services
+        return self.deployment.create_watcher(
+            services=names,
+            append_to_traceback=True,
+            rich_traceback=True,
+            wait_for_first_log=False,
+        )
 
     def get_service_url(
         self, service_name: str, internal_port: int = 80, protocol: str = "http"
@@ -268,39 +353,28 @@ class ArkitektServer:
 TempDeployment = ArkitektServer
 
 
-def _register_health_checks(setup: Deployment, config: ArkitektServerConfig) -> None:
+def _register_health_checks(setup: Deployment, config: BaseModel) -> None:
     """Register a gateway-routed ``/<host>/ht`` health check per enabled web service.
 
-    Uses ``iterate_service`` as the source of truth for which services are actually
-    deployed as web/Django services. Note that ``lovekit`` is intentionally not part
-    of ``iterate_service`` (it is a LiveKit/realtime service, not a Django app), so
-    it is not deployed and gets no health check.
+    Delegates to :func:`arkitekt_next.server.lifecycle.register_health_checks`, which
+    the CLI's ``status`` command uses too -- so a stack is judged healthy by exactly
+    the same criteria whether a test or a human asks.
     """
-    for service in iterate_service(config):
-        host = service.host
-        # Bind ``host`` via default arg to avoid late-binding closure capture.
-        setup.add_health_check(
-            url=lambda spec, host=host: (
-                f"http://localhost:"
-                f"{setup.spec.find_service('gateway').get_port_for_internal(80).published}"
-                f"/{host}/ht"
-            ),
-            service=host,
-            # First boot runs database migrations, which can take a while.
-            timeout=10,
-            max_retries=60,
-        )
+    from arkitekt_next.server.lifecycle import register_health_checks
+
+    register_health_checks(setup, config)
 
 
 @contextmanager
 def temp_setup(
     services: list[str] | None = None,
     *,
-    config: ArkitektServerConfig | None = None,
+    kind: str = "hubinator",
+    config: BaseModel | None = None,
     channel: Channel | None = None,
     health_checks: bool = True,
 ) -> Generator[ArkitektServer, None, None]:
-    """Generate a temporary Arkitekt deployment and yield a handle to it.
+    """Generate a temporary Arkitekt deployment of any kind and yield a handle to it.
 
     The configuration is written to a temporary directory and a ``dokker`` testing
     deployment is built with health checks registered for every enabled web service.
@@ -310,19 +384,28 @@ def temp_setup(
 
     Args:
         services: Identifiers of the services to enable. See ``create_test_config``.
+        kind: Which deployment kind to generate -- a key of ``KINDS``. Defaults to
+            ``"hubinator"`` (the full stack), which is what this used to hardcode.
+            ``"engine"`` generates fine but cannot be started on its own: it is a lone
+            deployer joining an existing deployment's external network.
         config: An optional base config to mutate.
         channel: Release channel for the service images (``"next"``/``"latest"``/``None``).
+        health_checks: Register per-service health checks on the deployment.
 
     Yield:
         ArkitektServer: A handle exposing the config, path, and dokker ``setup``.
     """
     import tempfile
 
-    config = create_test_config(services, config=config, channel=channel)
+    from arkitekt_next.server.deployments import DEPLOYMENTS
+
+    spec = DEPLOYMENTS[kind]
+    config = create_test_config(services, kind=kind, config=config, channel=channel)
 
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_path = Path(temp_dir)
-        create_server(temp_path, config)
+        # Each kind has its own generator; ``create_server`` is only the hubinator one.
+        spec.generator(temp_path, config)
 
         # ``testing`` defaults to the "testing" teardown policy, which already
         # downs the stack (removing volumes/orphans) and tears the project down
@@ -332,46 +415,4 @@ def temp_setup(
         if health_checks:
             _register_health_checks(setup, config)
 
-        yield ArkitektServer(config=config, deployment=setup, path=temp_path)
-
-
-@contextmanager
-def temp_deployment(
-    config: ArkitektServerConfig | None = None,
-) -> Generator[ArkitektServer, None, None]:
-    """
-    Create a temporary deployment configuration using the provided config.
-
-    This is a context manager that yields the path to the temporary deployment configuration.
-    The deployment directory is created and cleaned up automatically.
-
-    Args:
-        config (ArkitektServerConfig): The configuration for the deployment.
-    Yield:
-
-    """
-
-    # Preserve historical behaviour: bring the deployment up without registering
-    # health checks (the caller may inspect/down it directly).
-    with temp_setup(config=config, health_checks=False) as server:
-        setup = server.setup
-        with setup:
-            # Check that the setup can be initialized
-            assert setup is not None, "Setup could not be initialized"
-
-            # Entering the deployment no longer inspects automatically, so populate
-            # the compose spec before reading it via ``setup.spec``.
-            setup.inspect()
-
-            # The gateway is always present, and every deployed service should be too.
-            assert setup.spec.find_service("gateway") is not None, (
-                "Gateway service not found"
-            )
-            for service in iterate_service(server.config):
-                assert setup.spec.find_service(service.host) is not None, (
-                    f"{service.get_identifier()} service not found"
-                )
-
-            yield server
-
-            setup.down()
+        yield ArkitektServer(config=config, deployment=setup, path=temp_path, kind=kind)

@@ -13,7 +13,7 @@ from arkitekt_next.app.fakts import (
 )
 from .utils import create_arkitekt_next_folder
 from fakts_next.models import Manifest, PublicSource
-from fakts_next.grants.remote.demanders.device_code import DeviceCodeHook
+from fakts_next.grants.remote.authorizers.device_code import DeviceCodeHook
 from .app import App
 from .service_registry import ServiceBuilderRegistry, get_default_service_registry
 from .init_registry import InitHookRegistry, get_default_init_hook_registry
@@ -135,6 +135,7 @@ def easy(
             manifest=manifest,
             token=token,
             url=url,
+            no_cache=no_cache,
         )
 
     elif redeem_token:
@@ -142,6 +143,7 @@ def easy(
             manifest=manifest,
             redeem_token=redeem_token,
             url=url,
+            no_cache=no_cache,
         )
     else:
         fakts_next = build_device_code_fakts(

@@ -47,7 +47,7 @@ def publish(
         typer.Option("--tag", help="The tag to use"),
     ] = None,
 ) -> None:
-    """Deploys aa previous build to dockerhub"""
+    """Deploy a previous build to Docker Hub."""
     from .utils import search_username_in_docker_info
     from .io import get_builds, generate_deployment
 

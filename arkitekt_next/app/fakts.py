@@ -1,20 +1,40 @@
 from typing import Optional
 
+from fakts_next.cache.file import FileCache
+from fakts_next.cache.nocache import NoCache
 from fakts_next.fakts import Fakts
 from fakts_next.grants.remote import RemoteGrant
-from fakts_next.grants.remote.discovery.well_known import WellKnownDiscovery
-from fakts_next.grants.remote.demanders.static import StaticDemander
-from fakts_next.grants.remote.demanders.device_code import (
+from fakts_next.grants.remote.authorizers.device_code import (
     ClientKind,
-    DeviceCodeDemander,
+    DeviceCodeAuthorizer,
     DeviceCodeHook,
     display_in_terminal,
-    
 )
-from fakts_next.grants.remote.claimers.post import ClaimEndpointClaimer
-from fakts_next.grants.remote.demanders.redeem import RedeemDemander
-from fakts_next.cache.file import FileCache
+from fakts_next.grants.remote.authorizers.redeem import RedeemAuthorizer
+from fakts_next.grants.remote.authorizers.static import StaticAuthorizer
+from fakts_next.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts_next.models import Manifest
+from fakts_next.protocols import FaktsCache
+
+
+def _build_cache(
+    manifest: Manifest, url: str, no_cache: bool = False
+) -> FaktsCache:
+    """Cache the granted session per app and per server.
+
+    Under fakts protocol v2 this file holds a live, rotating refresh token,
+    not just configuration — so an app without a cache re-authenticates on
+    every start.
+    """
+    if no_cache:
+        return NoCache()
+
+    identifier = manifest.identifier
+    version = manifest.version
+    return FileCache(
+        cache_file=f".arkitekt_next/cache/{identifier}-{version}_fakts_cache.json",
+        hash=manifest.hash() + url,
+    )
 
 
 def build_device_code_fakts(
@@ -23,66 +43,60 @@ def build_device_code_fakts(
     no_cache: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
+    allow_insecure_transport: bool = False,
 ) -> Fakts:
-    """ Builds a Fakts instance for device code authentication.
-    
+    """Builds a Fakts instance for device code authentication.
+
     This is used when the user wants to authenticate an application
     using a device code. The user will be prompted to open a browser
-    and enter a code to authenticate the application.
-    
-    
-    
+    and approve the application once; the resulting session is cached.
     """
-    identifier = manifest.identifier
-    version = manifest.version
     if url is None:
         raise ValueError("URL must be provided")
 
-    demander = DeviceCodeDemander(
+    authorizer = DeviceCodeAuthorizer(
         manifest=manifest,
         open_browser=not headless,
         requested_client_kind=ClientKind.DEVELOPMENT,
         device_code_hook=device_code_hook if device_code_hook else display_in_terminal,
+        allow_insecure_transport=allow_insecure_transport,
     )
 
     return Fakts(
         grant=RemoteGrant(
-            demander=demander,
+            authorizer=authorizer,
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
-            claimer=ClaimEndpointClaimer(),
         ),
         manifest=manifest,
-        cache=FileCache(
-            cache_file=f".arkitekt_next/cache/{identifier}-{version}_fakts_cache.json",
-            hash=manifest.hash() + url,
-        ),
+        cache=_build_cache(manifest, url, no_cache),
+        allow_insecure_transport=allow_insecure_transport,
     )
 
 
-def build_redeem_fakts(manifest: Manifest, redeem_token: str, url: str) -> Fakts:
-    """ Builds a Fakts instance for redeeming a token.
-    
-    A redeem token is used to register an application with the
-    fakts server, and to claim the configuration for the application.
-    
-    Instead of using a device code, the user can redeem an application
-    without user interaction.
-    
+def build_redeem_fakts(
+    manifest: Manifest,
+    redeem_token: str,
+    url: str,
+    no_cache: bool = False,
+    allow_insecure_transport: bool = False,
+) -> Fakts:
+    """Builds a Fakts instance that redeems a provisioning token.
+
+    The headless path: no browser, no user. Deployed containers and CI
+    runners get one of these instead of a device code.
     """
-    identifier = manifest.identifier
-    version = manifest.version
-
     return Fakts(
-        manifest=manifest,
         grant=RemoteGrant(
-            demander=RedeemDemander(token=redeem_token, manifest=manifest),
+            authorizer=RedeemAuthorizer(
+                token=redeem_token,
+                manifest=manifest,
+                allow_insecure_transport=allow_insecure_transport,
+            ),
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
-            claimer=ClaimEndpointClaimer(),
         ),
-        cache=FileCache(
-            cache_file=f".arkitekt_next/cache/{identifier}-{version}_fakts_cache.json",
-            hash=manifest.hash() + url,
-        ),
+        manifest=manifest,
+        cache=_build_cache(manifest, url, no_cache),
+        allow_insecure_transport=allow_insecure_transport,
     )
 
 
@@ -90,27 +104,28 @@ def build_token_fakts(
     manifest: Manifest,
     token: str,
     url: str,
+    no_cache: bool = False,
+    allow_insecure_transport: bool = False,
 ) -> Fakts:
-    """ Builds a Fakts instance for token-based authentication.
-    
-    This is used when an appllication was previously authenticated
-    and the user has a (claim) token to use for authentication.
-    
-    E.g. when deploying an application through the kabinet deployer
-    
-    """
-    identifier = manifest.identifier
-    version = manifest.version
+    """Builds a Fakts instance from a credential issued earlier.
 
+    ``token`` is a ``client_id:refresh_token`` pair. A bare refresh token
+    will not work: the token endpoint authenticates the client before it
+    validates the token, so both halves have to travel together.
+
+    Under protocol v1 this flag carried a *claim* token, which was traded at
+    an endpoint that no longer exists. If you were passing one of those, use
+    ``--redeem-token`` instead.
+    """
     return Fakts(
-        manifest=manifest,
         grant=RemoteGrant(
-            demander=StaticDemander(token=token),  # type: ignore
+            authorizer=StaticAuthorizer(
+                token=token,
+                allow_insecure_transport=allow_insecure_transport,
+            ),
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
-            claimer=ClaimEndpointClaimer(),
         ),
-        cache=FileCache(
-            cache_file=f".arkitekt_next/cache/{identifier}-{version}_fakts_cache.json",
-            hash=manifest.hash() + url,
-        ),
+        manifest=manifest,
+        cache=_build_cache(manifest, url, no_cache),
+        allow_insecure_transport=allow_insecure_transport,
     )

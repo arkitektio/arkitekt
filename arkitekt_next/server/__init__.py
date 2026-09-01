@@ -6,8 +6,9 @@ configuration models (:mod:`~arkitekt_next.server.config`), the service registry
 (:mod:`~arkitekt_next.server.services`) and the compose/config generator
 (:mod:`~arkitekt_next.server.diff`).
 
-The user-facing CLI lives in :mod:`arkitekt_next.cli.commands.hub`,
-``.coord`` and ``.hubinator`` and calls into the functions re-exported here.
+The user-facing CLI groups (`hub`, `coord`, `hubinator`, `engine`) are generated
+from the :data:`~arkitekt_next.server.kinds.KINDS` registry in
+:mod:`arkitekt_next.cli.commands.deployments` and call into this subpackage.
 """
 
 from .dev import create_server

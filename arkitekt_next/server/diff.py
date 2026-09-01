@@ -203,7 +203,12 @@ def iterate_services(all_services: list[BaseService]) -> list[BaseService]:
 
 
 def iterate_service(config: ArkitektServerConfig) -> list[BaseService]:
-    """Iterate over the enabled services in a full ``ArkitektServerConfig``."""
+    """Iterate over the enabled services in a full ``ArkitektServerConfig``.
+
+    The explicit ordering here drives the order services are emitted into the
+    generated compose file -- do not reorder. For a config-shape-agnostic version
+    (hub/coord carry different fields), use :func:`iterate_any_service`.
+    """
     return iterate_services(
         [
             config.rekuest,
@@ -216,6 +221,32 @@ def iterate_service(config: ArkitektServerConfig) -> list[BaseService]:
             config.kraph,
         ]
     )
+
+
+#: Services in ``SERVICE_REGISTRY`` that are not Django web apps and therefore expose
+#: no gateway-routed ``/<host>/ht`` endpoint. ``lovekit`` is a LiveKit/realtime
+#: service; it is enabled by default but never deployed as a web service.
+NON_WEB_SERVICES = frozenset({"lovekit"})
+
+
+def iterate_any_service(config: BaseModel) -> list[BaseService]:
+    """Enabled web services of *any* deployment config shape.
+
+    Unlike :func:`iterate_service`, this does not assume the full
+    ``ArkitektServerConfig`` schema. ``HubConfig`` carries no ``lok`` and
+    ``CoordConfig`` carries no data services, so attribute access must be
+    tolerant. Used for health checks and the CLI lifecycle commands, which run
+    against all four deployment kinds.
+    """
+    from arkitekt_next.server.services import SERVICE_REGISTRY
+
+    present = [
+        service
+        for name in SERVICE_REGISTRY
+        if name not in NON_WEB_SERVICES
+        and (service := getattr(config, name, None)) is not None
+    ]
+    return iterate_services(present)
 
 
 def build_datalayer(ctx: GenContext, service: BaseService) -> Dict[str, Any]:
