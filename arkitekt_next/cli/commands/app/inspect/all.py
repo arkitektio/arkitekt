@@ -76,24 +76,14 @@ def all(
 
     x = [item.model_dump(by_alias=True) for item in service_registry.get_requirements()]
 
+    # Assemble the agent payload through ImplementAgentInput so it is validated
+    # the same way the server would validate it, instead of hand-rolling raw
+    # model_dump()s. `name`/`hash` are agent-instance concerns, and requirements
+    # are a fakts/manifest concept, so they stay out of / get added to the dump.
+    agent_input = registry.to_implement_agent_input()
     agent = {
-        "states": [d.model_dump() for d in registry.states.values()]
-        if registry
-        else [],
-        "implementations": [
-            d.model_dump()
-            for d in registry.get_implementations()
-        ]
-        if registry
-        else [],
-        "locks": [
-            d.model_dump() for d in registry.get_locks()
-        ],  # TODO: this is a bit hacky locks are not a first class concept in the registry but we want to expose them in the agent manifest, we should probably refactor this at some point
+        **agent_input.model_dump(exclude={"name", "hash"}),
         "requirements": x,
-        "bloks": [
-            d.model_dump()
-            for key, d in registry.get_declared_bloks().items()
-        ],
     }
 
     if rekuest is None:

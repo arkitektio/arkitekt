@@ -46,7 +46,12 @@ def add_selector(
 ) -> None:
     """Add a new selector to a flavour."""
     import yaml
-    from kabinet.api.schema import SelectorInput
+    from kabinet.api.schema import (
+        CpuSelectorInput,
+        CudaSelectorInput,
+        OneApiSelectorInput,
+        RocmSelectorInput,
+    )
     from .types import Flavour
 
     console = get_console(ctx)
@@ -70,15 +75,22 @@ def add_selector(
 
     fl = Flavour(**data)
 
-    new_selector = SelectorInput(
-        kind=kind,
-        apiVersion=api_version,
-        apiThing=api_thing,
-        oneapiVersion=one_api_version,
-        cudaCores=cuda_cores,
-        frequency=frequency,
-        memory=memory,
-    )
+    # SelectorInput is a @oneOf union discriminated on `kind`: construct the
+    # matching variant with only the fields that variant carries.
+    if kind == "cpu":
+        new_selector = CpuSelectorInput(kind="cpu", frequency=frequency, memory=memory)
+    elif kind == "cuda":
+        new_selector = CudaSelectorInput(
+            kind="cuda", cuda_version=api_version, cuda_cores=cuda_cores
+        )
+    elif kind == "oneapi":
+        new_selector = OneApiSelectorInput(kind="oneapi", oneapi_version=one_api_version)
+    elif kind == "rocm":
+        new_selector = RocmSelectorInput(
+            kind="rocm", api_version=api_version, api_thing=api_thing
+        )
+    else:
+        cli_error(f"Unknown selector kind '{kind}'. Available: cpu, cuda, oneapi, rocm")
 
     fl.selectors.append(new_selector)
 

@@ -14,9 +14,15 @@ inspect = typer.Typer(
 from .variables import variables
 from .implementations import implementations
 from .requirements import requirements
+from .services import services
+from .hooks import hooks
+from .lifecycle import lifecycle
 from .all import all
 
 inspect.command("all")(all)
 inspect.command("variables")(variables)
 inspect.command("requirements")(requirements)
 inspect.command("implementations")(implementations)
+inspect.command("services")(services)
+inspect.command("hooks")(hooks)
+inspect.command("lifecycle")(lifecycle)

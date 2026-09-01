@@ -48,16 +48,16 @@ class InitHookRegistry:
         if name is None:
             name = function.__name__
 
+        # A hook lives in exactly one dict: cli_only_hooks only run when
+        # run_all(is_cli=True), init_hooks always run.
         if only_cli:
-            if name not in self.cli_only_hooks:
-                self.cli_only_hooks[name] = function
-            else:
+            if name in self.cli_only_hooks:
                 raise ValueError(f"CLI Hook {name} already registered")
-
-        if name not in self.init_hooks:
-            self.init_hooks[name] = function
+            self.cli_only_hooks[name] = function
         else:
-            raise ValueError(f"Init Hook {name} already registered")
+            if name in self.init_hooks:
+                raise ValueError(f"Init Hook {name} already registered")
+            self.init_hooks[name] = function
 
     def run_all(self, app: App, is_cli: bool = False) -> None:
         """ Run all registered init hooks."""

@@ -142,6 +142,61 @@ def test_inspect_all_pretty(app_dir):
 
 
 # ---------------------------------------------------------------------------
+# inspect services / hooks / lifecycle
+# ---------------------------------------------------------------------------
+
+
+def test_inspect_services(app_dir):
+    """`inspect services -mr` lists the registered service SDKs."""
+    result = _run_cli(app_dir, "inspect", "services", "-mr")
+    assert result.returncode == 0, result.stderr
+
+    records = _between(result.stdout, "--START_SERVICES--", "--END_SERVICES--")
+    assert isinstance(records, list)
+    names = [r["name"] for r in records]
+    assert "rekuest" in names  # the simple template registers functions via rekuest
+    for record in records:
+        for key in ("name", "class", "requirements", "has_schema", "has_turms_project"):
+            assert key in record
+
+
+def test_inspect_services_schema(app_dir):
+    """`inspect services --schema rekuest` dumps raw SDL."""
+    result = _run_cli(app_dir, "inspect", "services", "--schema", "rekuest")
+    assert result.returncode == 0, result.stderr
+    assert "type" in result.stdout
+
+
+def test_inspect_services_unknown_schema(app_dir):
+    result = _run_cli(app_dir, "inspect", "services", "--schema", "nope")
+    assert result.returncode != 0
+    assert "Unknown service" in result.stdout + result.stderr
+
+
+def test_inspect_hooks(app_dir):
+    """`inspect hooks -mr` emits the init-hook list (possibly empty)."""
+    result = _run_cli(app_dir, "inspect", "hooks", "-mr")
+    assert result.returncode == 0, result.stderr
+
+    records = _between(result.stdout, "--START_HOOKS--", "--END_HOOKS--")
+    assert isinstance(records, list)
+    for record in records:
+        for key in ("name", "module", "cli_only", "order"):
+            assert key in record
+
+
+def test_inspect_lifecycle(app_dir):
+    """`inspect lifecycle -mr` emits the three hook sections."""
+    result = _run_cli(app_dir, "inspect", "lifecycle", "-mr")
+    assert result.returncode == 0, result.stderr
+
+    data = _between(result.stdout, "--START_LIFECYCLE--", "--END_LIFECYCLE--")
+    assert set(data.keys()) == {"startup", "shutdown", "background"}
+    for rows in data.values():
+        assert isinstance(rows, list)
+
+
+# ---------------------------------------------------------------------------
 # kabinet validate
 # ---------------------------------------------------------------------------
 
@@ -185,6 +240,9 @@ def test_kabinet_validate_without_flavours_errors(app_dir):
         ["manifest", "version"],
         ["manifest", "scopes"],
         ["inspect"],
+        ["inspect", "services"],
+        ["inspect", "hooks"],
+        ["inspect", "lifecycle"],
         ["call"],
     ],
 )

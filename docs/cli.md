@@ -223,7 +223,10 @@ arkitekt-next inspect all --pretty
 | `variables` | Scans the entrypoint for dangerous global variables that can leak across reloads. |
 | `requirements` | Prints the service requirements of the app as JSON. |
 | `implementations` | Prints the registered implementations of the app. |
-| `all` | Prints the complete agent manifest (implementations, states, locks, requirements, bloks). |
+| `services` | Lists the registered service SDKs, their requirements and codegen assets. `--schema <name>` dumps a service's raw GraphQL SDL. |
+| `hooks` | Lists the `@init` hooks in run order (with their CLI-only flag). |
+| `lifecycle` | Lists the agent's startup, shutdown and background hooks. |
+| `all` | Prints the complete agent manifest (implementations, states, locks, requirements, bloks), validated the way the server would validate it. |
 
 The JSON-emitting commands accept `--pretty`/`-p` for indented output and
 `--machine-readable`/`-mr` for delimiter-wrapped output consumed by the server.
