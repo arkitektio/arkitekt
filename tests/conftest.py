@@ -85,7 +85,6 @@ def initialized_app_cli_runner():
         result = runner.invoke(
             cli,
             [
-                "app",
                 "init",
                 "--identifier",
                 "arkitekt-next",
@@ -119,7 +118,6 @@ def app_dir(tmp_path):
         [
             "--work-dir",
             str(tmp_path),
-            "app",
             "init",
             "--identifier",
             "com.test.app",

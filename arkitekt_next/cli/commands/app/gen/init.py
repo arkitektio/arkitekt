@@ -137,7 +137,7 @@ def init(
         }
     else:
         require_interactive(
-            "`app gen init`",
+            "`gen init`",
             hint="Pass --service to choose the service non-interactively.",
         )
         service = click.prompt(
@@ -149,7 +149,7 @@ def init(
 
     if os.path.exists(config):
         require_interactive(
-            "`app gen init`",
+            "`gen init`",
             hint="Remove or move the existing GraphQL config to run non-interactively.",
         )
         if typer.confirm(
@@ -175,7 +175,7 @@ def init(
             if key in projects:
                 get_console(ctx).print(f"[red]Project {key} already exists [/]")
                 require_interactive(
-                    "`app gen init`",
+                    "`gen init`",
                     hint="Remove the existing project to run non-interactively.",
                 )
                 if not typer.confirm("Do you want to overwrite it?"):

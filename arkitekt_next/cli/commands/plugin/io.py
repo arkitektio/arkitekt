@@ -71,7 +71,7 @@ def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = Non
 
     if not os.path.exists(config_file):
         cli_error(
-            "Could not find any builds. Please run `arkitekt-next app kabinet build` first"
+            "Could not find any builds. Please run `arkitekt-next plugin build` first"
         )
 
     with open(config_file, "r") as file:

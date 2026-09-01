@@ -12,7 +12,7 @@ from arkitekt_next.cli.io import load_manifest
 def _invoke(work_dir, *args):
     runner = CliRunner()
     # The SDK commands now live under the `app` group (e.g. `arkitekt-next app manifest ...`).
-    result = runner.invoke(cli, ["--work-dir", str(work_dir), "app", *args])
+    result = runner.invoke(cli, ["--work-dir", str(work_dir), *args])
     if result.exit_code != 0:
         print(result.output)
         print(result.exception)
@@ -66,7 +66,7 @@ def test_manifest_version_set_prompts_when_no_arg(app_dir):
     runner = CliRunner()
     result = runner.invoke(
         cli,
-        ["--work-dir", str(app_dir), "app", "manifest", "version", "set"],
+        ["--work-dir", str(app_dir), "manifest", "version", "set"],
         input="\n",  # accept the suggested default
     )
     assert result.exit_code == 0

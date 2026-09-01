@@ -18,7 +18,7 @@ from arkitekt_next.cli.utils import build_relative_dir
 from arkitekt_next.cli.vars import get_console, get_work_dir
 
 
-#: Non-interactive escape hatch surfaced when `app init` needs to prompt.
+#: Non-interactive escape hatch surfaced when `init` needs to prompt.
 _INIT_HINT = "Pass --yes to accept the defaults, or provide the fields as options."
 
 
@@ -29,7 +29,7 @@ def get_default_package_manager():
 
 
 class PackageManager(str, enum.Enum):
-    """The package managers supported by ``app init``."""
+    """The package managers supported by ``init``."""
 
     pip = "pip"
     uv = "uv"
@@ -181,21 +181,21 @@ def init_command(
         if yes:
             identifier = default_identifier
         else:
-            require_interactive("`app init`", hint=_INIT_HINT)
+            require_interactive("`init`", hint=_INIT_HINT)
             identifier = typer.prompt("Your app identifier", default=default_identifier)
 
     if not author:
         if yes:
             author = getuser()
         else:
-            require_interactive("`app init`", hint=_INIT_HINT)
+            require_interactive("`init`", hint=_INIT_HINT)
             author = typer.prompt("Your name", default=getuser())
 
     if not entrypoint:
         if yes:
             entrypoint = "app"
         else:
-            require_interactive("`app init`", hint=_INIT_HINT)
+            require_interactive("`init`", hint=_INIT_HINT)
             entrypoint = typer.prompt("Your app file", default="app")
 
     if not semver.Version.is_valid(version):
@@ -204,7 +204,7 @@ def init_command(
                 f"Invalid version: {version}. ArkitektNext versions need to follow semver."
             )
         else:
-            require_interactive("`app init`", hint=_INIT_HINT)
+            require_interactive("`init`", hint=_INIT_HINT)
             while not semver.Version.is_valid(version):
                 get_console(ctx).print(
                     "ArkitektNext versions need to follow [link=https://semver.org]semver[/link]. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
@@ -219,7 +219,7 @@ def init_command(
         if yes:
             should_overwrite = True
         else:
-            require_interactive("`app init`", hint=_INIT_HINT)
+            require_interactive("`init`", hint=_INIT_HINT)
             confirm_or_abort(
                 f"Another ArkitektNext app {existing_manifest.to_console_string()} exists already at {work_dir}?. Do you want to overwrite?"
             )
@@ -271,7 +271,7 @@ def init_command(
         if yes:
             should_overwrite = True
         else:
-            require_interactive("`app init`", hint=_INIT_HINT)
+            require_interactive("`init`", hint=_INIT_HINT)
             should_overwrite = typer.confirm(
                 "Entrypoint File already exists. Do you want to overwrite?"
             )

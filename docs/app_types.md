@@ -54,8 +54,8 @@ In this mode, your app is a structured project that gets built into a Docker con
 *   **User Interface (Bloks):** Plugin apps **do not** have their own native GUI windows. Instead, they can hook into Arkitekt's "Blok" system. You define widgets and UI elements that are rendered by the Arkitekt client (web or desktop). This allows your app to provide a UI that feels native to the platform.
 *   **Reproducibility & Traceability:** Because your app is containerized (Docker) and versioned, every run is reproducible. Arkitekt tracks exactly which version of your app processed which data, providing full provenance and traceability for scientific workflows.
 *   **Execution:** You don't run these apps with `python app.py` in production. Instead, you use the CLI commands:
-    *   `arkitekt-next app run dev`: Runs the app in development mode (hot-reloading, local connection).
-    *   `arkitekt-next app run prod`: Runs the app in production mode (simulating the container environment).
+    *   `arkitekt-next run dev`: Runs the app in development mode (hot-reloading, local connection).
+    *   `arkitekt-next run prod`: Runs the app in production mode (simulating the container environment).
     *   *Note:* These commands expect an entrypoint (e.g., `app.py`) and accept parameters like `--url` to connect to specific Arkitekt instances.
 
 **Example Use Cases:**
@@ -69,7 +69,7 @@ In this mode, your app is a structured project that gets built into a Docker con
 | :--- | :--- | :--- |
 | **Setup** | Minimal (import library) | Structured (Manifest + Docker) |
 | **UI/GUI** | **Full Custom Control** (PyQt, etc.) | **Integrated Bloks** (Rendered by Arkitekt) |
-| **Execution** | Manual (`python script.py`) | Managed (`arkitekt-next app run dev/prod`) |
+| **Execution** | Manual (`python script.py`) | Managed (`arkitekt-next run dev/prod`) |
 | **Environment** | Local Python Env | Docker Container (Reproducible) |
 | **Distribution** | Share script | Docker Registry |
 | **Traceability** | Limited | **Full Provenance** |

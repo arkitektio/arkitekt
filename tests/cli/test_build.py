@@ -50,7 +50,7 @@ def _scaffold(runner: CliRunner, version: str = "0.0.1") -> None:
     result = runner.invoke(
         cli,
         [
-            "app", "init",
+            "init",
             "--identifier", "com.test.app",
             "--version", version,
             "--author", "me",

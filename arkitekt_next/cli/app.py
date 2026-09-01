@@ -21,8 +21,15 @@ import typer
 from rich.console import Console
 
 from arkitekt_next.cli.docs import DOCS_BASE_URL
+from arkitekt_next.cli.io import load_manifest
 from arkitekt_next.cli.texts import LOGO
-from arkitekt_next.cli.vars import set_console, set_work_dir
+from arkitekt_next.cli.vars import set_console, set_manifest, set_work_dir
+from arkitekt_next.utils import create_arkitekt_next_folder
+
+#: Root commands that operate on a scaffolded app project (a manifest inside the
+#: `.arkitekt_next` folder). They need the folder to exist and the manifest loaded
+#: into context; `init` is the command that creates that project, so it is excluded.
+APP_PROJECT_COMMANDS = {"run", "gen", "manifest", "inspect", "call"}
 
 _ROOT_HELP = (
     f"[cyan]{LOGO}[/cyan]\n\n"
@@ -63,3 +70,10 @@ def main(
     ctx.obj = {}
     set_console(ctx, Console())
     set_work_dir(ctx, work_dir)
+
+    if ctx.invoked_subcommand in APP_PROJECT_COMMANDS:
+        create_arkitekt_next_folder(base_dir=work_dir)
+
+        manifest = load_manifest(base_dir=work_dir)
+        if manifest:
+            set_manifest(ctx, manifest)

@@ -22,7 +22,7 @@ plugin = typer.Typer(
     publish the image (`build`, `publish`), validate flavours (`validate`), and
     manage flavours/selectors. These commands operate on the app in the current
     working directory and therefore require an already-initialized app — run
-    `arkitekt-next app init` first.
+    `arkitekt-next init` first.
     """,
 )
 
@@ -36,17 +36,18 @@ def plugin_callback(ctx: typer.Context) -> None:
     publish the image (`build`, `publish`), validate flavours (`validate`), and
     manage flavours/selectors. These commands operate on the app in the current
     working directory and therefore require an already-initialized app — run
-    `arkitekt-next app init` first.
+    `arkitekt-next init` first.
     """
     # Guard: plugin commands only make sense inside an initialized app directory.
-    # Top-level groups don't get the `app` group's manifest bootstrap, so load it
-    # here (and fail clearly if this isn't an app) for the subcommands to use.
+    # `plugin` is not in APP_PROJECT_COMMANDS (the root callback's manifest
+    # bootstrap), so load it here — failing clearly if this isn't an app —
+    # for the subcommands to use.
     work_dir = get_work_dir(ctx)
     manifest = load_manifest(base_dir=work_dir)
     if manifest is None:
         cli_error(
             f"No Arkitekt app found in '{work_dir}'. Plugin commands can only be run "
-            "inside an initialized app directory — run `arkitekt-next app init` first."
+            "inside an initialized app directory — run `arkitekt-next init` first."
         )
 
     create_arkitekt_next_folder(base_dir=work_dir)

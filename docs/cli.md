@@ -3,7 +3,7 @@
 `arkitekt-next` is the command line for building and running Arkitekt **apps**:
 
 - **Build apps** from your Python code — scaffold, run, generate typed clients,
-  and call functions (`app`).
+  and call functions (`init`, `run`, `gen`, `manifest`, `inspect`, `call`).
 - **Package plugins** — containerize an app into flavours and publish it
   (`plugin`).
 - **Join the mesh** — enroll a machine in the private WireGuard network that
@@ -15,15 +15,15 @@ Standing up an Arkitekt **server** (hub, coordinator, engine) is the job of
 [konstruktor](https://github.com/arkitektio/konstruktor) — the CLI and desktop
 app for creating and managing deployments.
 
-This page is a reference for the available command groups. Every command and
+This page is a reference for the available commands. Every command and
 sub-command also ships with `--help`, so you can always discover the exact flags
 from the terminal:
 
 ```bash
 arkitekt-next --help
-arkitekt-next app --help
+arkitekt-next run --help
 arkitekt-next mesh join --help
-arkitekt-next app manifest version --help
+arkitekt-next manifest version --help
 ```
 
 Each `--help` output also links to the matching page in the hosted
@@ -31,11 +31,11 @@ documentation. Those links live as constants in
 [`arkitekt_next/cli/docs.py`](../arkitekt_next/cli/docs.py) — change
 `DOCS_BASE_URL` or a route there and every `--help` epilogue updates with it.
 
-## Command groups at a glance
+## Commands at a glance
 
-| Group | What it does | Hosted docs |
+| Command | What it does | Hosted docs |
 | :--- | :--- | :--- |
-| `app` | Build, run and deploy apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli/app> |
+| `init` · `run` · `gen` · `manifest` · `inspect` · `call` | Build, run and deploy apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli> |
 | `plugin` | Containerize an app into flavours and publish it. | <https://arkitekt.live/docs/cli/plugin> |
 | `mesh` | Join this machine to the deployment's WireGuard mesh. | <https://arkitekt.live/docs/cli/mesh> |
 | `self` | Manage the Arkitekt CLI / SDK installation itself. | <https://arkitekt.live/docs/cli/self> |
@@ -44,15 +44,15 @@ documentation. Those links live as constants in
 
 | Option | Description |
 | :--- | :--- |
-| `--work-dir`, `-w` | The working directory. Defaults to the current directory. The `app` group reads and writes the `.arkitekt_next` project folder relative to this directory, so you can operate on a project without `cd`-ing into it. |
+| `--work-dir`, `-w` | The working directory. Defaults to the current directory. The app commands read and write the `.arkitekt_next` project folder relative to this directory, so you can operate on a project without `cd`-ing into it. |
 
 ```bash
 # Operate on a project located elsewhere without changing directories
-arkitekt-next --work-dir ./my-app app manifest inspect
+arkitekt-next --work-dir ./my-app manifest inspect
 ```
 
-> **Note:** The `app` group operates on a scaffolded app project. Every `app`
-> subcommand except `app init` expects an initialized app; it will create the
+> **Note:** The app commands operate on a scaffolded app project. Every one of
+> them except `init` expects an initialized app; they create the
 > `.arkitekt_next` folder if needed and load the manifest from the working
 > directory.
 
@@ -60,15 +60,11 @@ arkitekt-next --work-dir ./my-app app manifest inspect
 
 # App development
 
-The `app` and `plugin` groups are the client-side SDK: they turn your Python code
-into an Arkitekt app and package it for distribution.
+The app commands and the `plugin` group are the client-side SDK: they turn your
+Python code into an Arkitekt app and package it for distribution. Every command
+below operates on the app in the current working directory (see `--work-dir`).
 
-## `app` — Build, run and deploy apps
-
-Everything below lives under `arkitekt-next app …` and operates on the app in the
-current working directory (see `--work-dir`).
-
-### `app init` — Scaffold a new app
+### `init` — Scaffold a new app
 
 Creates a new Arkitekt Next app in the working directory. It writes an
 entrypoint file (default `app.py`) seeded from a template and a
@@ -76,13 +72,13 @@ entrypoint file (default `app.py`) seeded from a template and a
 
 ```bash
 # Interactive — prompts for identifier, author and entrypoint
-arkitekt-next app init
+arkitekt-next init
 
 # Non-interactive — accept all defaults
-arkitekt-next app init --yes --package-manager pip
+arkitekt-next init --yes --package-manager pip
 
 # Fully specified
-arkitekt-next app init myapp \
+arkitekt-next init myapp \
   --identifier com.example.myapp \
   --version 0.1.0 \
   --author "Jane Doe" \
@@ -113,19 +109,19 @@ When `--package-manager uv` is chosen, `uv` must be installed; the CLI runs
 
 📖 <https://arkitekt.live/docs/cli/init>
 
-### `app run` — Run your app locally
+### `run` — Run your app locally
 
 Runs your app against a (local or remote) Arkitekt instance.
 
 ```bash
 # Development mode with hot-reloading
-arkitekt-next app run dev
+arkitekt-next run dev
 
 # Production mode (no reloading, scalable)
-arkitekt-next app run prod
+arkitekt-next run prod
 
 # Connect to a specific instance, unattended
-arkitekt-next app run dev --url http://localhost:8000 --headless
+arkitekt-next run dev --url http://localhost:8000 --headless
 ```
 
 | Sub-command | Description |
@@ -150,26 +146,26 @@ Common options (shared by `dev` and `prod`):
 
 📖 <https://arkitekt.live/docs/cli/run>
 
-### `app manifest` — Manage the app manifest
+### `manifest` — Manage the app manifest
 
 The manifest describes the app — its identifier, version, author and the
 **scopes** (rights) it requests. It is used to authenticate the app with the
 platform.
 
 ```bash
-arkitekt-next app manifest inspect               # print the manifest as a table
+arkitekt-next manifest inspect               # print the manifest as a table
 
-arkitekt-next app manifest version set 1.2.3     # set an explicit version
-arkitekt-next app manifest version patch         # 1.2.3 -> 1.2.4
-arkitekt-next app manifest version minor         # 1.2.3 -> 1.3.0
-arkitekt-next app manifest version major         # 1.2.3 -> 2.0.0
-arkitekt-next app manifest version prerelease    # 1.2.3 -> 1.2.3-rc.1
-arkitekt-next app manifest version build         # 1.2.3 -> 1.2.3+build.1
+arkitekt-next manifest version set 1.2.3     # set an explicit version
+arkitekt-next manifest version patch         # 1.2.3 -> 1.2.4
+arkitekt-next manifest version minor         # 1.2.3 -> 1.3.0
+arkitekt-next manifest version major         # 1.2.3 -> 2.0.0
+arkitekt-next manifest version prerelease    # 1.2.3 -> 1.2.3-rc.1
+arkitekt-next manifest version build         # 1.2.3 -> 1.2.3+build.1
 
-arkitekt-next app manifest scopes list           # scopes this app requests
-arkitekt-next app manifest scopes available      # all scopes the platform offers
-arkitekt-next app manifest scopes add write      # request additional scopes
-arkitekt-next app manifest scopes remove write
+arkitekt-next manifest scopes list           # scopes this app requests
+arkitekt-next manifest scopes available      # all scopes the platform offers
+arkitekt-next manifest scopes add write      # request additional scopes
+arkitekt-next manifest scopes remove write
 ```
 
 | Sub-command | Effect |
@@ -190,15 +186,15 @@ Scopes are validated against the platform's known scopes (currently `read` and
 
 📖 <https://arkitekt.live/docs/cli/manifest>
 
-### `app gen` — Code generation
+### `gen` — Code generation
 
 Generates fully typed Python code for your GraphQL API documents using
 [turms](https://github.com/jhnnsrs/turms). Requires `turms` to be installed.
 
 ```bash
-arkitekt-next app gen init      # scaffold a graphql.config.yaml
-arkitekt-next app gen compile   # generate code once
-arkitekt-next app gen watch     # regenerate whenever documents change
+arkitekt-next gen init      # scaffold a graphql.config.yaml
+arkitekt-next gen compile   # generate code once
+arkitekt-next gen watch     # regenerate whenever documents change
 ```
 
 `gen compile` accepts `--config` to point at a specific GraphQL config file
@@ -206,20 +202,20 @@ arkitekt-next app gen watch     # regenerate whenever documents change
 
 📖 <https://arkitekt.live/docs/cli/gen>
 
-### `app inspect` — Inspect your app
+### `inspect` — Inspect your app
 
 Inspects parts of your app. These commands are also used by the Arkitekt server
 to introspect your app when it runs in production.
 
 ```bash
 # Scan for module-level (leaking) variables that are unsafe on reload
-arkitekt-next app inspect variables
+arkitekt-next inspect variables
 
 # Emit the app's requirements as JSON
-arkitekt-next app inspect requirements --pretty
+arkitekt-next inspect requirements --pretty
 
 # Emit the full agent manifest (implementations, states, requirements) as JSON
-arkitekt-next app inspect all --pretty
+arkitekt-next inspect all --pretty
 ```
 
 | Sub-command | Description |
@@ -234,13 +230,13 @@ The JSON-emitting commands accept `--pretty`/`-p` for indented output and
 
 📖 <https://arkitekt.live/docs/cli/inspect>
 
-### `app call` — Call functions in your app
+### `call` — Call functions in your app
 
 Calls functions defined in your app, either locally (no server needed) or
 remotely (through a rekuest server).
 
 ```bash
-arkitekt-next app call remote <function> ...
+arkitekt-next call remote <function> ...
 ```
 
 📖 <https://arkitekt.live/docs/cli/call>
@@ -385,15 +381,15 @@ Develop and ship an app:
 
 ```bash
 # 1. Create the app
-arkitekt-next app init myapp --identifier com.example.myapp --package-manager uv
+arkitekt-next init myapp --identifier com.example.myapp --package-manager uv
 cd myapp
 
 # 2. Iterate locally
-arkitekt-next app run dev
+arkitekt-next run dev
 
 # 3. Prepare for distribution
 arkitekt-next plugin init --flavour vanilla --devcontainer
-arkitekt-next app manifest version patch
+arkitekt-next manifest version patch
 arkitekt-next plugin build
 arkitekt-next plugin publish
 ```

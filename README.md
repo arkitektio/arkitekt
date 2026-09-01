@@ -64,7 +64,7 @@ pip install "arkitekt-next[alpaka]"         # want to talk to LLMs? This one's f
 
 ```bash
 mkdir my-app && cd my-app
-arkitekt-next app init
+arkitekt-next init
 ```
 
 This walks you through creating an app and writes a manifest (identifier, version, entrypoint, scopes)
@@ -95,11 +95,11 @@ def greet(name: str, excited: bool = False) -> str:
 ### 3. Run it
 
 ```bash
-arkitekt-next app run dev
+arkitekt-next run dev
 ```
 
 `run dev` connects your app to a local or remote Arkitekt server with **hot reloading** — edit your
-code and the app reloads automatically. When you are ready for production, use `arkitekt-next app run prod`.
+code and the app reloads automatically. When you are ready for production, use `arkitekt-next run prod`.
 
 ## The CLI
 
@@ -107,16 +107,16 @@ code and the app reloads automatically. When you are ready for production, use `
 Standing up an Arkitekt server is the job of
 [konstruktor](https://github.com/arkitektio/konstruktor):
 
-| Command group | What it does |
+| Command | What it does |
 | --- | --- |
-| `app` | Build, run and deploy apps from your Python code — scaffold (`init`), run locally (`run dev`/`run prod`), generate typed clients (`gen`), manage the manifest, inspect, and call functions. |
+| `init` · `run` · `gen` · `manifest` · `inspect` · `call` | Build, run and deploy apps from your Python code — scaffold, run locally (`run dev`/`run prod`), generate typed clients, manage the manifest, inspect, and call functions. |
 | `plugin` | Containerize your app into flavours and publish it as a deployable plugin. |
 | `mesh` | Join this machine to the deployment's private WireGuard mesh. |
 | `self` | Manage your Arkitekt install — upgrade the SDK, print versions, dump diagnostics. |
 
 ```bash
-arkitekt-next app init         # scaffold an app
-arkitekt-next app run dev      # run it with hot reloading
+arkitekt-next init         # scaffold an app
+arkitekt-next run dev      # run it with hot reloading
 konstruktor hub create         # stand up a server to run it against (separate tool)
 ```
 

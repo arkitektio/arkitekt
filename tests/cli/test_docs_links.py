@@ -36,14 +36,13 @@ def test_help_epilog_renders_a_link():
 @pytest.mark.parametrize(
     "args",
     [
-        # SDK commands now live under the `app` group.
-        ["app"],
-        ["app", "init"],
-        ["app", "run"],
-        ["app", "gen"],
-        ["app", "manifest"],
-        ["app", "inspect"],
-        ["app", "call"],
+        # SDK commands live at the root.
+        ["init"],
+        ["run"],
+        ["gen"],
+        ["manifest"],
+        ["inspect"],
+        ["call"],
         # Top-level groups.
         ["plugin"],
         ["mesh"],

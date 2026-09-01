@@ -20,7 +20,6 @@ MANIFEST_DOCS = f"{CLI_DOCS_BASE}/manifest"
 INSPECT_DOCS = f"{CLI_DOCS_BASE}/inspect"
 CALL_DOCS = f"{CLI_DOCS_BASE}/call"
 SELF_DOCS = f"{CLI_DOCS_BASE}/self"
-APP_DOCS = f"{CLI_DOCS_BASE}/app"
 PLUGIN_DOCS = f"{CLI_DOCS_BASE}/plugin"
 
 MESH_DOCS = f"{CLI_DOCS_BASE}/mesh"

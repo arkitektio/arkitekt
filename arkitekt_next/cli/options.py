@@ -1,6 +1,6 @@
 """Shared Typer option definitions.
 
-Connection options: `app run dev|prod` and `app call remote` all take the same
+Connection options: `run dev|prod` and `call remote` all take the same
 fakts/builder options.
 
 Defining each once as an `Annotated` alias keeps flags, help, envvars and types

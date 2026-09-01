@@ -22,7 +22,7 @@ pytestmark = pytest.mark.cli
 def _invoke(work_dir, *args, **kwargs):
     runner = CliRunner()
     # SDK commands now live under the `app` group.
-    result = runner.invoke(cli, ["--work-dir", str(work_dir), "app", *args], **kwargs)
+    result = runner.invoke(cli, ["--work-dir", str(work_dir), *args], **kwargs)
     if result.exit_code != 0:
         print(result.output)
         print(result.exception)
@@ -39,7 +39,7 @@ def _run_cli(work_dir, *args):
     result = subprocess.run(
         [
             sys.executable, "-m", "arkitekt_next.cli.main",
-            "--work-dir", str(work_dir), "app", *args,
+            "--work-dir", str(work_dir), *args,
         ],
         capture_output=True,
         text=True,
@@ -177,16 +177,15 @@ def test_kabinet_validate_without_flavours_errors(app_dir):
     "args",
     [
         [],
-        ["app"],
-        ["app", "init"],
-        ["app", "run"],
-        ["app", "gen"],
+        ["init"],
+        ["run"],
+        ["gen"],
         ["plugin"],
-        ["app", "manifest"],
-        ["app", "manifest", "version"],
-        ["app", "manifest", "scopes"],
-        ["app", "inspect"],
-        ["app", "call"],
+        ["manifest"],
+        ["manifest", "version"],
+        ["manifest", "scopes"],
+        ["inspect"],
+        ["call"],
     ],
 )
 def test_help_for_command_groups(args):
