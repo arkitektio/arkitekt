@@ -57,7 +57,7 @@ def info(ctx: typer.Context) -> None:
     table.add_row("Platform", f"{platform.system()} {platform.release()} ({platform.machine()})")
     table.add_row("uv", _which_version("uv", ["--version"]))
     table.add_row("pip", _which_version("pip", ["--version"]))
-    # Docker is optional — only the `hub`/`coord`/`hubinator` up commands need it.
+    # Docker is optional — only the `plugin build`/`publish` commands need it.
     table.add_row("docker [dim](optional)[/dim]", _which_version("docker", ["--version"]))
     table.add_row("Working dir", get_work_dir(ctx))
 

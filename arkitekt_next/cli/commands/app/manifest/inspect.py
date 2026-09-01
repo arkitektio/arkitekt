@@ -1,11 +1,25 @@
+import json
+from typing import Annotated
+
 import typer
 from rich.table import Table
 from rich.panel import Panel
 from rich.console import Group
+from arkitekt_next.cli.utils import emit_machine_readable
 from arkitekt_next.cli.vars import get_manifest, get_console
 
 
-def inspect(ctx: typer.Context) -> None:
+def inspect(
+    ctx: typer.Context,
+    pretty: Annotated[
+        bool,
+        typer.Option("--pretty", "-p", help="Should we just output json?"),
+    ] = False,
+    machine_readable: Annotated[
+        bool,
+        typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
+    ] = False,
+) -> None:
     """Inspect the [i]current[/i] manifest of this app
 
     The manifest is used to describe the app and its rights (scopes) and requirements, to be run on the platform.
@@ -14,6 +28,13 @@ def inspect(ctx: typer.Context) -> None:
 
     """
     manifest = get_manifest(ctx)
+
+    if machine_readable:
+        emit_machine_readable("MANIFEST", manifest.model_dump(mode="json"))
+        return
+    if pretty:
+        get_console(ctx).print(json.dumps(manifest.model_dump(mode="json"), indent=2))
+        return
 
     table = Table.grid(padding=(0, 3))
     table.add_column()

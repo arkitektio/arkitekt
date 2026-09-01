@@ -3,7 +3,6 @@ import os
 import shutil
 from typing import Annotated, List, Optional
 
-import click
 import typer
 import yaml
 
@@ -140,10 +139,12 @@ def init(
             "`gen init`",
             hint="Pass --service to choose the service non-interactively.",
         )
-        service = click.prompt(
-            "Choose a service to initialize the project for",
-            type=click.Choice(list(chosen_services.keys())),
+        available = ", ".join(chosen_services.keys())
+        service = typer.prompt(
+            f"Choose a service to initialize the project for ({available})"
         )
+        if service not in chosen_services:
+            cli_error(f"Unknown service '{service}'. Available: {available}")
 
         chosen_services = {service: chosen_services[service]}
 

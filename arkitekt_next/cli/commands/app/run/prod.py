@@ -19,7 +19,7 @@ from arkitekt_next.cli.options import (
     NoCacheOption,
     VersionOption,
 )
-import sys
+from arkitekt_next.cli.errors import cli_error
 
 
 def prod(
@@ -37,9 +37,9 @@ def prod(
 ) -> None:
     """Runs the app in production mode
 
-    \n
-    You can specify the builder to use with the --builder flag. By default, the easy builder is used, which is designed to be easy to use and to get started with.
-
+    You can specify the builder to use with the --builder flag. By default, the
+    easy builder is used, which is designed to be easy to use and to get
+    started with.
     """
 
     manifest = get_manifest(ctx)
@@ -54,8 +54,7 @@ def prod(
         try:
             import_module(entrypoint_module)
         except ModuleNotFoundError as e:
-            console.print(f"Could not find entrypoint module {entrypoint_module}")
-            raise e
+            cli_error(f"Could not import entrypoint module '{entrypoint_module}': {e}")
 
     builder_kwargs = {
         "url": url,
@@ -79,6 +78,6 @@ def prod(
 
     try:
         asyncio.run(run_app(app))
-    except Exception as e:
+    except Exception:
         console.print_exception()
-        sys.exit(1)
+        cli_error("App crashed while running. See the traceback above.")

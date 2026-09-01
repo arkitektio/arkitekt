@@ -7,8 +7,6 @@ to abort. ``require_interactive`` is the single guard to call before any such
 prompt: on a non-TTY it raises a clean :class:`click.ClickException` that names
 the non-interactive escape hatch instead of hanging.
 
-This mirrors the ``sys.stdin.isatty()`` guard already used in
-``arkitekt_next.cli.commands.hub.connect``.
 """
 
 import sys

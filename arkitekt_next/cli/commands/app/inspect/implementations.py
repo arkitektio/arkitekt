@@ -2,6 +2,8 @@ import asyncio
 from typing import Annotated
 from pydantic import BaseModel
 import typer
+
+from arkitekt_next.cli.utils import emit_machine_readable
 from importlib import import_module
 from arkitekt_next.app.app import App
 from arkitekt_next.cli.commands.app.run.utils import import_builder
@@ -71,11 +73,7 @@ def implementations(
         return
 
     if machine_readable:
-        print(
-            "--START_TEMPLATES--"
-            + json.dumps(global_list, indent=2)
-            + "--END_TEMPLATES--"
-        )
+        emit_machine_readable("TEMPLATES", global_list)
 
     else:
         if pretty:

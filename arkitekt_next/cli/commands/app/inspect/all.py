@@ -2,6 +2,8 @@ import asyncio
 from typing import Annotated
 from pydantic import BaseModel
 import typer
+
+from arkitekt_next.cli.utils import emit_machine_readable
 from importlib import import_module
 from arkitekt_next.app.app import App
 from arkitekt_next.cli.commands.app.run.utils import import_builder
@@ -99,7 +101,7 @@ def all(
         return
 
     if machine_readable:
-        print("--START_AGENT--" + json.dumps(agent) + "--END_AGENT--")
+        emit_machine_readable("AGENT", agent)
 
     else:
         if pretty:

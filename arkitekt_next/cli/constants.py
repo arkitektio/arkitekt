@@ -1,4 +1,3 @@
-from .types import Requirement
 from .utils import build_relative_dir
 from typing import List
 import os
@@ -7,28 +6,6 @@ import os
 def compile_scopes() -> List[str]:
     """Compile all available scopes"""
     return ["read", "write"]
-
-
-def compile_builders():
-    return ["arkitekt_next.builders.easy"]
-
-
-def compile_runtimes():
-    return ["nvidia", "standard"]
-
-
-def compile_schema_versions() -> List[str]:
-    z = build_relative_dir("schemas")
-    return [
-        os.path.basename(f) for f in os.listdir(z) if os.path.isdir(os.path.join(z, f))
-    ]
-
-
-def compile_configs() -> List[str]:
-    z = build_relative_dir("configs")
-    return [
-        os.path.basename(f) for f in os.listdir(z) if os.path.isdir(os.path.join(z, f))
-    ]
 
 
 def compile_dockerfiles() -> List[str]:

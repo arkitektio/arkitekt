@@ -8,19 +8,10 @@ from .service_registry import (
     get_default_service_registry,
 )
 
-
-def missing_install(name: str, error: Exception):
-    def real_missing_install(*args, **kwargs):
-        raise ImportError(
-            f"Missing import: {name}. Please install the missing package. "
-        ) from error
-
-    return real_missing_install
-
-
 from rekuest_next.register import register
 from rekuest_next.agents.hooks.background import background
 from rekuest_next.agents.hooks.startup import startup
+from rekuest_next.agents.hooks.shutdown import shutdown
 from rekuest_next.agents.context import context
 from rekuest_next.state.decorator import state
 from rekuest_next.actors.context import pausepoint, apausepoint
@@ -71,5 +62,7 @@ __all__ = [
     "context",
     "background",
     "startup",
+    "shutdown",
+    "declare",
     "init",
 ]

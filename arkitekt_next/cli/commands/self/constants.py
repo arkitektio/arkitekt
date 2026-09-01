@@ -23,7 +23,6 @@ ARKITEKT_PACKAGES: List[str] = [
     "unlok-next",
     "kraph",
     "alpaka",
-    "dokker",
     "turms",
     "reaktion-next",
     "lovekit",

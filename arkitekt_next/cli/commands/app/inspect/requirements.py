@@ -1,6 +1,8 @@
 from typing import Annotated
 from arkitekt_next import get_default_service_registry
 import typer
+
+from arkitekt_next.cli.utils import emit_machine_readable
 from importlib import import_module
 from arkitekt_next.app.app import App
 from arkitekt_next.cli.commands.app.run.utils import import_builder
@@ -52,7 +54,7 @@ def requirements(
     x = [item.model_dump(by_alias=True) for item in service_registry.get_requirements()]
 
     if machine_readable:
-        print("--START_REQUIREMENTS--" + json.dumps(x) + "--END_REQUIREMENTS--")
+        emit_machine_readable("REQUIREMENTS", x)
 
     else:
         if pretty:

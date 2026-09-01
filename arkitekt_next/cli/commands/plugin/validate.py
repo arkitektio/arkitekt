@@ -21,4 +21,4 @@ def validate(
     for name in flavours:
         console.print(f"[green]✓[/green] Flavour [bold]{name}[/bold] is valid")
 
-    typer.echo("All flavours are valid")
+    console.print("[green]All flavours are valid[/green]")

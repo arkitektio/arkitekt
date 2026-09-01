@@ -2,7 +2,7 @@ from typing import Annotated, Optional
 import typer
 from arkitekt_next.cli.errors import cli_error
 from arkitekt_next.cli.interactive import require_interactive
-from arkitekt_next.cli.vars import get_work_dir
+from arkitekt_next.cli.vars import get_console, get_work_dir
 from arkitekt_next.utils import create_arkitekt_next_folder
 import os
 
@@ -49,6 +49,7 @@ def add_selector(
     from kabinet.api.schema import SelectorInput
     from .types import Flavour
 
+    console = get_console(ctx)
     work_dir = get_work_dir(ctx)
     arkitekt_next_folder = create_arkitekt_next_folder(base_dir=work_dir)
     flavour_folder = os.path.join(arkitekt_next_folder, "flavours", flavour)
@@ -84,7 +85,7 @@ def add_selector(
     with open(config_file, "w") as f:
         yaml.dump(fl.model_dump(), f)
 
-    typer.echo(f"Added selector {new_selector} to flavour {flavour}")
+    console.print(f"Added selector {new_selector} to flavour [bold]{flavour}[/bold]")
 
 
 selector.command("add")(add_selector)

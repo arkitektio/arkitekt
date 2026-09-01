@@ -9,18 +9,7 @@ import uuid
 
 
 def check_if_build_already_deployed(build: "Build") -> None:
-    """Checks if a manifest has already been deployed. If it has, it raises a click.ClickException.
-
-    Parameters
-    ----------
-    manifest : Manifest
-        THe manifest to check
-
-    Raises
-    ------
-    click.ClickException
-        A click exception if the manifest has already been deployed
-    """
+    """Checks if a build has already been deployed; aborts via cli_error if so."""
     from .io import get_deployments
 
     config = get_deployments()

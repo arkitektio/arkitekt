@@ -45,12 +45,11 @@ pip install "arkitekt-next[all]"
 This installs everything, including the `arkitekt-next` command line interface used to create, develop,
 containerize, and deploy apps.
 
-Prefer a lean install? Pick only the extras you need:
+Prefer a lean install? The CLI and packaging tooling are always included — pick
+only the service extras you need:
 
 ```bash
-pip install "arkitekt-next[cli]"            # the CLI + app development tooling
 pip install "arkitekt-next[mikro]"          # microscopy / imaging data
-pip install "arkitekt-next[kabinet]"        # Docker packaging & deployment
 pip install "arkitekt-next[fluss]"          # workflow orchestration
 pip install "arkitekt-next[elektro]"       # electrophysiology data
 pip install "arkitekt-next[alpaka]"         # want to talk to LLMs? This one's for you.

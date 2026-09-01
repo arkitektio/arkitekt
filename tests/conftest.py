@@ -38,27 +38,15 @@ def pytest_collection_modifyitems(
 ) -> None:
     """Gate tests that need external services.
 
-    Every test runs by default, except:
-    - ``integration`` tests (which require a running arkitekt-server) — skipped
-      unless explicitly selected with ``-m integration``;
-    - ``needs_docker`` tests — skipped when no docker daemon is reachable, so
-      they no-op on macOS/Windows CI runners and dev machines without docker.
-
-    Docker-backed stack tests carry **both** markers: opt-in via ``-m integration``
-    so a bare ``pytest`` stays fast, and a clean skip when there is no daemon.
+    Every test runs by default, except ``needs_docker`` tests, which are skipped
+    when no docker daemon is reachable, so they no-op on macOS/Windows CI runners
+    and dev machines without docker.
     """
     docker_ok = docker_available()
-    # `-m integration` selects integration tests; only then do we run them.
-    run_integration = "integration" in str(config.getoption("markexpr") or "")
     skip_no_docker = pytest.mark.skip(reason="docker daemon not available")
-    skip_integration = pytest.mark.skip(
-        reason="integration tests require a running arkitekt-server; run with -m integration"
-    )
     for item in items:
         # Use get_closest_marker (not `in item.keywords`): keywords also contain
         # path-derived names like the `cli` directory, which would over-match.
-        if item.get_closest_marker("integration") is not None and not run_integration:
-            item.add_marker(skip_integration)
         if item.get_closest_marker("needs_docker") is not None and not docker_ok:
             item.add_marker(skip_no_docker)
 

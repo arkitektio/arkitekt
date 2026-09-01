@@ -218,7 +218,9 @@ async def run_dev(
     # Build the app from the manifest (identifier, logo, scopes, ...), overriding
     # the version with the dev sentinel (or an explicit --version). Shared between
     # the initial build and every hot reload so they can never diverge.
-    builder_args = {**manifest.to_builder_dict(), "version": version, **builder_kwargs, "no_cache": reauth}
+    # --reauth implies skipping the fakts cache; never clobber an explicit --no-cache.
+    builder_args = {**manifest.to_builder_dict(), "version": version, **builder_kwargs}
+    builder_args["no_cache"] = bool(builder_args.get("no_cache")) or reauth
 
     generation_message = "[not bold white]This is a development tool for arkitekt_next apps. It will watch your app for changes and reload it when it detects a change. It will also print out the current state of your app.[/]"
 
@@ -282,8 +284,6 @@ async def run_dev(
 
         group = construct_changes_group(changes)
         panel = Panel(group, style="bold blue", border_style="blue")
-        console.print(panel)
-
         console.print(panel)
         # Cancelling the app
         if not current_run or current_run.done():
@@ -362,7 +362,7 @@ def dev(
         bool,
         typer.Option(
             "--reauth",
-            help="Should we check the whole directory for changes and reload them when changes?",
+            help="Force a fresh login: skip the fakts cache and re-run authentication.",
         ),
     ] = False,
 ) -> None:

@@ -1,8 +1,12 @@
 from importlib import import_module
 import inspect as pyinspect
+import json
+from typing import Annotated
+
 import typer
 
 from arkitekt_next.cli.ui import construct_leaking_group
+from arkitekt_next.cli.utils import emit_machine_readable
 from arkitekt_next.cli.vars import get_console, get_manifest
 from rich.panel import Panel
 
@@ -49,7 +53,17 @@ def scan_module(module_path):
     return inspect_dangerous_variables(module_path)
 
 
-def variables(ctx: typer.Context):
+def variables(
+    ctx: typer.Context,
+    pretty: Annotated[
+        bool,
+        typer.Option("--pretty", "-p", help="Should we just output json?"),
+    ] = False,
+    machine_readable: Annotated[
+        bool,
+        typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
+    ] = False,
+):
     """Scans your arkitekt_next app for unsafe variables
 
     When designing an ArkitektNext app, you should not have variables in your
@@ -66,6 +80,16 @@ def variables(ctx: typer.Context):
     entrypoint = manifest.entrypoint
 
     variables = scan_module(entrypoint)
+
+    # The values can be arbitrary objects; stringify anything JSON can't carry.
+    serializable = {key: repr(value) for key, value in variables.items()}
+
+    if machine_readable:
+        emit_machine_readable("VARIABLES", serializable)
+        return
+    if pretty:
+        console.print(json.dumps(serializable, indent=2))
+        return
 
     if not variables:
         console.print(
