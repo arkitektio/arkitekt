@@ -260,7 +260,7 @@ arkitekt-next plugin init --flavour vanilla --devcontainer
 arkitekt-next plugin flavour add --flavour gpu --description "CUDA enabled build"
 
 # Attach a hardware selector to a flavour
-arkitekt-next plugin selector add gpu --kind cuda --cuda-cores 100
+arkitekt-next plugin selector add gpu --kind cuda --compute-capability 8.6 --vram 8000
 
 # Validate all flavour Dockerfiles and configs
 arkitekt-next plugin validate
@@ -301,10 +301,14 @@ arkitekt-next plugin publish
 | `--no-inspect`, `-n` | Skip inspection of the app during the build. |
 | `--url`, `-u` | The `fakts-next` server to use during inspection. |
 
-`plugin selector add <flavour>` attaches a hardware requirement to a flavour and
-accepts `--kind`/`-k` (e.g. `cuda`) plus quantitative selectors such as
-`--cuda-cores`/`-cc`, `--frequency`/`-fr` and `--memory`/`-m`. See
-[Flavours](flavours.md) for how selectors drive deployment.
+`plugin selector add <flavour>` attaches a hardware requirement to a flavour.
+`--kind`/`-k` picks one of `cpu`, `ram`, `cuda`, `rocm`, `oneapi`, `label`;
+`--required/--optional` and `--weight`/`-w` set the hard/soft split. Kind
+flags: `--min-count`, `--frequency`/`-fr`, `--arch` (cpu); `--memory`/`-m`
+(ram, MB); `--compute-capability`, `--cuda-version`, `--vram`, `--count`,
+`--cuda-cores`/`-cc` (cuda, the last deprecated); `--api-version`/`-av`,
+`--api-thing`/`-at` (rocm); `--one-api-version`/`-oav` (oneapi); `--key`,
+`--value` (label). Services are requirements, never selectors.
 
 📖 <https://arkitekt.live/docs/cli/plugin> · [Flavours guide](flavours.md)
 

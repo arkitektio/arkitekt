@@ -9,47 +9,102 @@ import os
 
 selector = typer.Typer(no_args_is_help=True, help="Manage selectors")
 
+KINDS = "cpu, ram, cuda, rocm, oneapi, label"
+
 
 def add_selector(
     ctx: typer.Context,
     flavour: Annotated[str, typer.Argument()],
     kind: Annotated[
         Optional[str],
-        typer.Option("--kind", "-k", help="The kind of selector"),
+        typer.Option("--kind", "-k", help=f"The kind of selector ({KINDS})"),
     ] = None,
-    api_version: Annotated[
-        Optional[str],
-        typer.Option("--api-version", "-av", help="The api version of the selector"),
-    ] = None,
-    api_thing: Annotated[
-        Optional[str],
-        typer.Option("--api-thing", "-at", help="The api thing of the selector"),
-    ] = None,
-    one_api_version: Annotated[
-        Optional[str],
+    required: Annotated[
+        bool,
         typer.Option(
-            "--one-api-version", "-oav", help="The one api version of the selector"
+            "--required/--optional",
+            help="Required selectors are hard constraints; optional ones are preferences scored by --weight.",
         ),
+    ] = True,
+    weight: Annotated[
+        Optional[int],
+        typer.Option("--weight", "-w", help="Scoring weight of an optional selector."),
+    ] = None,
+    # cpu
+    min_count: Annotated[
+        Optional[int],
+        typer.Option("--min-count", help="cpu: the minimum number of CPU cores."),
+    ] = None,
+    frequency: Annotated[
+        Optional[float],
+        typer.Option("--frequency", "-fr", help="cpu: the minimum CPU frequency, in MHz."),
+    ] = None,
+    arch: Annotated[
+        Optional[str],
+        typer.Option("--arch", help="cpu: the CPU architecture of the image (amd64, arm64, ...)."),
+    ] = None,
+    # ram
+    memory: Annotated[
+        Optional[int],
+        typer.Option("--memory", "-m", help="ram: the minimum system memory, in MB."),
+    ] = None,
+    # cuda
+    compute_capability: Annotated[
+        Optional[str],
+        typer.Option("--compute-capability", help="cuda: the minimum CUDA compute capability (e.g. 8.6)."),
+    ] = None,
+    cuda_version: Annotated[
+        Optional[str],
+        typer.Option("--cuda-version", help="cuda: the minimum CUDA driver/runtime version."),
+    ] = None,
+    vram: Annotated[
+        Optional[int],
+        typer.Option("--vram", help="cuda: the minimum GPU memory (VRAM), in MB."),
+    ] = None,
+    count: Annotated[
+        Optional[int],
+        typer.Option("--count", help="cuda: the number of GPUs required."),
     ] = None,
     cuda_cores: Annotated[
         Optional[int],
-        typer.Option("--cuda-cores", "-cc", help="The cuda cores of the selector"),
+        typer.Option("--cuda-cores", "-cc", help="cuda: deprecated, prefer --compute-capability and --vram."),
     ] = None,
-    frequency: Annotated[
-        Optional[int],
-        typer.Option("--frequency", "-fr", help="The frequency of the selector"),
+    # rocm
+    api_version: Annotated[
+        Optional[str],
+        typer.Option("--api-version", "-av", help="rocm: the minimum ROCm API version."),
     ] = None,
-    memory: Annotated[
-        Optional[int],
-        typer.Option("--memory", "-m", help="The memory of the selector"),
+    api_thing: Annotated[
+        Optional[str],
+        typer.Option("--api-thing", "-at", help="rocm: an additional ROCm capability qualifier."),
+    ] = None,
+    # oneapi
+    one_api_version: Annotated[
+        Optional[str],
+        typer.Option("--one-api-version", "-oav", help="oneapi: the minimum oneAPI version."),
+    ] = None,
+    # label
+    key: Annotated[
+        Optional[str],
+        typer.Option("--key", help="label: the qualifier key the backend resource must carry."),
+    ] = None,
+    value: Annotated[
+        Optional[str],
+        typer.Option("--value", help="label: the qualifier value; omit to only require the key to exist."),
     ] = None,
 ) -> None:
-    """Add a new selector to a flavour."""
+    """Add a selector (a hardware/capability placement requirement) to a flavour.
+
+    Selectors constrain hardware placement only — a service your app needs is
+    a requirement, never a selector.
+    """
     import yaml
     from kabinet.api.schema import (
         CpuSelectorInput,
         CudaSelectorInput,
+        LabelSelectorInput,
         OneApiSelectorInput,
+        RamSelectorInput,
         RocmSelectorInput,
     )
     from .types import Flavour
@@ -68,29 +123,46 @@ def add_selector(
             "Choosing a selector kind",
             hint="Pass --kind to set it non-interactively.",
         )
-        kind = typer.prompt("The kind of selector")
+        kind = typer.prompt(f"The kind of selector ({KINDS})")
 
     with open(config_file, "r") as f:
         data = yaml.safe_load(f)
 
     fl = Flavour(**data)
 
+    shared = {"required": required}
+    if weight is not None:
+        shared["weight"] = weight
+
     # SelectorInput is a @oneOf union discriminated on `kind`: construct the
     # matching variant with only the fields that variant carries.
     if kind == "cpu":
-        new_selector = CpuSelectorInput(kind="cpu", frequency=frequency, memory=memory)
+        new_selector = CpuSelectorInput(
+            min_count=min_count, frequency=frequency, arch=arch, **shared
+        )
+    elif kind == "ram":
+        new_selector = RamSelectorInput(min=memory, **shared)
     elif kind == "cuda":
         new_selector = CudaSelectorInput(
-            kind="cuda", cuda_version=api_version, cuda_cores=cuda_cores
+            compute_capability=compute_capability,
+            cuda_version=cuda_version,
+            memory=vram,
+            count=count,
+            cuda_cores=cuda_cores,
+            **shared,
         )
-    elif kind == "oneapi":
-        new_selector = OneApiSelectorInput(kind="oneapi", oneapi_version=one_api_version)
     elif kind == "rocm":
         new_selector = RocmSelectorInput(
-            kind="rocm", api_version=api_version, api_thing=api_thing
+            api_version=api_version, api_thing=api_thing, **shared
         )
+    elif kind == "oneapi":
+        new_selector = OneApiSelectorInput(oneapi_version=one_api_version, **shared)
+    elif kind == "label":
+        if key is None:
+            cli_error("A label selector needs --key")
+        new_selector = LabelSelectorInput(key=key, value=value, **shared)
     else:
-        cli_error(f"Unknown selector kind '{kind}'. Available: cpu, cuda, oneapi, rocm")
+        cli_error(f"Unknown selector kind '{kind}'. Available: {KINDS}")
 
     fl.selectors.append(new_selector)
 

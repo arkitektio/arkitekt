@@ -75,7 +75,17 @@ build = ["uv>=0.7.12"]
 [project.scripts]
 arkitekt-next = "arkitekt_next.cli.main:cli"
 
+[tool.uv.sources]
+# Dev-time only: the selector CLI targets the kabinet 2.x client (discriminated
+# SelectorInput union). TODO: drop once that kabinet release is on PyPI.
+kabinet = { path = "../../packages/kabinet", editable = true }
+# fakts-next>=5 exists only locally (PyPI stops at 4.1.0).
+fakts-next = { path = "../../packages/fakts-next", editable = true }
+rekuest-next = { path = "../../packages/rekuest-next", editable = true }
+
 [tool.uv]
+# fakts-next 5 is only published as a release candidate so far.
+prerelease = "allow"
 dev-dependencies = [
     "autoflake>=1.7.7,<2",
     "ruff>=0.8",

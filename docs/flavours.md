@@ -35,25 +35,42 @@ This will create a new directory in `.arkitekt_next/flavours/gpu/` containing a 
 
 ## Selectors
 
-Selectors are the mechanism Arkitekt uses to match a flavour to a deployment environment. You define them in the flavour's `config.yaml`.
+Selectors declare the hardware/capability requirements a backend must satisfy
+to run the flavour. They are stored in the flavour's `config.yaml`, published
+with the app image, and evaluated by the deployer that places pods. The
+canonical reference (all kinds, fields, units, and the Kubernetes/Compose
+mapping) lives in the kabinet server repo: `docs/selectors.md`.
 
-Common selectors include:
+Every selector carries `kind`, `required` (default `true` — a hard
+constraint) and `weight` (scores optional selectors, like Kubernetes'
+preferred-scheduling weight), plus kind-specific fields:
 
-*   **`cuda`**: Requires a CUDA-enabled GPU to be present.
-*   **`cpu`**: Matches based on CPU architecture (e.g., `arm64` vs `amd64`).
-*   **`ram`**: Specifies minimum memory requirements.
+*   **`cpu`** — `min_count` (cores), `frequency` (MHz), `arch` (`amd64`, `arm64`, ...)
+*   **`ram`** — `min` (MB of system memory)
+*   **`cuda`** — `compute_capability` (e.g. `"8.6"`), `cuda_version`, `memory` (VRAM MB), `count` (GPUs)
+*   **`rocm`** — `api_version`, `api_thing`
+*   **`oneapi`** — `oneapi_version`
+*   **`label`** — `key`, `value` (matches a backend resource's qualifiers; omit `value` to require only the key)
 
-
+A service your app needs (mikro, rekuest, ...) is **never** a selector — it is
+a requirement in the manifest, composed by the deployment. Selectors only
+constrain hardware placement.
 
 ### Example `config.yaml`
 
 ```yaml
 description: "A high-performance GPU build"
 selectors:
-  - type: gpu
-    required: true
-  - type: ram
-    min: "8GB"
+  - kind: cuda
+    compute_capability: "8.6"
+    memory: 8000
+  - kind: ram
+    min: 16000
+  - kind: label
+    key: microscope
+    value: lightsheet
+    required: false
+    weight: 10
 dockerfile: Dockerfile
 ```
 

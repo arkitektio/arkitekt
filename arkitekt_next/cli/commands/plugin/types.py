@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field, field_validator
 import datetime
 from typing import List, Optional
-from enum import Enum
+
 
 from string import Formatter
 import os
@@ -18,13 +18,6 @@ ALLOWED_BUILDER_KEYS = [
     "dockerfile",
     "package_version",
 ]
-
-
-class SelectorType(str, Enum):
-    RAM = "ram"
-    CPU = "cpu"
-    GPU = "gpu"
-    LABEL = "label"
 
 
 class Flavour(BaseModel):
@@ -108,24 +101,27 @@ class Build(BaseModel):
     )
 
     def build_docker_command(self) -> List[str]:
-        """Builds the docker command for this build"""
+        """Builds the docker command for this build.
 
-        base_command = self.base_docker_command
+        Mirrors the deployer's selector mapping: a cuda selector requests the
+        GPUs; every other kind constrains placement, not the run command.
+        (These used to call a ``selector.build_docker_params()`` that never
+        existed, so any flavour with a selector raised AttributeError.)
+        """
 
-        for selector in self.selectors:
-            base_command = base_command + selector.build_docker_params()
+        base_command = list(self.base_docker_command)
+
+        if any(selector.kind == "cuda" for selector in self.selectors):
+            base_command = base_command + ["--gpus", "all"]
 
         base_command = base_command + [self.build_id]
 
         return base_command
 
     def build_arkitekt_next_command(self, fakts_next_url: str):
-        """Builds the arkitekt_next command for this build"""
+        """Builds the arkitekt_next command for this build."""
 
-        base_command = self.base_arkitekt_next_command
-
-        for selector in self.selectors:
-            base_command = base_command + selector.build_arkitekt_next_params()
+        base_command = list(self.base_arkitekt_next_command)
 
         base_command = base_command + ["--url", fakts_next_url]
 
