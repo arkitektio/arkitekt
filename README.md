@@ -18,6 +18,12 @@
 
 ## What is Arkitekt?
 
+> **Renamed.** This client was published as `arkitekt-next` up to 1.4.2. From 2.0.0 it
+> is published as `arkitekt` again: the import root is `arkitekt` (`arkitekt_next` is
+> gone) and the CLI command is `arkitekt`, not `arkitekt-next`. Install `arkitekt>=2`.
+> Note the extras changed meaning too — `arkitekt[mikro]` now brings mikro 3.x, and the
+> `reaktion` extra is gone (the flow engine lives in `fluss[engine]`).
+
 [**Arkitekt**](https://arkitekt.live) is an open platform for building, connecting, and orchestrating
 computational apps. `arkitekt` is its Python client: a framework that takes your ordinary Python
 functions and exposes them as **remotely callable, orchestratable building blocks** — without you having
