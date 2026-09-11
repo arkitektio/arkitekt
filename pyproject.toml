@@ -13,7 +13,7 @@ dependencies = [
     "click>=8.2.0",
     "typer>=0.15.0",
     "rekuest>=3",
-    "kabinet>=1.0.3",
+    "kabinet>=2",
     "semver>=3.0.4",
     "watchfiles>=1.0.5",
     "turms>=2.0.0",
@@ -72,11 +72,6 @@ build = ["uv>=0.7.12"]
 [project.scripts]
 arkitekt = "arkitekt.cli.main:cli"
 
-[tool.uv.sources]
-# Dev-time only: the selector CLI targets the kabinet 2.x client (discriminated
-# SelectorInput union). TODO: drop once that kabinet release is on PyPI.
-kabinet = { path = "../../packages/kabinet", editable = true }
-
 [tool.uv]
 dev-dependencies = [
     "autoflake>=1.7.7,<2",
@@ -91,7 +86,7 @@ dev-dependencies = [
     "qtpy>=2.4.3",
     "numpy>=1,<2",
     "rekuest>=3",
-    "kabinet>=1.0.1",
+    "kabinet>=2",
     "alpaka>=1.0.0",
     "kraph>=0.5.1",
     "fluss>=2",

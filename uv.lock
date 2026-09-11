@@ -301,7 +301,7 @@ requires-dist = [
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=2.0.0" },
     { name = "fakts", specifier = ">=2" },
     { name = "fluss", marker = "extra == 'fluss'", specifier = ">=2" },
-    { name = "kabinet", editable = "../kabinet" },
+    { name = "kabinet", specifier = ">=2" },
     { name = "koil", specifier = ">=3.3.2" },
     { name = "kraph", marker = "extra == 'extended'", specifier = ">=0.5.1" },
     { name = "kraph", marker = "extra == 'kraph'", specifier = ">=0.5.1" },
@@ -329,7 +329,7 @@ dev = [
     { name = "basedpyright", specifier = ">=1.21" },
     { name = "elektro", specifier = ">=2.0.0" },
     { name = "fluss", specifier = ">=2" },
-    { name = "kabinet", editable = "../kabinet" },
+    { name = "kabinet", specifier = ">=1.0.1" },
     { name = "kraph", specifier = ">=0.5.1" },
     { name = "lovekit", specifier = ">=1.2.1" },
     { name = "mikro", specifier = ">=3" },
@@ -1033,36 +1033,16 @@ wheels = [
 
 [[package]]
 name = "kabinet"
-version = "1.0.3"
-source = { editable = "../kabinet" }
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "koil" },
     { name = "rath" },
     { name = "websockets" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "koil", specifier = ">=1.0.0" },
-    { name = "rath", specifier = ">=3.12" },
-    { name = "uv", marker = "extra == 'build'", specifier = ">=0.7.12" },
-    { name = "websockets", specifier = ">=15.0.1" },
-]
-provides-extras = ["build"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "aiohttp", specifier = ">=3.8.3,<4" },
-    { name = "autoflake", specifier = ">=1.7.7,<2" },
-    { name = "basedpyright", specifier = ">=1.21" },
-    { name = "dokker", specifier = ">=2.5" },
-    { name = "fakts-next", editable = "../fakts-next" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-aiohttp", specifier = ">=1.0.4,<2" },
-    { name = "pytest-asyncio", specifier = ">=0.26.0" },
-    { name = "pytest-cov", specifier = ">=6.1.1" },
-    { name = "python-semantic-release", specifier = ">=9.21.0" },
-    { name = "ruff", specifier = ">=0.11" },
+sdist = { url = "https://files.pythonhosted.org/packages/60/28/895bc27c696a6d1b9c7f0045d30b920692b86f64fa04b96938e7583e0cf1/kabinet-2.0.0.tar.gz", hash = "sha256:28105f8ee96d56d083580bb3289f271542ce9411e0712038ae38f11c2605e6b6", size = 69651, upload-time = "2026-09-11T16:33:38.663Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/12/8a09fb064740ae7a78a12e0536143baa2e482aa5f2fecf4864a4c1c3408e/kabinet-2.0.0-py3-none-any.whl", hash = "sha256:3b5701b86a1fd8041d64cacdd6fa63d4e36839713433f0f9286b7f94fbe42fb3", size = 71998, upload-time = "2026-09-11T16:33:37.444Z" },
 ]
 
 [[package]]
