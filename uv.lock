@@ -13,9 +13,6 @@ resolution-markers = [
     "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
 ]
 
-[options]
-prerelease-mode = "allow"
-
 [[package]]
 name = "aiofiles"
 version = "25.1.0"
@@ -212,20 +209,20 @@ wheels = [
 ]
 
 [[package]]
-name = "arkitekt-next"
+name = "arkitekt"
 version = "1.4.2"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
     { name = "click" },
-    { name = "fakts-next" },
+    { name = "fakts" },
     { name = "kabinet" },
     { name = "koil" },
     { name = "platformdirs" },
     { name = "py-machineid" },
     { name = "pyyaml" },
     { name = "rath" },
-    { name = "rekuest-next" },
+    { name = "rekuest" },
     { name = "semver" },
     { name = "turms" },
     { name = "typer" },
@@ -235,9 +232,8 @@ dependencies = [
 [package.optional-dependencies]
 all = [
     { name = "elektro" },
-    { name = "fluss-next" },
-    { name = "mikro-next" },
-    { name = "reaktion-next" },
+    { name = "fluss" },
+    { name = "mikro" },
     { name = "unlok-next" },
 ]
 alpaka = [
@@ -254,7 +250,7 @@ extended = [
     { name = "kraph" },
 ]
 fluss = [
-    { name = "fluss-next" },
+    { name = "fluss" },
 ]
 kraph = [
     { name = "kraph" },
@@ -263,13 +259,10 @@ lovekit = [
     { name = "lovekit" },
 ]
 mikro = [
-    { name = "mikro-next" },
+    { name = "mikro" },
 ]
 qt = [
     { name = "qtpy" },
-]
-reaktion = [
-    { name = "reaktion-next" },
 ]
 unlok = [
     { name = "unlok-next" },
@@ -281,11 +274,11 @@ dev = [
     { name = "autoflake" },
     { name = "basedpyright" },
     { name = "elektro" },
-    { name = "fluss-next" },
+    { name = "fluss" },
     { name = "kabinet" },
     { name = "kraph" },
     { name = "lovekit" },
-    { name = "mikro-next" },
+    { name = "mikro" },
     { name = "numpy" },
     { name = "pytest" },
     { name = "pytest-aiohttp" },
@@ -293,8 +286,7 @@ dev = [
     { name = "pytest-cov" },
     { name = "python-semantic-release" },
     { name = "qtpy" },
-    { name = "reaktion-next" },
-    { name = "rekuest-next" },
+    { name = "rekuest" },
     { name = "ruff" },
     { name = "unlok-next" },
 ]
@@ -304,24 +296,23 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
     { name = "alpaka", marker = "extra == 'alpaka'", specifier = ">=1.0.0" },
     { name = "alpaka", marker = "extra == 'extended'", specifier = ">=1.0.0" },
-    { name = "arkitekt-next", extras = ["mikro", "kabinet", "elektro", "fluss", "reaktion", "unlok"], marker = "extra == 'all'" },
+    { name = "arkitekt", extras = ["mikro", "kabinet", "elektro", "fluss", "unlok"], marker = "extra == 'all'" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=2.0.0" },
-    { name = "fakts-next", editable = "../fakts-next" },
-    { name = "fluss-next", marker = "extra == 'fluss'", specifier = ">=1.0.0" },
+    { name = "fakts", specifier = ">=2" },
+    { name = "fluss", marker = "extra == 'fluss'", specifier = ">=2" },
     { name = "kabinet", editable = "../kabinet" },
     { name = "koil", specifier = ">=3.3.2" },
     { name = "kraph", marker = "extra == 'extended'", specifier = ">=0.5.1" },
     { name = "kraph", marker = "extra == 'kraph'", specifier = ">=0.5.1" },
     { name = "lovekit", marker = "extra == 'lovekit'", specifier = ">=1.2.1" },
-    { name = "mikro-next", marker = "extra == 'mikro'", specifier = ">=2.1.0" },
+    { name = "mikro", marker = "extra == 'mikro'", specifier = ">=3" },
     { name = "platformdirs", specifier = ">=4.5.0" },
     { name = "py-machineid", specifier = ">=0.8.1" },
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "qtpy", marker = "extra == 'qt'", specifier = ">=2.4.3" },
     { name = "rath", specifier = ">=3.12.0" },
-    { name = "reaktion-next", marker = "extra == 'reaktion'", specifier = ">=0.4.1" },
-    { name = "rekuest-next", editable = "../rekuest-next" },
+    { name = "rekuest", specifier = ">=3" },
     { name = "semver", specifier = ">=3.0.4" },
     { name = "turms", specifier = ">=2.0.0" },
     { name = "typer", specifier = ">=0.15.0" },
@@ -329,7 +320,7 @@ requires-dist = [
     { name = "uv", marker = "extra == 'build'", specifier = ">=0.7.12" },
     { name = "watchfiles", specifier = ">=1.0.5" },
 ]
-provides-extras = ["cli", "alpaka", "kraph", "mikro", "kabinet", "elektro", "fluss", "reaktion", "lovekit", "unlok", "qt", "all", "extended", "build"]
+provides-extras = ["cli", "alpaka", "kraph", "mikro", "kabinet", "elektro", "fluss", "lovekit", "unlok", "qt", "all", "extended", "build"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -337,11 +328,11 @@ dev = [
     { name = "autoflake", specifier = ">=1.7.7,<2" },
     { name = "basedpyright", specifier = ">=1.21" },
     { name = "elektro", specifier = ">=2.0.0" },
-    { name = "fluss-next", specifier = ">=1.0.0" },
+    { name = "fluss", specifier = ">=2" },
     { name = "kabinet", editable = "../kabinet" },
     { name = "kraph", specifier = ">=0.5.1" },
     { name = "lovekit", specifier = ">=1.2.1" },
-    { name = "mikro-next", specifier = ">=2.1.0" },
+    { name = "mikro", specifier = ">=3" },
     { name = "numpy", specifier = ">=1,<2" },
     { name = "pytest", specifier = ">=8.3.0,<9" },
     { name = "pytest-aiohttp", specifier = ">=1.0.4,<2" },
@@ -349,8 +340,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=4.0.0,<5" },
     { name = "python-semantic-release", specifier = ">=9.21.1" },
     { name = "qtpy", specifier = ">=2.4.3" },
-    { name = "reaktion-next", specifier = ">=0.4.1" },
-    { name = "rekuest-next", editable = "../rekuest-next" },
+    { name = "rekuest", specifier = ">=3" },
     { name = "ruff", specifier = ">=0.8" },
     { name = "unlok-next", specifier = ">=1.3.1" },
 ]
@@ -702,41 +692,18 @@ wheels = [
 ]
 
 [[package]]
-name = "fakts-next"
-version = "5.0.0rc1"
-source = { editable = "../fakts-next" }
+name = "fakts"
+version = "2.0.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "certifi" },
     { name = "koil" },
     { name = "pydantic" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiohttp", specifier = ">=3.11.18" },
-    { name = "certifi", specifier = ">=2025.4.26" },
-    { name = "cryptography", marker = "extra == 'crypto'", specifier = ">=42" },
-    { name = "koil", specifier = ">=3.3.1" },
-    { name = "pydantic", specifier = ">2" },
-    { name = "qtpy", marker = "extra == 'qt'", specifier = ">=2.4.3" },
-    { name = "rath", marker = "extra == 'rath'", specifier = ">=3.0" },
-    { name = "uv", marker = "extra == 'build'", specifier = ">=0.7.12" },
-]
-provides-extras = ["qt", "rath", "crypto", "build"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "basedpyright", specifier = ">=1.21" },
-    { name = "cryptography", specifier = ">=42" },
-    { name = "dokker", specifier = ">=2.5" },
-    { name = "pyqt5", specifier = ">=5.15.11" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-asyncio", specifier = ">=0.26.0" },
-    { name = "pytest-cov", specifier = ">=6.1.1" },
-    { name = "pytest-qt", specifier = ">=4.4.0" },
-    { name = "python-semantic-release", specifier = ">=9.21.1" },
-    { name = "qtpy", specifier = ">=2.4.3" },
+sdist = { url = "https://files.pythonhosted.org/packages/cc/8a/51bc35d234a1513f727c7845a96cb4a4835d7f84f699808088792f147721/fakts-2.0.0.tar.gz", hash = "sha256:379c5a3479bcb8b66fd3ae940493925bffad7a970ba2f774401a2b3fa2c85af2", size = 72890, upload-time = "2026-09-11T10:31:07.199Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/86/95/9225ea24e15ebac0a3d733d89bffebed2b38361f11d374fce5f6cc0840ad/fakts-2.0.0-py3-none-any.whl", hash = "sha256:0acbca458339aed58f360009903c121f824e3ec98a9bb4cbb54646194936c065", size = 90421, upload-time = "2026-09-11T10:31:06.144Z" },
 ]
 
 [[package]]
@@ -785,16 +752,16 @@ wheels = [
 ]
 
 [[package]]
-name = "fluss-next"
-version = "1.0.0"
+name = "fluss"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "rath" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a7/42/83125ff793eaa21c7367472e21aed720403a383ebb22b8a7a414164fa1ac/fluss_next-1.0.0.tar.gz", hash = "sha256:6b08232e135410c94b3fc09518988d2ab87036fbda02374886779b5f20461e1a", size = 36646, upload-time = "2026-06-25T15:52:45.82Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/89/0a/1ea20e148343cab206172e1f023366897fcd6d9c30669630b4fc6c96dbf1/fluss-2.0.0.tar.gz", hash = "sha256:14ff415dbb12671b81402f05d46fb333a738154e5c4b44c970c192d55eafd32a", size = 70675, upload-time = "2026-09-11T14:40:14.465Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d9/32/21def4a1da14bcadc5a8d50a94cfaf4dd8ddf41ba0726bf79879fca86f43/fluss_next-1.0.0-py3-none-any.whl", hash = "sha256:968ec3bdfde6162d67a1b84589377aaa3cec4f937a49b91cef170becb2ecb8ae", size = 39207, upload-time = "2026-06-25T15:52:44.893Z" },
+    { url = "https://files.pythonhosted.org/packages/dd/6c/aa9c86defb28f46376c43444ae17a047f80b544f6a54be3eb4fe94b290de/fluss-2.0.0-py3-none-any.whl", hash = "sha256:7f54fda13f8f08961acb2da5aa331e177ddd29928ebe0bedd5f10e9924ebbe4b", size = 89062, upload-time = "2026-09-11T14:40:13.428Z" },
 ]
 
 [[package]]
@@ -1275,25 +1242,24 @@ wheels = [
 ]
 
 [[package]]
-name = "mikro-next"
-version = "2.1.0"
+name = "mikro"
+version = "3.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dask" },
-    { name = "fakts-next" },
+    { name = "fakts" },
     { name = "kanne" },
     { name = "numcodecs" },
     { name = "numpy", marker = "python_full_version >= '3.12'" },
     { name = "obstore" },
-    { name = "pytest" },
     { name = "rath" },
     { name = "websockets" },
     { name = "xarray" },
     { name = "zarr" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ce/15/7fc213c7ef19e9263de0e5d47558af11a6a1f6a678a6db26014271bebfcc/mikro_next-2.1.0.tar.gz", hash = "sha256:cbd5c8df890d13518d4b340e8399f91ff1fe30ea8708b9eaf0b97fc69b6d5641", size = 112934, upload-time = "2026-07-09T06:25:42.863Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4b/79/fc269be1b033fa30786faba6cd0c17b35fc82e6fdfab7c3dbf00445b9d6e/mikro-3.0.0.tar.gz", hash = "sha256:5bba24a5fc9d14d71bf8504991da7f3f7d0c6299089cc072bc10cbf2f39b85f5", size = 376545, upload-time = "2026-09-11T14:03:50.679Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/a5/2a/7d7c6a7d341b3fadf3f8e5e74d6ea3824f977c7a8d954371f0bdcaf575d9/mikro_next-2.1.0-py3-none-any.whl", hash = "sha256:2026ef65306b3c11298185b9b1a054125c0e0dbc17b46c6d94c4162259bb8be6", size = 123173, upload-time = "2026-07-09T06:25:41.789Z" },
+    { url = "https://files.pythonhosted.org/packages/31/d4/44f5c9ac83b2fe62470c25485042f8bf6ad14c61fbd3382a51f0d1721038/mikro-3.0.0-py3-none-any.whl", hash = "sha256:9d9d83faa80f4de862f9bf7d406b704d38d81583cb466edc6fd75f5df41ceee1", size = 397313, upload-time = "2026-09-11T14:03:49.143Z" },
 ]
 
 [[package]]
@@ -2207,23 +2173,9 @@ wheels = [
 ]
 
 [[package]]
-name = "reaktion-next"
-version = "0.4.1"
+name = "rekuest"
+version = "3.0.1"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "fluss-next" },
-    { name = "rath" },
-    { name = "rekuest-next" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/66/43/8b6310b972019f86ec8b3a27a0f09671e910c8f96a38105ecbf1449a2c65/reaktion_next-0.4.1.tar.gz", hash = "sha256:68f7be4239e175a0a20de2fbfb5d18fb5adfc0f55e6cf677aa29f2f9da251348", size = 17943, upload-time = "2025-11-24T18:17:27.186Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/cf/16/3e3f15d4b1508323f1043b004047af5a71ce05d3665901dfc51c73615ffb/reaktion_next-0.4.1-py3-none-any.whl", hash = "sha256:55567a0f6ebd0590e1bc03faa97c9b4279a66ff0fd318654b1925476e3443937", size = 33145, upload-time = "2025-11-24T18:17:26.319Z" },
-]
-
-[[package]]
-name = "rekuest-next"
-version = "2.3.1"
-source = { editable = "../rekuest-next" }
 dependencies = [
     { name = "docstring-parser" },
     { name = "fieldz" },
@@ -2235,44 +2187,9 @@ dependencies = [
     { name = "rath" },
     { name = "websockets" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "annotated-types", marker = "extra == 'types'", specifier = ">=0.5.0" },
-    { name = "docstring-parser", specifier = ">=0.11" },
-    { name = "fieldz", specifier = ">=0.0.2" },
-    { name = "inflection", specifier = ">=0.5.1" },
-    { name = "janus", specifier = ">=2.0.0" },
-    { name = "jsonpatch", specifier = ">=1.33" },
-    { name = "kanne", marker = "extra == 'units'", specifier = ">=2.2" },
-    { name = "koil", specifier = ">=3.3.1" },
-    { name = "pydantic", specifier = ">=2" },
-    { name = "rath", specifier = ">=3.11.1" },
-    { name = "uv", marker = "extra == 'build'", specifier = ">=0.7.12" },
-    { name = "websockets", specifier = ">=12.0" },
-]
-provides-extras = ["types", "units", "build"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "aiohttp", specifier = ">=3.8.3,<4" },
-    { name = "aiosqlite", specifier = ">=0.22.1" },
-    { name = "autoflake", specifier = ">=1.7.7,<2" },
-    { name = "basedpyright", specifier = ">=1.21" },
-    { name = "black", specifier = ">=23.1.0,<24" },
-    { name = "dokker", specifier = ">=2.5" },
-    { name = "fakts-next", specifier = ">=4" },
-    { name = "fastapi", specifier = ">=0.128.0" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "pytest", specifier = ">=8.3.5" },
-    { name = "pytest-aiohttp", specifier = ">=1.0.4,<2" },
-    { name = "pytest-asyncio", specifier = ">=0.26.0" },
-    { name = "pytest-cov", specifier = ">=6.1.1" },
-    { name = "python-semantic-release", specifier = ">=9.21.0" },
-    { name = "qtpy", specifier = ">=2.4.3" },
-    { name = "ruff", specifier = ">0.11" },
-    { name = "testcontainers", specifier = "==3.7.0" },
-    { name = "turms", specifier = ">=2.0.0" },
+sdist = { url = "https://files.pythonhosted.org/packages/f6/98/5bc7e714bd591ba8eba94b7d0523900609a9defe8596fa8521b434dd27e8/rekuest-3.0.1.tar.gz", hash = "sha256:e17febc8be813fd09eef8702ec8d35c925c80dc1f7a599615966971f70f5c010", size = 305990, upload-time = "2026-09-11T14:49:03.646Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/23/2f/0afc41c33859fc4011db57da7840241c0b7c2a1af44d94287de536ecff5b/rekuest-3.0.1-py3-none-any.whl", hash = "sha256:2072cdb99392e4f0f1b91406fa8e19cfa5d4b995d061dd66de1a27b19523e08e", size = 373100, upload-time = "2026-09-11T14:49:02.415Z" },
 ]
 
 [[package]]
