@@ -7,6 +7,7 @@ well-known document, start a join, poll for a pre-auth key, then run
 """
 
 import asyncio
+import re
 import subprocess
 from types import SimpleNamespace
 from unittest.mock import patch
@@ -17,6 +18,19 @@ from click.testing import CliRunner
 
 from arkitekt.cli.main import cli
 from arkitekt.cli.commands.mesh.main import TAILSCALE_UP_TIMEOUT_SECONDS
+
+_ANSI = re.compile(r"\x1b\[[0-9;]*m")
+
+
+def _plain(output: str) -> str:
+    """Help output with rich's styling stripped.
+
+    rich-click styles each option name, so the raw text interleaves escape
+    sequences inside tokens -- ``--name`` is not a substring of it. Colour is
+    off on a plain terminal but CI sets FORCE_COLOR, so an assertion against
+    the raw output passes locally and fails there.
+    """
+    return _ANSI.sub("", output)
 
 MESH = "arkitekt.cli.commands.mesh.main"
 
@@ -61,18 +75,20 @@ def _patch_flow(granted=GRANTED, well_known=WELL_KNOWN):
 def test_mesh_group_registered():
     result = CliRunner().invoke(cli, ["mesh", "--help"])
     assert result.exit_code == 0
-    assert "join" in result.output
-    assert "cert" in result.output
+    help_text = _plain(result.output)
+    assert "join" in help_text
+    assert "cert" in help_text
 
 
 def test_join_help_has_device_code_options_and_no_force_reauth():
     result = CliRunner().invoke(cli, ["mesh", "join", "--help"])
     assert result.exit_code == 0
+    help_text = _plain(result.output)
     for opt in ("--name", "--description", "--ephemeral", "--tag", "--expiration"):
-        assert opt in result.output
-    assert "--open-browser" in result.output
+        assert opt in help_text
+    assert "--open-browser" in help_text
     # The old force-reauth *option* (and its disconnect warning) is gone.
-    assert "disconnect" not in result.output
+    assert "disconnect" not in help_text
 
 
 def test_join_runs_full_device_code_flow():

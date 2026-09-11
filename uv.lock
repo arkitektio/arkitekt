@@ -329,7 +329,7 @@ dev = [
     { name = "basedpyright", specifier = ">=1.21" },
     { name = "elektro", specifier = ">=2.0.0" },
     { name = "fluss", specifier = ">=2" },
-    { name = "kabinet", specifier = ">=1.0.1" },
+    { name = "kabinet", specifier = ">=2" },
     { name = "kraph", specifier = ">=0.5.1" },
     { name = "lovekit", specifier = ">=1.2.1" },
     { name = "mikro", specifier = ">=3" },
