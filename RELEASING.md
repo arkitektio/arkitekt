@@ -1,6 +1,6 @@
-# Releasing arkitekt-next
+# Releasing arkitekt
 
-`arkitekt-next` ships as a PyPI package (`arkitekt-next`). Versioning is automated
+`arkitekt` ships as a PyPI package (`arkitekt`). Versioning is automated
 by [python-semantic-release][psr] from [Conventional Commits][cc] — you never bump
 the version by hand. A push to a release branch runs
 `.github/workflows/release.yaml`, which:
@@ -26,12 +26,12 @@ a release on their own.
 
 | Branch | Releases | PyPI |
 | --- | --- | --- |
-| `main` | stable `X.Y.Z` | the default install (`pip install arkitekt-next`) |
-| `next` | prereleases `X.Y.Z-rc.N` | published as a **prerelease** — only reached via `pip install arkitekt-next --pre` or an exact pin |
+| `main` | stable `X.Y.Z` | the default install (`pip install arkitekt`) |
+| `next` | prereleases `X.Y.Z-rc.N` | published as a **prerelease** — only reached via `pip install arkitekt --pre` or an exact pin |
 | `N.x` (e.g. `0.x`) | maintenance `X.Y.Z` | published stable for an older major |
 
 PyPI marks `…-rc.N` versions as prereleases, so a plain
-`pip install arkitekt-next` never picks them up — `next` is a safe soak channel.
+`pip install arkitekt` never picks them up — `next` is a safe soak channel.
 
 ## Tag-based integration backend
 
@@ -80,11 +80,11 @@ also applies there.
 ## Consuming the next channel
 
 ```sh
-pip install arkitekt-next --pre          # latest rc (or stable, whichever is newer)
-pip install 'arkitekt-next==1.0.0-rc.1'  # pin a specific rc
+pip install arkitekt --pre          # latest rc (or stable, whichever is newer)
+pip install 'arkitekt==1.0.0-rc.1'  # pin a specific rc
 ```
 
-Stable consumers (`pip install arkitekt-next`) are unaffected by the `next`
+Stable consumers (`pip install arkitekt`) are unaffected by the `next`
 channel.
 
 ## Dry-running locally

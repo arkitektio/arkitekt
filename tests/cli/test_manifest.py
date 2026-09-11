@@ -1,17 +1,17 @@
-"""Tests for the `arkitekt-next manifest` command group.
+"""Tests for the `arkitekt manifest` command group.
 
 These tests drive the CLI through `--work-dir` (no os.chdir side effects) using
 the `app_dir` fixture, which provides a directory with a freshly initialized app.
 """
 
 from click.testing import CliRunner
-from arkitekt_next.cli.main import cli
-from arkitekt_next.cli.io import load_manifest
+from arkitekt.cli.main import cli
+from arkitekt.cli.io import load_manifest
 
 
 def _invoke(work_dir, *args):
     runner = CliRunner()
-    # The SDK commands now live under the `app` group (e.g. `arkitekt-next app manifest ...`).
+    # The SDK commands now live under the `app` group (e.g. `arkitekt app manifest ...`).
     result = runner.invoke(cli, ["--work-dir", str(work_dir), *args])
     if result.exit_code != 0:
         print(result.output)

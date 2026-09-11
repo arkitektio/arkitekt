@@ -1,6 +1,6 @@
 """Tests for the CLI documentation links / `--help` epilogues.
 
-The hosted documentation routes live as constants in `arkitekt_next.cli.docs`.
+The hosted documentation routes live as constants in `arkitekt.cli.docs`.
 These tests ensure the constants stay consistent and that each command group's
 `--help` actually surfaces its link, so the crosslinking does not silently break.
 """
@@ -8,8 +8,8 @@ These tests ensure the constants stay consistent and that each command group's
 import pytest
 from click.testing import CliRunner
 
-from arkitekt_next.cli.main import cli
-from arkitekt_next.cli import docs
+from arkitekt.cli.main import cli
+from arkitekt.cli import docs
 
 
 def test_routes_build_on_base_url():

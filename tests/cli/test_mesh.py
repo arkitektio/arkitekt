@@ -15,10 +15,10 @@ import pytest
 import typer
 from click.testing import CliRunner
 
-from arkitekt_next.cli.main import cli
-from arkitekt_next.cli.commands.mesh.main import TAILSCALE_UP_TIMEOUT_SECONDS
+from arkitekt.cli.main import cli
+from arkitekt.cli.commands.mesh.main import TAILSCALE_UP_TIMEOUT_SECONDS
 
-MESH = "arkitekt_next.cli.commands.mesh.main"
+MESH = "arkitekt.cli.commands.mesh.main"
 
 # A well-known doc advertising the mesh device-code endpoints.
 WELL_KNOWN = {
@@ -472,7 +472,7 @@ def test_mesh_poll_times_out_when_never_authorized(capsys):
     """`_mesh_poll` raises (does not spin forever) once its deadline passes."""
     import itertools
 
-    from arkitekt_next.cli.commands.mesh.main import _mesh_poll
+    from arkitekt.cli.commands.mesh.main import _mesh_poll
 
     # A monotonic (ever-increasing) clock: safe for asyncio's own monotonic()
     # calls, and each step (100s) dwarfs the 1s timeout so the first 'pending'

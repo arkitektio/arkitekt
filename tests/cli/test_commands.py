@@ -1,5 +1,5 @@
 from click.testing import CliRunner
-from arkitekt_next.cli.main import cli
+from arkitekt.cli.main import cli
 import os
 from unittest.mock import patch
 import pytest
@@ -23,12 +23,12 @@ def test_init_uv():
 
             assert mock_run.call_count == 2
             mock_run.assert_any_call(["uv", "init", "--name", "com.test.app", "--no-workspace"], check=True, cwd=os.getcwd())
-            mock_run.assert_any_call(["uv", "add", "arkitekt-next[all]"], check=True, cwd=os.getcwd())
+            mock_run.assert_any_call(["uv", "add", "arkitekt[all]"], check=True, cwd=os.getcwd())
 
             assert os.path.exists("app.py")
-            assert os.path.exists(".arkitekt_next/manifest.yaml")
+            assert os.path.exists(".arkitekt/manifest.yaml")
 
-            with open(".arkitekt_next/manifest.yaml") as f:
+            with open(".arkitekt/manifest.yaml") as f:
                 content = f.read()
                 assert "package_manager: uv" in content
 
@@ -42,7 +42,7 @@ def test_init_yes():
             print(result.exception)
         assert result.exit_code == 0
         assert os.path.exists("app.py")
-        assert os.path.exists(".arkitekt_next/manifest.yaml")
+        assert os.path.exists(".arkitekt/manifest.yaml")
 
 
 def test_init_path():
@@ -56,9 +56,9 @@ def test_init_path():
         assert result.exit_code == 0
 
         assert os.path.exists(os.path.join(original_cwd, "myapp", "app.py"))
-        assert os.path.exists(os.path.join(original_cwd, "myapp", ".arkitekt_next", "manifest.yaml"))
+        assert os.path.exists(os.path.join(original_cwd, "myapp", ".arkitekt", "manifest.yaml"))
 
-        with open(os.path.join(original_cwd, "myapp", ".arkitekt_next", "manifest.yaml")) as f:
+        with open(os.path.join(original_cwd, "myapp", ".arkitekt", "manifest.yaml")) as f:
             content = f.read()
             assert "identifier: myapp" in content
 
@@ -125,10 +125,10 @@ def test_init_work_dir(tmp_path):
 
     # Files were created in tmp_path, not in the original cwd
     assert (tmp_path / "app.py").exists()
-    assert (tmp_path / ".arkitekt_next" / "manifest.yaml").exists()
+    assert (tmp_path / ".arkitekt" / "manifest.yaml").exists()
     assert os.getcwd() == original_cwd, "Process CWD must not change"
 
-    with open(tmp_path / ".arkitekt_next" / "manifest.yaml") as f:
+    with open(tmp_path / ".arkitekt" / "manifest.yaml") as f:
         content = f.read()
         assert "identifier: com.workdir.app" in content
 
@@ -153,7 +153,7 @@ def test_init_subdir_work_dir(tmp_path):
     assert result.exit_code == 0
 
     assert (tmp_path / "mysubapp" / "app.py").exists()
-    assert (tmp_path / "mysubapp" / ".arkitekt_next" / "manifest.yaml").exists()
+    assert (tmp_path / "mysubapp" / ".arkitekt" / "manifest.yaml").exists()
     assert os.getcwd() == original_cwd
 
 
@@ -171,7 +171,7 @@ def test_kabinet_init():
             print(result.output)
             print(result.exception)
         assert result.exit_code == 0
-        assert os.path.exists(".arkitekt_next/flavours/vanilla/Dockerfile")
+        assert os.path.exists(".arkitekt/flavours/vanilla/Dockerfile")
         assert os.path.exists(".devcontainer/vanilla/devcontainer.json")
 
         with open(".devcontainer/vanilla/devcontainer.json") as f:
@@ -189,9 +189,9 @@ def test_kabinet_init_uv():
             print(result.output)
             print(result.exception)
         assert result.exit_code == 0
-        assert os.path.exists(".arkitekt_next/flavours/uv_flavour/Dockerfile")
+        assert os.path.exists(".arkitekt/flavours/uv_flavour/Dockerfile")
 
-        with open(".arkitekt_next/flavours/uv_flavour/Dockerfile") as f:
+        with open(".arkitekt/flavours/uv_flavour/Dockerfile") as f:
             content = f.read()
             assert "COPY --from=ghcr.io/astral-sh/uv" in content
 
@@ -206,7 +206,7 @@ def test_kabinet_flavour_commands():
             print(result.output)
             print(result.exception)
         assert result.exit_code == 0
-        assert os.path.exists(".arkitekt_next/flavours/gpu/config.yaml")
+        assert os.path.exists(".arkitekt/flavours/gpu/config.yaml")
 
         result = runner.invoke(cli, ["plugin", "selector", "add", "gpu", "--kind", "cuda", "--cuda-cores", "100"])
         if result.exit_code != 0:
@@ -214,7 +214,7 @@ def test_kabinet_flavour_commands():
             print(result.exception)
         assert result.exit_code == 0
 
-        with open(".arkitekt_next/flavours/gpu/config.yaml") as f:
+        with open(".arkitekt/flavours/gpu/config.yaml") as f:
             content = f.read()
             assert "kind: cuda" in content
             assert "cuda_cores: 100" in content
@@ -250,7 +250,7 @@ def test_kabinet_init_work_dir(tmp_path):
         print(result.output)
         print(result.exception)
     assert result.exit_code == 0
-    assert (tmp_path / ".arkitekt_next" / "flavours" / "vanilla" / "Dockerfile").exists()
+    assert (tmp_path / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile").exists()
     assert os.getcwd() == original_cwd
 
 
@@ -280,6 +280,6 @@ def test_manifest_version(tmp_path):
         print(result.exception)
     assert result.exit_code == 0
 
-    with open(tmp_path / ".arkitekt_next" / "manifest.yaml") as f:
+    with open(tmp_path / ".arkitekt" / "manifest.yaml") as f:
         content = f.read()
         assert "1.2.3" in content

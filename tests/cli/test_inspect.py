@@ -1,4 +1,4 @@
-"""Tests for `arkitekt-next inspect` and `kabinet validate`.
+"""Tests for `arkitekt inspect` and `kabinet validate`.
 
 These exercise commands that introspect an initialized app. They use the
 `app_dir` fixture (a directory with a freshly initialized app, driven via
@@ -11,7 +11,7 @@ import sys
 
 import pytest
 from click.testing import CliRunner
-from arkitekt_next.cli.main import cli
+from arkitekt.cli.main import cli
 
 
 # All tests in this file are local CLI tests (no server, no docker). Tagging the
@@ -32,13 +32,13 @@ def _invoke(work_dir, *args, **kwargs):
 def _run_cli(work_dir, *args):
     """Run the CLI in a fresh subprocess (clean global registries, cwd on sys.path).
 
-    Uses ``python -m arkitekt_next.cli.main`` with the test's own interpreter so the
+    Uses ``python -m arkitekt.cli.main`` with the test's own interpreter so the
     inspect commands import the entrypoint and build the app in isolation — mirroring
     how ``kabinet build`` invokes them.
     """
     result = subprocess.run(
         [
-            sys.executable, "-m", "arkitekt_next.cli.main",
+            sys.executable, "-m", "arkitekt.cli.main",
             "--work-dir", str(work_dir), *args,
         ],
         capture_output=True,

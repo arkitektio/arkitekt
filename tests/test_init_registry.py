@@ -1,6 +1,6 @@
 """Tests for the init-hook registry, notably the only_cli exclusivity fix."""
 
-from arkitekt_next.init_registry import InitHookRegistry
+from arkitekt.init_registry import InitHookRegistry
 
 
 def test_cli_only_hook_registers_only_once():

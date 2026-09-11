@@ -5,10 +5,10 @@ import matplotlib
 from matplotlib import pyplot as plt
 import numpy as np
 
-from arkitekt_next.qt import qt
-from arkitekt_next import find
+from arkitekt.qt import qt
+from arkitekt import find
 from PyQt5.QtWidgets import QApplication, QWidget, QPushButton, QVBoxLayout
-from mikro_next.api.schema import (
+from mikro.api.schema import (
     Image,
 )  # important as we are trying to expand the image when receiving it
 

@@ -97,8 +97,8 @@ def add_package_dev(package_name):
 
 def main():
     
-    dev_packages = ["mikro-next", "alpaka", "kraph", "fluss-next", "reaktion-next", "lovekit", "unlok-next", "elektro"]
-    packages = ["rekuest-next", "kabinet", "turms", "fakts-next", "rath", "koil", "dokker"]
+    dev_packages = ["mikro", "alpaka", "kraph", "fluss", "lovekit", "unlok-next", "elektro"]
+    packages = ["rekuest", "kabinet", "turms", "fakts", "rath", "koil", "dokker"]
     
     
     

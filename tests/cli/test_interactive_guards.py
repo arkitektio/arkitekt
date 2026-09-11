@@ -13,10 +13,10 @@ import pytest
 import typer
 from click.testing import CliRunner
 
-from arkitekt_next.cli.interactive import require_interactive
-from arkitekt_next.cli.main import cli
+from arkitekt.cli.interactive import require_interactive
+from arkitekt.cli.main import cli
 
-INTERACTIVE = "arkitekt_next.cli.interactive.is_interactive"
+INTERACTIVE = "arkitekt.cli.interactive.is_interactive"
 
 
 def test_require_interactive_is_noop_when_tty():
@@ -38,9 +38,9 @@ def test_require_interactive_raises_when_not_tty(capsys):
 def test_mesh_leave_aborts_without_tty_and_without_yes():
     """`mesh leave` without --yes must not block on the confirm in a non-TTY."""
     runner = CliRunner()
-    with patch("arkitekt_next.cli.commands.mesh.main.shutil.which", return_value="/usr/bin/tailscale"), \
+    with patch("arkitekt.cli.commands.mesh.main.shutil.which", return_value="/usr/bin/tailscale"), \
          patch(INTERACTIVE, return_value=False), \
-         patch("arkitekt_next.cli.commands.mesh.main.subprocess.run") as mock_run:
+         patch("arkitekt.cli.commands.mesh.main.subprocess.run") as mock_run:
         result = runner.invoke(cli, ["mesh", "leave"])
 
     assert result.exit_code != 0

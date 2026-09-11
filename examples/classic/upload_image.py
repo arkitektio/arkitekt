@@ -3,7 +3,7 @@
  and how to access it again.
 
  It requires the following packages:
-    arkitekt_next
+    arkitekt
     mikro
  
  If you are not concerned about installing multiple packages, you can
@@ -16,8 +16,8 @@
 
 """
 
-from arkitekt_next import easy
-from mikro_next.api.schema import from_array_like
+from arkitekt import easy
+from mikro.api.schema import from_array_like
 import xarray as xr
 import numpy as np
 

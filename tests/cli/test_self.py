@@ -5,9 +5,9 @@ from unittest.mock import patch
 
 from click.testing import CliRunner
 
-from arkitekt_next.cli.main import cli
+from arkitekt.cli.main import cli
 
-MODULE = "arkitekt_next.cli.commands.self.upgrade"
+MODULE = "arkitekt.cli.commands.self.upgrade"
 
 
 def _pypi_payload(version: str) -> bytes:
@@ -40,7 +40,7 @@ def test_self_upgrade_pip_outdated():
         command = mock_run.call_args[0][0]
         assert command[:4] == [sys.executable, "-m", "pip", "install"]
         assert "--upgrade" in command
-        assert "arkitekt-next" in command
+        assert "arkitekt" in command
 
 
 def test_self_upgrade_uv_outdated():
@@ -61,7 +61,7 @@ def test_self_upgrade_uv_outdated():
         assert mock_run.call_count == 1
         command = mock_run.call_args[0][0]
         assert command[:3] == ["uv", "add", "--upgrade"]
-        assert "arkitekt-next" in command
+        assert "arkitekt" in command
 
 
 def test_self_upgrade_uv_not_installed():

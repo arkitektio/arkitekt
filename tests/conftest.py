@@ -1,4 +1,4 @@
-"""Test configuration for arkitekt-next itself.
+"""Test configuration for arkitekt itself.
 
 Repo-local CLI runner fixtures and the marker gating. Server-backed fixtures are
 gone along with the server-construction code: deployments are konstruktor's job
@@ -11,7 +11,7 @@ import shutil
 import subprocess
 
 import pytest
-from arkitekt_next.cli.main import cli
+from arkitekt.cli.main import cli
 from click.testing import CliRunner
 
 
@@ -61,7 +61,7 @@ def _assume_interactive(monkeypatch):
     the non-TTY guard patch ``is_interactive`` back to ``False`` themselves.
     """
     monkeypatch.setattr(
-        "arkitekt_next.cli.interactive.is_interactive", lambda: True
+        "arkitekt.cli.interactive.is_interactive", lambda: True
     )
 
 
@@ -75,7 +75,7 @@ def initialized_app_cli_runner():
             [
                 "init",
                 "--identifier",
-                "arkitekt-next",
+                "arkitekt",
                 "--version",
                 "0.0.1",
                 "--author",

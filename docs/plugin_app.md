@@ -4,10 +4,10 @@ Plugin apps are the recommended way to build and distribute Arkitekt application
 
 ## Initialization
 
-To create a new plugin app, use the `arkitekt-next init` command. This will guide you through the setup process and create the necessary files (manifest, entrypoint, etc.).
+To create a new plugin app, use the `arkitekt init` command. This will guide you through the setup process and create the necessary files (manifest, entrypoint, etc.).
 
 ```bash
-arkitekt-next init
+arkitekt init
 ```
 
 You will be prompted to enter details about your app, such as:
@@ -24,7 +24,7 @@ You can develop your app by editing the generated python files. The entrypoint i
 To run your app locally during development, you can use:
 
 ```bash
-arkitekt-next run dev
+arkitekt run dev
 ```
 
 This command will:
@@ -35,10 +35,10 @@ This command will:
 
 ## Building
 
-Once you are ready to package your app, you can build it into a Docker container using the `arkitekt-next build` command.
+Once you are ready to package your app, you can build it into a Docker container using the `arkitekt build` command.
 
 ```bash
-arkitekt-next build
+arkitekt build
 ```
 
 This command will:
@@ -50,10 +50,10 @@ You can specify a "flavour" if you have multiple build configurations defined.
 
 ## Publishing
 
-To share your app with others, you can publish it to a Docker registry (like Docker Hub) using the `arkitekt-next publish` command.
+To share your app with others, you can publish it to a Docker registry (like Docker Hub) using the `arkitekt publish` command.
 
 ```bash
-arkitekt-next publish
+arkitekt publish
 ```
 
 This command will:
@@ -64,9 +64,9 @@ This command will:
 
 ## Workflow Summary
 
-1. **Init**: `arkitekt-next init` - Create project structure.
+1. **Init**: `arkitekt init` - Create project structure.
 2. **Code**: Write your application logic.
-3. **Build**: `arkitekt-next build` - Create Docker image.
-4. **Publish**: `arkitekt-next publish` - Push to registry.
+3. **Build**: `arkitekt build` - Create Docker image.
+4. **Publish**: `arkitekt publish` - Push to registry.
 
 This workflow ensures your app is versioned, packaged, and ready for deployment on any Arkitekt instance.

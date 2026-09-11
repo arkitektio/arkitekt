@@ -22,16 +22,16 @@ When you publish your app, you publish all its flavours. When a user (or the Ark
 You can add a new flavour to your project using the CLI:
 
 ```bash
-arkitekt-next plugin flavour add --flavour <name>
+arkitekt plugin flavour add --flavour <name>
 ```
 
 **Example:** Adding a GPU flavour
 
 ```bash
-arkitekt-next plugin flavour add --flavour gpu --description "CUDA enabled build"
+arkitekt plugin flavour add --flavour gpu --description "CUDA enabled build"
 ```
 
-This will create a new directory in `.arkitekt_next/flavours/gpu/` containing a `Dockerfile` and `config.yaml`. You can then customize the Dockerfile to include the necessary GPU drivers and libraries.
+This will create a new directory in `.arkitekt/flavours/gpu/` containing a `Dockerfile` and `config.yaml`. You can then customize the Dockerfile to include the necessary GPU drivers and libraries.
 
 ## Selectors
 
@@ -76,12 +76,12 @@ dockerfile: Dockerfile
 
 ## Building Flavours
 
-When you run `arkitekt-next build`, the CLI will build the default flavour (usually `vanilla`). To build a specific flavour, use the `--flavour` flag:
+When you run `arkitekt build`, the CLI will build the default flavour (usually `vanilla`). To build a specific flavour, use the `--flavour` flag:
 
 ```bash
-arkitekt-next build --flavour gpu
+arkitekt build --flavour gpu
 ```
 
 ## Publishing
 
-When you run `arkitekt-next publish`, you can publish specific builds associated with their flavours. The platform will register these flavours under the same app version, allowing for seamless deployment across diverse infrastructure.
+When you run `arkitekt publish`, you can publish specific builds associated with their flavours. The platform will register these flavours under the same app version, allowing for seamless deployment across diverse infrastructure.

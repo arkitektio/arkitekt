@@ -9,8 +9,8 @@ temp dir) rather than ``--work-dir``, because ``kabinet publish`` resolves its
 builds/deployments against the current working directory.
 
 Note on inspection: ``kabinet build`` (without ``--no-inspect``) runs the freshly
-built container and executes ``arkitekt-next inspect all`` inside it. That command
-belongs to the *released* ``arkitekt-next`` installed into the image from PyPI, which
+built container and executes ``arkitekt inspect all`` inside it. That command
+belongs to the *released* ``arkitekt`` installed into the image from PyPI, which
 is currently incompatible with this checkout (``AppRegistry`` has no
 ``state_registry``). We therefore stub only that one in-container call via
 ``_patched_inspect_all`` so the rest of the path stays real: ``docker build``,
@@ -25,14 +25,14 @@ from unittest.mock import patch
 import pytest
 from click.testing import CliRunner
 
-from arkitekt_next.cli.main import cli
-from arkitekt_next.cli.commands.plugin.io import get_builds, get_deployments
+from arkitekt.cli.main import cli
+from arkitekt.cli.commands.plugin.io import get_builds, get_deployments
 
 
 pytestmark = pytest.mark.needs_docker
 
 # A minimal but schema-valid runtime payload, standing in for the result of running
-# ``arkitekt-next inspect all`` inside the container (keys map to InspectionInput).
+# ``arkitekt inspect all`` inside the container (keys map to InspectionInput).
 _FAKE_RUNTIME = {
     "locks": [],
     "implementations": [],
@@ -87,13 +87,13 @@ def _cleanup_images() -> None:
 
 
 def _patched_inspect_all():
-    """Stub the (upstream-broken) in-container ``arkitekt-next inspect all`` call.
+    """Stub the (upstream-broken) in-container ``arkitekt inspect all`` call.
 
     The real ``docker inspect`` for image size still runs, so the build's inspection
     record carries a real size while the container-runtime payload is canned.
     """
     return patch(
-        "arkitekt_next.cli.commands.plugin.build.inspect_all",
+        "arkitekt.cli.commands.plugin.build.inspect_all",
         return_value=_FAKE_RUNTIME,
     )
 
@@ -108,7 +108,7 @@ def _patched_push():
         return real_run(cmd, *args, **kwargs)
 
     return patch(
-        "arkitekt_next.cli.commands.plugin.publish.subprocess.run",
+        "arkitekt.cli.commands.plugin.publish.subprocess.run",
         side_effect=fake_run,
     )
 

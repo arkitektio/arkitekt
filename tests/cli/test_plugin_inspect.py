@@ -1,6 +1,6 @@
 """Unit tests for ``plugin.build.inspect_all``'s stall bound.
 
-``inspect_all`` runs ``arkitekt-next inspect all`` inside the freshly built
+``inspect_all`` runs ``arkitekt inspect all`` inside the freshly built
 container. If that container never emits the ``--END_AGENT--`` sentinel (or
 hangs on import), the read must not block the build forever -- ``communicate``
 is bounded by ``INSPECTION_TIMEOUT_SECONDS`` and the container is killed. This
@@ -12,13 +12,13 @@ from unittest.mock import patch
 
 import pytest
 
-from arkitekt_next.cli.commands.plugin.build import (
+from arkitekt.cli.commands.plugin.build import (
     INSPECTION_TIMEOUT_SECONDS,
     InspectionError,
     inspect_all,
 )
 
-BUILD = "arkitekt_next.cli.commands.plugin.build"
+BUILD = "arkitekt.cli.commands.plugin.build"
 
 
 class _HangingProc:

@@ -1,5 +1,5 @@
 <p align="center">
-  <h1 align="center">arkitekt-next</h1>
+  <h1 align="center">arkitekt</h1>
 </p>
 
 <p align="center">
@@ -7,10 +7,10 @@
 </p>
 
 <p align="center">
-  <a href="https://codecov.io/gh/jhnnsrs/arkitekt_next"><img src="https://codecov.io/gh/jhnnsrs/arkitekt_next/branch/master/graph/badge.svg?token=UGXEA2THBV" alt="codecov"></a>
-  <a href="https://pypi.org/project/arkitekt_next/"><img src="https://badge.fury.io/py/arkitekt_next.svg" alt="PyPI version"></a>
-  <a href="https://pypi.python.org/pypi/arkitekt_next/"><img src="https://img.shields.io/pypi/pyversions/arkitekt_next.svg" alt="PyPI pyversions"></a>
-  <a href="https://pypi.python.org/pypi/arkitekt_next/"><img src="https://img.shields.io/pypi/status/arkitekt_next.svg" alt="PyPI status"></a>
+  <a href="https://codecov.io/gh/jhnnsrs/arkitekt"><img src="https://codecov.io/gh/jhnnsrs/arkitekt/branch/master/graph/badge.svg?token=UGXEA2THBV" alt="codecov"></a>
+  <a href="https://pypi.org/project/arkitekt/"><img src="https://badge.fury.io/py/arkitekt.svg" alt="PyPI version"></a>
+  <a href="https://pypi.python.org/pypi/arkitekt/"><img src="https://img.shields.io/pypi/pyversions/arkitekt.svg" alt="PyPI pyversions"></a>
+  <a href="https://pypi.python.org/pypi/arkitekt/"><img src="https://img.shields.io/pypi/status/arkitekt.svg" alt="PyPI status"></a>
   <a href="https://arkitekt.live"><img src="https://img.shields.io/badge/docs-arkitekt.live-blue" alt="Documentation"></a>
 </p>
 
@@ -19,7 +19,7 @@
 ## What is Arkitekt?
 
 [**Arkitekt**](https://arkitekt.live) is an open platform for building, connecting, and orchestrating
-computational apps. `arkitekt-next` is its Python client: a framework that takes your ordinary Python
+computational apps. `arkitekt` is its Python client: a framework that takes your ordinary Python
 functions and exposes them as **remotely callable, orchestratable building blocks** — without you having
 to write servers, APIs, message queues, or UIs.
 
@@ -39,23 +39,23 @@ imaging, and graph data), but the core is **domain-agnostic** — any Python wor
 ## Installation
 
 ```bash
-pip install "arkitekt-next[all]"
+pip install "arkitekt[all]"
 ```
 
-This installs everything, including the `arkitekt-next` command line interface used to create, develop,
+This installs everything, including the `arkitekt` command line interface used to create, develop,
 containerize, and deploy apps.
 
 Prefer a lean install? The CLI and packaging tooling are always included — pick
 only the service extras you need:
 
 ```bash
-pip install "arkitekt-next[mikro]"          # microscopy / imaging data
-pip install "arkitekt-next[fluss]"          # workflow orchestration
-pip install "arkitekt-next[elektro]"       # electrophysiology data
-pip install "arkitekt-next[alpaka]"         # want to talk to LLMs? This one's for you.
+pip install "arkitekt[mikro]"          # microscopy / imaging data
+pip install "arkitekt[fluss]"          # workflow orchestration
+pip install "arkitekt[elektro]"       # electrophysiology data
+pip install "arkitekt[alpaka]"         # want to talk to LLMs? This one's for you.
 ```
 
-`arkitekt-next` requires **Python 3.11+** and builds on the `asyncio` and `pydantic` stacks.
+`arkitekt` requires **Python 3.11+** and builds on the `asyncio` and `pydantic` stacks.
 
 ## Quickstart
 
@@ -63,11 +63,11 @@ pip install "arkitekt-next[alpaka]"         # want to talk to LLMs? This one's f
 
 ```bash
 mkdir my-app && cd my-app
-arkitekt-next init
+arkitekt init
 ```
 
 This walks you through creating an app and writes a manifest (identifier, version, entrypoint, scopes)
-into `.arkitekt_next/`.
+into `.arkitekt/`.
 
 ### 2. Register your functions
 
@@ -76,7 +76,7 @@ arguments and return values are inferred from your type hints — which also dri
 documentation, and the auto-generated GUI.
 
 ```python
-from arkitekt_next import register
+from arkitekt import register
 
 
 @register
@@ -94,15 +94,15 @@ def greet(name: str, excited: bool = False) -> str:
 ### 3. Run it
 
 ```bash
-arkitekt-next run dev
+arkitekt run dev
 ```
 
 `run dev` connects your app to a local or remote Arkitekt server with **hot reloading** — edit your
-code and the app reloads automatically. When you are ready for production, use `arkitekt-next run prod`.
+code and the app reloads automatically. When you are ready for production, use `arkitekt run prod`.
 
 ## The CLI
 
-`arkitekt-next` is the command line for building and running Arkitekt apps.
+`arkitekt` is the command line for building and running Arkitekt apps.
 Standing up an Arkitekt server is the job of
 [konstruktor](https://github.com/arkitektio/konstruktor):
 
@@ -114,8 +114,8 @@ Standing up an Arkitekt server is the job of
 | `self` | Manage your Arkitekt install — upgrade the SDK, print versions, dump diagnostics. |
 
 ```bash
-arkitekt-next init         # scaffold an app
-arkitekt-next run dev      # run it with hot reloading
+arkitekt init         # scaffold an app
+arkitekt run dev      # run it with hot reloading
 konstruktor hub create         # stand up a server to run it against (separate tool)
 ```
 
@@ -135,9 +135,9 @@ See the documentation for details on custom data structures and storage backends
 
 - 📚 **Documentation:** [arkitekt.live](https://arkitekt.live)
 - 🧰 **CLI reference:** [docs/cli.md](docs/cli.md)
-- 📦 **PyPI:** [pypi.org/project/arkitekt-next](https://pypi.org/project/arkitekt_next/)
-- 🐙 **Source:** [github.com/jhnnsrs/arkitekt_next](https://github.com/jhnnsrs/arkitekt_next)
+- 📦 **PyPI:** [pypi.org/project/arkitekt](https://pypi.org/project/arkitekt/)
+- 🐙 **Source:** [github.com/jhnnsrs/arkitekt](https://github.com/jhnnsrs/arkitekt)
 
 ## License
 
-`arkitekt-next` is released under the [MIT License](LICENSE).
+`arkitekt` is released under the [MIT License](LICENSE).
