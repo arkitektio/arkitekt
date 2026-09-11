@@ -20,7 +20,7 @@ def construct_codegen_welcome_panel() -> Panel:
         + WELCOME_MESSAGE
         + "\n\n"
         + "[bold green]Let's setup your codegen environment",
-        title="Welcome to ArkitektNext Codegen",
+        title="Welcome to Arkitekt Codegen",
         title_align="center",
         border_style="green",
         style="green",
@@ -86,7 +86,7 @@ def construct_leaking_group(variables: Dict[str, Any]) -> Group:
 
     This panel is displayed if the app has leaking variables
     and is therefore considered to be not safe to run
-    as an ArkitektNext plugin
+    as an Arkitekt plugin
 
     Parameters
     ----------
@@ -119,5 +119,5 @@ def construct_run_panel(app: App) -> Panel:
     app_group = construct_app_group(app)
 
     return Panel(
-        app_group, style="bold green", border_style="green", title="ArkitektNext Run"
+        app_group, style="bold green", border_style="green", title="Arkitekt Run"
     )

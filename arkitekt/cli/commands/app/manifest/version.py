@@ -11,7 +11,7 @@ version = typer.Typer(
     no_args_is_help=True,
     help="""Updates the version of the arkitekt app
 
-    ArkitektNext manifests versioning follow [link=https://semver.org]semver[/link] and are used to version the app.
+    Arkitekt manifests versioning follow [link=https://semver.org]semver[/link] and are used to version the app.
     This provides an orthogonal way to version the app, beyond node versioning. The version is used to
     track changes and to provide a way to update the app in the platform. For more information, please visit
     [link=https://arkitekt.live]https://arkitekt.live[/link]

@@ -1,4 +1,4 @@
-"""Documentation links for the Arkitekt Next CLI.
+"""Documentation links for the Arkitekt CLI.
 
 These routes are kept as constants in one place so the hosted documentation can
 be re-organized without touching any command code. Change :data:`DOCS_BASE_URL`

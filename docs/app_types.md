@@ -1,6 +1,6 @@
 # Choosing the Right App Type
 
-Arkitekt Next offers two primary ways to build and deploy applications: **Standalone Apps** and **Plugin Apps**. Choosing the right approach depends on your specific use case, deployment requirements, and how you intend to distribute your work.
+Arkitekt offers two primary ways to build and deploy applications: **Standalone Apps** and **Plugin Apps**. Choosing the right approach depends on your specific use case, deployment requirements, and how you intend to distribute your work.
 
 ## Decision Guide
 

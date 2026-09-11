@@ -43,11 +43,11 @@ def easy(
 ) -> App:
     """Creates a next app
 
-    A simple way to create an ArkitektNext Next app, ArkitektNext next apps are
+    A simple way to create an Arkitekt app; Arkitekt apps are
     development apps by default, as they will try to register themselves
     with services that are not yet available in production (such as the
     rekuest and mikro services). They represent the next generation
-    of ArkitektNext apps, and will be the default way to create ArkitektNext apps
+    of Arkitekt apps, and will be the default way to create Arkitekt apps
     in the future. From here be dragons.
 
     A few things to note:
@@ -56,11 +56,11 @@ def easy(
             and will therefore not be compatible with the current generation.
 
         -  Next apps will try to establish themselves a "development" apps, by default
-            which means that they will be authenticated with the ArkitektNext server on
+            which means that they will be authenticated with the Arkitekt server on
             a per user basis. If you want to create a "desktop" app, which multiple users
             can use, you should set the `app_kind` to "desktop" TODO: Currently not implemented (use next app for this)
         -  The Next builder can also be used in plugin apps, and when provided with a fakts token
-           will be able to connect to the ArkitektNext server without any user interaction.
+           will be able to connect to the Arkitekt server without any user interaction.
 
 
     Parameters
@@ -74,7 +74,7 @@ def easy(
     scopes : List[str], optional
         The scopes, that this apps requires, will default to standard scopes, by default None
     url : str, optional
-        The fakts server that will be used to configure this app, in a default ArkitektNext deployment this
+        The fakts server that will be used to configure this app, in a default Arkitekt deployment this
         is the address of the "Lok Service" (which provides the Fakts API), by default DEFAULT_ARKITEKT_URL
         Will be overwritten by the FAKTS_URL environment variable
     headless : bool, optional
@@ -104,7 +104,7 @@ def easy(
     Returns
     -------
     NextApp
-        A built app, that can be used to interact with the ArkitektNext server
+        A built app, that can be used to interact with the Arkitekt server
     """
     service_registry = service_registry or get_default_service_registry()
     init_hook_registry = init_hook_registry or get_default_init_hook_registry()

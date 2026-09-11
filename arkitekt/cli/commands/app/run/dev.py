@@ -233,7 +233,7 @@ async def run_dev(
         generation_message,
         style="bold green",
         border_style="green",
-        title="ArkitektNext Dev Mode",
+        title="Arkitekt Dev Mode",
     )
     console.print(panel)
 

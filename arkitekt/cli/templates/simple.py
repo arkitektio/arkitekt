@@ -1,4 +1,4 @@
-""" An example of a simple template for Arkitekt Next"""
+""" An example of a simple template for Arkitekt"""
 
 from arkitekt import register
 import time

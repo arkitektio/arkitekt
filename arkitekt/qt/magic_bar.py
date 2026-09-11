@@ -69,7 +69,7 @@ class Logo(QtWidgets.QWidget):
                     return None
 
 
-class ArkitektNextLogsRetriever(logging.Handler, QtCore.QObject):
+class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
     """A logging handler that will emit a Qt signal when a log message is received."""
 
     appendPlainText = QtCore.Signal(str)
@@ -97,7 +97,7 @@ class ArkitektNextLogsRetriever(logging.Handler, QtCore.QObject):
         self.appendPlainText.emit(msg)
 
 
-class ArkitektNextLogs(QtWidgets.QDialog):
+class ArkitektLogs(QtWidgets.QDialog):
     """A dialog that will display the logs of the app."""
 
     def __init__(
@@ -131,7 +131,7 @@ class ArkitektNextLogs(QtWidgets.QDialog):
         self.text.setMaximumBlockCount(5000)
         self.text.setReadOnly(True)
         self.mylayout.addWidget(self.text)
-        self.logRetriever = ArkitektNextLogsRetriever(self.text)
+        self.logRetriever = ArkitektLogsRetriever(self.text)
         logging.getLogger().addHandler(self.logRetriever)
         logging.getLogger().setLevel(self.log_level)
         self.setLayout(self.mylayout)
@@ -221,7 +221,7 @@ class Profile(QtWidgets.QDialog):
         self.infobar.addLayout(button_bar)
         button_bar.addWidget(self.unkonfigure_button)
 
-        self.logs = ArkitektNextLogs(self.settings, parent=self)
+        self.logs = ArkitektLogs(self.settings, parent=self)
 
         self.go_all_the_way_button = QtWidgets.QPushButton("One click provide")
         self.go_all_the_way_button.setCheckable(True)

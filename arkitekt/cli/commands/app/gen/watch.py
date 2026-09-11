@@ -36,4 +36,4 @@ def watch(
     if project:
         projects = {key: value for key, value in projects.items() if key == project}
 
-    watch_projects(projects, title="ArkitektNext Code Watch")
+    watch_projects(projects, title="Arkitekt Code Watch")

@@ -66,7 +66,7 @@ def variables(
 ):
     """Scans your arkitekt app for unsafe variables
 
-    When designing an ArkitektNext app, you should not have variables in your
+    When designing an Arkitekt app, you should not have variables in your
     global scope, as on potential reloads (like for example in development)
     these variables will be redefined and cause memory leaks and other issues.
 
@@ -97,7 +97,7 @@ def variables(
                 "No dangerous variables found. You are good to go!  🎉",
                 style="green",
                 border_style="green",
-                title="ArkitektNext Scan",
+                title="Arkitekt Scan",
             )
         )
         return
@@ -105,6 +105,6 @@ def variables(
     group = construct_leaking_group(variables)
 
     panel = Panel(
-        group, title="ArkitektNext Scan", expand=True, border_style="red", style="red"
+        group, title="Arkitekt Scan", expand=True, border_style="red", style="red"
     )
     console.print(panel)

@@ -44,6 +44,6 @@ def compile(
             f"No projects found with the name '{projects}'. Available Projects: {', '.join(parsing_projects.keys())}"
         )
 
-    generate_projects(parsing_projects, title="ArkitektNext Compile")
+    generate_projects(parsing_projects, title="Arkitekt Compile")
 
     pass

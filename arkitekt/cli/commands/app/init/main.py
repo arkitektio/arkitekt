@@ -62,7 +62,7 @@ def init_command(
         typer.Option(
             "--identifier",
             "-i",
-            help="The identifier of your app. This will be used to identify your app in the ArkitektNext ecosystem. It should be unique and should follow the [link=https://en.wikipedia.org/wiki/Reverse_domain_name_notation]reverse domain name notation[/link] (example: com.example.myapp)",
+            help="The identifier of your app. This will be used to identify your app in the Arkitekt ecosystem. It should be unique and should follow the [link=https://en.wikipedia.org/wiki/Reverse_domain_name_notation]reverse domain name notation[/link] (example: com.example.myapp)",
         ),
     ] = None,
     version: Annotated[
@@ -153,9 +153,9 @@ def init_command(
         ),
     ] = ["all"],
 ):
-    """Initializes an ArkitektNext app
+    """Initializes an Arkitekt app
 
-    This command will create a new ArkitektNext app in the current directory. It will
+    This command will create a new Arkitekt app in the current directory. It will
     create a `.arkitekt` folder that will contain a manifest and a `app.py` file,
     which will serve as the entrypoint for your app. By default, the app will be
     initialized with a simple hello world app, but you can choose from a variety
@@ -201,13 +201,13 @@ def init_command(
     if not semver.Version.is_valid(version):
         if yes:
             cli_error(
-                f"Invalid version: {version}. ArkitektNext versions need to follow semver."
+                f"Invalid version: {version}. Arkitekt versions need to follow semver."
             )
         else:
             require_interactive("`init`", hint=_INIT_HINT)
             while not semver.Version.is_valid(version):
                 get_console(ctx).print(
-                    "ArkitektNext versions need to follow [link=https://semver.org]semver[/link]. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
+                    "Arkitekt versions need to follow [link=https://semver.org]semver[/link]. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
                 )
                 version = typer.prompt(
                     "The version of your app",
@@ -221,7 +221,7 @@ def init_command(
         else:
             require_interactive("`init`", hint=_INIT_HINT)
             confirm_or_abort(
-                f"Another ArkitektNext app {existing_manifest.to_console_string()} exists already at {work_dir}?. Do you want to overwrite?"
+                f"Another Arkitekt app {existing_manifest.to_console_string()} exists already at {work_dir}?. Do you want to overwrite?"
             )
             should_overwrite = True
         if not should_overwrite:

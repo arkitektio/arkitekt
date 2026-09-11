@@ -8,7 +8,7 @@ def create_arkitekt_folder(with_cache: bool = True, base_dir: Optional[str] = No
 
     If the folder already exists, it does nothing.
     It automatically creates a .gitignore file, and a .dockerignore file,
-    so that the ArkitektNext credential files are not added to git.
+    so that the Arkitekt credential files are not added to git.
 
     Parameters
     ----------
@@ -33,12 +33,12 @@ def create_arkitekt_folder(with_cache: bool = True, base_dir: Optional[str] = No
     if not os.path.exists(gitignore):
         with open(gitignore, "w") as f:
             f.write(
-                "# Hiding ArkitektNext Credential files from git\n*.json\n*.temp\ncache/\nservers/"
+                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/\nservers/"
             )
     if not os.path.exists(dockerignore):
         with open(dockerignore, "w") as f:
             f.write(
-                "# Hiding ArkitektNext Credential files from git\n*.json\n*.temp\ncache/\nservers/"
+                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/\nservers/"
             )
 
     return os.path.abspath(folder)

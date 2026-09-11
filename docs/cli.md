@@ -1,4 +1,4 @@
-# The Arkitekt Next CLI
+# The Arkitekt CLI
 
 `arkitekt` is the command line for building and running Arkitekt **apps**:
 
@@ -66,7 +66,7 @@ below operates on the app in the current working directory (see `--work-dir`).
 
 ### `init` — Scaffold a new app
 
-Creates a new Arkitekt Next app in the working directory. It writes an
+Creates a new Arkitekt app in the working directory. It writes an
 entrypoint file (default `app.py`) seeded from a template and a
 `.arkitekt/manifest.yaml` describing the app.
 

@@ -1,5 +1,5 @@
 WELCOME_MESSAGE = (
-    "Welcome to ArkitektNext. ArkitektNext is a bioimage analysis framework for building"
+    "Welcome to Arkitekt. Arkitekt is a bioimage analysis framework for building"
     " beautiful and fast interfaces around your python code. It is buid on top of "
     "composable packages like mikro, fluss and rekuest, which allow you to build simple"
     " apps with ease."

@@ -1,6 +1,6 @@
 # Flavours
 
-In Arkitekt Next, **Flavours** allow you to provide multiple build configurations for the same application. This is essential for supporting different hardware environments (like CPU vs. GPU) or deployment scenarios without maintaining separate codebases.
+In Arkitekt, **Flavours** allow you to provide multiple build configurations for the same application. This is essential for supporting different hardware environments (like CPU vs. GPU) or deployment scenarios without maintaining separate codebases.
 
 ## What is a Flavour?
 

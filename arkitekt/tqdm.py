@@ -14,7 +14,7 @@ class tqdm(_tqdm[T]):
 
     This tqdm assigns the current progress to the current assignation helper
     if it exists. This allows the progress to be reported to the user
-    through the ArkitektNext UI.
+    through the Arkitekt UI.
 
     TODO: Check if this works with the current and next versions of tqdm. Maybe
     we should factor this out into the rekuest package

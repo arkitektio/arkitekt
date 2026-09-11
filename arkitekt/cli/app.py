@@ -33,10 +33,10 @@ APP_PROJECT_COMMANDS = {"run", "gen", "manifest", "inspect", "call"}
 
 _ROOT_HELP = (
     f"[cyan]{LOGO}[/cyan]\n\n"
-    "ArkitektNext is a framework for building safe and performant apps that can be "
+    "Arkitekt is a framework for building safe and performant apps that can be "
     "centrally orchestrated and managed in workflows.\n\n"
-    "This is the CLI for the ArkitektNext Python SDK. It lets you create and deploy "
-    "ArkitektNext Apps from your Python code and run them locally for testing and "
+    "This is the CLI for the Arkitekt Python SDK. It lets you create and deploy "
+    "Arkitekt Apps from your Python code and run them locally for testing and "
     "development."
 )
 

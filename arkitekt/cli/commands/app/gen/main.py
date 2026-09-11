@@ -13,7 +13,7 @@ gen = typer.Typer(no_args_is_help=True)
 
 @gen.callback()
 def gen_callback(ctx: typer.Context) -> None:
-    """Codegeneration tools for ArkitektNext Apps (requires turms)
+    """Codegeneration tools for Arkitekt Apps (requires turms)
 
     Code generation for API's is done with the help of GraphQL Code Generation
     that is powered by [link=https://github.com/jhnnsrs/turms]turms[/link]. Simply

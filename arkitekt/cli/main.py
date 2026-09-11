@@ -4,7 +4,7 @@ try:
     import typer
 except ImportError:
     print(
-        "The ArkitektNext CLI could not load its dependencies (typer is missing). "
+        "The Arkitekt CLI could not load its dependencies (typer is missing). "
         "Reinstall the package with `pip install arkitekt`."
     )
     sys.exit(1)
