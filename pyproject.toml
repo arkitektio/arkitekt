@@ -12,7 +12,10 @@ python = "^3.8"
 herre = ">=0.4.3"
 fakts = ">=0.4.2"
 rekuest = { version = ">=0.2.29", optional = true }
-mikro = { version = ">=0.3.95", optional = true }
+# Capped below 1: the `mikro` name now carries the former mikro-next line
+# (3.x), which is a different package with a different import surface. Without
+# an upper bound a fresh resolve would silently install it here.
+mikro = { version = ">=0.3.95,<1", optional = true }
 mikro-next = { version = ">=0.1.6", python = "^3.10", optional = true }
 unlok = { version = ">=0.1.19", optional = true }
 fluss = { version = ">=0.1.61", optional = true }
