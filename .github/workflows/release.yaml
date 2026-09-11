@@ -1,28 +1,51 @@
-name: Publish
+name: Release with uv and semantic-release
 
 on:
-  release:
-    types:
-      - created
+  push:
+    branches: [main, next, "*.x"] # main: stable, next: prereleases, N.x: maintenance
+
+# Needed so semantic-release can push the version-bump commit + tag and create
+# the GitHub Release. id-token is for PyPI trusted publishing via `uv publish`.
+permissions:
+  contents: write
+  id-token: write
 
 jobs:
-  publish:
+  # Run the suite, then let python-semantic-release decide the next version from
+  # the conventional-commit history, bump pyproject, write CHANGELOG.md, commit,
+  # tag (vX.Y.Z on main / vX.Y.Z-rc.N on next) and cut a GitHub Release. Only if
+  # a release was actually cut do we upload the freshly built wheel to PyPI.
+  release:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v2
-      - name: Set up Python
-        uses: actions/setup-python@v2
+      - uses: actions/checkout@v4
         with:
-          python-version: "3.8"
-      - name: Run image
-        uses: abatilo/actions-poetry@v2.0.0
+          fetch-depth: 0 # semantic-release needs the full history + tags
+
+      - name: Install uv and set Python
+        uses: astral-sh/setup-uv@v6
         with:
-          poetry-version: "1.1.4"
-      - name: Run Poetry Install
-        run: poetry install --all-extras
-      - name: Publish
-        env:
-          PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          poetry config pypi-token.pypi $PYPI_TOKEN
-          poetry publish --build
+          version: "latest"
+          python-version: "3.12"
+
+      - name: Install dependencies
+        run: uv sync --all-extras --dev
+
+      - name: Run tests
+        run: uv run pytest 
+
+      - name: Python Semantic Release
+        id: release
+        uses: python-semantic-release/python-semantic-release@v10
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          # The action runs in its own Docker container without uv, so the
+          # build_command in pyproject pip-installs uv (the `build` extra)
+          # before running `uv build`. Branch config tags vX.Y.Z on main,
+          # vX.Y.Z-rc.N on next.
+
+      # rc versions upload fine; pip ignores them unless `--pre` is passed.
+      - name: Publish to PyPI
+        if: steps.release.outputs.released == 'true'
+        run: uv publish

@@ -1,0 +1,4630 @@
+"""
+The root Query
+"""
+type Query {
+  hello: String
+  void: String
+
+  "Comments for a specific object\n    \n    This query returns all comments for a specific object. The object is\n    specified by the `model` and `id` arguments. The `model` argument is\n    a string that is the name of the model. The `id` argument is the id of\n    the object.\n\n    You can only query for comments for objects that you have access to.\n    \n    "
+  commentsfor(deep: Boolean, model: CommentableModels!, id: ID): [Comment]
+  mymentions: [Comment]
+  comment(id: ID!): Comment
+  agent(
+    """
+    The query pod
+    """
+    id: ID
+
+    """
+    The query pod
+    """
+    client: ID
+
+    """
+    The query pod
+    """
+    sub: ID
+
+    """
+    The query pod
+    """
+    instance: ID = "main"
+  ): Agent
+  agents(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    app: String
+    registry: ID
+    status: [AgentStatusInput]
+
+    """
+    Search
+    """
+    search: String
+  ): [Agent]
+  myagents(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    app: String
+    registry: ID
+    status: [AgentStatusInput]
+
+    """
+    Search
+    """
+    search: String
+  ): [Agent]
+  assignation(
+    """
+    The query assignation
+    """
+    id: ID!
+  ): Assignation
+  myrequests(
+    """
+    The excluded values
+    """
+    exclude: [AssignationStatusInput]
+
+    """
+    The included values
+    """
+    filter: [AssignationStatusInput]
+
+    """
+    The excluded values
+    """
+    limit: Int
+
+    """
+    The excluded values
+    """
+    latest: Boolean
+
+    """
+    The excluded values
+    """
+    onlyMine: Boolean
+  ): [Assignation]
+  assignations(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    status: [AssignationStatusInput]
+    reference: String
+    reservation: ID
+    reservationReference: String
+    parent: ID
+
+    """
+    Ordering
+    """
+    o: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Assignation]
+  requests(
+    instanceId: String!
+
+    """
+    The excluded values
+    """
+    exclude: [AssignationStatusInput]
+
+    """
+    The included values
+    """
+    filter: [AssignationStatusInput]
+  ): [Assignation]
+  mytodos(
+    """
+    The excluded values
+    """
+    exclude: [AssignationStatusInput]
+
+    """
+    The included values
+    """
+    filter: [AssignationStatusInput]
+
+    """
+    The excluded values
+    """
+    limit: Int
+  ): [Assignation]
+  todos(
+    """
+    The excluded values
+    """
+    exclude: [AssignationStatusInput]
+
+    """
+    The included values
+    """
+    filter: [AssignationStatusInput]
+    identifier: String = "default"
+  ): [Assignation]
+
+  "Asss\n\n    Is A query for all of these specials in the world\n    "
+  node(
+    """
+    The identifier string
+    """
+    q: QString
+
+    """
+    The query node
+    """
+    id: ID
+
+    """
+    The query node
+    """
+    hash: String
+
+    """
+    The reservation that is linked to this node
+    """
+    reservation: ID
+
+    """
+    The reservation that is linked to this node
+    """
+    assignation: ID
+
+    """
+    Get node for a template (overrides the others)
+    """
+    template: ID
+  ): Node
+  demandednodes(
+    inputPortDemands: [PortDemandInput]
+    outputPortDemands: [PortDemandInput]
+  ): [Node]
+  allnodes(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    repository: ID
+    collections: [ID]
+    protocols: [ID]
+    name: String
+
+    """
+    Search
+    """
+    search: String
+    type: NodeKindInput
+    scopes: [NodeScope]
+
+    """
+    Args
+    """
+    argTypes: [String]
+
+    """
+    Protocol Names
+    """
+    protocolNames: [String]
+
+    """
+    Args
+    """
+    interfaces: [String]
+
+    """
+    Restrict
+    """
+    restrict: [String]
+
+    """
+    Currently Templated
+    """
+    templated: Boolean
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Node]
+  reservation(
+    """
+    The query reservation
+    """
+    id: ID
+
+    """
+    The parent provision
+    """
+    provision: ID
+
+    """
+    The reference
+    """
+    reference: String
+  ): Reservation
+  allreservations: [Reservation]
+  myreservations(
+    """
+    The excluded values
+    """
+    exclude: [ReservationStatusInput]
+
+    """
+    The included values
+    """
+    filter: [ReservationStatusInput]
+  ): [Reservation]
+  reservations(
+    instanceId: String!
+
+    """
+    The excluded values
+    """
+    exclude: [ReservationStatusInput]
+
+    """
+    The included values
+    """
+    filter: [ReservationStatusInput]
+    inputPortDemands: [PortDemandInput]
+    outputPortDemands: [PortDemandInput]
+    nodeInterfaces: [String]
+    templateParams: [TemplateParamInput]
+  ): [Reservation]
+  repository(
+    """
+    The query node
+    """
+    id: ID
+  ): Repository
+  allrepositories: [Repository]
+  myrepositories: [Repository]
+  collection(
+    """
+    The query node
+    """
+    id: ID
+  ): Collection
+  collections(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search
+    """
+    search: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Collection]
+  template(
+    """
+    The query pod
+    """
+    id: ID
+  ): Template
+
+  "Asss\n\n    Is A query for all of these specials in the world\n    "
+  mytemplatefor(
+    """
+    The query node
+    """
+    id: ID
+
+    """
+    The query node
+    """
+    hash: String
+
+    """
+    The instance id
+    """
+    instanceId: ID!
+  ): Template
+  templates(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    package: String
+    name: String
+    interface: String
+    scopes: [NodeScope]
+
+    """
+    Get active pods?
+    """
+    providable: Boolean
+    nodeName: String
+    nodeDescription: String
+    node: ID
+
+    """
+    Search
+    """
+    search: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Template]
+  reservableTemplates(
+    """
+    The template to reserve (This will assert if the template is truly reservable)
+    """
+    template: ID
+
+    """
+    The node provisions
+    """
+    node: ID
+
+    """
+    The hash of the template
+    """
+    hash: String
+    templateParams: [TemplateParamInput]
+  ): [Template]
+  structure(
+    """
+    The query node
+    """
+    id: ID
+
+    """
+    The Identifier of this Model
+    """
+    identifier: String
+  ): Structure
+  structures: [Structure]
+  provision(
+    """
+    The query provisions
+    """
+    id: ID!
+  ): Provision
+  allprovisions(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    status: [ProvisionStatusInput]
+    agent: ID
+    client: ID
+    clientId: String
+  ): [Provision]
+  linkableprovisions(
+    """
+    The query provisions
+    """
+    id: ID!
+  ): [Provision]
+  myprovisions(
+    """
+    The excluded values
+    """
+    exclude: [ProvisionStatusInput]
+
+    """
+    The included values
+    """
+    filter: [ProvisionStatusInput]
+  ): [Provision]
+  provisions(
+    """
+    The excluded values
+    """
+    exclude: [ProvisionStatusInput]
+
+    """
+    The included values
+    """
+    filter: [ProvisionStatusInput]
+
+    """
+    The agent instance_ids
+    """
+    instanceId: String = "main"
+  ): [Provision]
+  registry(
+    """
+    The query pod
+    """
+    id: ID
+  ): Registry
+  registries(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    unique: String
+  ): [Registry]
+  testcase(
+    """
+    The query pod
+    """
+    id: ID
+  ): TestCase
+  testcases(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search
+    """
+    search: String
+    node: ID
+    key: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [TestCase]
+  testresult(
+    """
+    The query pod
+    """
+    id: ID
+  ): TestResult
+  testresults(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search
+    """
+    search: String
+    case: ID
+    template: ID
+    key: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [TestResult]
+  permissionsFor(model: SharableModels!, name: String): [Permission]
+  permissionsOf(model: SharableModels!, id: ID!): PermissionsOfReturn
+  me: User
+  user(
+    """
+    The user's id
+    """
+    id: ID
+
+    """
+    The user's id
+    """
+    email: String
+  ): User
+
+  """
+  Get a list of users
+  """
+  users(
+    """
+    Search for substring of name
+    """
+    username: String
+
+    """
+    Search for substring of name
+    """
+    email: String
+
+    """
+    Search for substring of name
+    """
+    search: String
+  ): [User]
+}
+
+"""
+A comment
+
+A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+"""
+type Comment {
+  """
+  """
+  id: ID!
+
+  """
+  The content type of the commentable object
+  """
+  contentType: CommentableModels
+
+  """
+  """
+  objectId: Int!
+
+  """
+  """
+  user: User!
+
+  """
+  """
+  text: String!
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  parent: Comment
+
+  """
+  The descendents of the comment (this referes to the Comment Tree)
+  """
+  descendents: [Descendent]
+
+  """
+  """
+  mentions: [User!]!
+
+  """
+  """
+  resolved: DateTime
+
+  """
+  """
+  resolvedBy: User
+
+  """
+  Comments that are replies to this comment
+  """
+  children(
+    """
+    How many children to return
+    """
+    limit: Int
+
+    """
+    The offset for the children
+    """
+    offset: Int
+  ): [Comment]
+}
+
+enum CommentableModels {
+  FACADE_REPOSITORY
+  FACADE_REGISTRY
+  FACADE_PROTOCOL
+  FACADE_STRUCTURE
+  FACADE_MIRRORREPOSITORY
+  FACADE_APPREPOSITORY
+  FACADE_AGENT
+  FACADE_COLLECTION
+  FACADE_WAITER
+  FACADE_NODE
+  FACADE_TEMPLATE
+  FACADE_PROVISIONLOG
+  FACADE_PROVISION
+  FACADE_RESERVATIONLOG
+  FACADE_RESERVATION
+  FACADE_ASSIGNATION
+  FACADE_ASSIGNATIONLOG
+  FACADE_TESTCASE
+  FACADE_TESTRESULT
+}
+
+"""
+A reflection on the real User
+"""
+type User {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  password: String!
+
+  """
+  """
+  lastLogin: DateTime
+
+  """
+  Designates that this user has all permissions without explicitly assigning them.
+  """
+  isSuperuser: Boolean!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  groups: [Group!]!
+
+  """
+  Specific permissions for this user.
+  """
+  userPermissions: [Permission!]!
+
+  """
+  Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+  """
+  username: String!
+
+  """
+  """
+  firstName: String!
+
+  """
+  """
+  lastName: String!
+
+  """
+  """
+  email: String!
+
+  """
+  Designates whether the user can log into this admin site.
+  """
+  isStaff: Boolean!
+
+  """
+  Designates whether this user should be treated as active. Unselect this instead of deleting accounts.
+  """
+  isActive: Boolean!
+
+  """
+  """
+  dateJoined: DateTime!
+
+  """
+  The sub of the user
+  """
+  sub: String
+
+  """
+  """
+  iss: String
+
+  """
+  """
+  comments: [Comment!]!
+
+  """
+  """
+  mentionedIn: [Comment!]!
+
+  """
+  """
+  resolvedComments: [Comment!]!
+
+  """
+  The Associatsed App
+  """
+  registrySet: [Registry!]!
+
+  """
+  Who created this template on this instance
+  """
+  templateSet: [Template!]!
+
+  """
+  This provision creator
+  """
+  provisionSet: [Provision!]!
+
+  """
+  This Reservations creator
+  """
+  reservationSet: [Reservation!]!
+
+  """
+  The creator is this assignation
+  """
+  assignationSet: [Assignation!]!
+
+  """
+  The associated color for this user
+  """
+  color: String
+
+  """
+  The name of the user
+  """
+  name: String
+}
+
+"""
+The `DateTime` scalar type represents a DateTime
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar DateTime
+
+type Group {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  permissions: [Permission!]!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  userSet: [User!]!
+}
+
+"""
+A Permission object
+
+This object represents a permission in the system. Permissions are
+used to control access to different parts of the system. Permissions
+are assigned to groups and users. A user has access to a part of the
+system if the user is a member of a group that has the permission
+assigned to it.
+"""
+type Permission {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  codename: String!
+
+  """
+  """
+  groupSet: [Group!]!
+
+  """
+  Specific permissions for this user.
+  """
+  userSet: [User!]!
+
+  """
+  Unique ID for this permission
+  """
+  unique: String!
+}
+
+type Registry {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  client: LokClient!
+
+  """
+  The Associated App
+  """
+  app: LokApp
+
+  """
+  The Associatsed App
+  """
+  user: User
+
+  """
+  The provide might be limited to a instance like ImageJ belonging to a specific person. Is nullable for backend users
+  """
+  agents: [Agent!]!
+
+  """
+  The provide might be limited to a instance like ImageJ belonging to a specific person. Is nullable for backend users
+  """
+  waiters: [Waiter!]!
+  name: String @deprecated(reason: "Will be replaced in the future")
+}
+
+type LokClient {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  iss: String!
+
+  """
+  """
+  clientId: String!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  app: LokApp!
+
+  """
+  """
+  grantType: LokClientGrantType!
+
+  """
+  """
+  registrySet: [Registry!]!
+}
+
+type LokApp {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  identifier: String!
+
+  """
+  """
+  version: String!
+
+  """
+  """
+  lokclientSet: [LokClient!]!
+
+  """
+  The Associated App
+  """
+  registrySet: [Registry!]!
+
+  """
+  The Associated App
+  """
+  apprepositorySet: [AppRepository!]!
+
+  """
+  This provision creator
+  """
+  provisionSet: [Provision!]!
+
+  """
+  This Reservations app
+  """
+  reservationSet: [Reservation!]!
+
+  """
+  The app is this assignation
+  """
+  assignationSet: [Assignation!]!
+}
+
+type AppRepository implements Repository {
+  """
+  Id of the Repository
+  """
+  id: ID!
+
+  """
+  """
+  installedAt: DateTime!
+
+  """
+  """
+  type: RepositoryType!
+
+  """
+  The Name of the Repository
+  """
+  name: String
+
+  """
+  A world-unique identifier
+  """
+  unique: String!
+
+  """
+  The Associated App
+  """
+  app: LokApp
+  nodes(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    package: String
+  ): [Node]
+}
+
+interface Repository {
+  """
+  Id of the Repository
+  """
+  id: ID!
+  nodes(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    package: String
+  ): [Node]
+
+  """
+  The Name of the Repository
+  """
+  name: String
+}
+
+type Node {
+  """
+  """
+  id: ID!
+
+  """
+  The collections this Node belongs to
+  """
+  collections: [Collection!]!
+
+  """
+  Is this function pure. e.g can we cache the result?
+  """
+  pure: Boolean!
+
+  """
+  Is this function pure. e.g can we cache the result?
+  """
+  idempotent: Boolean!
+
+  """
+  Function, generator? Check async Programming Textbook
+  """
+  kind: NodeKind!
+  interfaces: [String]
+
+  """
+  The port groups
+  """
+  portGroups: [PortGroup]
+
+  """
+  The cleartext name of this Node
+  """
+  name: String!
+  meta: GenericScalar
+
+  """
+  The tests of its node
+  """
+  protocols(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    name: String
+  ): [Protocol]
+
+  """
+  A description for the Node
+  """
+  description: String!
+
+  """
+  Beautiful images for beautiful Nodes
+  """
+  image: String
+
+  """
+  The scope of this port
+  """
+  scope: NodeScope!
+
+  """
+  The nodes this node tests
+  """
+  isTestFor(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    package: String
+  ): [Node]
+
+  """
+  The hash of the Node (completely unique)
+  """
+  hash: String!
+
+  """
+  """
+  createdAt: DateTime!
+  args: [Port]
+  returns: [Port]
+
+  """
+  The tests of its node
+  """
+  tests(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    package: String
+  ): [Node]
+  templates(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    package: String
+    name: String
+    interface: String
+    scopes: [NodeScope]
+
+    """
+    Get active pods?
+    """
+    providable: Boolean
+    nodeName: String
+    nodeDescription: String
+    node: ID
+
+    """
+    Search
+    """
+    search: String
+  ): [Template]
+
+  """
+  The node this reservation connects
+  """
+  reservations: [Reservation!]!
+
+  """
+  The node this test belongs to
+  """
+  testcases: [TestCase!]!
+}
+
+type Collection {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  definedAt: DateTime!
+
+  """
+  The name of this Collection
+  """
+  name: String!
+
+  """
+  A description for the Collection
+  """
+  description: String!
+
+  """
+  The nodes this collection has
+  """
+  nodes(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    package: String
+  ): [Node]
+}
+
+"""
+An enumeration.
+"""
+enum NodeKind {
+  """
+  Generator
+  """
+  GENERATOR
+
+  """
+  Function
+  """
+  FUNCTION
+}
+
+type PortGroup {
+  key: String!
+  hidden: Boolean
+}
+
+"""
+The `GenericScalar` scalar type represents a generic
+GraphQL scalar value that could be:
+String, Boolean, Int, Float, List or Object.
+"""
+scalar GenericScalar
+
+type Protocol {
+  """
+  """
+  id: ID!
+
+  """
+  The name of this Protocol
+  """
+  name: String!
+
+  """
+  A description for the Protocol
+  """
+  description: String!
+
+  """
+  The protocols this Node implements (e.g. Predicate)
+  """
+  nodes: [Node!]!
+}
+
+enum NodeScope {
+  GLOBAL
+  LOCAL
+  BRIDGE_GLOBAL_TO_LOCAL
+  BRIDGE_LOCAL_TO_GLOBAL
+}
+
+"""
+A Port
+"""
+type Port {
+  key: String!
+  label: String
+
+  """
+  the type of input
+  """
+  kind: PortKind!
+
+  """
+  A description for this Port
+  """
+  description: String
+
+  """
+  The effects of this port
+  """
+  effects: [Effect]
+
+  """
+  The corresponding Model
+  """
+  identifier: Identifier
+
+  """
+  The scope of this port
+  """
+  scope: Scope!
+  nullable: Boolean!
+
+  """
+  The varients of this port (only for unions)
+  """
+  variants: [ChildPort]
+  default: Any
+
+  """
+  The child
+  """
+  child: ChildPort
+
+  """
+  The annotations of this port
+  """
+  annotations: [Annotation]
+
+  """
+  Description of the Widget
+  """
+  assignWidget: Widget
+
+  """
+  A return widget
+  """
+  returnWidget: ReturnWidget
+
+  """
+  The port groups
+  """
+  groups: [String]
+}
+
+enum PortKind {
+  INT
+  STRING
+  STRUCTURE
+  LIST
+  BOOL
+  DICT
+  FLOAT
+  UNION
+  DATE
+}
+
+type Effect {
+  """
+  The dependencies of this effect
+  """
+  dependencies: [Dependency]
+
+  """
+  The condition of the dependency
+  """
+  kind: EffectKind!
+  message: String
+}
+
+type Dependency {
+  """
+  The key of the port (null should be self)
+  """
+  key: String
+
+  """
+  The condition of the dependency
+  """
+  condition: LogicalCondition!
+  value: GenericScalar!
+}
+
+enum LogicalCondition {
+  IS
+  IS_NOT
+  IN
+}
+
+enum EffectKind {
+  HIDDEN
+  HIGHLIGHT
+  WARN
+  CRAZY
+}
+
+"""
+A unique Structure identifier
+"""
+scalar Identifier
+
+enum Scope {
+  GLOBAL
+  LOCAL
+}
+
+type ChildPort {
+  """
+  the type of input
+  """
+  kind: PortKind!
+
+  """
+  The corresponding Model
+  """
+  identifier: Identifier
+
+  """
+  The scope of this port
+  """
+  scope: Scope!
+
+  """
+  The child
+  """
+  child: ChildPort
+
+  """
+  Is this argument nullable
+  """
+  nullable: Boolean!
+  default: Any
+
+  """
+  The varients of this port (only for unions)
+  """
+  variants: [ChildPort]
+
+  """
+  The annotations of this port
+  """
+  annotations: [Annotation]
+
+  """
+  Description of the Widget
+  """
+  assignWidget: Widget
+
+  """
+  A return widget
+  """
+  returnWidget: ReturnWidget
+}
+
+"""
+Any any field
+"""
+scalar Any
+
+interface Annotation {
+  """
+  The name of the annotation
+  """
+  kind: String
+}
+
+interface Widget {
+  kind: String!
+}
+
+interface ReturnWidget {
+  kind: String!
+}
+
+type Template {
+  """
+  """
+  id: ID!
+
+  """
+  Interface (think Function)
+  """
+  interface: String!
+
+  """
+  The node this template is implementatig
+  """
+  node: Node!
+
+  """
+  The associated registry for this Template
+  """
+  agent: Agent!
+
+  """
+  A name for this Template
+  """
+  name: String!
+
+  """
+  The extentions of this template
+  """
+  extensions: [String]
+  policy: GenericScalar
+  params: GenericScalar
+
+  """
+  Who created this template on this instance
+  """
+  creator: User
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  updatedAt: DateTime!
+  provisions(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    status: [ProvisionStatusInput]
+    agent: ID
+    client: ID
+    clientId: String
+  ): [Provision]
+
+  """
+  The template this reservation connects
+  """
+  reservations: [Reservation!]!
+
+  """
+  """
+  testresults: [TestResult!]!
+}
+
+type Agent {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  installedAt: DateTime!
+
+  """
+  This providers Name
+  """
+  name: String!
+
+  """
+  """
+  instanceId: String!
+
+  """
+  The Channel we are listening to
+  """
+  unique: String!
+
+  """
+  The Instance this Agent is running on
+  """
+  onInstance: String!
+
+  """
+  The Status of this Agent
+  """
+  status: AgentStatus!
+
+  """
+  The provide might be limited to a instance like ImageJ belonging to a specific person. Is nullable for backend users
+  """
+  registry: Registry
+
+  """
+  If this Agent is blocked, it will not be used for provision, nor will it be able to provide
+  """
+  blocked: Boolean!
+
+  """
+  The associated registry for this Template
+  """
+  templates: [Template!]!
+
+  """
+  Is this Provision bound to a certain Agent?
+  """
+  provisions: [Provision!]!
+  clientId: String!
+}
+
+"""
+An enumeration.
+"""
+enum AgentStatus {
+  """
+  Active
+  """
+  ACTIVE
+
+  """
+  Just kicked
+  """
+  KICKED
+
+  """
+  Disconnected
+  """
+  DISCONNECTED
+
+  """
+  Complete Vanilla Scenario after a forced restart of
+  """
+  VANILLA
+}
+
+type Provision {
+  """
+  """
+  id: ID!
+
+  """
+  A Unique identifier for this Topic
+  """
+  unique: UUID!
+
+  """
+  The Deployment Mode for this Provisions
+  """
+  mode: ProvisionMode!
+
+  """
+  The Unique identifier of this Provision
+  """
+  reference: String!
+
+  """
+  Reservation that created this provision (if we were auto created)
+  """
+  reservation: Reservation
+
+  """
+  Is this Provision bound to a certain Agent?
+  """
+  agent: Agent
+
+  """
+  A Short Hand Way to identify this reservation for you
+  """
+  title: String
+  template: Template!
+
+  """
+  Is the connection to this Provision lost?
+  """
+  dropped: Boolean!
+  params: ProvisionParams
+  extensions: GenericScalar
+  context: GenericScalar
+
+  """
+  Access Strategy for this Provision
+  """
+  access: ProvisionAccess!
+
+  """
+  Current lifecycle of Provision
+  """
+  status: ProvisionStatus!
+
+  """
+  Clear Text status of the Provision as for now
+  """
+  statusmessage: String!
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  updatedAt: DateTime!
+
+  """
+  This provision creator
+  """
+  creator: User
+
+  """
+  This provision creator
+  """
+  app: LokApp
+  log(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    level: LogLevelInput
+    createdAt: String
+
+    """
+    Ordering
+    """
+    o: String
+  ): [ProvisionLog]
+
+  """
+  The Provisions this reservation connects
+  """
+  reservations: [Reservation!]!
+
+  """
+  Was this Reservation caused by a Provision?
+  """
+  causedReservations: [Reservation!]!
+  assignations(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    status: [AssignationStatusInput]
+    reference: String
+    reservation: ID
+    reservationReference: String
+    parent: ID
+
+    """
+    Ordering
+    """
+    o: String
+  ): [Assignation]
+}
+
+"""
+Leverages the internal Python implmeentation of UUID (uuid.UUID) to provide native UUID objects
+in fields, resolvers and input.
+"""
+scalar UUID
+
+"""
+An enumeration.
+"""
+enum ProvisionMode {
+  """
+  Debug Mode (Node might be constantly evolving)
+  """
+  DEBUG
+
+  """
+  Production Mode (Node might be constantly evolving)
+  """
+  PRODUCTION
+}
+
+type Reservation {
+  """
+  """
+  id: ID!
+
+  """
+  The channel of this Reservation
+  """
+  channel: String!
+
+  """
+  Is this reservation happy? (aka: does it have as many linked provisions as desired
+  """
+  happy: Boolean!
+
+  """
+  Is this reservation viable? (aka: does it have as many linked provisions as minimal
+  """
+  viable: Boolean!
+
+  """
+  Allow automatic requests for this reservation
+  """
+  allowAutoRequest: Boolean!
+
+  """
+  The node this reservation connects
+  """
+  node: Node!
+
+  """
+  A Short Hand Way to identify this reservation for you
+  """
+  title: String
+
+  """
+  The template this reservation connects
+  """
+  template: Template
+
+  """
+  The Provisions this reservation connects
+  """
+  provisions: [Provision!]!
+  params: ReserveParams
+  binds: Binds
+
+  """
+  The hash of the Reservation
+  """
+  hash: String!
+
+  """
+  Current lifecycle of Reservation
+  """
+  status: ReservationStatus!
+
+  """
+  Clear Text status of the Provision as for now
+  """
+  statusmessage: String!
+
+  """
+  Callback
+  """
+  callback: String
+
+  """
+  Provider
+  """
+  progress: String
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  updatedAt: DateTime!
+
+  """
+  This Reservations app
+  """
+  waiter: Waiter!
+
+  """
+  This Reservations app
+  """
+  app: LokApp
+
+  """
+  This Reservations creator
+  """
+  creator: User
+
+  """
+  The Unique identifier of this Assignation
+  """
+  reference: String!
+
+  """
+  Was this Reservation caused by a Provision?
+  """
+  provision: Provision
+
+  """
+  Reservation that created this provision (if we were auto created)
+  """
+  createdProvisions: [Provision!]!
+  log(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    level: LogLevelInput
+    createdAt: String
+
+    """
+    Ordering
+    """
+    o: String
+  ): [ReservationLog]
+
+  """
+  Which reservation are we assigning to
+  """
+  assignations: [Assignation!]!
+}
+
+type ReserveParams {
+  """
+  Registry thar are allowed
+  """
+  registries: [ID]
+
+  """
+  Templates that can be selected
+  """
+  templates: [ID]
+
+  """
+  The desired amount of Instances
+  """
+  desiredInstances: Int
+
+  """
+  Autoproviding
+  """
+  autoProvide: Boolean
+
+  """
+  Autounproviding
+  """
+  autoUnprovide: Boolean
+
+  """
+  The minimal amount of Instances
+  """
+  minimalInstances: Int
+}
+
+type Binds {
+  """
+  The clients of this bind
+  """
+  clients: [LokClient]
+
+  """
+  The templates of this bind
+  """
+  templates: [Template]
+}
+
+"""
+An enumeration.
+"""
+enum ReservationStatus {
+  """
+  Routing (Reservation has been requested but no Topic found yet)
+  """
+  ROUTING
+
+  """
+  SHould signal that this reservation is non viable (has less linked provisions than minimalInstances)
+  """
+  NON_VIABLE
+
+  """
+  Providing (Reservation required the provision of a new worker)
+  """
+  PROVIDING
+
+  """
+  Waiting (We are waiting for any assignable Topic to come online)
+  """
+  WAITING
+
+  """
+  Rerouting (State of provisions this reservation connects to have changed and require Retouring)
+  """
+  REROUTING
+
+  """
+  Disconnect (State of provisions this reservation connects to have changed and require Retouring)
+  """
+  DISCONNECTED
+
+  """
+  Disconnect (State of provisions this reservation connects to have changed and require Retouring)
+  """
+  DISCONNECT
+
+  """
+  Cancelling (Reervation is currently being cancelled)
+  """
+  CANCELING
+
+  """
+  Active (Reservation is active and accepts assignments
+  """
+  ACTIVE
+
+  """
+  Error (Reservation was not able to be performed (See StatusMessage)
+  """
+  ERROR
+
+  """
+  Ended (Reservation was ended by the the Platform and is no longer active)
+  """
+  ENDED
+
+  """
+  Cancelled (Reservation was cancelled by user and is no longer active)
+  """
+  CANCELLED
+
+  """
+  Critical (Reservation failed with an Critical Error)
+  """
+  CRITICAL
+}
+
+type Waiter {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  installedAt: DateTime!
+
+  """
+  This waiters Name
+  """
+  name: String!
+
+  """
+  """
+  identifier: String!
+
+  """
+  The Channel we are listening to
+  """
+  unique: String!
+
+  """
+  The Status of this Waiter
+  """
+  status: WaiterStatus!
+
+  """
+  The provide might be limited to a instance like ImageJ belonging to a specific person. Is nullable for backend users
+  """
+  registry: Registry
+
+  """
+  This Reservations app
+  """
+  reservations: [Reservation!]!
+
+  """
+  This Assignation app
+  """
+  assignations: [Assignation!]!
+  clientId: String!
+}
+
+"""
+An enumeration.
+"""
+enum WaiterStatus {
+  """
+  Active
+  """
+  ACTIVE
+
+  """
+  Disconnected
+  """
+  DISCONNECTED
+
+  """
+  Complete Vanilla Scenario after a forced restart of
+  """
+  VANILLA
+}
+
+type Assignation {
+  """
+  """
+  id: ID!
+
+  """
+  Which reservation are we assigning to
+  """
+  reservation: Reservation
+  context: GenericScalar
+
+  """
+  The progress of this assignation
+  """
+  progress: Int
+  args: [Any]
+
+  """
+  Which Provision did we end up being assigned to
+  """
+  provision: Provision
+
+  """
+  This Assignation app
+  """
+  waiter: Waiter
+  kwargs: GenericScalar
+  returns: [Any]
+
+  """
+  Current lifecycle of Assignation
+  """
+  status: AssignationStatus!
+
+  """
+  Clear Text status of the Assignation as for now
+  """
+  statusmessage: String!
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  updatedAt: DateTime!
+
+  """
+  The Unique identifier of this Assignation considering its parent
+  """
+  reference: String!
+
+  """
+  The creator is this assignation
+  """
+  creator: User
+
+  """
+  The app is this assignation
+  """
+  app: LokApp
+
+  """
+  The Assignations parent
+  """
+  parent: Assignation
+
+  """
+  The Assignations parent
+  """
+  children: [Assignation!]!
+  log(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    level: LogLevelInput
+    createdAt: String
+
+    """
+    Ordering
+    """
+    o: String
+  ): [AssignationLog]
+}
+
+"""
+An enumeration.
+"""
+enum AssignationStatus {
+  """
+  Pending
+  """
+  PENDING
+
+  """
+  Bound
+  """
+  BOUND
+
+  """
+  Acknowledged
+  """
+  ACKNOWLEDGED
+
+  """
+  Assignation Returned (Only for Functions)
+  """
+  RETURNED
+
+  """
+  Denied (Assingment was rejected)
+  """
+  DENIED
+
+  """
+  Was able to assign to a pod
+  """
+  ASSIGNED
+
+  """
+  Progress (Assignment has current Progress)
+  """
+  PROGRESS
+
+  """
+  Received (Assignment was received by an agent)
+  """
+  RECEIVED
+
+  """
+  Error (Retrieable)
+  """
+  ERROR
+
+  """
+  Critical Error (No Retries available)
+  """
+  CRITICAL
+
+  """
+  Assinment is beeing cancelled
+  """
+  CANCEL
+
+  """
+  Cancelling (Assingment is currently being cancelled)
+  """
+  CANCELING
+
+  """
+  Assignment has been cancelled.
+  """
+  CANCELLED
+
+  """
+  Assignment yielded a value (only for Generators)
+  """
+  YIELD
+
+  """
+  Assignment has finished
+  """
+  DONE
+}
+
+type AssignationLog {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  The reservation this log item belongs to
+  """
+  assignation: Assignation!
+
+  """
+  """
+  message: String
+
+  """
+  """
+  level: AssignationLogLevel!
+}
+
+"""
+An enumeration.
+"""
+enum AssignationLogLevel {
+  """
+  CRITICAL Level
+  """
+  CRITICAL
+
+  """
+  INFO Level
+  """
+  INFO
+
+  """
+  DEBUG Level
+  """
+  DEBUG
+
+  """
+  ERROR Level
+  """
+  ERROR
+
+  """
+  WARN Level
+  """
+  WARN
+
+  """
+  YIELD Level
+  """
+  YIELD
+
+  """
+  Cancel Level
+  """
+  CANCEL
+
+  """
+  YIELD Level
+  """
+  RETURN
+
+  """
+  Done Level
+  """
+  DONE
+
+  """
+  Event Level (only handled by plugins)
+  """
+  EVENT
+}
+
+"""
+An enumeration.
+"""
+enum LogLevelInput {
+  """
+  CRITICAL Level
+  """
+  CRITICAL
+
+  """
+  INFO Level
+  """
+  INFO
+
+  """
+  DEBUG Level
+  """
+  DEBUG
+
+  """
+  ERROR Level
+  """
+  ERROR
+
+  """
+  WARN Level
+  """
+  WARN
+
+  """
+  YIELD Level
+  """
+  YIELD
+
+  """
+  Cancel Level
+  """
+  CANCEL
+
+  """
+  YIELD Level
+  """
+  RETURN
+
+  """
+  Done Level
+  """
+  DONE
+
+  """
+  Event Level (only handled by plugins)
+  """
+  EVENT
+}
+
+type ReservationLog {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  The reservation this log item belongs to
+  """
+  reservation: Reservation!
+
+  """
+  """
+  message: String
+
+  """
+  """
+  level: ReservationLogLevel!
+}
+
+"""
+An enumeration.
+"""
+enum ReservationLogLevel {
+  """
+  CRITICAL Level
+  """
+  CRITICAL
+
+  """
+  INFO Level
+  """
+  INFO
+
+  """
+  DEBUG Level
+  """
+  DEBUG
+
+  """
+  ERROR Level
+  """
+  ERROR
+
+  """
+  WARN Level
+  """
+  WARN
+
+  """
+  YIELD Level
+  """
+  YIELD
+
+  """
+  Cancel Level
+  """
+  CANCEL
+
+  """
+  YIELD Level
+  """
+  RETURN
+
+  """
+  Done Level
+  """
+  DONE
+
+  """
+  Event Level (only handled by plugins)
+  """
+  EVENT
+}
+
+type ProvisionParams {
+  autoUnprovide: Boolean
+}
+
+"""
+An enumeration.
+"""
+enum ProvisionAccess {
+  """
+  This Topic is Only Accessible linkable for its creating User
+  """
+  EXCLUSIVE
+
+  """
+  Everyone can link to this Topic
+  """
+  EVERYONE
+}
+
+"""
+An enumeration.
+"""
+enum ProvisionStatus {
+  """
+  Pending (Request has been created and waits for its initial creation)
+  """
+  PENDING
+
+  """
+  Bound (Provision was bound to an Agent)
+  """
+  BOUND
+
+  """
+  Providing (Request has been send to its Agent and waits for Result
+  """
+  PROVIDING
+
+  """
+  Active (Provision is currently active)
+  """
+  ACTIVE
+
+  """
+  Inactive (Provision is currently not active)
+  """
+  INACTIVE
+
+  """
+  Cancelling (Provisions is currently being cancelled)
+  """
+  CANCELING
+
+  """
+  Lost (Subscribers to this Topic have lost their connection)
+  """
+  LOST
+
+  """
+  Reconnecting (We are trying to Reconnect to this Topic)
+  """
+  RECONNECTING
+
+  """
+  Denied (Provision was rejected for this User)
+  """
+  DENIED
+
+  """
+  Error (Reservation was not able to be performed (See StatusMessage)
+  """
+  ERROR
+
+  """
+  Critical (Provision resulted in an critical system error)
+  """
+  CRITICAL
+
+  """
+  Ended (Provision was cancelled by the Platform and will no longer create Topics)
+  """
+  ENDED
+
+  """
+  Cancelled (Provision was cancelled by the User and will no longer create Topics)
+  """
+  CANCELLED
+}
+
+type ProvisionLog {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  The provision this log item belongs to
+  """
+  provision: Provision!
+
+  """
+  """
+  message: String
+
+  """
+  """
+  level: ProvisionLogLevel!
+}
+
+"""
+An enumeration.
+"""
+enum ProvisionLogLevel {
+  """
+  CRITICAL Level
+  """
+  CRITICAL
+
+  """
+  INFO Level
+  """
+  INFO
+
+  """
+  DEBUG Level
+  """
+  DEBUG
+
+  """
+  ERROR Level
+  """
+  ERROR
+
+  """
+  WARN Level
+  """
+  WARN
+
+  """
+  YIELD Level
+  """
+  YIELD
+
+  """
+  Cancel Level
+  """
+  CANCEL
+
+  """
+  YIELD Level
+  """
+  RETURN
+
+  """
+  Done Level
+  """
+  DONE
+
+  """
+  Event Level (only handled by plugins)
+  """
+  EVENT
+}
+
+"""
+An enumeration.
+"""
+enum AssignationStatusInput {
+  """
+  Pending
+  """
+  PENDING
+
+  """
+  Bound
+  """
+  BOUND
+
+  """
+  Acknowledged
+  """
+  ACKNOWLEDGED
+
+  """
+  Assignation Returned (Only for Functions)
+  """
+  RETURNED
+
+  """
+  Denied (Assingment was rejected)
+  """
+  DENIED
+
+  """
+  Was able to assign to a pod
+  """
+  ASSIGNED
+
+  """
+  Progress (Assignment has current Progress)
+  """
+  PROGRESS
+
+  """
+  Received (Assignment was received by an agent)
+  """
+  RECEIVED
+
+  """
+  Error (Retrieable)
+  """
+  ERROR
+
+  """
+  Critical Error (No Retries available)
+  """
+  CRITICAL
+
+  """
+  Assinment is beeing cancelled
+  """
+  CANCEL
+
+  """
+  Cancelling (Assingment is currently being cancelled)
+  """
+  CANCELING
+
+  """
+  Assignment has been cancelled.
+  """
+  CANCELLED
+
+  """
+  Assignment yielded a value (only for Generators)
+  """
+  YIELD
+
+  """
+  Assignment has finished
+  """
+  DONE
+}
+
+"""
+An enumeration.
+"""
+enum ProvisionStatusInput {
+  """
+  Pending (Request has been created and waits for its initial creation)
+  """
+  PENDING
+
+  """
+  Bound (Provision was bound to an Agent)
+  """
+  BOUND
+
+  """
+  Providing (Request has been send to its Agent and waits for Result
+  """
+  PROVIDING
+
+  """
+  Active (Provision is currently active)
+  """
+  ACTIVE
+
+  """
+  Inactive (Provision is currently not active)
+  """
+  INACTIVE
+
+  """
+  Cancelling (Provisions is currently being cancelled)
+  """
+  CANCELING
+
+  """
+  Lost (Subscribers to this Topic have lost their connection)
+  """
+  DISCONNECTED
+
+  """
+  Reconnecting (We are trying to Reconnect to this Topic)
+  """
+  RECONNECTING
+
+  """
+  Denied (Provision was rejected for this User)
+  """
+  DENIED
+
+  """
+  Error (Reservation was not able to be performed (See StatusMessage)
+  """
+  ERROR
+
+  """
+  Critical (Provision resulted in an critical system error)
+  """
+  CRITICAL
+
+  """
+  Ended (Provision was cancelled by the Platform and will no longer create Topics)
+  """
+  ENDED
+
+  """
+  Cancelled (Provision was cancelled by the User and will no longer create Topics)
+  """
+  CANCELLED
+}
+
+type TestResult {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  case: TestCase!
+
+  """
+  """
+  template: Template!
+
+  """
+  """
+  passed: Boolean!
+  result: GenericScalar
+
+  """
+  """
+  createdAt: DateTime!
+}
+
+type TestCase {
+  """
+  """
+  id: ID!
+
+  """
+  The node this test belongs to
+  """
+  node: Node!
+
+  """
+  """
+  key: String
+
+  """
+  """
+  name: String
+
+  """
+  """
+  description: String
+
+  """
+  """
+  isBenchmark: Boolean!
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  results: [TestResult!]!
+}
+
+"""
+An enumeration.
+"""
+enum RepositoryType {
+  """
+  Repository that is hosted by an App
+  """
+  APP
+
+  """
+  Repository mirrors online Repository
+  """
+  MIRROR
+}
+
+"""
+An enumeration.
+"""
+enum LokClientGrantType {
+  """
+  Backend (Client Credentials)
+  """
+  CLIENT_CREDENTIALS
+
+  """
+  Implicit Grant
+  """
+  IMPLICIT
+
+  """
+  Authorization Code
+  """
+  AUTHORIZATION_CODE
+
+  """
+  Password
+  """
+  PASSWORD
+
+  """
+  Django Session
+  """
+  SESSION
+}
+
+"""
+A descendent of a node in the comment tree
+"""
+interface Descendent {
+  typename: String
+}
+
+"""
+An enumeration.
+"""
+enum AgentStatusInput {
+  """
+  Active
+  """
+  ACTIVE
+
+  """
+  Just kicked
+  """
+  KICKED
+
+  """
+  Disconnected
+  """
+  DISCONNECTED
+
+  """
+  Complete Vanilla Scenario after a forced restart of
+  """
+  VANILLA
+}
+
+"""
+A q-string is a universal identifier for a node on the
+arkitekt_next platform, its a hash of the node's name and the
+and its functional signature.
+"""
+scalar QString
+
+input PortDemandInput {
+  at: Int
+  key: String
+  kind: PortKindInput
+  identifier: String
+  nullable: Boolean
+  variants: [PortDemandInput]
+  child: PortDemandInput
+}
+
+enum PortKindInput {
+  INT
+  STRING
+  STRUCTURE
+  LIST
+  BOOL
+  DICT
+  FLOAT
+  UNION
+  DATE
+}
+
+"""
+An enumeration.
+"""
+enum NodeKindInput {
+  """
+  Generator
+  """
+  GENERATOR
+
+  """
+  Function
+  """
+  FUNCTION
+}
+
+"""
+An enumeration.
+"""
+enum ReservationStatusInput {
+  """
+  Routing (Reservation has been requested but no Topic found yet)
+  """
+  ROUTING
+
+  """
+  SHould signal that this reservation is non viable (has less linked provisions than minimalInstances)
+  """
+  NON_VIABLE
+
+  """
+  Providing (Reservation required the provision of a new worker)
+  """
+  PROVIDING
+
+  """
+  Waiting (We are waiting for any assignable Topic to come online)
+  """
+  WAITING
+
+  """
+  Rerouting (State of provisions this reservation connects to have changed and require Retouring)
+  """
+  REROUTING
+
+  """
+  Disconnect (State of provisions this reservation connects to have changed and require Retouring)
+  """
+  DISCONNECTED
+
+  """
+  Disconnect (State of provisions this reservation connects to have changed and require Retouring)
+  """
+  DISCONNECT
+
+  """
+  Cancelling (Reervation is currently being cancelled)
+  """
+  CANCELING
+
+  """
+  Active (Reservation is active and accepts assignments
+  """
+  ACTIVE
+
+  """
+  Error (Reservation was not able to be performed (See StatusMessage)
+  """
+  ERROR
+
+  """
+  Ended (Reservation was ended by the the Platform and is no longer active)
+  """
+  ENDED
+
+  """
+  Cancelled (Reservation was cancelled by user and is no longer active)
+  """
+  CANCELLED
+
+  """
+  Critical (Reservation failed with an Critical Error)
+  """
+  CRITICAL
+}
+
+input TemplateParamInput {
+  key: String!
+  value: GenericScalar
+}
+
+type Structure {
+  """
+  """
+  id: ID!
+  extenders: GenericScalar
+
+  """
+  A unique identifier for this Model accross the Platform
+  """
+  identifier: String!
+  repository: Repository
+}
+
+"""
+Sharable Models are models that can be shared amongst users and groups. They representent the models of the DB
+"""
+enum SharableModels {
+  LOK_LOKUSER
+  LOK_LOKAPP
+  LOK_LOKCLIENT
+  FACADE_REPOSITORY
+  FACADE_REGISTRY
+  FACADE_PROTOCOL
+  FACADE_STRUCTURE
+  FACADE_MIRRORREPOSITORY
+  FACADE_APPREPOSITORY
+  FACADE_AGENT
+  FACADE_COLLECTION
+  FACADE_WAITER
+  FACADE_NODE
+  FACADE_TEMPLATE
+  FACADE_PROVISIONLOG
+  FACADE_PROVISION
+  FACADE_RESERVATIONLOG
+  FACADE_RESERVATION
+  FACADE_ASSIGNATION
+  FACADE_ASSIGNATIONLOG
+  FACADE_TESTCASE
+  FACADE_TESTRESULT
+}
+
+type PermissionsOfReturn {
+  available: [Permission]
+  userAssignments: [UserAssignment]
+  groupAssignments: [GroupAssignment]
+}
+
+type UserAssignment {
+  permissions: [String]!
+
+  """
+  A query that returns an image path
+  """
+  user: User!
+}
+
+type GroupAssignment {
+  permissions: [String]!
+
+  """
+  A query that returns an image path
+  """
+  group: Group!
+}
+
+"""
+The root Mutation
+"""
+type Mutation {
+  """
+  Create an Comment
+
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+
+
+      (only signed in users)
+  """
+  createComment(
+    """
+    The comment tree
+    """
+    descendents: [DescendendInput]!
+
+    """
+    The Representationss this sROI belongs to
+    """
+    object: ID!
+
+    """
+    The parent comment
+    """
+    parent: ID
+
+    """
+    The type model you want to comment on
+    """
+    type: CommentableModels!
+  ): Comment
+
+  """
+  Reply to an Comment
+
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+
+
+      (only signed in users)
+  """
+  replyTo(
+    """
+    The comment tree
+    """
+    descendents: [DescendendInput]!
+
+    """
+    The parent comment
+    """
+    parent: ID!
+  ): Comment
+
+  """
+  Create an Comment
+
+      This mutation resolves a comment. By resolving a comment, it will be marked as resolved,
+      and the user that resolved it will be set as the resolver.
+
+      (only signed in users)
+  """
+  resolveComment(
+    """
+    The comments id
+    """
+    id: ID!
+
+    """
+    Should we imitate the resolving by another user (requires imitate permission)
+    """
+    imitate: ID
+  ): Comment
+
+  """
+  Create an experiment (only signed in users)
+  """
+  deleteNode(
+    """
+    A cleartext description what this representation represents as data
+    """
+    id: ID!
+  ): DeleteNodeReturn
+  purgeNodes(app: String): PurgeNodesReturn
+
+  """
+  Create Repostiory
+  """
+  createMirror(
+    """
+    The name of this template
+    """
+    name: String!
+
+    """
+    A Url for the Mirror
+    """
+    url: String!
+  ): CreateMirrorReturn
+
+  """
+  Create an experiment (only signed in users)
+  """
+  deleterepo(
+    """
+    The Id of the Mirror
+    """
+    id: ID!
+  ): DeleteRepoReturn
+
+  """
+  Create an experiment (only signed in users)
+  """
+  updateMirror(
+    """
+    A cleartext description what this representation represents as data
+    """
+    id: ID!
+  ): UpdateMirrorReturn
+  createTemplate(
+    definition: DefinitionInput!
+
+    """
+    Desired Extensions (e.g reaktion)
+    """
+    extensions: [String]
+
+    """
+    User to imitate
+    """
+    imitate: ID
+
+    """
+    The instance id
+    """
+    instanceId: ID!
+    interface: String!
+
+    """
+    Some additional Params for your offering
+    """
+    params: GenericScalar
+
+    """
+    Some additional Params for your offering
+    """
+    policy: GenericScalar
+  ): Template
+  ack(assignation: ID!): Assignation
+  assign(
+    """
+    Additional Params
+    """
+    args: [AnyInput]
+
+    """
+    Should we allow cached results (only applicable if node was registered as pure)
+    """
+    cached: Boolean
+
+    """
+    Should we log intermediate resulst? (if also persist is true these will be persisted to the log system)
+    """
+    log: Boolean
+
+    """
+    If this task inherits from another task
+    """
+    parent: ID
+
+    """
+    A reference
+    """
+    reference: String
+    reservation: ID!
+  ): Assignation
+
+  """
+  Scan allows you to add Datapoints to your Arnheim Schema, this is only available to Admin users
+  """
+  provide(
+    """
+    Additional Params
+    """
+    params: GenericScalar
+    template: ID!
+  ): Provision
+  reserve(
+    allowAutoRequest: Boolean
+
+    """
+    bindings
+    """
+    binds: ReserveBindsInput
+    hash: String
+    imitate: ID
+    instanceId: ID!
+    node: ID
+
+    """
+    Additional Params
+    """
+    params: ReserveParamsInput
+
+    """
+    Additional Params
+    """
+    persist: Boolean = true
+    provision: ID
+    reference: String
+    template: ID
+    title: String
+  ): Reservation
+  slate(
+    """
+    The identifier you want to slate
+    """
+    identifier: String!
+  ): [ID]
+  unassign(
+    """
+    The reference of the Assignation you want to ruin
+    """
+    assignation: ID
+
+    """
+    An identifier you want this unassignation to go buy
+    """
+    reference: String
+  ): Assignation
+  unprovide(
+    """
+    The reference of the Provision you want to ruin
+    """
+    id: ID
+  ): UnprovideReturn
+  unreserve(
+    """
+    The reference of the Reservation you want to ruin
+    """
+    id: ID!
+  ): UnreserveResult
+  link(provision: ID!, reservation: ID!): Provision
+  unlink(provision: ID!, reservation: ID!, safe: Boolean): Provision
+  tell(message: MessageInput!, reservation: ID!): Tell
+
+  """
+  Create Repostiory
+  """
+  resetRepository: ResetRepositoryReturn
+
+  """
+  Create Repostiory
+  """
+  resetAgents: ResetAgentsReturn
+
+  """
+  Create Repostiory
+  """
+  resetAssignations(
+    """
+    The status you want to get rid of
+    """
+    exclude: [AssignationStatusInput]
+  ): ResetAssignationsReturn
+
+  """
+  Create Repostiory
+  """
+  resetNodes(
+    """
+    Respositroys you want to exclude
+    """
+    exclude: [ID]
+  ): ResetNodesReturn
+
+  """
+  Create Repostiory
+  """
+  resetProvisions(
+    """
+    The status you want to get rid of
+    """
+    exclude: [ProvisionStatusInput]
+  ): ResetProvisionsReturn
+
+  """
+  Create Repostiory
+  """
+  resetReservations(
+    """
+    The status you want to get rid of
+    """
+    exclude: [ReservationStatusInput]
+  ): ResetReservationsReturn
+
+  """
+  Kick an agent (only signed in users)
+  """
+  kickAgent(
+    """
+    The id of the agent to delete
+    """
+    id: ID!
+  ): Agent
+
+  """
+  Kick an agent (only signed in users)
+  """
+  bounceAgent(
+    """
+    The id of the agent to delete
+    """
+    id: ID!
+  ): Agent
+
+  """
+  Kick an agent (only signed in users)
+  """
+  blockAgent(
+    """
+    The id of the agent to delete
+    """
+    id: ID!
+  ): Agent
+
+  """
+  Deletes an agent (only signed in users)
+  """
+  deleteAgent(
+    """
+    The id of the agent to delete
+    """
+    id: ID!
+  ): DeleteAgentReturn
+
+  """
+  Create Repostiory
+  """
+  createTestCase(
+    """
+    The description of this testcase
+    """
+    description: String
+
+    """
+    Is this a benchmark?
+    """
+    isBenchmark: Boolean
+
+    """
+    The name of this template
+    """
+    key: String!
+
+    """
+    The name of this testcase
+    """
+    name: String!
+
+    """
+    The name of this template
+    """
+    node: ID!
+  ): TestCase
+
+  """
+  Delete TestCase
+
+      This mutation deletes an TestCase and returns the deleted TestCase.
+  """
+  deleteTestCase(
+    """
+    The ID of the testcase to delete
+    """
+    id: ID!
+  ): DeleteTestCaseResult
+
+  """
+  Create Test Result
+  """
+  createTestResult(
+    """
+    The associated case
+    """
+    case: ID!
+
+    """
+    Did the test-case pass
+    """
+    passed: Boolean!
+
+    """
+    The result of the test
+    """
+    result: String
+
+    """
+    The associated template
+    """
+    template: ID!
+  ): TestResult
+
+  """
+  Creates a Sample
+  """
+  changePermissions(
+    groupAssignments: [GroupAssignmentInput]
+
+    """
+    The Representationss this sROI belongs to
+    """
+    object: ID!
+    type: SharableModels!
+    userAssignments: [UserAssignmentInput]
+  ): ChangePermissionsResult
+}
+
+input DescendendInput {
+  children: [DescendendInput]
+
+  """
+  The type of the descendent
+  """
+  typename: String
+
+  """
+  The user that is mentioned
+  """
+  user: String
+
+  """
+  Is this a bold leaf?
+  """
+  bold: Boolean
+
+  """
+  Is this a italic leaf?
+  """
+  italic: Boolean
+
+  """
+  Is this a code leaf?
+  """
+  code: Boolean
+
+  """
+  The text of the leaf
+  """
+  text: String
+}
+
+type DeleteNodeReturn {
+  id: String
+}
+
+type PurgeNodesReturn {
+  ids: [String]
+}
+
+type CreateMirrorReturn {
+  created: Boolean
+  repo: MirrorRepository
+}
+
+type MirrorRepository implements Repository {
+  """
+  Id of the Repository
+  """
+  id: ID!
+
+  """
+  """
+  installedAt: DateTime!
+
+  """
+  """
+  type: RepositoryType!
+
+  """
+  The Name of the Repository
+  """
+  name: String
+
+  """
+  A world-unique identifier
+  """
+  unique: String!
+
+  """
+  """
+  url: String
+
+  """
+  """
+  updatedAt: DateTime!
+  nodes(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    package: String
+  ): [Node]
+}
+
+type DeleteRepoReturn {
+  id: String
+}
+
+type UpdateMirrorReturn {
+  id: String
+}
+
+"""
+A definition for a template
+"""
+input DefinitionInput {
+  """
+  A description for the Node
+  """
+  description: String
+  collections: [ID]
+
+  """
+  The name of this template
+  """
+  name: String!
+  portGroups: [PortGroupInput]!
+
+  """
+  The Args
+  """
+  args: [PortInput]!
+
+  """
+  The Returns
+  """
+  returns: [PortInput]!
+
+  """
+  The Interfaces this node provides makes sense of the metadata
+  """
+  interfaces: [String]!
+
+  """
+  The variety
+  """
+  kind: NodeKindInput!
+
+  """
+  The nodes this is a test for
+  """
+  isTestFor: [String]
+  pure: Boolean = false
+  idempotent: Boolean = false
+}
+
+input PortGroupInput {
+  """
+  The key of the port group
+  """
+  key: String!
+
+  """
+  Is this port group hidden
+  """
+  hidden: Boolean
+}
+
+input PortInput {
+  """
+  The dependencies of this port
+  """
+  effects: [EffectInput]
+
+  """
+  The identifier
+  """
+  identifier: Identifier
+
+  """
+  The key of the arg
+  """
+  key: String!
+
+  """
+  The scope of this port
+  """
+  scope: Scope!
+
+  """
+  The varients of this port (only for union)
+  """
+  variants: [ChildPortInput]
+
+  """
+  The name of this argument
+  """
+  name: String
+
+  """
+  The name of this argument
+  """
+  label: String
+
+  """
+  The type of this argument
+  """
+  kind: PortKindInput!
+
+  """
+  The description of this argument
+  """
+  description: String
+
+  """
+  The child of this argument
+  """
+  child: ChildPortInput
+
+  """
+  The child of this argument
+  """
+  assignWidget: WidgetInput
+
+  """
+  The child of this argument
+  """
+  returnWidget: ReturnWidgetInput
+
+  """
+  The key of the arg
+  """
+  default: Any
+
+  """
+  Is this argument nullable
+  """
+  nullable: Boolean!
+
+  """
+  The annotations of this argument
+  """
+  annotations: [AnnotationInput]
+
+  """
+  The port group of this argument
+  """
+  groups: [String]
+}
+
+input EffectInput {
+  """
+  The dependencies of this effect
+  """
+  dependencies: [DependencyInput]
+
+  """
+  The condition of the dependency
+  """
+  kind: EffectKind!
+  message: String
+}
+
+input DependencyInput {
+  """
+  The key of the port, defaults to self
+  """
+  key: String
+
+  """
+  The condition of the dependency
+  """
+  condition: LogicalCondition!
+  value: AnyInput!
+}
+
+"""
+Any any field
+"""
+scalar AnyInput
+
+input ChildPortInput {
+  """
+  The identifier
+  """
+  identifier: Identifier
+
+  """
+  The scope of this port
+  """
+  scope: Scope!
+
+  """
+  The name of this port
+  """
+  name: String
+
+  """
+  The type of this port
+  """
+  kind: PortKindInput
+
+  """
+  The child port
+  """
+  child: ChildPortInput
+
+  """
+  Is this argument nullable
+  """
+  nullable: Boolean!
+
+  """
+  The annotations of this argument
+  """
+  annotations: [AnnotationInput]
+
+  """
+  The varients of this port (only for union)
+  """
+  variants: [ChildPortInput]
+
+  """
+  The child of this argument
+  """
+  assignWidget: WidgetInput
+
+  """
+  The child of this argument
+  """
+  returnWidget: ReturnWidgetInput
+}
+
+input AnnotationInput {
+  """
+  The kind of annotation
+  """
+  kind: AnnotationKind!
+
+  """
+  The name of this annotation
+  """
+  name: String
+
+  """
+  The value of this annotation
+  """
+  args: String
+
+  """
+  The min of this annotation (Value Range)
+  """
+  min: Float
+
+  """
+  The max of this annotation (Value Range)
+  """
+  max: Float
+
+  """
+  A hook for the app to call
+  """
+  hook: String
+
+  """
+  The predicate of this annotation (IsPredicate)
+  """
+  predicate: IsPredicateType
+
+  """
+  The attribute to check
+  """
+  attribute: String
+
+  """
+  The annotation of this annotation
+  """
+  annotations: [AnnotationInput]
+}
+
+"""
+The kind of annotation
+"""
+enum AnnotationKind {
+  ValueRange
+  CustomAnnotation
+  IsPredicate
+  AttributePredicate
+}
+
+enum IsPredicateType {
+  LOWER
+  HIGHER
+  DIGIT
+}
+
+input WidgetInput {
+  """
+  type
+  """
+  kind: WidgetKind!
+
+  """
+  Do we have a possible
+  """
+  query: SearchQuery
+
+  """
+  The dependencies of this port
+  """
+  choices: [ChoiceInput]
+
+  """
+  Max value for slider widget
+  """
+  max: Float
+
+  """
+  Min value for slider widget
+  """
+  min: Float
+
+  """
+  Step value for slider widget
+  """
+  step: Float
+
+  """
+  Placeholder for any widget
+  """
+  placeholder: String
+
+  """
+  Is this a paragraph
+  """
+  asParagraph: Boolean
+
+  """
+  A hook for the app to call
+  """
+  hook: String
+
+  """
+  A ward for the app to call
+  """
+  ward: String
+
+  """
+  The fields of this widget (onbly on TemplateWidget)
+  """
+  fields: [TemplateFieldInput]
+}
+
+"""
+The kind of widget
+"""
+enum WidgetKind {
+  QueryWidget
+  IntWidget
+  StringWidget
+  SearchWidget
+  SliderWidget
+  LinkWidget
+  BoolWidget
+  ChoiceWidget
+  CustomWidget
+  TemplateWidget
+  DateWidget
+  ColorWidget
+}
+
+"""
+Search query
+"""
+scalar SearchQuery
+
+input ChoiceInput {
+  value: AnyInput!
+  label: String!
+  description: String
+}
+
+input TemplateFieldInput {
+  """
+  The parent key (if nested)
+  """
+  parent: String
+
+  """
+  The key of the field
+  """
+  key: String!
+
+  """
+  The key of the field
+  """
+  type: String!
+
+  """
+  A short description of the field
+  """
+  description: String
+}
+
+input ReturnWidgetInput {
+  """
+  type
+  """
+  kind: ReturnWidgetKind!
+
+  """
+  The dependencies of this port
+  """
+  choices: [ChoiceInput]
+
+  """
+  Do we have a possible
+  """
+  query: String
+
+  """
+  A hook for the app to call
+  """
+  hook: String
+
+  """
+  A hook for the app to call
+  """
+  ward: String
+}
+
+"""
+The kind of return widget
+"""
+enum ReturnWidgetKind {
+  ImageReturnWidget
+  CustomReturnWidget
+  ChoiceReturnWidget
+}
+
+input ReserveBindsInput {
+  """
+  The templates that we are allowed to use
+  """
+  templates: [ID]!
+
+  """
+  The clients that we are allowed to use
+  """
+  clients: [ID]!
+}
+
+input ReserveParamsInput {
+  """
+  Do you want to autoprovide
+  """
+  autoProvide: Boolean
+
+  """
+  Do you want to auto_unprovide
+  """
+  autoUnprovide: Boolean
+
+  """
+  Registry thar are allowed
+  """
+  registries: [ID]
+
+  """
+  Agents that are allowed
+  """
+  agents: [ID]
+
+  """
+  Templates that can be selected
+  """
+  templates: [ID]
+
+  """
+  The desired amount of Instances
+  """
+  desiredInstances: Int!
+
+  """
+  The minimal amount of Instances
+  """
+  minimalInstances: Int!
+}
+
+type UnprovideReturn {
+  id: ID!
+}
+
+type UnreserveResult {
+  id: ID!
+}
+
+type Tell {
+  reference: String
+}
+
+input MessageInput {
+  kind: MessageKind!
+  text: String!
+  reference: String!
+  data: AnyInput!
+}
+
+enum MessageKind {
+  TERMINATE
+  CANCEL
+  ASSIGN
+  TELL
+}
+
+type ResetRepositoryReturn {
+  ok: Boolean
+}
+
+type ResetAgentsReturn {
+  ok: Boolean
+}
+
+type ResetAssignationsReturn {
+  ok: Boolean
+}
+
+type ResetNodesReturn {
+  ok: Boolean
+}
+
+type ResetProvisionsReturn {
+  ok: Boolean
+}
+
+type ResetReservationsReturn {
+  ok: Boolean
+}
+
+type DeleteAgentReturn {
+  id: String
+}
+
+type DeleteTestCaseResult {
+  id: String
+}
+
+type ChangePermissionsResult {
+  success: Boolean
+  message: String
+}
+
+input GroupAssignmentInput {
+  permissions: [String]!
+  group: ID!
+}
+
+input UserAssignmentInput {
+  permissions: [String]!
+
+  """
+  The user id
+  """
+  user: String!
+}
+
+"""
+The root Subscriptions
+"""
+type Subscription {
+  agentsEvent(
+    """
+    The log level for alterations
+    """
+    level: String
+  ): AgentEvent
+  assignation(
+    """
+    The reference of the assignation
+    """
+    id: ID!
+
+    """
+    The log level for alterations
+    """
+    level: String
+  ): AssignationEvent
+  myrequests(
+    """
+    The log level for alterations
+    """
+    level: String
+  ): AssignationsEvent
+  requests(
+    """
+    The log level for alterations
+    """
+    instanceId: String!
+  ): AssignationsEvent
+  todos(
+    """
+    The reference of this todos
+    """
+    instanceId: String!
+  ): TodoEvent
+  mytodos: TodoEvent
+  provision(
+    """
+    The reference of the assignation
+    """
+    id: ID!
+
+    """
+    The log level for alterations
+    """
+    level: String
+  ): ProvisionEvent
+  provisions(
+    """
+    The reference of this waiter
+    """
+    identifier: String!
+  ): ProvisionsEvent
+  myprovisions: ProvisionsEvent
+  waiter(
+    """
+    The log level for alterations
+    """
+    level: String
+  ): WaiterEvent
+  reservation(
+    """
+    The reference of the assignation
+    """
+    id: ID!
+
+    """
+    The log level for alterations
+    """
+    level: String
+  ): ReservationEvent
+  myreservations(
+    """
+    The log level for alterations
+    """
+    level: String
+  ): ReservationsEvent
+  reservations(
+    """
+    The reference of this waiter
+    """
+    instanceId: String!
+
+    """
+    The reference of the provision (if we want to only listen to this)
+    """
+    provision: String
+  ): ReservationsEvent
+  nodes(
+    """
+    List only nodes with this interface
+    """
+    interface: String
+
+    """
+    The log level for alterations
+    """
+    level: String
+  ): NodeEvent
+  nodeEvent(
+    """
+    The Id of the node you are intereset in
+    """
+    id: ID!
+  ): Node
+  templates(
+    """
+    The params to filter by
+    """
+    templateParams: [TemplateParamInput]
+  ): TemplateEvent
+
+  "My Mentions\n\n    Returns an event of a new mention for the user if the user \n    was mentioned in a comment.\n    "
+  mymentions: MentionEvent
+}
+
+type AgentEvent {
+  created: Agent
+  deleted: ID
+  updated: Agent
+}
+
+type AssignationEvent {
+  log: AssignationLogEvent
+}
+
+type AssignationLogEvent {
+  message: String
+  level: String
+}
+
+type AssignationsEvent {
+  delete: ID
+  update: Assignation
+  create: Assignation
+}
+
+type TodoEvent {
+  update: Assignation
+  delete: ID
+  create: Assignation
+}
+
+type ProvisionEvent {
+  log: ProvisionLogEvent
+}
+
+type ProvisionLogEvent {
+  message: String
+  level: String
+}
+
+type ProvisionsEvent {
+  delete: ID
+  update: Provision
+  create: Provision
+}
+
+type WaiterEvent {
+  created: Waiter
+  deleted: ID
+  updated: Waiter
+}
+
+type ReservationEvent {
+  log: ReservationLogEvent
+}
+
+type ReservationLogEvent {
+  message: String
+  level: String
+}
+
+type ReservationsEvent {
+  update: Reservation
+  delete: ID
+  create: Reservation
+}
+
+type NodeEvent {
+  created: Node
+  deleted: ID
+  updated: Node
+}
+
+type TemplateEvent {
+  created: Template
+  deleted: ID
+  updated: Template
+}
+
+type MentionEvent {
+  deleted: ID
+  update: Comment
+  create: Comment
+}
+
+type ValueRange implements Annotation {
+  """
+  The name of the annotation
+  """
+  kind: String
+
+  """
+  The minimum value
+  """
+  min: Float!
+
+  """
+  The maximum value
+  """
+  max: Float!
+}
+
+type CustomAnnotation implements Annotation {
+  """
+  The name of the annotation
+  """
+  kind: String
+
+  """
+  The arguments for this annotation
+  """
+  args: [String]
+
+  """
+  The hook for this annotation
+  """
+  hook: String!
+}
+
+type IsPredicate implements Annotation {
+  """
+  The name of the annotation
+  """
+  kind: String
+
+  """
+  The arguments for this annotation
+  """
+  predicate: IsPredicateType!
+}
+
+"""
+A predicate that checks if an atribute fullfills a certain condition
+"""
+type AttributePredicate implements Annotation {
+  """
+  The name of the annotation
+  """
+  kind: String
+
+  """
+  The attribute to check
+  """
+  attribute: String!
+
+  """
+  The annotations for this attribute
+  """
+  annotations: [Annotation]
+}
+
+type QueryWidget implements Widget {
+  kind: String!
+
+  """
+  A Complex description
+  """
+  query: String
+}
+
+type LinkWidget implements Widget {
+  kind: String!
+
+  """
+  A Complex description
+  """
+  linkbuilder: String
+}
+
+type SearchWidget implements Widget {
+  kind: String!
+
+  """
+  A Complex description
+  """
+  query: String!
+
+  """
+  A ward for the app to call
+  """
+  ward: String!
+}
+
+type BoolWidget implements Widget {
+  kind: String!
+}
+
+type ChoiceWidget implements Widget {
+  kind: String!
+
+  """
+  A list of choices
+  """
+  choices: [Choice]
+}
+
+type Choice {
+  value: GenericScalar!
+  label: String!
+  description: String
+}
+
+type IntWidget implements Widget {
+  kind: String!
+
+  """
+  A Complex description
+  """
+  query: String
+}
+
+type SliderWidget implements Widget {
+  kind: String!
+
+  """
+  A Complex description
+  """
+  min: Float
+
+  """
+  A Complex description
+  """
+  max: Float
+
+  """
+  A Complex description
+  """
+  step: Float
+}
+
+type StringWidget implements Widget {
+  kind: String!
+
+  """
+  A placeholder to display
+  """
+  placeholder: String
+
+  """
+  Whether to display as paragraph
+  """
+  asParagraph: Boolean
+}
+
+type CustomWidget implements Widget {
+  kind: String!
+
+  """
+  A hook for the ward to call
+  """
+  hook: String
+
+  """
+  A ward for the app to call
+  """
+  ward: String
+}
+
+type DateWidget implements Widget {
+  kind: String!
+
+  """
+  A start date
+  """
+  startDate: String
+}
+
+type ColorWidget implements Widget {
+  kind: String!
+
+  """
+  A start date
+  """
+  startDate: String
+}
+
+type TemplateWidget implements Widget {
+  kind: String!
+  fields: [TemplateField]!
+}
+
+type TemplateField {
+  """
+  The parent key (if nested)
+  """
+  parent: String
+
+  """
+  The key of the field
+  """
+  key: String!
+
+  """
+  The type of the field
+  """
+  type: String!
+
+  """
+  A short description of the field
+  """
+  description: String!
+}
+
+type ImageReturnWidget implements ReturnWidget {
+  kind: String!
+
+  """
+  A query that returns an image path
+  """
+  query: String
+
+  """
+  A hook for the app to call
+  """
+  ward: String
+}
+
+type CustomReturnWidget implements ReturnWidget {
+  kind: String!
+
+  """
+  A hook for the app to call
+  """
+  hook: String
+
+  """
+  A hook for the app to call
+  """
+  ward: String
+}
+
+type ChoiceReturnWidget implements ReturnWidget {
+  kind: String!
+
+  """
+  A list of choices
+  """
+  choices: [Choice]
+}
+
+"""
+A node in the comment tree
+"""
+interface CommentNode {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+}
+
+"""
+A leaf in the comment tree. Representations some sort of text
+"""
+type Leaf implements Descendent {
+  typename: String
+
+  """
+  Is this a bold leaf?
+  """
+  bold: Boolean
+
+  """
+  Is this a italic leaf?
+  """
+  italic: Boolean
+
+  """
+  Is this a code leaf?
+  """
+  code: Boolean
+
+  """
+  The text of the leaf
+  """
+  text: String
+}
+
+"""
+A mention in the comment tree. This  is a reference to another user on the platform
+"""
+type MentionDescendent implements CommentNode & Descendent {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+  typename: String
+
+  """
+  The user that is mentioned
+  """
+  user: User!
+}
+
+"""
+A paragraph in the comment tree. This paragraph contains other nodes (list nodes)
+"""
+type ParagraphDescendent implements CommentNode & Descendent {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+  typename: String
+
+  """
+  The size of the paragraph
+  """
+  size: String
+}

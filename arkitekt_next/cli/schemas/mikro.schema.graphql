@@ -1,0 +1,8908 @@
+"""
+The root Query
+"""
+type Query {
+  hello: String
+  void: String
+
+  "Comments for a specific object\n    \n    This query returns all comments for a specific object. The object is\n    specified by the `model` and `id` arguments. The `model` argument is\n    a string that is the name of the model. The `id` argument is the id of\n    the object.\n\n    You can only query for comments for objects that you have access to.\n    \n    "
+  commentsfor(deep: Boolean, model: CommentableModels!, id: ID): [Comment]
+  mymentions: [Comment]
+  comment(id: ID!): Comment
+  permissionsFor(model: SharableModels!, name: String): [Permission]
+  permissionsOf(model: SharableModels!, id: ID!): PermissionsOfReturn
+
+  """
+  Get a list of users
+  """
+  users(
+    """
+    Search for substring of name
+    """
+    username: String
+
+    """
+    Search for substring of name
+    """
+    email: String
+
+    """
+    Search for substring of name
+    """
+    search: String
+  ): [User]
+
+  """
+  Get a list of users
+  """
+  user(
+    """
+    Unique app name for user
+    """
+    id: ID
+  ): User
+
+  "All Experiments \n ![Image](/static/img/data.png) \n This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned. \n If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query. \n \n    \n    "
+  experiments(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    creator: ID
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Experiment]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  experiment(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Experiment
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  myexperiments(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    creator: ID
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Experiment]
+
+  "Get a single Metric by ID\n    \n    Returns a single Metric by ID. If the user does not have access\n    to the Metric, an error will be raised.\n    "
+  metric(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Metric
+
+  "All Metric\n    \n    This query returns all Metric that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Metric that the user has access to. If the user is an amdin\n    or superuser, all Metric will be returned.\n    "
+  metrics(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The key you want to filter by
+    """
+    keys: [String]
+    sample: ID
+    experiment: ID
+    representation: ID
+
+    """
+    Order by Keys
+    """
+    order: [String]
+    creator: ID
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Metric]
+
+  """
+  Get a single Omero File by ID
+
+      Returns a single Omero File by ID. If the user does not have access
+      to the Omero File, an error will be raised.
+  """
+  omerofile(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): OmeroFile
+
+  """
+  My Omerofiles runs a fast query on the database to return all
+      Omerofile that the user has created. This query is faster than
+      the `omerofiles` query, but it does not return all OmeroFile that
+      the user has access to.
+  """
+  myomerofiles(
+    name: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [OmeroFile]
+
+  "All OmeroFiles\n\n    This query returns all OmeroFiles that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all OmeroFiles that the user has access to. If the user is an amdin\n    or superuser, all OmeroFiles will be returned.\n    \n    "
+  omerofiles(
+    name: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [OmeroFile]
+
+  """
+  My Representatoin runs a fast query on the database to return all
+      Representation that the user has created. This query is faster than
+      the `representations` query, but it does not return all Representation that
+      the user has access to.
+  """
+  myrepresentations(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Experiment the Sample of this Representation belongs to
+    """
+    experiments: [ID]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    samples: [ID]
+
+    """
+    Only show Representations without children
+    """
+    noChildren: Boolean
+
+    """
+    Only show Representations without parents
+    """
+    noParents: Boolean
+
+    """
+    Only show Representations that are derived from ROIs
+    """
+    isRoiDerived: Boolean
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    Filter by required Metric Keys (seperated by ,)
+    """
+    hasMetric: String
+
+    """
+    Order by Keys
+    """
+    order: [String]
+    variety: RepresentationVarietyInput
+    forceThumbnail: Boolean
+    creator: ID
+
+    """
+    The tags you want to filter by
+    """
+    derivedTags: [String]
+
+    """
+    The Stage this Representation belongs to
+    """
+    stages: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Representation]
+  accessiblerepresentations: [Representation]
+  sharedrepresentations: [Representation]
+  representationsForGroup(
+    """
+    The Group to search by
+    """
+    name: String!
+  ): [Representation]
+  representationsForUser(
+    """
+    The Person you shared for
+    """
+    email: String!
+  ): [Representation]
+
+  "Get a single Representation by ID\n\n    Returns a single Representation by ID. If the user does not have access\n    to the Representation, an error will be raised.\n    "
+  representation(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Representation
+
+  "Get a single Image by ID\n\n    Returns a single Representation by ID. If the user does not have access\n    to the Representation, an error will be raised.\n    "
+  image(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Representation
+
+  "Get a random Representation\n\n    Gets a random Representation from the database. This is used for\n    testing purposes\n\n    "
+  randomRepresentation: Representation
+
+  """
+  All Representations
+
+      This query returns all Representations that are stored on the platform
+      depending on the user's permissions. Generally, this query will return
+      all Representations that the user has access to. If the user is an amdin
+      or superuser, all Representations will be returned.
+  """
+  representations(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Experiment the Sample of this Representation belongs to
+    """
+    experiments: [ID]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    samples: [ID]
+
+    """
+    Only show Representations without children
+    """
+    noChildren: Boolean
+
+    """
+    Only show Representations without parents
+    """
+    noParents: Boolean
+
+    """
+    Only show Representations that are derived from ROIs
+    """
+    isRoiDerived: Boolean
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    Filter by required Metric Keys (seperated by ,)
+    """
+    hasMetric: String
+
+    """
+    Order by Keys
+    """
+    order: [String]
+    variety: RepresentationVarietyInput
+    forceThumbnail: Boolean
+    creator: ID
+
+    """
+    The tags you want to filter by
+    """
+    derivedTags: [String]
+
+    """
+    The Stage this Representation belongs to
+    """
+    stages: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Representation]
+
+  "Get a Sample by ID\n    \n    Returns a single Sample by ID. If the user does not have access\n    to the Sample, an error will be raised.\n    "
+  sample(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Sample
+
+  "All Samples\n    \n    This query returns all Samples that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Samples that the user has access to. If the user is an amdin\n    or superuser, all Samples will be returned.\n    \n    "
+  samples(
+    creator: ID
+    experiments: [ID]
+
+    """
+    The name of the desired BioSeries
+    """
+    bioseries: String
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    The ids you want to filter by
+    """
+    ids: [ID]
+
+    """
+    The ids you want to filter by
+    """
+    representations: [ID]
+
+    """
+    Order by Keys
+    """
+    order: [String]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Sample]
+
+  """
+  My Samples runs a fast query on the database to return all
+      Samples that the user has *created*. This query is faster than
+      the `samples` query, but it does not return all Samples that
+      the user has access to.
+  """
+  mysamples(
+    creator: ID
+    experiments: [ID]
+
+    """
+    The name of the desired BioSeries
+    """
+    bioseries: String
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    The ids you want to filter by
+    """
+    ids: [ID]
+
+    """
+    The ids you want to filter by
+    """
+    representations: [ID]
+
+    """
+    Order by Keys
+    """
+    order: [String]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Sample]
+
+  "All Tags\n    \n    Returns all Tags that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Tags that the user has access to. If the user is an amdin\n    or superuser, all Tags will be returned.\n    "
+  tags(
+    name: String
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    values: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Tag]
+
+  "Get a single Thumbnail by ID\n    \n    Get a single Thumbnail by ID. If the user does not have access\n    to the Thumbnail, an error will be raised.\n    "
+  thumbnail(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Thumbnail
+
+  "All Thumbnails\n    \n    This query returns all Thumbnails that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Thumbnails that the user has access to. If the user is an amdin\n    or superuser, all Thumbnails will be returned.\n    \n    "
+  thumbnails(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    creator: ID
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Thumbnail]
+
+  """
+  All Rois
+
+      This query returns all Rois that are stored on the platform
+      depending on the user's permissions. Generally, this query will return
+      all Rois that the user has access to. If the user is an amdin
+      or superuser, all Rois will be returned.
+  """
+  rois(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+    representation: ID
+    repname: String
+    creator: ID
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+    type: [RoiTypeInput]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [ROI]
+
+  """
+  Get a single Roi by ID"
+
+      Returns a single Roi by ID. If the user does not have access
+      to the Roi, an error will be raised.
+  """
+  roi(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): ROI
+
+  "All Labels\n    \n    This query returns all Labels that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Labels that the user has access to. If the user is an amdin\n    or superuser, all Labels will be returned.\n    "
+  labels(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+    representation: ID
+    creator: Float
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Label]
+
+  """
+  Get a single label by ID
+
+      Returns a single label by ID. If the user does not have access
+      to the label, an error will be raised.
+  """
+  label(
+    """
+    The ID to search by
+    """
+    id: ID
+  ): Label
+
+  "Get a label for a specific instance on a specific representation\n    \n    "
+  labelFor(
+    """
+    The ID to search by
+    """
+    representation: ID!
+
+    """
+    The instance on the representation
+    """
+    instance: Int!
+  ): Label
+
+  """
+  Requets a new set of credentials from the S3 server
+      encompassing the users credentials and the access key and secret key
+  """
+  request(id: String): Credentials
+
+  "All features\n    \n    This query returns all features that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all features that the user has access to. If the user is an amdin\n    or superuser, all features will be returned.\n    "
+  features(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The corresponding label that you want to filter by
+    """
+    label: ID
+    creator: Float
+
+    """
+    The key you want to filter by
+    """
+    keys: [String]
+
+    """
+    The substring you want to filter by
+    """
+    substring: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Feature]
+
+  "Get a single feature by ID\n    \n    Returns a single feature by ID. If the user does not have access\n    to the feature, an error will be raised.\n    "
+  feature(
+    """
+    The ID to search by
+    """
+    id: ID
+  ): Feature
+
+  """
+  All Instruments
+
+      This query returns all Instruments that are stored on the platform
+      depending on the user's permissions. Generally, this query will return
+      all Instruments that the user has access to. If the user is an amdin
+      or superuser, all Instruments will be returned.
+  """
+  instruments(
+    name: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Instrument]
+
+  """
+  Get a single instrumes by ID
+
+      Returns a single instrument by ID. If the user does not have access
+      to the instrument, an error will be raised.
+  """
+  instrument(
+    """
+    The ID to search by
+    """
+    id: ID
+
+    """
+    The name to search by
+    """
+    name: String
+  ): Instrument
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  positions(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+    stage: ID
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Position]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  position(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Position
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  stages(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Stage]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  stage(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Stage
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  mystages(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Stage]
+
+  """
+  All Instruments
+
+      This query returns all Instruments that are stored on the platform
+      depending on the user's permissions. Generally, this query will return
+      all Instruments that the user has access to. If the user is an amdin
+      or superuser, all Instruments will be returned.
+  """
+  objectives(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    The substring you want to filter by
+    """
+    search: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Objective]
+
+  """
+  Get a single instrumes by ID
+
+      Returns a single instrument by ID. If the user does not have access
+      to the instrument, an error will be raised.
+  """
+  objective(
+    """
+    The ID to search by
+    """
+    id: ID
+
+    """
+    The name to search by
+    """
+    name: String
+  ): Objective
+
+  "All Labels\n    \n    This query returns all Labels that are stored on the platform\n    depending on the user's permissions.s Generally, this query will return\n    all Labels that the user has access to. If the user is an amdin\n    or superuser, all Labels wsill be returned.\n    "
+  models(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+    creator: Float
+
+    """
+    Search for substring of name
+    """
+    name: String
+    contexts: ID
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Model]
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  mymodels(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+    creator: Float
+
+    """
+    Search for substring of name
+    """
+    name: String
+    contexts: ID
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Model]
+
+  """
+  Get a single label by ID
+
+      Returns a single label by ID. If the user does not have access
+      to the label, an error will be raised.
+  """
+  model(
+    """
+    The ID to search by
+    """
+    id: ID
+  ): Model
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  links(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for relationship of name
+    """
+    relation: String
+    creator: ID
+    context: ID
+
+    """
+    Ordering
+    """
+    order: String
+    xType: LinkableModels
+    yType: LinkableModels
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [DataLink]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  link(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): DataLink
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  contexts(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    creator: ID
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Context]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  context(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Context
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  mycontexts(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    creator: ID
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Context]
+
+  "All Experiments \n ![Image](/static/img/data.png) \n This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned. \n If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query. \n \n    \n    "
+  datasets(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Dataset]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  dataset(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Dataset
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  mydatasets(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Dataset]
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  relations(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Relation]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  relation(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Relation
+
+  "Get a single Thumbnail by ID\n    \n    Get a single Thumbnail by ID. If the user does not have access\n    to the Thumbnail, an error will be raised.\n    "
+  video(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Video
+
+  "All Thumbnails\n    \n    This query returns all Thumbnails that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Thumbnails that the user has access to. If the user is an amdin\n    or superuser, all Thumbnails will be returned.\n    \n    "
+  videos(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    creator: ID
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Video]
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  provenance(createdWhiles: [ID]!): [ProvenanceResult]
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  dimensionmaps(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    dims: [Dimension]
+    index: Float
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [DimensionMap]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  dimensionmap(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): DimensionMap
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  channels(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Channel]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  channel(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Channel
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  views(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    omero: ID
+    representation: ID
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    z: String
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForZ: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForT: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForX: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForY: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForC: Float
+
+    """
+    Filter by global
+    """
+    isGlobal: Boolean
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [View]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  view(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): View
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  metas(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Order the omeros: options are -acquired or acquired
+    """
+    order: String
+    timepoints: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Omero]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  meta(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Omero
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  mymetas(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Order the omeros: options are -acquired or acquired
+    """
+    order: String
+    timepoints: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Omero]
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  timepoints(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    deltaT: Float
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Timepoint]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  timepoint(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Timepoint
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  mytimepoints(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    deltaT: Float
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Timepoint]
+
+  "All Experiments\n    \n    This query returns all Experiments that are stored on the platform\n    depending on the user's permissions. Generally, this query will return\n    all Experiments that the user has access to. If the user is an amdin\n    or superuser, all Experiments will be returned.\n\n    If you want to retrieve only the Experiments that you have created,\n    use the `myExperiments` query.\n    \n    "
+  eras(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Era]
+
+  "Get a single experiment by ID\"\n    \n    Returns a single experiment by ID. If the user does not have access\n    to the experiment, an error will be raised.\n    \n    "
+  era(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Era
+
+  """
+  My Experiments runs a fast query on the database to return all
+      Experiments that the user has created. This query is faster than
+      the `experiments` query, but it does not return all Experiments that
+      the user has access to.
+  """
+  myeras(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Era]
+
+  """
+  All Instruments
+
+      This query returns all Instruments that are stored on the platform
+      depending on the user's permissions. Generally, this query will return
+      all Instruments that the user has access to. If the user is an amdin
+      or superuser, all Instruments will be returned.
+  """
+  cameras(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    The substring you want to filter by
+    """
+    search: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Camera]
+
+  """
+  Get a single instrumes by ID
+
+      Returns a single instrument by ID. If the user does not have access
+      to the instrument, an error will be raised.
+  """
+  camera(
+    """
+    The ID to search by
+    """
+    id: ID
+
+    """
+    The name to search by
+    """
+    name: String
+  ): Camera
+
+  """
+  My samples return all of the users samples attached to the current user
+  """
+  tables(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdDay: DateTime
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Table]
+
+  """
+  My samples return all of the users samples attached to the current user
+  """
+  mytables(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdDay: DateTime
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Table]
+
+  """
+  Get a single representation by ID
+  """
+  table(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Table
+  columnsof(
+    """
+    The ID to search by
+    """
+    table: ID!
+
+    """
+    Filter by dtype
+    """
+    dtype: [PandasDType]
+
+    """
+    Filter by the value of the column
+    """
+    values: [ID]
+
+    """
+    Filter by name
+    """
+    search: String
+  ): [Column]
+
+  """
+  My samples return all of the users samples attached to the current user
+  """
+  graphs(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdDay: DateTime
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Graph]
+
+  """
+  My samples return all of the users samples attached to the current user
+  """
+  mygraphs(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdDay: DateTime
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Graph]
+
+  """
+  Get a single representation by ID
+  """
+  graph(
+    """
+    The ID to search by
+    """
+    id: ID!
+  ): Graph
+  plot(
+    """
+    The id of the plot
+    """
+    id: ID
+  ): Plot
+  myplots(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Plot]
+}
+
+"""
+A comment
+
+A comment is a user generated comment on a commentable object. A comment can be a reply to another comment or a top level comment.
+Comments can be nested to any depth. A comment can be edited and deleted by the user that created it.
+"""
+type Comment {
+  """
+  """
+  id: ID!
+
+  """
+  The content type of the commentable object
+  """
+  contentType: CommentableModels
+
+  """
+  """
+  objectId: Int!
+
+  """
+  """
+  user: User!
+
+  """
+  The text of the comment (without any formatting)
+  """
+  text: String
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  parent: Comment
+
+  """
+  The descendents of the comment (this referes to the Comment Tree)
+  """
+  descendents: [Descendent]
+
+  """
+  """
+  mentions: [User!]!
+
+  """
+  """
+  resolved: DateTime
+
+  """
+  """
+  resolvedBy: User
+
+  """
+  Comments that are replies to this comment
+  """
+  children(
+    """
+    How many children to return
+    """
+    limit: Int
+
+    """
+    The offset for the children
+    """
+    offset: Int
+  ): [Comment]
+}
+
+enum CommentableModels {
+  GRUNNLAG_USERMETA
+  GRUNNLAG_ANTIBODY
+  GRUNNLAG_OBJECTIVE
+  GRUNNLAG_CAMERA
+  GRUNNLAG_INSTRUMENT
+  GRUNNLAG_DATASET
+  GRUNNLAG_EXPERIMENT
+  GRUNNLAG_CONTEXT
+  GRUNNLAG_RELATION
+  GRUNNLAG_DATALINK
+  GRUNNLAG_EXPERIMENTALGROUP
+  GRUNNLAG_ANIMAL
+  GRUNNLAG_OMEROFILE
+  GRUNNLAG_MODEL
+  GRUNNLAG_SAMPLE
+  GRUNNLAG_STAGE
+  GRUNNLAG_CHANNEL
+  GRUNNLAG_POSITION
+  GRUNNLAG_ERA
+  GRUNNLAG_TIMEPOINT
+  GRUNNLAG_REPRESENTATION
+  GRUNNLAG_OMERO
+  GRUNNLAG_DIMENSIONMAP
+  GRUNNLAG_VIEW
+  GRUNNLAG_METRIC
+  GRUNNLAG_THUMBNAIL
+  GRUNNLAG_VIDEO
+  GRUNNLAG_ROI
+  GRUNNLAG_LABEL
+  GRUNNLAG_FEATURE
+  BORD_TABLE
+  BORD_GRAPH
+}
+
+"""
+User
+
+This object represents a user in the system. Users are used to
+control access to different parts of the system. Users are assigned
+to groups. A user has access to a part of the system if the user is
+a member of a group that has the permission assigned to it.
+
+Users can be be "creator" of objects. This means that the user has
+created the object. This is used to control access to objects. A user
+can only access objects that they have created, or objects that they
+have access to through a group that they are a member of.
+
+See the documentation for "Object Level Permissions" for more information.
+"""
+type User {
+  """
+  """
+  id: ID!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  groups: [Group!]!
+
+  """
+  Required. 150 characters or fewer. Letters, digits and @/./+/-/_ only.
+  """
+  username: String!
+
+  """
+  """
+  firstName: String!
+
+  """
+  """
+  lastName: String!
+
+  """
+  """
+  email: String!
+
+  """
+  """
+  sub: String
+
+  """
+  The prefered color of the user
+  """
+  color: String!
+
+  """
+  The name of the user
+  """
+  name: String!
+}
+
+"""
+Group
+
+This object represents a group in the system. Groups are used to
+control access to different parts of the system. Groups are assigned
+to users. A user has access to a part of the system if the user is
+a member of a group that has the permission assigned to it.
+"""
+type Group {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  permissions: [Permission!]!
+
+  """
+  The groups this user belongs to. A user will get all permissions granted to each of their groups.
+  """
+  userSet: [User!]!
+}
+
+"""
+A Permission object
+
+This object represents a permission in the system. Permissions are
+used to control access to different parts of the system. Permissions
+are assigned to groups and users. A user has access to a part of the
+system if the user is a member of a group that has the permission
+assigned to it.
+"""
+type Permission {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  codename: String!
+
+  """
+  """
+  groupSet: [Group!]!
+
+  """
+  Specific permissions for this user.
+  """
+  userSet: [User!]!
+
+  """
+  Unique ID for this permission
+  """
+  unique: String!
+}
+
+"""
+The `DateTime` scalar type represents a DateTime
+value as specified by
+[iso8601](https://en.wikipedia.org/wiki/ISO_8601).
+"""
+scalar DateTime
+
+"""
+A descendent of a node in the comment tree
+"""
+interface Descendent {
+  typename: String
+}
+
+"""
+Sharable Models are models that can be shared amongst users and groups. They representent the models of the DB
+"""
+enum SharableModels {
+  GRUNNLAG_USERMETA
+  GRUNNLAG_ANTIBODY
+  GRUNNLAG_OBJECTIVE
+  GRUNNLAG_CAMERA
+  GRUNNLAG_INSTRUMENT
+  GRUNNLAG_DATASET
+  GRUNNLAG_EXPERIMENT
+  GRUNNLAG_CONTEXT
+  GRUNNLAG_RELATION
+  GRUNNLAG_DATALINK
+  GRUNNLAG_EXPERIMENTALGROUP
+  GRUNNLAG_ANIMAL
+  GRUNNLAG_OMEROFILE
+  GRUNNLAG_MODEL
+  GRUNNLAG_SAMPLE
+  GRUNNLAG_STAGE
+  GRUNNLAG_CHANNEL
+  GRUNNLAG_POSITION
+  GRUNNLAG_ERA
+  GRUNNLAG_TIMEPOINT
+  GRUNNLAG_REPRESENTATION
+  GRUNNLAG_OMERO
+  GRUNNLAG_DIMENSIONMAP
+  GRUNNLAG_VIEW
+  GRUNNLAG_METRIC
+  GRUNNLAG_THUMBNAIL
+  GRUNNLAG_VIDEO
+  GRUNNLAG_ROI
+  GRUNNLAG_LABEL
+  GRUNNLAG_FEATURE
+  BORD_TABLE
+  BORD_GRAPH
+}
+
+type PermissionsOfReturn {
+  available: [Permission]
+  userAssignments: [UserAssignment]
+  groupAssignments: [GroupAssignment]
+}
+
+type UserAssignment {
+  permissions: [String]!
+
+  """
+  A query that returns an image path
+  """
+  user: User!
+}
+
+type GroupAssignment {
+  permissions: [String]!
+
+  """
+  A query that returns an image path
+  """
+  group: Group!
+}
+
+"\n    An experiment is a collection of samples and their representations.\n    It mimics the concept of an experiment in the lab and is the top level\n    object in the data model.\n\n    You can use the experiment to group samples and representations likewise\n    to how you would group files into folders in a file system.\n    "
+type Experiment {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+
+  """
+  The name of the experiment
+  """
+  name: String!
+
+  """
+  A short description of the experiment
+  """
+  description: String
+
+  """
+  A long description of the experiment
+  """
+  descriptionLong: String
+
+  """
+  A link to a paper describing the experiment
+  """
+  linkedPaper: String
+
+  """
+  An image to be used as a banner for the experiment
+  """
+  image: String
+
+  """
+  The time the experiment was created
+  """
+  createdAt: DateTime!
+
+  """
+  The user that created the experiment
+  """
+  creator: User
+
+  """
+  The users that have pinned the experiment
+  """
+  pinnedBy: [User!]!
+
+  """
+  Tags for the experiment
+  """
+  tags: [String]
+
+  """
+  """
+  contexts: [Context!]!
+
+  """
+  The experiment this file belongs to
+  """
+  omeroFiles: [OmeroFile!]!
+
+  """
+  The experiment this model belongs to
+  """
+  models: [Model!]!
+  samples(
+    creator: ID
+    experiments: [ID]
+
+    """
+    The name of the desired BioSeries
+    """
+    bioseries: String
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    The ids you want to filter by
+    """
+    ids: [ID]
+
+    """
+    The ids you want to filter by
+    """
+    representations: [ID]
+
+    """
+    Order by Keys
+    """
+    order: [String]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Sample]
+
+  """
+  The experiments this image belongs to
+  """
+  experiments: [Representation!]!
+
+  """
+  The Representatoin this Metric belongs to
+  """
+  metrics: [Metric!]!
+
+  """
+  The Experiment this Table belongs to.
+  """
+  tables: [Table!]!
+  pinned: Boolean
+  comments: [Comment]
+}
+
+type LokClient {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  iss: String!
+
+  """
+  """
+  clientId: String!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  app: LokApp!
+
+  """
+  """
+  grantType: LokClientGrantType!
+
+  """
+  """
+  objectiveCreatedThrough: [Objective!]!
+
+  """
+  """
+  cameraCreatedThrough: [Camera!]!
+
+  """
+  """
+  instrumentCreatedThrough: [Instrument!]!
+
+  """
+  """
+  datasetCreatedThrough: [Dataset!]!
+
+  """
+  """
+  experimentCreatedThrough: [Experiment!]!
+
+  """
+  """
+  contextCreatedThrough: [Context!]!
+
+  """
+  """
+  relationCreatedThrough: [Relation!]!
+
+  """
+  """
+  datalinkCreatedThrough: [DataLink!]!
+
+  """
+  """
+  omerofileCreatedThrough: [OmeroFile!]!
+
+  """
+  """
+  modelCreatedThrough: [Model!]!
+
+  """
+  """
+  sampleCreatedThrough: [Sample!]!
+
+  """
+  """
+  stageCreatedThrough: [Stage!]!
+
+  """
+  """
+  channelCreatedThrough: [Channel!]!
+
+  """
+  """
+  positionCreatedThrough: [Position!]!
+
+  """
+  """
+  eraCreatedThrough: [Era!]!
+
+  """
+  """
+  timepointCreatedThrough: [Timepoint!]!
+
+  """
+  """
+  representationCreatedThrough: [Representation!]!
+
+  """
+  """
+  omeroCreatedThrough: [Omero!]!
+
+  """
+  """
+  dimensionmapCreatedThrough: [DimensionMap!]!
+
+  """
+  """
+  viewCreatedThrough: [View!]!
+
+  """
+  """
+  metricCreatedThrough: [Metric!]!
+
+  """
+  """
+  thumbnailCreatedThrough: [Thumbnail!]!
+
+  """
+  """
+  videoCreatedThrough: [Video!]!
+
+  """
+  """
+  roiCreatedThrough: [ROI!]!
+
+  """
+  """
+  labelCreatedThrough: [Label!]!
+
+  """
+  """
+  featureCreatedThrough: [Feature!]!
+
+  """
+  """
+  tableCreatedThrough: [Table!]!
+
+  """
+  """
+  graphCreatedThrough: [Graph!]!
+}
+
+type LokApp {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  identifier: String!
+
+  """
+  """
+  version: String!
+
+  """
+  """
+  lokclientSet: [LokClient!]!
+}
+
+"""
+An enumeration.
+"""
+enum LokClientGrantType {
+  """
+  Backend (Client Credentials)
+  """
+  CLIENT_CREDENTIALS
+
+  """
+  Implicit Grant
+  """
+  IMPLICIT
+
+  """
+  Authorization Code
+  """
+  AUTHORIZATION_CODE
+
+  """
+  Password
+  """
+  PASSWORD
+
+  """
+  Django Session
+  """
+  SESSION
+}
+
+"""
+Objective(id, created_by, created_through, created_while, serial_number, name, magnification, na, immersion)
+"""
+type Objective {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  serialNumber: String!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  magnification: Float
+
+  """
+  """
+  na: Float
+
+  """
+  """
+  immersion: String
+
+  """
+  """
+  instruments: [Instrument!]!
+
+  """
+  Associated images through Omero
+  """
+  omeros(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Order the omeros: options are -acquired or acquired
+    """
+    order: String
+    timepoints: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Omero]
+
+  """
+  """
+  views: [View!]!
+  comments: [Comment]
+}
+
+"""
+Instrument(id, created_by, created_through, created_while, name, detectors, dichroics, filters, lot_number, manufacturer, model, serial_number)
+"""
+type Instrument {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  name: String!
+  detectors: GenericScalar
+  dichroics: GenericScalar
+  filters: GenericScalar
+
+  """
+  """
+  objectives: [Objective!]!
+
+  """
+  """
+  lotNumber: String
+
+  """
+  """
+  manufacturer: String
+
+  """
+  """
+  model: String
+
+  """
+  """
+  serialNumber: String
+
+  """
+  """
+  stageSet: [Stage!]!
+
+  """
+  Associated images through Omero
+  """
+  omeros(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Order the omeros: options are -acquired or acquired
+    """
+    order: String
+    timepoints: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Omero]
+
+  """
+  """
+  views: [View!]!
+  comments: [Comment]
+}
+
+"""
+The `GenericScalar` scalar type represents a generic
+GraphQL scalar value that could be:
+String, Boolean, Int, Float, List or Object.
+"""
+scalar GenericScalar
+
+"An Stage is a set of positions that share a common space on a microscope and can\n    be use to translate.\n\n\n    "
+type Stage {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+
+  """
+  The name of the stage
+  """
+  name: String!
+
+  """
+  The kind of acquisition
+  """
+  kind: AcquisitionKind
+
+  """
+  """
+  instrument: Instrument
+
+  """
+  The time the acquistion was created
+  """
+  createdAt: DateTime!
+
+  """
+  The user that created the stage
+  """
+  creator: User
+
+  """
+  The users that have pinned the stage
+  """
+  pinnedBy: [User!]!
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  Derived Images from this Image
+  """
+  positions(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+    stage: ID
+
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Position]
+
+  """
+  Is the table pinned by the active user
+  """
+  pinned: Boolean
+  comments: [Comment]
+}
+
+"\n    A dataset is a collection of data files and metadata files.\n    It mimics the concept of a folder in a file system and is the top level\n    object in the data model.\n\n    "
+type Dataset {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The time the experiment was created
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  parent: Dataset
+
+  """
+  The name of the experiment
+  """
+  name: String!
+
+  """
+  The users that have pinned the experiment
+  """
+  pinnedBy: [User!]!
+
+  """
+  Tags for the experiment
+  """
+  tags: [String]
+
+  """
+  """
+  children: [Dataset!]!
+
+  """
+  """
+  experiments: [Experiment!]!
+
+  """
+  """
+  contexts: [Context!]!
+
+  """
+  """
+  omerofiles: [OmeroFile!]!
+
+  """
+  """
+  models: [Model!]!
+
+  """
+  """
+  samples: [Sample!]!
+
+  """
+  """
+  stages: [Stage!]!
+
+  """
+  Associated images through Omero
+  """
+  representations(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Experiment the Sample of this Representation belongs to
+    """
+    experiments: [ID]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    samples: [ID]
+
+    """
+    Only show Representations without children
+    """
+    noChildren: Boolean
+
+    """
+    Only show Representations without parents
+    """
+    noParents: Boolean
+
+    """
+    Only show Representations that are derived from ROIs
+    """
+    isRoiDerived: Boolean
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    Filter by required Metric Keys (seperated by ,)
+    """
+    hasMetric: String
+
+    """
+    Order by Keys
+    """
+    order: [String]
+    variety: RepresentationVarietyInput
+    forceThumbnail: Boolean
+    creator: ID
+
+    """
+    The tags you want to filter by
+    """
+    derivedTags: [String]
+
+    """
+    The Stage this Representation belongs to
+    """
+    stages: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Representation]
+
+  """
+  """
+  tables: [Table!]!
+
+  """
+  """
+  graphs: [Graph!]!
+
+  """
+  Is the table pinned by the active user
+  """
+  pinned: Boolean
+}
+
+"""
+Context(id, created_by, created_through, created_while, name, created_at, experiment, creator)
+"""
+type Context {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+
+  """
+  The name of the context
+  """
+  name: String!
+
+  """
+  The time the context was created
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  experiment: Experiment
+
+  """
+  The user that created the context
+  """
+  creator: User
+
+  """
+  The users that have pinned the context
+  """
+  pinnedBy: [User!]!
+
+  """
+  Tags for the context
+  """
+  tags: [String]
+
+  """
+  """
+  links: [DataLink!]!
+
+  """
+  The contexts this model is valid for
+  """
+  models: [Model!]!
+}
+
+"""
+DataLink(id, created_by, created_through, created_while, x_content_type, x_id, y_content_type, y_id, relation, left_type, right_type, context, created_at, creator)
+"""
+type DataLink {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  X
+  """
+  xId: ID! @deprecated(reason: "Use leftId")
+
+  """
+  Y
+  """
+  yId: ID! @deprecated(reason: "Use rightId")
+
+  """
+  The relation between the two objects
+  """
+  relation: Relation!
+
+  """
+  Left Type
+  """
+  leftType: LinkableModels
+
+  """
+  Left Type
+  """
+  rightType: LinkableModels
+
+  """
+  """
+  context: Context
+
+  """
+  The time the sample was created
+  """
+  createdAt: DateTime!
+
+  """
+  The user that created the sample
+  """
+  creator: User
+
+  """
+  X
+  """
+  x: GenericObject @deprecated(reason: "Use left")
+
+  """
+  Y
+  """
+  y: GenericObject @deprecated(reason: "Use right")
+
+  """
+  X
+  """
+  left: GenericObject
+
+  """
+  Y
+  """
+  right: GenericObject
+
+  """
+  X
+  """
+  leftId: ID!
+
+  """
+  Y
+  """
+  rightId: ID!
+}
+
+"""
+Relation(id, created_by, created_through, created_while, name, description)
+"""
+type Relation {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The name of the relation
+  """
+  name: String!
+
+  """
+  A verbose description of the relation
+  """
+  description: String
+
+  """
+  The relation between the two objects
+  """
+  datalinkSet: [DataLink!]!
+}
+
+"""
+LinkableModels Models are models that can be shared amongst users and groups. They representent the models of the DB
+"""
+enum LinkableModels {
+  ADMIN_LOGENTRY
+  AUTH_PERMISSION
+  AUTH_GROUP
+  CONTENTTYPES_CONTENTTYPE
+  SESSIONS_SESSION
+  TAGGIT_TAG
+  TAGGIT_TAGGEDITEM
+  KOMMENT_COMMENT
+  DB_TESTMODEL
+  LOK_LOKUSER
+  LOK_LOKAPP
+  LOK_LOKCLIENT
+  GUARDIAN_USEROBJECTPERMISSION
+  GUARDIAN_GROUPOBJECTPERMISSION
+  GRUNNLAG_USERMETA
+  GRUNNLAG_ANTIBODY
+  GRUNNLAG_OBJECTIVE
+  GRUNNLAG_CAMERA
+  GRUNNLAG_INSTRUMENT
+  GRUNNLAG_DATASET
+  GRUNNLAG_EXPERIMENT
+  GRUNNLAG_CONTEXT
+  GRUNNLAG_RELATION
+  GRUNNLAG_DATALINK
+  GRUNNLAG_EXPERIMENTALGROUP
+  GRUNNLAG_ANIMAL
+  GRUNNLAG_OMEROFILE
+  GRUNNLAG_MODEL
+  GRUNNLAG_SAMPLE
+  GRUNNLAG_STAGE
+  GRUNNLAG_CHANNEL
+  GRUNNLAG_POSITION
+  GRUNNLAG_ERA
+  GRUNNLAG_TIMEPOINT
+  GRUNNLAG_REPRESENTATION
+  GRUNNLAG_OMERO
+  GRUNNLAG_DIMENSIONMAP
+  GRUNNLAG_VIEW
+  GRUNNLAG_METRIC
+  GRUNNLAG_THUMBNAIL
+  GRUNNLAG_VIDEO
+  GRUNNLAG_ROI
+  GRUNNLAG_LABEL
+  GRUNNLAG_FEATURE
+  BORD_TABLE
+  BORD_GRAPH
+  PLOTQL_PLOT
+}
+
+union GenericObject =
+    Representation
+  | ROI
+  | Feature
+  | Label
+  | Model
+  | Sample
+  | Experiment
+  | Stage
+  | Position
+
+"A Representation is 5-dimensional representation of an image\n\n    Mikro stores each image as sa 5-dimensional representation. The dimensions are:\n    - t: time\n    - c: channel\n    - z: z-stack\n    - x: x-dimension\n    - y: y-dimension\n\n    This ensures a unified api for all images, regardless of their original dimensions. Another main\n    determining factor for a representation is its variety:\n    A representation can be a raw image representating voxels (VOXEL)\n    or a segmentation mask representing instances of a class. (MASK)\n    It can also representate a human perception of the image (RGB) or a human perception of the mask (RGBMASK)\n\n    # Meta\n\n    Meta information is stored in the omero field which gives access to the omero-meta data. Refer to the omero documentation for more information.\n\n\n    #Origins and Derivations\n\n    Images can be filtered, which means that a new representation is created from the other (original) representations. This new representation is then linked to the original representations. This way, we can always trace back to the original representation.\n    Both are encapsulaed in the origins and derived fields.\n\n    Representations belong to *one* sample. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample\n    Each iamge has also a name, which is used to identify the image. The name is unique within a sample.\n    File and Rois that are used to create images are saved in the file origins and roi origins repectively.\n\n\n    "
+type Representation {
+  """
+  """
+  id: ID!
+  store: Store
+
+  """
+  The arrays shape format [c,t,z,y,x]
+  """
+  shape: [Int!]
+
+  """
+  The arrays dimension
+  """
+  dims: [String!]
+
+  """
+  Does this Model have attached Data?
+  """
+  hasArray: Boolean!
+
+  """
+  Cleartext name
+  """
+  name: String
+
+  """
+  A unique identifier for this array
+  """
+  unique: UUID!
+
+  """
+  The File Version of this Array
+  """
+  fileversion: String!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+  meta: GenericScalar
+
+  """
+  """
+  origins: [Representation!]!
+
+  """
+  """
+  fileOrigins: [OmeroFile!]!
+
+  """
+  """
+  tableOrigins: [Table!]!
+
+  """
+  Originating from rois
+  """
+  roiOrigins(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+    representation: ID
+    repname: String
+    creator: ID
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+    type: [RoiTypeInput]
+
+    """
+    How many levels to flatten the metrics
+    """
+    flatten: Int = 0
+
+    """
+    Should the query be recursive. E.g. span all origins of this as well?
+    """
+    recursive: Boolean = false
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [ROI]
+
+  """
+  The Sample this representation belosngs to
+  """
+  sample: Sample
+
+  """
+  The experiments this image belongs to
+  """
+  experiments: [Experiment!]!
+
+  """
+  """
+  description: String
+
+  """
+  The Representation can have vasrying types, consult your API
+  """
+  variety: RepresentationVariety!
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  creator: User
+
+  """
+  The users that have pinned the representation
+  """
+  pinnedBy: [User!]!
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  Derived Images from this Image
+  """
+  derived(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Experiment the Sample of this Representation belongs to
+    """
+    experiments: [ID]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    samples: [ID]
+
+    """
+    Only show Representations without children
+    """
+    noChildren: Boolean
+
+    """
+    Only show Representations without parents
+    """
+    noParents: Boolean
+
+    """
+    Only show Representations that are derived from ROIs
+    """
+    isRoiDerived: Boolean
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    Filter by required Metric Keys (seperated by ,)
+    """
+    hasMetric: String
+
+    """
+    Order by Keys
+    """
+    order: [String]
+    variety: RepresentationVarietyInput
+    forceThumbnail: Boolean
+    creator: ID
+
+    """
+    The tags you want to filter by
+    """
+    derivedTags: [String]
+
+    """
+    The Stage this Representation belongs to
+    """
+    stages: [ID]
+
+    """
+    How many levels to flatten the metrics
+    """
+    flatten: Int = 0
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Representation]
+  omero: Omero
+
+  """
+  Associated metrics of this Imasge
+  """
+  metrics(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The key you want to filter by
+    """
+    keys: [String]
+    sample: ID
+    experiment: ID
+    representation: ID
+
+    """
+    Order by Keys
+    """
+    order: [String]
+    creator: ID
+
+    """
+    How many levels to flatten the metrics
+    """
+    flatten: Int = 0
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Metric]
+
+  """
+  The rendered biomage
+  """
+  thumbnails: [Thumbnail!]!
+
+  """
+  The rendered bioimages
+  """
+  videos: [Video!]!
+
+  """
+  Associated rois
+  """
+  rois(
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+    representation: ID
+    repname: String
+    creator: ID
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+    type: [RoiTypeInput]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [ROI]
+
+  """
+  The Representation this Label instance belongs to
+  """
+  labels: [Label!]!
+
+  """
+  Associated tables
+  """
+  tables(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdDay: DateTime
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Table]
+
+  """
+  The ArkitektNext identifier
+  """
+  identifier: String
+  table(
+    """
+    Should we get the first item?
+    """
+    first: Boolean
+  ): Table
+  metric(key: String!): Metric
+  latestThumbnail: Thumbnail
+
+  """
+  Associated views
+  """
+  views(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    omero: ID
+    representation: ID
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    z: String
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForZ: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForT: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForX: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForY: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForC: Float
+
+    """
+    Filter by global
+    """
+    isGlobal: Boolean
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [View]
+  comments: [Comment]
+  pinned: Boolean
+  renders: [Render]
+}
+
+"""
+Store
+
+This scalar is used to represent zarr store objects and allows them to
+be serialized correct.
+Zarr Stores are used to retrieve multidimensional data, such as
+time series, images, and other data.
+
+This scalar is used to represent the data stored as an object on a S3 bucket
+this object representats a zarr store of an xarray
+"""
+scalar Store
+
+"""
+Leverages the internal Python implmeentation of UUID (uuid.UUID) to provide native UUID objects
+in fields, resolvers and input.
+"""
+scalar UUID
+
+type OmeroFile {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+
+  """
+  The type of the file
+  """
+  type: OmeroFileType!
+
+  """
+  The experiment this file belongs to
+  """
+  experiments: [Experiment!]!
+
+  """
+  the associaed file
+  """
+  file: File
+
+  """
+  The name of the file
+  """
+  name: String!
+
+  """
+  The time the file was created
+  """
+  createdAt: DateTime!
+
+  """
+  The user that created/uploaded the file
+  """
+  creator: User
+
+  """
+  Tags for the file
+  """
+  tags: [String]
+
+  """
+  """
+  derivedRepresentations: [Representation!]!
+
+  """
+  Url of a thumbnail
+  """
+  thumbnail: String
+}
+
+"""
+An enumeration.
+"""
+enum OmeroFileType {
+  """
+  Tiff
+  """
+  TIFF
+
+  """
+  Jpeg
+  """
+  JPEG
+
+  """
+  MSR File
+  """
+  MSR
+
+  """
+  Zeiss Microscopy File
+  """
+  CZI
+
+  """
+  Unwknon File Format
+  """
+  UNKNOWN
+}
+
+"A Representation of a Django File\n    "
+scalar File
+
+" A Table is a collection of tabular data.\n\n    It provides a way to store data in a tabular format and associate it with a Representation,\n    Sample or Experiment. It is a way to store data that might be to large to store in a\n    Feature or Metric on this Experiments. Or it might be data that is not easily represented\n    as a Feature or Metric.\n\n    Tables can be easily created from a pandas DataFrame and can be converted to a pandas DataFrame.\n    Its columns are defined by the columns of the DataFrame.\n\n    \n    "
+type Table {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+
+  """
+  Images that were used to create this table
+  """
+  repOrigins(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Experiment the Sample of this Representation belongs to
+    """
+    experiments: [ID]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    samples: [ID]
+
+    """
+    Only show Representations without children
+    """
+    noChildren: Boolean
+
+    """
+    Only show Representations without parents
+    """
+    noParents: Boolean
+
+    """
+    Only show Representations that are derived from ROIs
+    """
+    isRoiDerived: Boolean
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    Filter by required Metric Keys (seperated by ,)
+    """
+    hasMetric: String
+
+    """
+    Order by Keys
+    """
+    order: [String]
+    variety: RepresentationVarietyInput
+    forceThumbnail: Boolean
+    creator: ID
+
+    """
+    The tags you want to filter by
+    """
+    derivedTags: [String]
+
+    """
+    The Stage this Representation belongs to
+    """
+    stages: [ID]
+
+    """
+    How many levels to flatten the metrics
+    """
+    flatten: Int = 0
+
+    """
+    Should the query be recursive. E.g. span all origins of this as well?
+    """
+    recursive: Boolean = false
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Representation]
+
+  """
+  Sample this table belongs to
+  """
+  sample: Sample
+
+  """
+  The Experiment this Table belongs to.
+  """
+  experiment: Experiment
+
+  """
+  """
+  name: String!
+
+  """
+  Columns Data
+  """
+  columns(
+    """
+    Columns you want to select
+    """
+    filter: [String]
+  ): [Column]
+
+  """
+  The parquet store for the table
+  """
+  store: Parquet
+
+  """
+  """
+  pinnedBy: [User!]!
+
+  """
+  When the Table was created
+  """
+  createdAt: DateTime!
+
+  """
+  The creator of the Table
+  """
+  creator: User
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  """
+  derivedRepresentations: [Representation!]!
+
+  """
+  """
+  graphs: [Graph!]!
+
+  """
+  List of Records
+  """
+  query(
+    """
+    Columns you want to select
+    """
+    columns: [String]
+
+    """
+    The Offset for the query
+    """
+    offset: Int
+
+    """
+    The Limit for the query
+    """
+    limit: Int
+
+    """
+    The Query for the query
+    """
+    query: String
+  ): [GenericScalar]
+
+  """
+  Tables that were used to create this table
+  """
+  tableOrigins(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    creator: ID
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdDay: DateTime
+
+    """
+    How many levels to flatten the metrics
+    """
+    flatten: Int = 0
+
+    """
+    Should the query be recursive. E.g. span all origins of this as well?
+    """
+    recursive: Boolean = false
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Table]
+  comments: [Comment]
+
+  """
+  Is the table pinned by the active user
+  """
+  pinned: Boolean
+}
+
+"""
+Variety expresses the Type of Representation we are dealing with
+"""
+enum RepresentationVarietyInput {
+  """
+  Mask (Value represent Labels)
+  """
+  MASK
+
+  """
+  Voxel (Value represent Intensity)
+  """
+  VOXEL
+
+  """
+  RGB (First three channel represent RGB)
+  """
+  RGB
+
+  """
+  Unknown
+  """
+  UNKNOWN
+}
+
+"""
+Samples are storage containers for representations. A Sample is to be understood analogous to a Biological Sample. It existed in Time (the time of acquisiton and experimental procedure), was measured in space (x,y,z) and in different modalities (c). Sample therefore provide a datacontainer where each Representation of the data shares the same dimensions. Every transaction to our image data is still part of the original acuqistion, so also filtered images are refering back to the sample
+"""
+type Sample {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+  meta: GenericScalar
+
+  """
+  The name of the sample
+  """
+  name: String!
+
+  """
+  The experiments this sample belongs to
+  """
+  experiments: [Experiment!]!
+
+  """
+  The time the sample was created
+  """
+  createdAt: DateTime!
+
+  """
+  The user that created the sample
+  """
+  creator: User
+
+  """
+  The users that have pinned the sample
+  """
+  pinnedBy: [User!]!
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  Associated representations of this Sample
+  """
+  representations(
+    """
+    Search for substring of name
+    """
+    name: String
+
+    """
+    Created through which app
+    """
+    app: String
+
+    """
+    Filter by pinned
+    """
+    pinned: Boolean
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The tags you want to filter by
+    """
+    tags: [String]
+
+    """
+    The Experiment the Sample of this Representation belongs to
+    """
+    experiments: [ID]
+
+    """
+    The Dataset this image belongs to
+    """
+    datasets: [ID]
+    samples: [ID]
+
+    """
+    Only show Representations without children
+    """
+    noChildren: Boolean
+
+    """
+    Only show Representations without parents
+    """
+    noParents: Boolean
+
+    """
+    Only show Representations that are derived from ROIs
+    """
+    isRoiDerived: Boolean
+
+    """
+    Ordering
+    """
+    ordering: String
+
+    """
+    Filter by required Metric Keys (seperated by ,)
+    """
+    hasMetric: String
+
+    """
+    Order by Keys
+    """
+    order: [String]
+    variety: RepresentationVarietyInput
+    forceThumbnail: Boolean
+    creator: ID
+
+    """
+    The tags you want to filter by
+    """
+    derivedTags: [String]
+
+    """
+    The Stage this Representation belongs to
+    """
+    stages: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Representation]
+
+  """
+  The Sample this Metric belongs to
+  """
+  metrics: [Metric!]!
+
+  """
+  Sample this table belongs to
+  """
+  tables: [Table!]!
+  pinned: Boolean
+  comments: [Comment]
+}
+
+type Metric {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The Representatoin this Metric belongs to
+  """
+  representation: Representation
+
+  """
+  The Representatoin this Metric belongs to
+  """
+  experiment: Experiment
+
+  """
+  The Sample this Metric belongs to
+  """
+  sample: Sample
+
+  """
+  The Key
+  """
+  key: String!
+
+  """
+  Value
+  """
+  value: MetricValue
+
+  """
+  """
+  createdAt: DateTime!
+
+  """
+  """
+  creator: User
+  comments: [Comment]
+}
+
+"""
+A Metric Value
+
+This scalar ensures serializaiton of metric values. Metric values
+can be of different types, such as int, float, string, datetime, etc.
+
+However we impose a few rules on the metric values:
+- The value must be a scalar
+- The value must be a scalar that can be serialized to JSON
+"""
+scalar MetricValue
+
+"""
+A column in a table
+
+A Column describes the associated name and metadata of a column in a table.
+It gives access to the pandas and numpy dtypes of the column.
+"""
+type Column {
+  """
+  The Column Name
+  """
+  name: String
+
+  """
+  The FIeld Name
+  """
+  fieldName: String!
+
+  """
+  The Panda Types for the Column
+  """
+  pandasType: PandasDType
+
+  """
+  The Numpy Types for the Column
+  """
+  numpyType: String
+
+  """
+  Generic MetaData from Stuff
+  """
+  metadata: GenericScalar
+}
+
+enum PandasDType {
+  OBJECT
+  INT64
+  FLOAT64
+  BOOL
+  CATEGORY
+  DATETIME65
+  TIMEDELTA
+  UNICODE
+  DATETIME
+  DATETIMEZ
+  DATETIMETZ
+  DATETIME64
+  DATETIME64TZ
+  DATETIME64NS
+  DATETIME64NSUTC
+  DATETIME64NSZ
+  DATETIME64NSZUTC
+}
+
+"""
+A Parquet file
+
+This scalar is used to represent parquet files and allows them to be accesed trough
+the code generator python libraries with the correct type.
+
+On the python side this will be converted from and to a pandas dataframe.
+"""
+scalar Parquet
+
+"""
+Graph(id, created_by, created_through, created_while, name, used_columns, image)
+"""
+type Graph {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+
+  """
+  """
+  tables: [Table!]!
+
+  """
+  """
+  name: String!
+  usedColumns: GenericScalar
+
+  """
+  """
+  image: String
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  """
+  pinnedBy: [User!]!
+  comments: [Comment]
+}
+
+"A ROI is a region of interest in a representation.\n\n    This region is to be regarded as a view on the representation. Depending\n    on the implementatoin (type) of the ROI, the view can be constructed\n    differently. For example, a rectangular ROI can be constructed by cropping\n    the representation according to its 2 vectors. while a polygonal ROI can be constructed by masking the\n    representation with the polygon.\n\n    The ROI can also store a name and a description. This is used to display the ROI in the UI.\n\n    "
+type ROI {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The user that created the ROI
+  """
+  creator: User!
+
+  """
+  The vectors of the ROI
+  """
+  vectors: [Vector]
+
+  """
+  The Roi can have varying types, consult your API
+  """
+  type: ROIType!
+
+  """
+  The color of the ROI (for UI)
+  """
+  color: String
+
+  """
+  The time the ROI was created
+  """
+  createdAt: DateTime!
+
+  """
+  The Representation this ROI was original used to create (drawn on)
+  """
+  representation: Representation
+
+  """
+  The label of the ROI (for UI)
+  """
+  label: String
+
+  """
+  The users that pinned this ROI
+  """
+  pinnedBy: [User!]!
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  """
+  derivedPositions: [Position!]!
+
+  """
+  """
+  derivedRepresentations: [Representation!]!
+
+  """
+  The dimensions of the ROI. Only valid for rectangular ROIs
+  """
+  dimensions: RoiDimensions
+
+  """
+  Is the ROI pinned by the active user
+  """
+  pinned: Boolean
+  comments: [Comment]
+}
+
+type Vector {
+  """
+  X-coordinate
+  """
+  x: Float
+
+  """
+  Y-coordinate
+  """
+  y: Float
+
+  """
+  Z-coordinate
+  """
+  z: Float
+
+  """
+  T-coordinate
+  """
+  t: Float
+
+  """
+  C-coordinate
+  """
+  c: Float
+}
+
+"""
+An enumeration.
+"""
+enum ROIType {
+  """
+  Ellipse
+  """
+  ELLIPSE
+
+  """
+  POLYGON
+  """
+  POLYGON
+
+  """
+  Line
+  """
+  LINE
+
+  """
+  Rectangle
+  """
+  RECTANGLE
+
+  """
+  Path
+  """
+  PATH
+
+  """
+  Unknown
+  """
+  UNKNOWN
+
+  """
+  Frame
+  """
+  FRAME
+
+  """
+  Slice
+  """
+  SLICE
+
+  """
+  Point
+  """
+  POINT
+}
+
+"""
+The relative position of a sample on a microscope stage
+"""
+type Position {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  roiOrigins: [ROI!]!
+
+  """
+  """
+  stage: Stage!
+
+  """
+  The name of the possition
+  """
+  name: String!
+
+  """
+  pixelSize for x in microns
+  """
+  x: Float!
+
+  """
+  pixelSize for y in microns
+  """
+  y: Float!
+
+  """
+  pixelSize for z in microns
+  """
+  z: Float!
+
+  """
+  The users that have pinned the position
+  """
+  pinnedBy: [User!]!
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  Associated images through Omero
+  """
+  omeros(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Order the omeros: options are -acquired or acquired
+    """
+    order: String
+    timepoints: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Omero]
+
+  """
+  """
+  views: [View!]!
+
+  """
+  Is the table pinned by the active user
+  """
+  pinned: Boolean
+  comments: [Comment]
+}
+
+"Omero is a through model that stores the real world context of an image\n\n    This means that it stores the position (corresponding to the relative displacement to\n    a stage (Both are models)), objective and other meta data of the image.\n\n    "
+type Omero {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  representation: Representation!
+
+  """
+  """
+  cameras: [Camera!]!
+
+  """
+  """
+  positions: [Position!]!
+
+  """
+  Associated Timepoints
+  """
+  timepoints(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    deltaT: Float
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Timepoint]
+
+  """
+  """
+  objective: Objective
+  affineTransformation: AffineMatrix
+  planes: [Plane]
+  channels: [OmeroChannel]
+  scale: [Float]
+  physicalSize: PhysicalSize
+  acquisitionDate: DateTime
+  objectiveSettings: ObjectiveSettings
+  imagingEnvironment: ImagingEnvironment
+
+  """
+  """
+  instrument: Instrument
+
+  """
+  Associated maps of dimensions
+  """
+  dimensionMaps(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    dims: [Dimension]
+    index: Float
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [DimensionMap]
+
+  """
+  Associated views
+  """
+  views(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    omero: ID
+    representation: ID
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    z: String
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForZ: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForT: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForX: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForY: Float
+
+    """
+    The z you want to filter by either interger or slice string
+    """
+    activeForC: Float
+
+    """
+    Filter by global
+    """
+    isGlobal: Boolean
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [View]
+  comments: [Comment]
+}
+
+"""
+Camera(id, created_by, created_through, created_while, serial_number, name, model, bit_depth, sensor_size_x, sensor_size_y, physical_sensor_size_x, physical_sensor_size_y, physical_sensor_size_unit, manufacturer)
+"""
+type Camera {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  serialNumber: String!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  model: String
+
+  """
+  """
+  bitDepth: Int
+
+  """
+  """
+  sensorSizeX: Float
+
+  """
+  """
+  sensorSizeY: Float
+
+  """
+  """
+  physicalSensorSizeX: Float
+
+  """
+  """
+  physicalSensorSizeY: Float
+
+  """
+  """
+  physicalSensorSizeUnit: String
+
+  """
+  """
+  manufacturer: String
+
+  """
+  Associated images through Omero
+  """
+  omeros(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Order the omeros: options are -acquired or acquired
+    """
+    order: String
+    timepoints: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Omero]
+  comments: [Comment]
+}
+
+"""
+The relative position of a sample on a microscope stage
+"""
+type Timepoint {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  era: Era!
+
+  """
+  The time the experiment was created
+  """
+  createdAt: DateTime!
+
+  """
+  The name of the timepoint
+  """
+  name: String
+
+  """
+  """
+  deltaT: Float
+
+  """
+  The users that have pinned the position
+  """
+  pinnedBy: [User!]!
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  Associated images through Omero
+  """
+  omeros(
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Order the omeros: options are -acquired or acquired
+    """
+    order: String
+    timepoints: [ID]
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Omero]
+
+  """
+  """
+  views: [View!]!
+  comments: [Comment]
+  pinned: Boolean
+}
+
+"""
+Era(id, created_by, created_through, created_while, name, start, end, created_at)
+"""
+type Era {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The name of the era
+  """
+  name: String!
+
+  """
+  The start of the era
+  """
+  start: DateTime
+
+  """
+  The end of the era
+  """
+  end: DateTime
+
+  """
+  The time the experiment was created
+  """
+  createdAt: DateTime!
+
+  """
+  The users that have pinned the era
+  """
+  pinnedBy: [User!]!
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  Associated Timepoints
+  """
+  timepoints(
+    """
+    Filter by values
+    """
+    ids: [ID]
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    deltaT: Float
+
+    """
+    Ordering
+    """
+    order: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Timepoint]
+  comments: [Comment]
+  pinned: Boolean
+}
+
+"""
+View(id, created_by, created_through, created_while, omero, z_min, z_max, x_min, x_max, y_min, y_max, t_min, t_max, c_min, c_max, channel, position, objective, instrument, timepoint)
+"""
+type View {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  omero: Omero!
+
+  """
+  The index of the channel
+  """
+  zMin: Int
+
+  """
+  The index of the channel
+  """
+  zMax: Int
+
+  """
+  The index of the channel
+  """
+  xMin: Int
+
+  """
+  The index of the channel
+  """
+  xMax: Int
+
+  """
+  The index of the channel
+  """
+  yMin: Int
+
+  """
+  The index of the channel
+  """
+  yMax: Int
+
+  """
+  The index of the channel
+  """
+  tMin: Int
+
+  """
+  The index of the channel
+  """
+  tMax: Int
+
+  """
+  The index of the channel
+  """
+  cMin: Int
+
+  """
+  The index of the channel
+  """
+  cMax: Int
+
+  """
+  """
+  channel: Channel
+
+  """
+  """
+  position: Position
+
+  """
+  """
+  objective: Objective
+
+  """
+  """
+  instrument: Instrument
+
+  """
+  """
+  timepoint: Timepoint
+  z: Slice
+  t: Slice
+  c: Slice
+  x: Slice
+  y: Slice
+  accessors: [String]
+}
+
+"""
+Channel(id, created_by, created_through, created_while, name, emission_wavelength, excitation_wavelength, acquisition_mode, color)
+"""
+type Channel {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The name of the channel
+  """
+  name: String!
+
+  """
+  The emmission wavelength of the fluorophore in nm
+  """
+  emissionWavelength: Float
+
+  """
+  The excitation wavelength of the fluorophore in nm
+  """
+  excitationWavelength: Float
+
+  """
+  The acquisition mode of the channel
+  """
+  acquisitionMode: String
+
+  """
+  The default color for the channel (might be ommited by the rendered)
+  """
+  color: String
+
+  """
+  Associated maps of dimensions
+  """
+  dimensionMaps(
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    Search for substring of name
+    """
+    name: String
+    dims: [Dimension]
+    index: Float
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [DimensionMap]
+
+  """
+  """
+  views: [View!]!
+}
+
+"""
+DimensionMap(id, created_by, created_through, created_while, omero, channel, dimension, index)
+"""
+type DimensionMap {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  omero: Omero!
+
+  """
+  """
+  channel: Channel!
+
+  """
+  """
+  dimension: String!
+
+  """
+  The index of the channel
+  """
+  index: Int!
+}
+
+"""
+The dimension of the data
+"""
+enum Dimension {
+  X
+  Y
+  Z
+  T
+  C
+}
+
+"""
+The context of a transaction (e.g an assignment
+through a rekuest server)
+"""
+scalar Slice
+
+"""
+A model
+"""
+scalar AffineMatrix
+
+"""
+A plane in an image
+
+Plane follows the convention of the OME model, where the first index is the
+Z axis, the second is the Y axis, the third is the X axis, the fourth is the
+C axis, and the fifth is the T axis.
+
+It attached the image at the indicated index to the image and gives information
+about the plane (e.g. exposure time, delta t to the origin, etc.)
+"""
+type Plane {
+  """
+  Z index of the plane
+  """
+  z: Int
+
+  """
+  Y index of the plane
+  """
+  y: Int
+
+  """
+  X index of the plane
+  """
+  x: Int
+
+  """
+  C index of the plane
+  """
+  c: Int
+
+  """
+  Z index of the plane
+  """
+  t: Int
+
+  """
+  The planes X position on the stage of the microscope
+  """
+  positionX: Float
+
+  """
+  The planes Y position on the stage of the microscope
+  """
+  positionY: Float
+
+  """
+  The planes Z position on the stage of the microscope
+  """
+  positionZ: Float
+
+  """
+  The exposure time of the plane (e.g. Laser exposure)
+  """
+  exposureTime: Float
+
+  """
+  The Delta T to the origin of the image acqusition
+  """
+  deltaT: Float
+}
+
+"""
+A channel in an image
+
+Channels can be highly variable in their properties. This class is a
+representation of the most common properties of a channel.
+"""
+type OmeroChannel {
+  """
+  The name of the channel
+  """
+  name: String
+
+  """
+  The emmission wavelength of the fluorophore in nm
+  """
+  emmissionWavelength: Float
+
+  """
+  The excitation wavelength of the fluorophore in nm
+  """
+  excitationWavelength: Float
+
+  """
+  The acquisition mode of the channel
+  """
+  acquisitionMode: String
+
+  """
+  The default color for the channel (might be ommited by the rendered)
+  """
+  color: String
+}
+
+"""
+Physical size of the image
+
+Each dimensions of the image has a physical size. This is the size of the
+pixel in the image. The physical size is given in micrometers on a PIXEL
+basis. This means that the physical size of the image is the size of the
+pixel in the image * the number of pixels in the image. For example, if
+the image is 1000x1000 pixels and the physical size of the image is 3 (x params) x 3 (y params),
+micrometer, the physical size of the image is 3000x3000 micrometer. If the image
+
+The t dimension is given in ms, since the time is given in ms.
+The C dimension is given in nm, since the wavelength is given in nm.
+"""
+type PhysicalSize {
+  """
+  Physical size of *one* Pixel in the x dimension (in µm)
+  """
+  x: Float
+
+  """
+  Physical size of *one* Pixel in the t dimension (in µm)
+  """
+  y: Float
+
+  """
+  Physical size of *one* Pixel in the z dimension (in µm)
+  """
+  z: Float
+
+  """
+  Physical size of *one* Pixel in the t dimension (in ms)
+  """
+  t: Float
+
+  """
+  Physical size of *one* Pixel in the c dimension (in µm)
+  """
+  c: Float
+}
+
+"""
+Settings of the objective used to acquire the image
+
+Follows the OME model for objective settings
+"""
+type ObjectiveSettings {
+  """
+  The correction collar of the objective
+  """
+  correctionCollar: Float
+
+  """
+  The medium of the objective
+  """
+  medium: Medium
+
+  """
+  The numerical aperture of the objective
+  """
+  numericalAperture: Float
+
+  """
+  The working distance of the objective
+  """
+  workingDistance: Float
+}
+
+"""
+The medium of the imaging environment
+
+Important for the objective settings
+"""
+enum Medium {
+  AIR
+  GLYCEROL
+  OIL
+  OTHER
+  WATER
+}
+
+"""
+The imaging environment during the acquisition
+
+Follows the OME model for imaging environment
+"""
+type ImagingEnvironment {
+  """
+  The air pressure during the acquisition
+  """
+  airPressure: Float
+
+  """
+  The CO2 percentage in the environment
+  """
+  co2Percent: Float
+
+  """
+  The humidity of the imaging environment
+  """
+  humidity: Float
+
+  """
+  The temperature of the imaging environment
+  """
+  temperature: Float
+
+  """
+  A map of the imaging environment. Key value based
+  """
+  map: GenericScalar
+}
+
+type RoiDimensions {
+  """
+  The dimensions of the image
+  """
+  width: Float
+
+  """
+  Height of the image
+  """
+  height: Float
+}
+
+"""
+An enumeration.
+"""
+enum RoiTypeInput {
+  """
+  Ellipse
+  """
+  ELLIPSIS
+
+  """
+  POLYGON
+  """
+  POLYGON
+
+  """
+  Line
+  """
+  LINE
+
+  """
+  Rectangle
+  """
+  RECTANGLE
+
+  """
+  Path
+  """
+  PATH
+
+  """
+  Unknown
+  """
+  UNKNOWN
+
+  """
+  Frame
+  """
+  FRAME
+
+  """
+  Slice
+  """
+  SLICE
+
+  """
+  Point
+  """
+  POINT
+}
+
+"""
+An enumeration.
+"""
+enum RepresentationVariety {
+  """
+  Mask (Value represent Labels)
+  """
+  MASK
+
+  """
+  Voxel (Value represent Intensity)
+  """
+  VOXEL
+
+  """
+  RGB (First three channel represent RGB)
+  """
+  RGB
+
+  """
+  Unknown
+  """
+  UNKNOWN
+}
+
+"A Thumbnail is a render of a representation that is used to display the representation in the UI.\n\n    Thumbnails can also store the major color of the representation. This is used to color the representation in the UI.\n    "
+type Thumbnail {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The rendered biomage
+  """
+  representation: Representation!
+
+  """
+  """
+  blurhash: String
+
+  """
+  """
+  image: String
+
+  """
+  """
+  majorColor: String
+}
+
+type Video {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The rendered bioimages
+  """
+  representations: [Representation!]!
+
+  """
+  """
+  data: String
+
+  """
+  """
+  frontImage: String
+}
+
+"A Label is a trough model for image and features.\n\n    Its map an instance value of a representation\n    (e.g. a pixel value of a segmentation mask) to a set of corresponding features of the segmented\n    class instance.\n\n    There can only be one label per representation and class instance. You can then attach\n    features to the label.\n\n\n    "
+type Label {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The instance value of the representation (pixel value). Must be a value of the image array
+  """
+  instance: Int!
+
+  """
+  The name of the instance
+  """
+  name: String
+
+  """
+  The time the Label was created
+  """
+  createdAt: DateTime!
+
+  """
+  The user that created the Label
+  """
+  creator: User!
+
+  """
+  The Representation this Label instance belongs to
+  """
+  representation: Representation
+
+  """
+  The users that pinned this Label
+  """
+  pinnedBy: [User!]!
+
+  """
+  A comma-separated list of tags.
+  """
+  tags: [String]
+
+  """
+  Features attached to this Label
+  """
+  features(
+    """
+    Created through which app
+    """
+    app: String
+    createdAfter: DateTime
+    createdBefore: DateTime
+    createdAt: DateTime
+    createdDay: DateTime
+    createdWhile: [String]
+
+    """
+    Filter by values
+    """
+    ids: [ID]
+
+    """
+    The corresponding label that you want to filter by
+    """
+    label: ID
+    creator: Float
+
+    """
+    The key you want to filter by
+    """
+    keys: [String]
+
+    """
+    The substring you want to filter by
+    """
+    substring: String
+
+    """
+    Query limit
+    """
+    limit: Int
+
+    """
+    Query offset
+    """
+    offset: Int
+  ): [Feature]
+  feature(key: String!): Feature
+  comments: [Comment]
+  pinned: Boolean
+}
+
+"A Feature is a numerical key value pair that is attached to a Label.\n\n    You can model it for example as a key value pair of a class instance of a segmentation mask.\n    Representation -> Label0 -> Feature0\n                             -> Feature1\n                   -> Label1 -> Feature0\n\n    Features can be used to store any numerical value that is attached to a class instance.\n    THere can only ever be one key per label. If you want to store multiple values for a key, you can\n    store them as a list in the value field.\n\n    Feature are analogous to metrics on a representation, but for a specific class instance (Label)\n\n    "
+type Feature {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  The user that created the Feature
+  """
+  creator: User
+
+  """
+  The Label this Feature belongs to
+  """
+  label: Label
+
+  """
+  The key of the feature
+  """
+  key: String!
+
+  """
+  Value
+  """
+  value: FeatureValue
+  comments: [Comment]
+}
+
+"""
+A Feature Value
+
+This scalar ensures serializaiton of feature values. Feature values
+can be of different types, such as int, float, string, datetime, etc.
+
+However we impose a few rules on the metric values:
+- The value must be a scalar
+- The value must be a scalar that can be serialized to JSON
+"""
+scalar FeatureValue
+
+union Render = Video | Thumbnail
+
+"A\n\n    Mikro uses the omero-meta data to create representations of the file. See Representation for more information.\n    "
+type Model {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  createdBy: User
+
+  """
+  """
+  createdThrough: LokClient
+
+  """
+  """
+  createdWhile: String
+
+  """
+  """
+  datasets: [Dataset!]!
+
+  """
+  The kind of model
+  """
+  kind: ModelKind
+
+  """
+  The experiment this model belongs to
+  """
+  experiments: [Experiment!]!
+
+  """
+  The model data
+  """
+  data: ModelData
+
+  """
+  The name of the model
+  """
+  name: String!
+
+  """
+  The time the file was created
+  """
+  createdAt: DateTime!
+
+  """
+  The user that created/uploaded the file
+  """
+  creator: User
+
+  """
+  The contexts this model is valid for
+  """
+  contexts: [Context!]!
+  comments: [Comment]
+}
+
+"""
+What format is the model in?
+"""
+enum ModelKind {
+  ONNX
+  TENSORFLOW
+  PYTORCH
+  UNKNOWN
+}
+
+"""
+A model
+"""
+scalar ModelData
+
+"""
+What do the multiple positions in this acquistion represent?
+"""
+enum AcquisitionKind {
+  POSTION_IS_SAMPLE
+  POSITION_IS_ROI
+  UNKNOWN
+}
+
+type Tag {
+  """
+  """
+  id: ID!
+
+  """
+  """
+  name: String!
+
+  """
+  """
+  slug: String!
+}
+
+type Credentials {
+  status: String!
+  accessKey: String!
+  secretKey: String!
+  sessionToken: String!
+}
+
+union ProvenanceResult =
+    Context
+  | Experiment
+  | Representation
+  | ROI
+  | Sample
+  | Stage
+  | Table
+
+"""
+A plot is a template to generate a graph
+
+Its store a PlotQL query and a list of variables that can be used in the
+query. The variables are stored as a JSON object. The variables are
+validated against the query before the query is executed.
+
+This query then returns a graph that can be rendered in the frontend.
+"""
+type Plot {
+  """
+  """
+  id: ID!
+
+  """
+  The name of the plot
+  """
+  name: String!
+
+  """
+  A description of the plot
+  """
+  description: String!
+
+  """
+  When was this plot created
+  """
+  createdAt: DateTime!
+
+  """
+  When was this plot last updated
+  """
+  updatedAt: DateTime!
+
+  """
+  The PlotQL query (see documentation for PlotQL)
+  """
+  query: String!
+
+  """
+  The user who created this plot
+  """
+  creator: User!
+}
+
+"""
+The root Mutation
+"""
+type Mutation {
+  """
+  Create an Comment
+
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+
+
+      (only signed in users)
+  """
+  createComment(
+    """
+    The comment tree
+    """
+    descendents: [DescendendInput]!
+
+    """
+    The Representationss this sROI belongs to
+    """
+    object: ID!
+
+    """
+    The parent comment
+    """
+    parent: ID
+
+    """
+    The type model you want to comment on
+    """
+    type: CommentableModels!
+  ): Comment
+
+  """
+  Reply to an Comment
+
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+
+
+      (only signed in users)
+  """
+  replyTo(
+    """
+    The comment tree
+    """
+    descendents: [DescendendInput]!
+
+    """
+    The parent comment
+    """
+    parent: ID!
+  ): Comment
+
+  """
+  Create an Comment
+
+      This mutation resolves a comment. By resolving a comment, it will be marked as resolved,
+      and the user that resolved it will be set as the resolver.
+
+      (only signed in users)
+  """
+  resolveComment(
+    """
+    The comments id
+    """
+    id: ID!
+
+    """
+    Should we imitate the resolving by another user (requires imitate permission)
+    """
+    imitate: ID
+  ): Comment
+
+  """
+  Creates a Sample
+  """
+  changePermissions(
+    groupAssignments: [GroupAssignmentInput]
+
+    """
+    The Representationss this sROI belongs to
+    """
+    object: ID!
+    type: SharableModels!
+    userAssignments: [UserAssignmentInput]
+  ): ChangePermissionsResult
+
+  "Create an Experiment\n    \n    This mutation creates an Experiment and returns the created Experiment.\n    "
+  createExperiment(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The user that created this experiment (defaults to the logined user)
+    """
+    creator: String
+
+    """
+    A short description of the experiment
+    """
+    description: String
+
+    """
+    A name for the experiment
+    """
+    name: String!
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+  ): Experiment
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteExperiment(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeleteExperimentResult
+
+  " Update an Experiment\n    \n    This mutation updates an Experiment and returns the updated Experiment."
+  updateExperiment(
+    """
+    The user that created this experiment (defaults to the logined user)
+    """
+    creator: String
+
+    """
+    A short description of the experiment
+    """
+    description: String
+    id: ID!
+
+    """
+    The name of the experiment
+    """
+    name: String!
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+  ): Experiment
+
+  """
+  Pin Experiment
+
+      This mutation pins an Experiment and returns the pinned Experiment.
+  """
+  pinExperiment(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin state
+    """
+    pin: Boolean!
+  ): Experiment
+  associateSamples(experiment: ID!, samples: [ID]!): Experiment
+  unassociateSamples(experiment: ID!, samples: [ID]!): Experiment
+  associateFiles(experiment: ID!, files: [ID]!): Experiment
+  unassociateFiles(experiment: ID!, files: [ID]!): Experiment
+
+  """
+  Creates a Sample
+  """
+  createSample(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The email of the creator, only for backend app
+    """
+    creator: String
+
+    """
+    The Experiments this sample Belongs to
+    """
+    experiments: [ID]
+
+    """
+    Meta Parameters
+    """
+    meta: GenericScalar
+
+    """
+    A cleartext name for this Sample
+    """
+    name: String
+
+    """
+    Do you want to tag the representation?
+    """
+    tags: [String]
+  ): Sample
+
+  """
+  Creates a Sample
+  """
+  updateSample(
+    """
+    The Experiments this sample Belongs to
+    """
+    experiments: [ID]
+    id: ID!
+
+    """
+    Meta Parameters
+    """
+    meta: GenericScalar
+
+    """
+    A cleartext name for this Sample
+    """
+    name: String
+
+    """
+    Do you want to tag the representation?
+    """
+    tags: [String]
+  ): Sample
+
+  """
+  Create an experiment (only signed in users)
+  """
+  deleteSample(
+    """
+    A cleartext description what this representation represents as data
+    """
+    id: ID!
+  ): DeleteSampleResult
+
+  """
+  Sets the pin
+  """
+  pinSample(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin
+    """
+    pin: Boolean!
+  ): Sample
+
+  """
+  Updates an Representation (also retriggers meta-data retrieval from data stored in)
+  """
+  updateRepresentation(
+    """
+    Which representations were used to create this representation
+    """
+    origins: [ID]
+
+    """
+    The position within an acquisition
+    """
+    position: ID
+
+    """
+    Which sample does this representation belong to
+    """
+    rep: ID!
+
+    """
+    The sample
+    """
+    sample: ID
+
+    """
+    Tags
+    """
+    tags: [String]
+
+    """
+    The variety of the representation
+    """
+    variety: RepresentationVarietyInput
+  ): Representation
+
+  """
+  Create an experiment (only signed in users)
+  """
+  deleteRepresentation(
+    """
+    The ID of the two deletet Representation
+    """
+    id: ID!
+  ): DeleteRepresentationResult
+
+  """
+  Create an experiment (only signed in users)
+  """
+  freeRepresentation(
+    """
+    The ID of the two deletet Representation
+    """
+    id: ID!
+  ): Representation
+
+  """
+  Creates a Representation
+  """
+  fromXArray(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The Email of the user creating the Representation (only for backend apps)
+    """
+    creator: String
+
+    """
+    Which datasets does this representation belong to
+    """
+    datasets: [ID]
+
+    """
+    Which experiments does this representation belong to
+    """
+    experiments: [ID]
+
+    """
+    Which files were used to create this representation
+    """
+    fileOrigins: [ID]
+
+    """
+    Meta Parameters
+    """
+    meta: GenericScalar
+
+    """
+    A cleartext description what this representation represents as data
+    """
+    name: String
+    omero: OmeroRepresentationInput
+
+    """
+    Which representations were used to create this representation
+    """
+    origins: [ID]
+
+    """
+    Which rois were used to create this representation
+    """
+    roiOrigins: [ID]
+
+    """
+    Which sample does this representation belong to
+    """
+    sample: ID
+
+    """
+    Which tables were used to create this representation (e.g simulation parameters)
+    """
+    tableOrigins: [ID]
+
+    """
+    Do you want to tag the repsresentation?
+    """
+    tags: [String]
+
+    """
+    A description of the variety
+    """
+    variety: RepresentationVarietyInput
+
+    """
+    Views for this representation
+    """
+    views: [RepresentationViewInput]
+
+    """
+    The X Arra
+    """
+    xarray: XArrayInput!
+  ): Representation
+
+  """
+  Sets the pin
+  """
+  pinRepresentation(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin
+    """
+    pin: Boolean!
+  ): Representation
+
+  "Create a metric\n\n    This mutation creates a metric and returns the created metric.\n    \n    "
+  createMetric(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The Email of the user creating the Representation (only for backend apps)
+    """
+    creator: String
+
+    """
+    Which Representaiton does this metric belong to
+    """
+    experiment: ID
+
+    """
+    A cleartext description what this representation represents as data
+    """
+    key: String!
+
+    """
+    Which Representaiton does this metric belong to
+    """
+    representation: ID
+
+    """
+    Which Representaiton does this metric belong to
+    """
+    sample: ID
+    value: MetricValue!
+  ): Metric
+  uploadThumbnail(
+    blurhash: String
+
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+    file: ImageFile!
+    majorColor: String
+
+    """
+    The repr
+    """
+    rep: ID!
+  ): Thumbnail
+
+  "Upload a file to Mikro\n\n    This mutation uploads a file to Omero and returns the created OmeroFile.\n    "
+  uploadOmeroFile(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+    datasets: [ID]
+    experiments: [ID]
+    file: ImageFile!
+    name: String
+  ): OmeroFile
+
+  """
+  Delete OmeroFile
+  """
+  deleteOmeroFile(
+    """
+    The ID of the two deleted File
+    """
+    id: ID!
+  ): DeleteOmeroFileResult
+
+  """
+  Update an omero file
+  """
+  updateOmeroFile(
+    """
+    The omero file you want to update
+    """
+    id: ID!
+
+    """
+    The updated tags ( old tags will be deleted)
+    """
+    tags: [String]
+  ): OmeroFile
+  negotiate(
+    """
+    Additional Parameters
+    """
+    additionals: GenericScalar
+
+    """
+    is this now a boolean
+    """
+    internal: Boolean
+  ): GenericScalar
+
+  """
+  Creates a Sample
+  """
+  createROI(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The email of the creator, only for backend app
+    """
+    creator: ID
+
+    """
+    The label of the ROI
+    """
+    label: String
+
+    """
+    Meta Parameters
+    """
+    meta: GenericScalar
+
+    """
+    The Representation this ROI belongs to
+    """
+    representation: ID!
+
+    """
+    Do you want to tag the roi?
+    """
+    tags: [String]
+
+    """
+    The type of ROI
+    """
+    type: RoiTypeInput!
+
+    """
+    The Experiments this sample Belongs to
+    """
+    vectors: [InputVector]!
+  ): ROI
+
+  """
+  Creates a Sample
+  """
+  createROIS(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The email of the creator, only for backend app
+    """
+    creator: ID
+
+    """
+    The label of the ROI
+    """
+    labels: [String]
+
+    """
+    Meta Parameters
+    """
+    meta: GenericScalar
+
+    """
+    The Representation this ROI belongs to
+    """
+    representation: ID!
+
+    """
+    Do you want to tag the roi?
+    """
+    tags: [String]
+
+    """
+    The type of ROI
+    """
+    type: RoiTypeInput!
+
+    """
+    the List of Vectors
+    """
+    vectorsList: [[InputVector]]
+  ): Representation
+
+  """
+  Create an experiment (only signed in users)
+  """
+  deleteROI(
+    """
+    A cleartext description what this representation represents as data
+    """
+    id: ID!
+  ): DeleteROIResult
+
+  """
+  Sets the pin
+  """
+  pinROI(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin
+    """
+    pin: Boolean!
+  ): ROI
+
+  """
+  Creates a Feature
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createfeature(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The creator of this feature
+    """
+    creator: ID
+
+    """
+    The key of the feature
+    """
+    key: String
+
+    """
+    The Label this Feature belongs to
+    """
+    label: ID!
+
+    """
+    The value of the feature
+    """
+    value: FeatureValue!
+  ): Feature
+
+  "Creates a Label\n    \n    This mutation creates a Label and returns the created Label.\n    We require a reference to the image pixel value that the label belongs to.\n    (Labels can be created for any pixel in an image, no matter if this image\n    is a mask or not). However labels can only be created for pixels that are\n    integer values.\n\n    \n\n    "
+  createLabel(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The creator of this label
+    """
+    creator: ID
+
+    """
+    The instance this Label belongs to
+    """
+    instance: Int!
+
+    """
+    The label name
+    """
+    name: String
+
+    """
+    The Representation this Label belongs to
+    """
+    representation: ID!
+  ): Label
+
+  "Creates an Instrument\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    "
+  createInstrument(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    Which Representaiton does this metric belong to
+    """
+    detectors: [GenericScalar]
+
+    """
+    Which Representaiton does this metric belong to
+    """
+    dichroics: [GenericScalar]
+
+    """
+    Which Representaiton does this metric belong to
+    """
+    filters: [GenericScalar]
+    lotNumber: String
+    manufacturer: String
+    model: String
+    name: String!
+
+    """
+    Which objectives are installed on this instrument
+    """
+    objectives: [ID]
+    serialNumber: String
+  ): Instrument
+
+  """
+  Creates a Stage
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createStage(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The creator of this position
+    """
+    creator: ID
+
+    """
+    The acquisition this position belongs to
+    """
+    instrument: ID
+
+    """
+    The name of the position
+    """
+    name: String
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+  ): Stage
+
+  " Update an Experiment\n    \n    This mutation updates an Experiment and returns the updated Experiment."
+  updateStage(
+    id: ID!
+
+    """
+    The name of the experiment
+    """
+    name: String!
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+  ): Stage
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteStage(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeleteStageResult
+
+  """
+  Pin Stage
+
+      This mutation pins an Experiment and returns the pinned Experiment.
+  """
+  pinStage(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin state
+    """
+    pin: Boolean!
+  ): Stage
+
+  """
+  Creates a Feature
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createPosition(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The creator of this position
+    """
+    creator: ID
+
+    """
+    The name of the position
+    """
+    name: String
+
+    """
+    The Rois that were used to define this position
+    """
+    roiOrigins: [ID]
+
+    """
+    The stage this position belongs to
+    """
+    stage: ID!
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+
+    """
+    The tolerance offset before we create a new position
+    """
+    tolerance: Float
+
+    """
+    The x coord of the position (relative to origin)
+    """
+    x: Float!
+
+    """
+    The y coord of the position (relative to origin)
+    """
+    y: Float!
+
+    """
+    The z coord of the position (relative to origin)
+    """
+    z: Float!
+  ): Position
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deletePosition(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeletePositionResult
+
+  """
+  Pin Acquisition
+
+      This mutation pins an Experiment and returns the pinned Experiment.
+  """
+  pinPosition(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin state
+    """
+    pin: Boolean!
+  ): Position
+
+  """
+  Add Posistion
+
+      This mutation adds a position to an experiment and returns the experiment.
+  """
+  addPosition(
+    """
+    The ID of the omero
+    """
+    omero: ID!
+
+    """
+    The ID of the position to add to the representation
+    """
+    position: ID!
+  ): Omero
+
+  """
+  Remove Posistion
+
+      This mutation adds a position to an experiment and returns the experiment.
+  """
+  removePosition(
+    """
+    The ID of the omero
+    """
+    omero: ID!
+
+    """
+    The ID of the position to remove from representation
+    """
+    position: ID!
+  ): Omero
+
+  "Creates an Instrument\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    "
+  createObjective(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+    immersion: String
+    magnification: Float!
+    manufacturer: String
+    na: Float
+    name: String!
+    serialNumber: String!
+  ): Objective
+
+  "Creates an Instrument\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    "
+  createModel(
+    """
+    Which training data does this model use?
+    """
+    contexts: [ID]
+
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The model
+    """
+    data: ModelFile!
+
+    """
+    Which training data does this model use?
+    """
+    experiments: [ID]
+
+    """
+    Which kind of model is this?
+    """
+    kind: ModelKind!
+    name: String!
+  ): Model
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteModel(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeleteModelResult
+
+  """
+  Create an Comment
+
+      This mutation creates a comment. It takes a commentable_id and a commentable_type.
+      If this is the first comment on the commentable, it will create a new comment thread.
+      If there is already a comment thread, it will add the comment to the thread (by setting
+      it's parent to the last parent comment in the thread).
+
+      CreateComment takes a list of Descendents, which are the comment tree. The Descendents
+      are a recursive structure, where each Descendent can have a list of Descendents as children.
+      The Descendents are either a Leaf, which is a text node, or a MentionDescendent, which is a
+      reference to another user on the platform.
+
+      Please convert your comment tree to a list of Descendents before sending it to the server.
+      TODO: Add a converter from a comment tree to a list of Descendents.
+
+
+      (only signed in users)
+  """
+  link(
+    """
+    The experiment this link is part of (optional), gives context to the link
+    """
+    context: ID
+
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The id of the model you want to link from
+    """
+    leftId: ID!
+
+    """
+    The type model you want to link from
+    """
+    leftType: LinkableModels!
+
+    """
+    The type of relation
+    """
+    relation: ID!
+
+    """
+    The id of the model you want to link to
+    """
+    rightId: ID!
+
+    """
+    The type model you want to link to
+    """
+    rightType: LinkableModels!
+  ): DataLink
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteLink(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeleteLinkResult
+
+  "Create an Experiment\n    \n    This mutation creates an Experiment and returns the created Experiment.\n    "
+  createDataset(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    A name for the experiment
+    """
+    name: String!
+
+    """
+    The parent of this dataset
+    """
+    parent: ID
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+  ): Dataset
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteDataset(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeleteDatasetResult
+
+  " Update an Experiment\n    \n    This mutation updates an Experiment and returns the updated Experiment."
+  updateDataset(
+    id: ID!
+
+    """
+    The name of the experiment
+    """
+    name: String!
+
+    """
+    The parent experiment
+    """
+    parent: ID
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+  ): Dataset
+
+  """
+  Pin Experiment
+
+      This mutation pins an Experiment and returns the pinned Experiment.
+  """
+  pinDataset(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin state
+    """
+    pin: Boolean!
+  ): Dataset
+  putSamples(dataset: ID!, samples: [ID]!): Dataset
+  releaseSamples(dataset: ID!, samples: [ID]!): Dataset
+  putDatasets(dataset: ID!, datasets: [ID]!): Dataset
+  releaseDatasets(dataset: ID!, datasets: [ID]!): Dataset
+  putRepresentations(dataset: ID!, representations: [ID]!): Dataset
+  releaseRepresentations(dataset: ID!, representations: [ID]!): Dataset
+  putFiles(dataset: ID!, files: [ID]!): Dataset
+  releaseFiles(dataset: ID!, files: [ID]!): Dataset
+
+  "Create an Experiment\n    \n    This mutation creates an Experiment and returns the created Experiment.\n    "
+  createContext(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The experiment this context belongs to
+    """
+    experiment: ID
+
+    """
+    A name for the experiment
+    """
+    name: String!
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+  ): Context
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteContext(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeleteContextResult
+
+  "Upload a file to Mikro\n\n    This mutation uploads a file to Omero and returns the created OmeroFile.\n    "
+  uploadBigFile(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+    datasets: [ID]
+    file: BigFile!
+  ): OmeroFile
+
+  """
+  Presign a file for upload
+  """
+  presign(file: String!): Presigned
+
+  """
+  Creates a new Relation
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createRelation(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The description of the relation
+    """
+    description: String
+
+    """
+    The name of the relation
+    """
+    name: String!
+  ): Relation
+  uploadVideo(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+    file: BigFile!
+    frontImage: BigFile
+
+    """
+    The renderer representations
+    """
+    representations: [ID]!
+  ): Video
+
+  """
+  Creates a Feature
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createDimensionMap(
+    """
+    The channel you want to associate with this map
+    """
+    channel: ID
+
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The x coord of the position (relative to origin)
+    """
+    dim: Dimension!
+
+    """
+    The y coord of the position (relative to origin)
+    """
+    index: Int!
+
+    """
+    The stage this position belongs to
+    """
+    omero: ID!
+  ): DimensionMap
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteDimensionMap(
+    """
+    The ID of the map to delete
+    """
+    id: ID!
+  ): DeleteDimensionsMap
+
+  """
+  Creates a Feature
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createChannel(
+    """
+    The acquisition mode of the channel
+    """
+    acquisitionMode: String
+
+    """
+    The default color for the channel (might be ommited by the rendered)
+    """
+    color: String
+
+    """
+    The emmission wavelength of the fluorophore in nm
+    """
+    emissionWavelength: Float
+
+    """
+    The excitation wavelength of the fluorophore in nm
+    """
+    excitationWavelength: Float
+
+    """
+    The name of the channel
+    """
+    name: String
+  ): Channel
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteChannel(
+    """
+    The ID of the map to delete
+    """
+    id: ID!
+  ): DeleteChannelResult
+
+  """
+  Creates a Feature
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createView(
+    """
+    The view to create
+    """
+    view: ViewInput!
+  ): View
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteView(
+    """
+    The ID of the map to delete
+    """
+    id: ID!
+  ): DeleteViewReturn
+
+  """
+  Creates a Timepoint
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createTimepoint(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The x coord of the position (relative to origin)
+    """
+    deltaT: Float!
+
+    """
+    The stage this position belongs to
+    """
+    era: ID!
+
+    """
+    The name of the position
+    """
+    name: String
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+
+    """
+    The tolerance offset before we create a new timepoint
+    """
+    tolerance: Float
+  ): Timepoint
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteTimepoint(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeleteTimepointResult
+
+  """
+  Pin Acquisition
+
+      This mutation pins an Experiment and returns the pinned Experiment.
+  """
+  pinTimepoint(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin state
+    """
+    pin: Boolean!
+  ): Timepoint
+
+  """
+  Add Timepoint
+
+      This mutation adds a position to an experiment and returns the experiment.
+  """
+  addTimepoint(
+    """
+    The ID of the omero
+    """
+    omero: ID!
+
+    """
+    The ID of the position to remove from representation
+    """
+    timepoint: ID!
+  ): Omero
+
+  """
+  Add Posistion
+
+      This mutation adds a position to an experiment and returns the experiment.
+  """
+  removeTimepoint(
+    """
+    The ID of the omero
+    """
+    omero: ID!
+
+    """
+    The ID of the position to add to the representation
+    """
+    timepoint: ID!
+  ): Omero
+
+  """
+  Creates a Stage
+
+      This mutation creates a Feature and returns the created Feature.
+      We require a reference to the label that the feature belongs to.
+      As well as the key and value of the feature.
+
+      There can be multiple features with the same label, but only one feature per key
+      per label
+  """
+  createEra(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The end of this era
+    """
+    end: DateTime
+
+    """
+    The name of the era
+    """
+    name: String
+
+    """
+    The start of this era
+    """
+    start: DateTime
+
+    """
+    Tags for the experiment
+    """
+    tags: [String]
+  ): Era
+
+  """
+  Delete Experiment
+
+      This mutation deletes an Experiment and returns the deleted Experiment.
+  """
+  deleteEra(
+    """
+    The ID of the experiment to delete
+    """
+    id: ID!
+  ): DeleteEraResult
+
+  """
+  Pin Stage
+
+      This mutation pins an Experiment and returns the pinned Experiment.
+  """
+  pinEra(
+    """
+    The ID of the representation
+    """
+    id: ID!
+
+    """
+    The pin state
+    """
+    pin: Boolean!
+  ): Era
+
+  "Creates an Camera\n    \n    This mutation creates an Instrument and returns the created Instrument.\n    The serial number is required and the manufacturer is inferred from the serial number.\n    "
+  createCamera(
+    bitDepth: Int
+
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+    model: String
+    name: String!
+    physicalSensorSizeX: Float!
+    physicalSensorSizeY: Float!
+    sensorSizeX: Int!
+    sensorSizeY: Int!
+    serialNumber: String!
+  ): Camera
+
+  """
+  Updates an Representation (also retriggers meta-data retrieval from data stored in)
+  """
+  updateTable(
+    """
+    Which sample does this representation belong to
+    """
+    id: ID!
+  ): Table
+
+  """
+  Creates a Representation
+  """
+  createTable(
+    """
+    Do you want to tag the representation?
+    """
+    columns: [String]
+
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The Email of the user creating the Representation (only for backend apps)
+    """
+    creator: String
+
+    """
+    Which sample does this table belong to
+    """
+    experiment: ID
+
+    """
+    A cleartext description what this representation represents as data
+    """
+    name: String
+
+    """
+    Which sample does this table belong to
+    """
+    representation: ID
+
+    """
+    Which sample does this table belong to
+    """
+    sample: ID
+
+    """
+    Do you want to tag the representation?
+    """
+    tags: [String]
+  ): Table
+
+  """
+  Creates a Representation
+  """
+  fromDf(
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The Email of the user creating the Representation (only for backend apps)
+    """
+    creator: String
+    df: ParquetInput!
+
+    """
+    Which sample does this table belong to
+    """
+    experiment: ID
+
+    """
+    A cleartext description what this representation represents as data
+    """
+    name: String
+
+    """
+    Which sample does this table belong to
+    """
+    repOrigins: [ID]
+
+    """
+    Which sample does this table belong to
+    """
+    sample: ID
+
+    """
+    Do you want to tag the representation?
+    """
+    tags: [String]
+  ): Table
+
+  """
+  Create an experiment (only signed in users)
+  """
+  deleteTable(
+    """
+    The ID of the two deletet Representation
+    """
+    id: ID!
+  ): DeleteTableResult
+
+  """
+  Creates a Representation
+  """
+  createGraph(
+    """
+    The colums of the table that make up the graph
+    """
+    columns: [String]
+
+    """
+    The assignation id
+    """
+    createdWhile: AssignationID
+
+    """
+    The image of the graph
+    """
+    image: ImageFile!
+
+    """
+    A cleartext description what this representation represents as data
+    """
+    name: String
+
+    """
+    The tables that make up the graph
+    """
+    tables: [ID]
+
+    """
+    Do you want to tag the representation?
+    """
+    tags: [String]
+  ): Graph
+
+  """
+  Create an experiment (only signed in users)
+  """
+  deleteGraph(
+    """
+    The ID of the two deletet Representation
+    """
+    id: ID!
+  ): DeleteGraphResult
+
+  """
+  Create an experiment (only signed in users)
+  """
+  createPlot(
+    """
+    The name of the plot
+    """
+    name: String!
+  ): Plot
+
+  """
+  Create an experiment (only signed in users)
+  """
+  updatePlot(
+    """
+    The name of the plot
+    """
+    id: ID!
+
+    """
+    The query of the plot
+    """
+    name: String
+
+    """
+    The query of the plot
+    """
+    query: String
+  ): Plot
+
+  """
+  Create an experiment (only signed in users)
+  """
+  deletePlot(
+    """
+    A cleartext description what this representation represents as data
+    """
+    id: ID!
+  ): DeletePlotResult
+}
+
+input DescendendInput {
+  children: [DescendendInput]
+
+  """
+  The type of the descendent
+  """
+  typename: String
+
+  """
+  The user that is mentioned
+  """
+  user: String
+
+  """
+  Is this a bold leaf?
+  """
+  bold: Boolean
+
+  """
+  Is this a italic leaf?
+  """
+  italic: Boolean
+
+  """
+  Is this a code leaf?
+  """
+  code: Boolean
+
+  """
+  The text of the leaf
+  """
+  text: String
+}
+
+type ChangePermissionsResult {
+  success: Boolean
+  message: String
+}
+
+input GroupAssignmentInput {
+  permissions: [String]!
+  group: ID!
+}
+
+input UserAssignmentInput {
+  permissions: [String]!
+
+  """
+  The user id
+  """
+  user: String!
+}
+
+"""
+The context of a transaction (e.g an assignment
+through a rekuest server)
+"""
+scalar AssignationID
+
+type DeleteExperimentResult {
+  id: String
+}
+
+type DeleteSampleResult {
+  id: String
+}
+
+type DeleteRepresentationResult {
+  id: String
+}
+
+"""
+The Omero Meta Data of an Image
+
+Follows closely the omexml model. With a few alterations:
+- The data model of the datasets and experimenters is
+part of the mikro datamodel and are not accessed here.
+- Some parameters are ommited as they are not really used
+"""
+input OmeroRepresentationInput {
+  planes: [PlaneInput]
+  maps: [ID]
+  timepoints: [ID]
+  channels: [ChannelInput]
+  physicalSize: PhysicalSizeInput
+  affineTransformation: AffineMatrix
+  scale: [Float]
+  positions: [ID]
+  cameras: [ID]
+  acquisitionDate: DateTime
+  objectiveSettings: ObjectiveSettingsInput
+  imagingEnvironment: ImagingEnvironmentInput
+  instrument: ID
+  objective: ID
+}
+
+"""
+" A plane in an image
+
+Plane follows the convention of the OME model, where the first index is the
+Z axis, the second is the Y axis, the third is the X axis, the fourth is the
+C axis, and the fifth is the T axis.
+
+It attached the image at the indicated index to the image and gives information
+about the plane (e.g. exposure time, delta t to the origin, etc.)
+"""
+input PlaneInput {
+  """
+  Z index of the plane
+  """
+  z: Int
+
+  """
+  Y index of the plane
+  """
+  y: Int
+
+  """
+  X index of the plane
+  """
+  x: Int
+
+  """
+  C index of the plane
+  """
+  c: Int
+
+  """
+  Z index of the plane
+  """
+  t: Int
+
+  """
+  The planes X position on the stage of the microscope
+  """
+  positionX: Float
+
+  """
+  The planes Y position on the stage of the microscope
+  """
+  positionY: Float
+
+  """
+  The planes Z position on the stage of the microscope
+  """
+  positionZ: Float
+
+  """
+  The exposure time of the plane (e.g. Laser exposure)
+  """
+  exposureTime: Float
+
+  """
+  The Delta T to the origin of the image acqusition
+  """
+  deltaT: Float
+}
+
+"""
+A channel in an image
+
+Channels can be highly variable in their properties. This class is a
+representation of the most common properties of a channel.
+"""
+input ChannelInput {
+  """
+  The name of the channel
+  """
+  name: String
+
+  """
+  The emmission wavelength of the fluorophore in nm
+  """
+  emmissionWavelength: Float
+
+  """
+  The excitation wavelength of the fluorophore in nm
+  """
+  excitationWavelength: Float
+
+  """
+  The acquisition mode of the channel
+  """
+  acquisitionMode: String
+
+  """
+  The default color for the channel (might be ommited by the rendered)
+  """
+  color: String
+}
+
+"""
+Physical size of the image
+
+Each dimensions of the image has a physical size. This is the size of the
+pixel in the image. The physical size is given in micrometers on a PIXEL
+basis. This means that the physical size of the image is the size of the
+pixel in the image * the number of pixels in the image. For example, if
+the image is 1000x1000 pixels and the physical size of the image is 3 (x params) x 3 (y params),
+micrometer, the physical size of the image is 3000x3000 micrometer. If the image
+
+The t dimension is given in ms, since the time is given in ms.
+The C dimension is given in nm, since the wavelength is given in nm.
+"""
+input PhysicalSizeInput {
+  """
+  Physical size of *one* Pixel in the x dimension (in µm)
+  """
+  x: Float
+
+  """
+  Physical size of *one* Pixel in the t dimension (in µm)
+  """
+  y: Float
+
+  """
+  Physical size of *one* Pixel in the z dimension (in µm)
+  """
+  z: Float
+
+  """
+  Physical size of *one* Pixel in the t dimension (in ms)
+  """
+  t: Float
+
+  """
+  Physical size of *one* Pixel in the c dimension (in nm)
+  """
+  c: Float
+}
+
+"""
+Settings of the objective used to acquire the image
+
+Follows the OME model for objective settings
+"""
+input ObjectiveSettingsInput {
+  """
+  The correction collar of the objective
+  """
+  correctionCollar: Float
+
+  """
+  The medium of the objective
+  """
+  medium: Medium
+
+  """
+  The numerical aperture of the objective
+  """
+  numericalAperture: Float
+
+  """
+  The working distance of the objective
+  """
+  workingDistance: Float
+}
+
+"""
+The imaging environment during the acquisition
+
+Follows the OME model for imaging environment
+"""
+input ImagingEnvironmentInput {
+  """
+  The air pressure during the acquisition
+  """
+  airPressure: Float
+
+  """
+  The CO2 percentage in the environment
+  """
+  co2Percent: Float
+
+  """
+  The humidity of the imaging environment
+  """
+  humidity: Float
+
+  """
+  The temperature of the imaging environment
+  """
+  temperature: Float
+
+  """
+  A map of the imaging environment. Key value based
+  """
+  map: GenericScalar
+}
+
+input RepresentationViewInput {
+  """
+  The x coord of the position (relative to origin)
+  """
+  zMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  zMax: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  tMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  tMax: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  cMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  cMax: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  xMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  xMax: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  yMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  yMax: Int
+
+  """
+  The channel you want to associate with this map
+  """
+  channel: ID
+
+  """
+  The position you want to associate with this map
+  """
+  position: ID
+
+  """
+  The position you want to associate with this map
+  """
+  timepoint: ID
+
+  """
+  The assignation id
+  """
+  createdWhile: AssignationID
+}
+
+"""
+XArray scalar
+
+This scalar is used to represent xarray objects and allows them to
+be serialized correct.
+XArray objects are used to represent multidimensional data, such as
+time series, images, and other data.
+
+They are used in this project to represent the data of a Representation.
+The Python interface can used to extra and manipulate the data.
+
+This scalar is used to represent the data stored as an object on a S3 bucket
+this object representats a zarr store of an xarray
+"""
+scalar XArrayInput
+
+"""
+An Image File (png, jpg)
+
+[type]: [description]
+"""
+scalar ImageFile
+
+type DeleteOmeroFileResult {
+  id: String
+}
+
+input InputVector {
+  """
+  X-coordinate
+  """
+  x: Float
+
+  """
+  Y-coordinate
+  """
+  y: Float
+
+  """
+  Z-coordinate
+  """
+  z: Float
+
+  """
+  C-coordinate
+  """
+  c: Float
+
+  """
+  T-coordinate
+  """
+  t: Float
+}
+
+type DeleteROIResult {
+  id: String
+}
+
+type DeleteStageResult {
+  id: String
+}
+
+type DeletePositionResult {
+  id: String
+}
+
+"""
+A Model File
+"""
+scalar ModelFile
+
+type DeleteModelResult {
+  id: String
+}
+
+type DeleteLinkResult {
+  id: String
+}
+
+type DeleteDatasetResult {
+  id: String
+}
+
+type DeleteContextResult {
+  id: String
+}
+
+"""
+A big file uploaded to s3
+"""
+scalar BigFile
+
+type Presigned {
+  bucket: String!
+  fields: PresignedFields!
+}
+
+type PresignedFields {
+  key: String!
+  xAmzAlgorithm: String!
+  xAmzCredential: String!
+  xAmzDate: String!
+  xAmzSignature: String!
+  policy: String!
+}
+
+type DeleteDimensionsMap {
+  id: ID
+}
+
+type DeleteChannelResult {
+  id: ID
+}
+
+input ViewInput {
+  """
+  The stage this position belongs to
+  """
+  omero: ID!
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  zMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  zMax: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  tMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  tMax: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  cMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  cMax: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  xMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  xMax: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  yMin: Int
+
+  """
+  The x coord of the position (relative to origin)
+  """
+  yMax: Int
+
+  """
+  The channel you want to associate with this map
+  """
+  channel: ID
+
+  """
+  The position you want to associate with this map
+  """
+  position: ID
+
+  """
+  The position you want to associate with this map
+  """
+  timepoint: ID
+
+  """
+  The assignation id
+  """
+  createdWhile: AssignationID
+}
+
+type DeleteViewReturn {
+  id: ID
+}
+
+type DeleteTimepointResult {
+  id: String
+}
+
+type DeleteEraResult {
+  id: String
+}
+
+"A scalar to represent a parquet file\n    "
+scalar ParquetInput
+
+type DeleteTableResult {
+  id: String
+}
+
+type DeleteGraphResult {
+  id: String
+}
+
+type DeletePlotResult {
+  id: String
+}
+
+"""
+The root Subscriptions
+"""
+type Subscription {
+  "My Mentions\n\n    Returns an event of a new mention for the user if the user \n    was mentioned in a comment.\n    "
+  mymentions: MentionEvent
+  myRepresentations(
+    """
+    Only get updates for a certain origin
+    """
+    origin: ID
+
+    """
+    Stream children
+    """
+    streamChildren: Boolean
+  ): RepresentationEvent
+  myExperiments: ExperimentsEvent
+  mySamples: SamplesEvent
+  myTables: TablesEvent
+  rois(
+    """
+    The representation to filter on
+    """
+    representation: ID!
+  ): RoiEvent
+}
+
+type MentionEvent {
+  deleted: ID
+  update: Comment
+  create: Comment
+}
+
+type RepresentationEvent {
+  deleted: ID
+  update: Representation
+  create: Representation
+}
+
+type ExperimentsEvent {
+  deleted: ID
+  update: Experiment
+  create: Experiment
+}
+
+type SamplesEvent {
+  deleted: ID
+  update: Sample
+  create: Sample
+}
+
+type TablesEvent {
+  deleted: ID
+  update: Table
+  create: Table
+}
+
+type RoiEvent {
+  delete: ID
+  update: ROI
+  create: ROI
+}
+
+"""
+A node in the comment tree
+"""
+interface Node {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+}
+
+"""
+A leaf in the comment tree. Representations some sort of text
+"""
+type Leaf implements Descendent {
+  typename: String
+
+  """
+  Is this a bold leaf?
+  """
+  bold: Boolean
+
+  """
+  Is this a italic leaf?
+  """
+  italic: Boolean
+
+  """
+  Is this a code leaf?
+  """
+  code: Boolean
+
+  """
+  The text of the leaf
+  """
+  text: String
+}
+
+"""
+A mention in the comment tree. This  is a reference to another user on the platform
+"""
+type MentionDescendent implements Node & Descendent {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+  typename: String
+
+  """
+  The user that is mentioned
+  """
+  user: User!
+}
+
+"""
+A paragraph in the comment tree. This paragraph contains other nodes (list nodes)
+"""
+type ParagraphDescendent implements Node & Descendent {
+  children: [Descendent]
+  untypedChildren: GenericScalar
+  typename: String
+
+  """
+  The size of the paragraph
+  """
+  size: String
+}

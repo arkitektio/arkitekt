@@ -1,0 +1,28 @@
+name: Typecheck
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  basedpyright:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and set Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          python-version: "3.12"
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      # Advisory for now: report typing issues without failing the build.
+      # Flip continue-on-error to false (or remove it) once the debt is cleared.
+      - name: basedpyright
+        run: uv run basedpyright
+        continue-on-error: true

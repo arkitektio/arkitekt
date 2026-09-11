@@ -1,0 +1,32 @@
+name: Lint
+
+on:
+  push:
+    branches: [main, next]
+  pull_request:
+    branches: [main, next]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and set Python
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          python-version: "3.12"
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      # Advisory for now: report lint/format issues without failing the build.
+      # Flip continue-on-error to false (or remove it) once the debt is cleared.
+      - name: Ruff check
+        run: uv run ruff check .
+        continue-on-error: true
+
+      - name: Ruff format check
+        run: uv run ruff format --check .
+        continue-on-error: true

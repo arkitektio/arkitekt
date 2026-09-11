@@ -1,123 +1,143 @@
-# arkitekt
+<p align="center">
+  <h1 align="center">arkitekt-next</h1>
+</p>
 
-[![codecov](https://codecov.io/gh/jhnnsrs/arkitekt/branch/master/graph/badge.svg?token=UGXEA2THBV)](https://codecov.io/gh/jhnnsrs/arkitekt)
-[![PyPI version](https://badge.fury.io/py/arkitekt.svg)](https://pypi.org/project/arkitekt/)
-[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://pypi.org/project/arkitekt/)
-![Maintainer](https://img.shields.io/badge/maintainer-jhnnsrs-blue)
-[![PyPI pyversions](https://img.shields.io/pypi/pyversions/arkitekt.svg)](https://pypi.python.org/pypi/arkitekt/)
-[![PyPI status](https://img.shields.io/pypi/status/arkitekt.svg)](https://pypi.python.org/pypi/arkitekt/)
+<p align="center">
+  <em>Turn your Python functions into apps you can orchestrate, share, and scale.</em>
+</p>
 
-streaming analysis for mikroscopy
+<p align="center">
+  <a href="https://codecov.io/gh/jhnnsrs/arkitekt_next"><img src="https://codecov.io/gh/jhnnsrs/arkitekt_next/branch/master/graph/badge.svg?token=UGXEA2THBV" alt="codecov"></a>
+  <a href="https://pypi.org/project/arkitekt_next/"><img src="https://badge.fury.io/py/arkitekt_next.svg" alt="PyPI version"></a>
+  <a href="https://pypi.python.org/pypi/arkitekt_next/"><img src="https://img.shields.io/pypi/pyversions/arkitekt_next.svg" alt="PyPI pyversions"></a>
+  <a href="https://pypi.python.org/pypi/arkitekt_next/"><img src="https://img.shields.io/pypi/status/arkitekt_next.svg" alt="PyPI status"></a>
+  <a href="https://arkitekt.live"><img src="https://img.shields.io/badge/docs-arkitekt.live-blue" alt="Documentation"></a>
+</p>
 
-## Idea
+---
 
-arkitekt is the python client for the arkitekt platform. It allows you to utilize the full extent of the platform from your python code.
-To understand the idea behind arkitekt, you need to understand the idea behind the arkitekt platform.
-(More on this in the [documentation](https://arkitekt.live))
+## What is Arkitekt?
 
-## Features
+[**Arkitekt**](https://arkitekt.live) is an open platform for building, connecting, and orchestrating
+computational apps. `arkitekt-next` is its Python client: a framework that takes your ordinary Python
+functions and exposes them as **remotely callable, orchestratable building blocks** — without you having
+to write servers, APIs, message queues, or UIs.
 
-- Host your python functions and make them to your team
-- Use functions from your team in your code
-- Interact with and store data in a secure and scalable way on the platform
-- Use the platform as a central storage for your data
+Annotate a function, run your app, and it becomes available on an Arkitekt server where it can be:
 
-## Install
+- **Called** from anywhere — other apps, notebooks, scripts, or the web UI.
+- **Composed** into real-time workflows that wire your functions together.
+- **Given a GUI automatically**, generated from your Python type hints.
+- **Shared** with your team behind central authentication and permissions.
+- **Packaged and deployed** as a Docker container with a single command.
 
-```bash
-pip install arkitekt[all]
-```
+Arkitekt grew out of the needs of data-intensive science (it has first-class extensions for microscopy,
+imaging, and graph data), but the core is **domain-agnostic** — any Python workload fits.
 
-This installs all dependencies for the arkitekt platform, inlcuding the arkitekt CLI, which can be used to develop and create apps, containerize them and deploy t
+> 📚 The best place to understand the platform and its concepts is the documentation at **[arkitekt.live](https://arkitekt.live)**.
 
-
-arkitekt is relying heavily on asyncio patters and therfore supports python 3.8 and above. It also relies on the pydantic stack for serialization.
-
-
-## App 
-
-You can use the cli to create python based apps for the arkitekt platform, profiting from a battery of features like easy GUI creation based on
-type annotations, orchestration of real-time (in memoery) workflows, data hosting,  easy packaging and distribution in docker containers, etc...
-
-To get started create a directory and run
+## Installation
 
 ```bash
-arkitekt init
+pip install "arkitekt-next[all]"
 ```
 
-Which will lead you throught an app creation process.
-Apps can simply registered functions, through the register decorator
+This installs everything, including the `arkitekt-next` command line interface used to create, develop,
+containerize, and deploy apps.
+
+Prefer a lean install? The CLI and packaging tooling are always included — pick
+only the service extras you need:
+
+```bash
+pip install "arkitekt-next[mikro]"          # microscopy / imaging data
+pip install "arkitekt-next[fluss]"          # workflow orchestration
+pip install "arkitekt-next[elektro]"       # electrophysiology data
+pip install "arkitekt-next[alpaka]"         # want to talk to LLMs? This one's for you.
+```
+
+`arkitekt-next` requires **Python 3.11+** and builds on the `asyncio` and `pydantic` stacks.
+
+## Quickstart
+
+### 1. Create an app
+
+```bash
+mkdir my-app && cd my-app
+arkitekt-next init
+```
+
+This walks you through creating an app and writes a manifest (identifier, version, entrypoint, scopes)
+into `.arkitekt_next/`.
+
+### 2. Register your functions
+
+Any function you decorate with `@register` becomes a callable building block on the platform. Its
+arguments and return values are inferred from your type hints — which also drive validation,
+documentation, and the auto-generated GUI.
 
 ```python
-from arkitekt import register
+from arkitekt_next import register
 
-@register()
-def rpc_function(x: int, name: str) -> str
+
+@register
+def greet(name: str, excited: bool = False) -> str:
+    """Greet a person by name.
+
+    Args:
+        name: Who to greet.
+        excited: Add some enthusiasm.
     """
-    A rpc function that we can
-    simple call from anywhere
-
-    ""
-
+    greeting = f"Hello, {name}"
+    return greeting + "!" if excited else greeting
 ```
 
-And then connected to a local or remote server by running
-
-Run example:
+### 3. Run it
 
 ```bash
-arkitekt run dev
+arkitekt-next run dev
 ```
 
+`run dev` connects your app to a local or remote Arkitekt server with **hot reloading** — edit your
+code and the app reloads automatically. When you are ready for production, use `arkitekt-next run prod`.
 
-For more details on how to create an app follow the tutorials on https://arkitekt.live.
+## The CLI
 
-## Usage with complex Datastructures
+`arkitekt-next` is the command line for building and running Arkitekt apps.
+Standing up an Arkitekt server is the job of
+[konstruktor](https://github.com/arkitektio/konstruktor):
 
-Arkitekt takes care of serialization and documentation of standard python datastructures
+| Command | What it does |
+| --- | --- |
+| `init` · `run` · `gen` · `manifest` · `inspect` · `call` | Build, run and deploy apps from your Python code — scaffold, run locally (`run dev`/`run prod`), generate typed clients, manage the manifest, inspect, and call functions. |
+| `plugin` | Containerize your app into flavours and publish it as a deployable plugin. |
+| `mesh` | Join this machine to the deployment's private WireGuard mesh. |
+| `self` | Manage your Arkitekt install — upgrade the SDK, print versions, dump diagnostics. |
 
-- str
-- bool
-- int
-- float
-- Enum
-- Dict
-- List
-
-To increase performance and reduce latency it is not possible to serialize complex python objects like numpy arrays into the messages. These are best transformed into immutable objects on a centrally accessible storage and then only the reference is passed.
-
-Arkitekt does not impose any rules on how you handle this storage (see mikro for ideas), it provides however a simple api.
-
-```python
-
-class ComplexStructure:
-    id: str # A reference for this structure on central storage
-
-    async def shrink(self):
-        return self.id
-
-    @classmethod
-    async def expand(cls, value):
-        return cls.load_from_server(value)
-
-
+```bash
+arkitekt-next init         # scaffold an app
+arkitekt-next run dev      # run it with hot reloading
+konstruktor hub create         # stand up a server to run it against (separate tool)
 ```
 
-by providing two functions:
+See the full reference in **[docs/cli.md](docs/cli.md)**.
 
-- shrink
-- expand
+## Working with data
 
-You can now use this Structure with simple typehints and arkitekt will automaticall shrink (serialize) and expand (deserialize) the structure on calling.
+Arkitekt automatically serializes and documents standard Python types — `str`, `bool`, `int`, `float`,
+`Enum`, `list`, and `dict`. For heavier data (images, arrays, large objects), the platform follows a
+**store-by-reference** model: data lives in a central, scalable store and only a lightweight reference
+travels between apps. Extensions like [`mikro`](https://arkitekt.live) provide ready-made structures for
+this, and you can define your own.
 
-```python
+See the documentation for details on custom data structures and storage backends.
 
-def complex_call(x: ComplexStrucuture) -> int:
-    return x.max()
+## Documentation & links
 
-```
+- 📚 **Documentation:** [arkitekt.live](https://arkitekt.live)
+- 🧰 **CLI reference:** [docs/cli.md](docs/cli.md)
+- 📦 **PyPI:** [pypi.org/project/arkitekt-next](https://pypi.org/project/arkitekt_next/)
+- 🐙 **Source:** [github.com/jhnnsrs/arkitekt_next](https://github.com/jhnnsrs/arkitekt_next)
 
+## License
 
-
-Check out the arkitekt [documentation](https://arkitekt.live) for usage of this libary
-
+`arkitekt-next` is released under the [MIT License](LICENSE).

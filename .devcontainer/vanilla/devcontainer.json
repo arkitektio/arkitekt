@@ -1,0 +1,19 @@
+{
+    "name": "com.test.app vanilla Devcontainer",
+    "build": {
+        "dockerfile": "../../../../../../../tmp/pytest-of-jhnnsrs/pytest-28/test_kabinet_init_work_dir0/.arkitekt_next/flavours/vanilla/Dockerfile",
+        "context": "../.."
+    },
+    "runArgs": [
+        "--network=host"
+    ],
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "ms-python.python",
+                "ms-python.vscode-pylance",
+                "jhnnsrs.arkitekt-next"
+            ]
+        }
+    }
+}

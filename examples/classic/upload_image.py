@@ -3,7 +3,7 @@
  and how to access it again.
 
  It requires the following packages:
-    arkitekt
+    arkitekt_next
     mikro
  
  If you are not concerned about installing multiple packages, you can
@@ -16,14 +16,14 @@
 
 """
 
-from arkitekt import easy
-from mikro.api.schema import from_xarray
+from arkitekt_next import easy
+from mikro_next.api.schema import from_array_like
 import xarray as xr
 import numpy as np
 
-app = easy("upload_test")
+app = easy("upload_test", url="localhost")
 # Create a new app with the name "upload_test", we here use the
-# default url "http://localhost:11000", adjust this if you are running
+# default url "http://localhost:80", adjust this if you are running
 # the server on a different port or host ()
 
 
@@ -36,7 +36,7 @@ data = xr.DataArray(np.random.rand(100, 100), dims=["x", "y"])
 with app:
     # Every app needs to be run in a context manager
 
-    image = from_xarray(
+    image = from_array_like(
         data,
         name="test",
         tags=["test"],
