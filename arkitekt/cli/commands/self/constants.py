@@ -20,7 +20,7 @@ ARKITEKT_PACKAGES: List[str] = [
     "kabinet",
     "elektro",
     "fluss",
-    "unlok-next",
+    "unlok",
     "kraph",
     "alpaka",
     "turms",

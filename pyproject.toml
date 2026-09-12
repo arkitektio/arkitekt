@@ -50,7 +50,7 @@ lovekit = [
     "lovekit>=1.2.1",
 ]
 unlok = [
-    "unlok-next>=1.3.1",
+    "unlok>=2.0.0",
 ]
 # Qt integration (arkitekt.qt / the MagicBar). qtpy still needs an actual
 # binding (PyQt5/6 or PySide2/6) supplied by the application.
@@ -89,7 +89,7 @@ dev-dependencies = [
     "kraph>=0.5.1",
     "fluss>=2",
     "lovekit>=1.2.1",
-    "unlok-next>=1.3.1",
+    "unlok>=2.0.0",
     "elektro>=2.0.0",
 ]
 
