@@ -2,8 +2,10 @@ import os
 import json
 from typing import Optional
 
+from fakts.cache.file import ensure_private_dir
 
-def create_arkitekt_folder(with_cache: bool = True, base_dir: Optional[str] = None) -> str:
+
+def create_arkitekt_folder(with_cache: bool = False, base_dir: Optional[str] = None) -> str:
     """Creates the .arkitekt folder in the given directory (defaults to cwd).
 
     If the folder already exists, it does nothing.
@@ -13,7 +15,10 @@ def create_arkitekt_folder(with_cache: bool = True, base_dir: Optional[str] = No
     Parameters
     ----------
     with_cache : bool, optional
-        Should we create a cache dir?, by default True
+        Create an (empty) `cache/` subdirectory, by default False. The fakts
+        session cache no longer lives here -- it moved to a private per-user
+        directory, see `arkitekt.app.fakts._cache_path` -- so nothing writes
+        into it any more. Kept only for callers that still expect the folder.
     base_dir : str, optional
         Base directory to create the folder in. Defaults to os.getcwd().
 
@@ -24,9 +29,16 @@ def create_arkitekt_folder(with_cache: bool = True, base_dir: Optional[str] = No
     """
     root = base_dir or os.getcwd()
     folder = os.path.join(root, ".arkitekt")
-    os.makedirs(folder, exist_ok=True)
+
+    # 0700, not whatever the umask allows. This folder holds the fakts cache
+    # -- a live, rotating refresh token -- plus `servers/` and the credential
+    # JSONs the .gitignore written below exists to hide. A bare os.makedirs
+    # yields 0775 under the umask 002 that Debian and Ubuntu ship, which is
+    # what used to make fakts refuse to read its own cache and silently
+    # re-run the device-code flow.
+    ensure_private_dir(folder)
     if with_cache:
-        os.makedirs(os.path.join(folder, "cache"), exist_ok=True)
+        ensure_private_dir(os.path.join(folder, "cache"))
 
     gitignore = os.path.join(folder, ".gitignore")
     dockerignore = os.path.join(folder, ".dockerignore")

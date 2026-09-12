@@ -159,7 +159,7 @@ def qt(
         "force": force,
     }
 
-    create_arkitekt_folder(with_cache=True)
+    create_arkitekt_folder()
 
     try:
         from rich.logging import RichHandler

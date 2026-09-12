@@ -6,8 +6,7 @@ from machineid import id
 
 logger = logging.getLogger(__name__)
 
-APP_AUTHOR = "arkitekt.live"
-APP_NAME = "arkitekt"
+from arkitekt.constants import APP_AUTHOR, APP_NAME
 
 
 def get_or_set_node_id() -> str | None:
