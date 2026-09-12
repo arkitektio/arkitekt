@@ -233,7 +233,7 @@ all = [
     { name = "elektro" },
     { name = "fluss" },
     { name = "mikro" },
-    { name = "unlok-next" },
+    { name = "unlok" },
 ]
 alpaka = [
     { name = "alpaka" },
@@ -261,7 +261,7 @@ qt = [
     { name = "qtpy" },
 ]
 unlok = [
-    { name = "unlok-next" },
+    { name = "unlok" },
 ]
 
 [package.dev-dependencies]
@@ -284,7 +284,7 @@ dev = [
     { name = "qtpy" },
     { name = "rekuest" },
     { name = "ruff" },
-    { name = "unlok-next" },
+    { name = "unlok" },
 ]
 
 [package.metadata]
@@ -295,7 +295,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=2.0.0" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=2.0.0" },
-    { name = "fakts", specifier = ">=2" },
+    { name = "fakts", specifier = ">=2.1.0" },
     { name = "fluss", marker = "extra == 'all'", specifier = ">=2" },
     { name = "fluss", marker = "extra == 'fluss'", specifier = ">=2" },
     { name = "kabinet", specifier = ">=2" },
@@ -314,8 +314,8 @@ requires-dist = [
     { name = "semver", specifier = ">=3.0.4" },
     { name = "turms", specifier = ">=2.0.0" },
     { name = "typer", specifier = ">=0.15.0" },
-    { name = "unlok-next", marker = "extra == 'all'", specifier = ">=1.3.1" },
-    { name = "unlok-next", marker = "extra == 'unlok'", specifier = ">=1.3.1" },
+    { name = "unlok", marker = "extra == 'all'", specifier = ">=2.0.0" },
+    { name = "unlok", marker = "extra == 'unlok'", specifier = ">=2.0.0" },
     { name = "watchfiles", specifier = ">=1.0.5" },
 ]
 provides-extras = ["all", "alpaka", "cli", "elektro", "extended", "fluss", "kabinet", "kraph", "lovekit", "mikro", "qt", "unlok"]
@@ -340,7 +340,7 @@ dev = [
     { name = "qtpy", specifier = ">=2.4.3" },
     { name = "rekuest", specifier = ">=3" },
     { name = "ruff", specifier = ">=0.8" },
-    { name = "unlok-next", specifier = ">=1.3.1" },
+    { name = "unlok", specifier = ">=2.0.0" },
 ]
 
 [[package]]
@@ -691,7 +691,7 @@ wheels = [
 
 [[package]]
 name = "fakts"
-version = "2.0.0"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -699,9 +699,9 @@ dependencies = [
     { name = "koil" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/cc/8a/51bc35d234a1513f727c7845a96cb4a4835d7f84f699808088792f147721/fakts-2.0.0.tar.gz", hash = "sha256:379c5a3479bcb8b66fd3ae940493925bffad7a970ba2f774401a2b3fa2c85af2", size = 72890, upload-time = "2026-09-11T10:31:07.199Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/08/ef/bd7c9a9c76c7d961d457df00092f5af1cd459250ab19ac18bfd32ecf2258/fakts-2.1.0.tar.gz", hash = "sha256:4aebc7ea66e2291119964d609a5820e27796a819d9f6c10ef25d33efb8b5812b", size = 76675, upload-time = "2026-09-12T19:12:04.949Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/86/95/9225ea24e15ebac0a3d733d89bffebed2b38361f11d374fce5f6cc0840ad/fakts-2.0.0-py3-none-any.whl", hash = "sha256:0acbca458339aed58f360009903c121f824e3ec98a9bb4cbb54646194936c065", size = 90421, upload-time = "2026-09-11T10:31:06.144Z" },
+    { url = "https://files.pythonhosted.org/packages/82/b9/9bc27ad37c914bad6945cc0c9fee123c8ac485382ee774a426b80886e476/fakts-2.1.0-py3-none-any.whl", hash = "sha256:27f2b9139429a5ccaa987cb7fdb5fbda755b8b9d081aef655bc2b3d10be00f05", size = 94054, upload-time = "2026-09-12T19:12:03.822Z" },
 ]
 
 [[package]]
@@ -2431,17 +2431,16 @@ wheels = [
 ]
 
 [[package]]
-name = "unlok-next"
-version = "1.3.1"
+name = "unlok"
+version = "2.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "dokker" },
     { name = "rath" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/80/b3/5e6e8845457e3db2f5da1b0f7d08c7e26a02d3dab563b9c1a096326ad1e8/unlok_next-1.3.1.tar.gz", hash = "sha256:87c37a37cfcf4f12e808f1ab8762572e826a4cf74c1ef8ff673848aa828b311f", size = 30118, upload-time = "2026-04-09T15:38:23.459Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/bf/14f0e414ebc244b72aab37c430768ee9afd25374af90f963ef610cfbcd2b/unlok-2.0.0.tar.gz", hash = "sha256:71de0c473baa67a9bd673ccf9dfdc3fd051d3cc29a0686a8b4bd15f1b8169a39", size = 36469, upload-time = "2026-09-12T18:33:55.458Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/11/e6/29ffc6041af274ec2f9ab269cd4cfc936413c73018e3b209a78cc9f47288/unlok_next-1.3.1-py3-none-any.whl", hash = "sha256:daf4834612ea8a4c7e0856257a4b682bc67cf057446f8abbef13611a3ade352e", size = 32171, upload-time = "2026-04-09T15:38:22.227Z" },
+    { url = "https://files.pythonhosted.org/packages/4c/c0/40b2505b368c78b19a3f4c4605e8030ab7d83a6bc3744a193b3671e06199/unlok-2.0.0-py3-none-any.whl", hash = "sha256:9095cd017dff0ed34516eb7574b46026d982ecbd92fe4459d998a84ef0a394d3", size = 37267, upload-time = "2026-09-12T18:33:54.56Z" },
 ]
 
 [[package]]
