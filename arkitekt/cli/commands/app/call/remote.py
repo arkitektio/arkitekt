@@ -51,7 +51,7 @@ async def call_app(app: App, hash: str, kwargs: Dict[str, Any], options: Dict[st
     The call goes through the run's rekuest client, so only actions available on
     the connected server can be called -- this app's own functions are not served.
     """
-    from rekuest.rekuest import Rekuest
+    from rekuest.client.client import Rekuest
 
     # Through the module, so the connection stays replaceable (tests patch it).
     async with runtime.connect(app, **options) as rt:

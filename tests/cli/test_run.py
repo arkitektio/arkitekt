@@ -108,7 +108,7 @@ def test_call_args_are_read_as_json_when_they_parse():
 
 
 def test_call_remote_connects_the_app_and_calls_through_its_rekuest(app_dir, monkeypatch):
-    from rekuest.rekuest import Rekuest
+    from rekuest.client.client import Rekuest
 
     seen = {}
 
