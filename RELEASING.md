@@ -33,13 +33,14 @@ a release on their own.
 PyPI marks `…-rc.N` versions as prereleases, so a plain
 `pip install arkitekt` never picks them up — `next` is a safe soak channel.
 
-## Tag-based integration backend
+## Integration backends
 
-`integration.yaml` runs on `main` and `next` and sets `SERVICE_TAGS` (`latest` on
-`main`, `next` elsewhere). The integration suite (`tests/conftest.py`) spins up a
-full Arkitekt server deployment via `arkitekt_server.dev.temp_server`, so the
-prerelease line is tested against the prerelease backend and the stable line
-against `:latest`.
+arkitekt has no integration suite of its own and no `integration.yaml`: nothing here
+pins a backend image tag. (An earlier version of this section described a `SERVICE_TAGS`
+variable and a workflow that do not exist.) The packages that do stand up a backend --
+rekuest, mikro, elektro, kraph, kabinet, alpaka, lovekit, unlok, fluss, fakts -- default
+to `:latest` in both their compose file and their workflow, and opt into another
+published tag through a repository variable.
 
 ## Day-to-day
 
