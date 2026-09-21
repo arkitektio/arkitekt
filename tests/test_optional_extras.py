@@ -6,6 +6,7 @@ in every clean install. Nothing caught it because nothing imported the module --
 that is exactly the shape of failure a public convenience module has.
 """
 
+import io
 import tomllib
 from pathlib import Path
 
@@ -23,12 +24,54 @@ def test_the_tqdm_extra_declares_what_the_module_imports() -> None:
 
 
 def test_arkitekt_tqdm_imports() -> None:
-    """Skips when the extra is not installed; fails if it is and still breaks."""
+    """Skips when the extra is not installed; fails if it is and still breaks.
+
+    It broke twice over: `tqdm` was in no dependency list, and the class wrote
+    `_tqdm[T]`, which only resolves under a type checker -- `tqdm` is generic in
+    `types-tqdm` and a plain class at runtime, so the module raised `TypeError`
+    on import even once the dependency arrived.
+    """
     pytest.importorskip("tqdm", reason="the `tqdm` extra is not installed")
 
     from arkitekt.tqdm import tqdm
 
     assert issubclass(tqdm, __import__("tqdm").tqdm)
+
+
+def test_arkitekt_tqdm_reports_to_the_task_it_is_handed() -> None:
+    """The one thing the subclass exists for, never exercised until now."""
+    pytest.importorskip("tqdm", reason="the `tqdm` extra is not installed")
+
+    from arkitekt.tqdm import tqdm
+
+    reported: list[int] = []
+
+    class RecordingTask:
+        def progress(self, percentage: int, message: str | None = None) -> None:
+            reported.append(percentage)
+
+    # Not `disable=True`: tqdm's disabled `__iter__` is a fast path that never
+    # calls `update`, so the reporting this exists for would never run.
+    consumed = list(
+        tqdm(  # type: ignore[arg-type]
+            range(100),
+            task=RecordingTask(),
+            file=io.StringIO(),
+            mininterval=0,
+        )
+    )
+
+    assert consumed == list(range(100))
+    assert reported and reported == sorted(reported)
+    assert reported[-1] >= 90, reported
+
+
+def test_arkitekt_tqdm_without_a_task_is_a_plain_tqdm() -> None:
+    pytest.importorskip("tqdm", reason="the `tqdm` extra is not installed")
+
+    from arkitekt.tqdm import tqdm
+
+    assert list(tqdm(range(5), file=io.StringIO())) == list(range(5))
 
 
 def test_the_all_extra_bundles_every_service_client() -> None:

@@ -1,13 +1,13 @@
 """Small extension to tqdm that reports progress to the task it is handed."""
 
-from typing import Any, Iterable, Mapping, TypeVar
+from typing import Any, Generic, Iterable, Mapping, TypeVar
 from tqdm import tqdm as _tqdm
 from rekuest.task import Task
 
 T = TypeVar("T")
 
 
-class tqdm(_tqdm[T]):
+class tqdm(_tqdm, Generic[T]):
     """A tqdm that reports its progress to ``task``, and so to the Arkitekt UI.
 
         def segment(images: list[Image], task: Task) -> ...:
