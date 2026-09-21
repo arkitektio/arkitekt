@@ -1,7 +1,7 @@
 from typing import Annotated, Optional
 import typer
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.interactive import require_interactive
+from arkitekt.cli.tty import require_tty
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.utils import create_arkitekt_folder
 import os
@@ -119,7 +119,7 @@ def add_selector(
         cli_error(f"Flavour {flavour} does not exist")
 
     if kind is None:
-        require_interactive(
+        require_tty(
             "Choosing a selector kind",
             hint="Pass --kind to set it non-interactively.",
         )

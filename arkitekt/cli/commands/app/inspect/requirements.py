@@ -1,23 +1,16 @@
 from typing import Annotated
-from arkitekt import get_default_service_registry
 import typer
 
+from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.utils import emit_machine_readable
-from importlib import import_module
-from arkitekt.app.app import App
-from arkitekt.cli.commands.app.run.utils import import_builder
-from arkitekt.cli.vars import get_console, get_manifest
+from arkitekt.cli.vars import get_console
 import json
-import os
-
-
-async def run_app(app):
-    async with app:
-        await app.rekuest.run()
 
 
 def requirements(
     ctx: typer.Context,
+    target: TargetArgument = DEFAULT_TARGET,
     pretty: Annotated[
         bool,
         typer.Option("--pretty", "-p", help="Should we just output json?"),
@@ -29,29 +22,15 @@ def requirements(
 ):
     """Checks the requirements of the app
 
-    \n
+    What a run of the app needs of a deployment: its services' requirements and
+    those of the provider serving it, read off the declaration without connecting.
     """
 
-    manifest = get_manifest(ctx)
     console = get_console(ctx)
+    app = load_app_or_exit(ctx, target)
 
-    entrypoint = manifest.entrypoint
-    identifier = manifest.identifier
-    entrypoint_file = f"{manifest.entrypoint}.py"
-    os.path.realpath(entrypoint_file)
-
-    entrypoint = manifest.entrypoint
-
-    with console.status("Loading entrypoint module..."):
-        try:
-            import_module(entrypoint)
-        except ModuleNotFoundError as e:
-            console.print(f"Could not find entrypoint module {entrypoint}")
-            raise e
-
-    service_registry = get_default_service_registry()
-
-    x = [item.model_dump(by_alias=True) for item in service_registry.get_requirements()]
+    requirements = run_snapshot_or_exit(app).manifest.requirements
+    x = [item.model_dump(by_alias=True) for item in requirements]
 
     if machine_readable:
         emit_machine_readable("REQUIREMENTS", x)

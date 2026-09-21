@@ -2,7 +2,7 @@ from typing import Annotated, Optional
 import typer
 import subprocess
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.interactive import require_interactive
+from arkitekt.cli.tty import require_tty
 from arkitekt.cli.vars import get_console
 from rich.panel import Panel
 import uuid
@@ -52,7 +52,7 @@ def publish(
     docker_info = subprocess.check_output(["docker", "info"]).decode("utf-8")
     username = search_username_in_docker_info(docker_info)
     if not username:
-        require_interactive(
+        require_tty(
             "Providing a docker username",
             hint="Log in to docker (so `docker info` reports a username) to run non-interactively.",
         )
@@ -69,7 +69,7 @@ def publish(
         check_if_build_already_deployed(build_model)
 
         if not tag:
-            require_interactive(
+            require_tty(
                 "Choosing a docker tag",
                 hint="Pass --tag to set the tag non-interactively.",
             )

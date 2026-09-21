@@ -17,7 +17,6 @@ except ImportError as e:
     ) from e
 
 from .magic_bar import MagicBar
-from .builders import qt
 from .types import *
 
-__all__ = ["MagicBar", "qt", "QtApp"]
+__all__ = ["MagicBar", "QtApp"]

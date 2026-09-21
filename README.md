@@ -77,15 +77,17 @@ into `.arkitekt/`.
 
 ### 2. Register your functions
 
-Any function you decorate with `@register` becomes a callable building block on the platform. Its
+Any function you decorate with `@app.action` becomes a callable building block on the platform. Its
 arguments and return values are inferred from your type hints — which also drive validation,
 documentation, and the auto-generated GUI.
 
 ```python
-from arkitekt import register
+from arkitekt import App
+
+app = App("my.app")
 
 
-@register
+@app.action
 def greet(name: str, excited: bool = False) -> str:
     """Greet a person by name.
 

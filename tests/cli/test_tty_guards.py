@@ -1,10 +1,10 @@
-"""Tests for the non-TTY interactive guard (``require_interactive``).
+"""Tests for the non-TTY interactive guard (``require_tty``).
 
-Every prompt site in the CLI is fronted by ``require_interactive`` so that a
+Every prompt site in the CLI is fronted by ``require_tty`` so that a
 non-interactive run (CI, a pipe) fails fast with guidance instead of blocking on
 stdin forever. The autouse ``_assume_interactive`` fixture (see
 ``tests/conftest.py``) makes the CLI look interactive by default; these tests
-patch ``is_interactive`` back to ``False`` to exercise the guard.
+patch ``is_tty`` back to ``False`` to exercise the guard.
 """
 
 from unittest.mock import patch
@@ -13,22 +13,22 @@ import pytest
 import typer
 from click.testing import CliRunner
 
-from arkitekt.cli.interactive import require_interactive
+from arkitekt.cli.tty import require_tty
 from arkitekt.cli.main import cli
 
-INTERACTIVE = "arkitekt.cli.interactive.is_interactive"
+INTERACTIVE = "arkitekt.cli.tty.is_tty"
 
 
-def test_require_interactive_is_noop_when_tty():
+def test_require_tty_is_noop_when_tty():
     with patch(INTERACTIVE, return_value=True):
-        require_interactive("Something", hint="do X")  # must not raise
+        require_tty("Something", hint="do X")  # must not raise
 
 
-def test_require_interactive_raises_when_not_tty(capsys):
+def test_require_tty_raises_when_not_tty(capsys):
     with patch(INTERACTIVE, return_value=False):
         # cli_error prints the guidance to stderr, then raises typer.Exit(1).
         with pytest.raises(typer.Exit):
-            require_interactive("The wizard", hint="Pass --template instead.")
+            require_tty("The wizard", hint="Pass --template instead.")
 
     message = capsys.readouterr().err
     assert "The wizard" in message

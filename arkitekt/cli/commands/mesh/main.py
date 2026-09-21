@@ -24,7 +24,7 @@ import typer
 from rich.panel import Panel
 
 from arkitekt.cli.errors import cli_error, confirm_or_abort
-from arkitekt.cli.interactive import require_interactive
+from arkitekt.cli.tty import require_tty
 from arkitekt.cli.options import UrlOption
 from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -590,7 +590,7 @@ def leave(
     _ensure_tailscale_installed(console)
 
     if not yes:
-        require_interactive("Confirming the mesh logout", hint="Pass --yes to leave non-interactively.")
+        require_tty("Confirming the mesh logout", hint="Pass --yes to leave non-interactively.")
         console.print(
             "[bold yellow]Warning:[/bold yellow] this deregisters the node from the "
             "mesh; reconnecting requires a fresh `mesh join` authorization."

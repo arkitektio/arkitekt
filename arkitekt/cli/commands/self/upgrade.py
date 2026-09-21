@@ -20,9 +20,10 @@ import semver
 from rich.table import Table
 
 from arkitekt.cli.errors import cli_error, confirm_or_abort
-from arkitekt.cli.interactive import require_interactive
+from arkitekt.cli.tty import require_tty
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.cli.commands.app.init.main import get_default_package_manager
+from arkitekt.cli.target import infer_package_manager
 from .constants import ARKITEKT_PACKAGES
 
 PYPI_JSON_URL = "https://pypi.org/pypi/{name}/json"
@@ -38,16 +39,15 @@ class PackageManager(str, enum.Enum):
 def _resolve_package_manager(ctx, package_manager: Optional[PackageManager]) -> str:
     """Resolve which package manager to use.
 
-    Explicit ``--package-manager`` wins, otherwise fall back to the loaded
-    manifest's ``package_manager`` (if a manifest was found), otherwise auto
-    detect (``uv`` if available, else ``pip``).
+    Explicit ``--package-manager`` wins. Otherwise a uv project in the work dir
+    (it has a ``uv.lock``) is upgraded with uv -- its lockfile is what installs
+    it -- and anything else by auto detection (``uv`` if available, else ``pip``).
     """
     if package_manager:
         return package_manager.value
 
-    manifest = ctx.obj.get("manifest") if ctx.obj else None
-    if manifest is not None:
-        return manifest.package_manager
+    if infer_package_manager(get_work_dir(ctx)) == "uv":
+        return "uv"
 
     return get_default_package_manager()
 
@@ -104,7 +104,7 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
                 "uv is not installed. Please install uv or choose --package-manager pip."
             )
         if not yes:
-            require_interactive("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
+            require_tty("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
             confirm_or_abort(
                 "Upgrade ALL project dependencies with `uv sync --upgrade`?",
             )
@@ -135,7 +135,7 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
 
     console.print(f"{len(outdated_names)} outdated package(s): {', '.join(outdated_names)}")
     if not yes:
-        require_interactive("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
+        require_tty("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
         confirm_or_abort(f"Upgrade all {len(outdated_names)} package(s) with pip?")
 
     command = [sys.executable, "-m", "pip", "install", "--upgrade", *outdated_names]
@@ -154,7 +154,7 @@ def upgrade(
         typer.Option(
             "--package-manager",
             "-pm",
-            help="The package manager to use for the upgrade. Defaults to the project manifest's package manager, or auto-detected (uv if available, else pip).",
+            help="The package manager to use for the upgrade. Defaults to uv for a uv project (a uv.lock in the work dir), otherwise auto-detected (uv if available, else pip).",
         ),
     ] = None,
     upgrade_all: Annotated[
@@ -232,7 +232,7 @@ def upgrade(
     manager = _resolve_package_manager(ctx, package_manager)
 
     if not yes:
-        require_interactive("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
+        require_tty("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
         confirm_or_abort(
             f"Upgrade {len(outdated)} package(s) using {manager}?",
         )

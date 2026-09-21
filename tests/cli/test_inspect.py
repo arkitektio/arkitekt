@@ -142,19 +142,19 @@ def test_inspect_all_pretty(app_dir):
 
 
 # ---------------------------------------------------------------------------
-# inspect services / hooks / lifecycle
+# inspect services / lifecycle
 # ---------------------------------------------------------------------------
 
 
 def test_inspect_services(app_dir):
-    """`inspect services -mr` lists the registered service SDKs."""
+    """`inspect services -mr` lists the service SDKs the app selected."""
     result = _run_cli(app_dir, "inspect", "services", "-mr")
     assert result.returncode == 0, result.stderr
 
     records = _between(result.stdout, "--START_SERVICES--", "--END_SERVICES--")
     assert isinstance(records, list)
     names = [r["name"] for r in records]
-    assert "rekuest" in names  # the simple template registers functions via rekuest
+    assert "rekuest" in names  # a run of an app that offers something is served by rekuest
     for record in records:
         for key in ("name", "class", "requirements", "has_schema", "has_turms_project"):
             assert key in record
@@ -171,18 +171,6 @@ def test_inspect_services_unknown_schema(app_dir):
     result = _run_cli(app_dir, "inspect", "services", "--schema", "nope")
     assert result.returncode != 0
     assert "Unknown service" in result.stdout + result.stderr
-
-
-def test_inspect_hooks(app_dir):
-    """`inspect hooks -mr` emits the init-hook list (possibly empty)."""
-    result = _run_cli(app_dir, "inspect", "hooks", "-mr")
-    assert result.returncode == 0, result.stderr
-
-    records = _between(result.stdout, "--START_HOOKS--", "--END_HOOKS--")
-    assert isinstance(records, list)
-    for record in records:
-        for key in ("name", "module", "cli_only", "order"):
-            assert key in record
 
 
 def test_inspect_lifecycle(app_dir):
@@ -236,12 +224,8 @@ def test_kabinet_validate_without_flavours_errors(app_dir):
         ["run"],
         ["gen"],
         ["plugin"],
-        ["manifest"],
-        ["manifest", "version"],
-        ["manifest", "scopes"],
         ["inspect"],
         ["inspect", "services"],
-        ["inspect", "hooks"],
         ["inspect", "lifecycle"],
         ["call"],
     ],
@@ -251,3 +235,102 @@ def test_help_for_command_groups(args):
     result = runner.invoke(cli, [*args, "--help"])
     assert result.exit_code == 0, result.output
     assert "Usage" in result.output or "Options" in result.output
+
+
+# ---------------------------------------------------------------------------
+# inspect reads the App's declaration and never connects
+# ---------------------------------------------------------------------------
+
+APP_WITH_EXTRA_SERVICE = '''
+from typing import Annotated
+
+from fakts import Alias, Require
+
+from arkitekt import App
+from rekuest.app import AppRegistry
+
+
+class ExtraClient:
+    """A client of a deployment service beyond rekuest."""
+
+
+registry = AppRegistry()
+
+
+@registry.service()
+def extra(
+    extra: Annotated[Alias, Require("live.arkitekt.extra", "Something beyond rekuest")],
+) -> ExtraClient:
+    """A deployment service beyond rekuest."""
+    return ExtraClient()
+
+
+# A requirement only ever arrives with a service.
+app = App("com.inspect.app", "2.0.0", author="inspector", services=[extra])
+
+
+@app.action
+def double(x: int) -> int:
+    """Double it"""
+    return x * 2
+'''
+
+
+@pytest.fixture
+def no_connecting(monkeypatch):
+    """Make any attempt to connect fail the test."""
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("inspect must not connect")
+
+    monkeypatch.setattr("arkitekt.runtime.connect", refuse)
+    monkeypatch.setattr("arkitekt.runtime.Runtime.__aenter__", refuse)
+    monkeypatch.setattr("arkitekt.runtime.Runtime._prepare", refuse)
+    monkeypatch.setattr("arkitekt.runtime.Runtime._build_clients", refuse)
+
+
+@pytest.mark.parametrize(
+    "command",
+    ["all", "requirements", "implementations", "services", "structures", "lifecycle", "variables"],
+)
+def test_inspect_never_connects(app_dir, no_connecting, command):
+    result = _invoke(app_dir, "inspect", command, "-mr")
+
+    assert result.exit_code == 0, result.output
+
+
+def test_inspect_requirements_are_the_apps(app_dir, no_connecting):
+    (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
+
+    result = _invoke(app_dir, "inspect", "requirements", "-mr")
+
+    assert result.exit_code == 0, result.output
+    requirements = _between(result.output, "--START_REQUIREMENTS--", "--END_REQUIREMENTS--")
+    assert {"rekuest", "extra"} <= {item["key"] for item in requirements}
+
+
+def test_inspect_all_carries_the_apps_requirements_and_actions(app_dir, no_connecting):
+    (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
+
+    result = _invoke(app_dir, "inspect", "all", "-mr")
+
+    assert result.exit_code == 0, result.output
+    agent = _between(result.output, "--START_AGENT--", "--END_AGENT--")
+    assert [impl["interface"] for impl in agent["implementations"]] == ["double"]
+    assert "extra" in {item["key"] for item in agent["requirements"]}
+
+
+def test_inspect_an_app_that_offers_nothing(app_dir, no_connecting):
+    (app_dir / "app.py").write_text("from arkitekt import App\napp = App('quiet')\n")
+
+    result = _invoke(app_dir, "inspect", "implementations", "-mr")
+
+    assert result.exit_code == 0, result.output
+    assert "offers nothing" in result.output
+
+
+def test_the_manifest_group_is_gone():
+    result = CliRunner().invoke(cli, ["manifest", "--help"])
+
+    assert result.exit_code != 0
+    assert "No such command" in result.output

@@ -1,8 +1,6 @@
 import typer
 
-from arkitekt.cli.errors import cli_error
-from arkitekt.cli.vars import get_work_dir, set_manifest
-from arkitekt.cli.io import load_manifest
+from arkitekt.cli.vars import get_work_dir
 from arkitekt.utils import create_arkitekt_folder
 
 from .init import init
@@ -38,20 +36,11 @@ def plugin_callback(ctx: typer.Context) -> None:
     working directory and therefore require an already-initialized app — run
     `arkitekt init` first.
     """
-    # Guard: plugin commands only make sense inside an initialized app directory.
-    # `plugin` is not in APP_PROJECT_COMMANDS (the root callback's manifest
-    # bootstrap), so load it here — failing clearly if this isn't an app —
-    # for the subcommands to use.
-    work_dir = get_work_dir(ctx)
-    manifest = load_manifest(base_dir=work_dir)
-    if manifest is None:
-        cli_error(
-            f"No Arkitekt app found in '{work_dir}'. Plugin commands can only be run "
-            "inside an initialized app directory — run `arkitekt init` first."
-        )
-
-    create_arkitekt_folder(base_dir=work_dir)
-    set_manifest(ctx, manifest)
+    # Flavours, builds and deployments live in the `.arkitekt` folder. The app
+    # itself is not loaded here: only the commands that need its identity (`init`
+    # for a devcontainer, `build`) import it, from their own target, so that
+    # `validate`, `publish` and `selector` never run the user's module.
+    create_arkitekt_folder(base_dir=get_work_dir(ctx))
 
 
 plugin.command("init")(init)

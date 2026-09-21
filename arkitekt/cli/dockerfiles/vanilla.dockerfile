@@ -4,5 +4,5 @@ RUN pip install "arkitekt[all]>={__arkitekt_version__}"
 
 RUN mkdir /app
 WORKDIR /app
-COPY .arkitekt /app/.arkitekt
-COPY app.py /app/app.py
+# The whole project: the app target may be any module in it, not only app.py.
+COPY . /app

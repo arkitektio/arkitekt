@@ -1,126 +1,249 @@
-from arkitekt.app.app import App
-from typing import Callable, TypeVar, ParamSpec, Any, Optional, Type
-from types import TracebackType
-from koil.qt import async_to_qt
+"""The Qt app: a declaration whose actions may run in, or talk to, the Qt event loop."""
+
+from typing import Any, Callable, Dict, List, Optional, ParamSpec, Sequence, TypeVar, overload
+
+from fakts.models import PublicSource
 from koil import run_threaded
-from qtpy import QtCore
+from koil.qt import async_to_qt
+from rekuest.actors.types import Actifier
+from rekuest.api.schema import AssignWidgetInput
+from rekuest.app import AppRegistry
+from rekuest.register import WrappedFunction
+
+from arkitekt.app.app import App, Ctx, _caller_module_name
+from rekuest.service import Service
 
 R = TypeVar("R")
 P = ParamSpec("P")
 
 
-class QtApp(App):
-    """An app that is built with the easy builder"""
+class QtApp(App[Ctx]):
+    """An app whose actions may run in the Qt event loop.
 
-    parent: QtCore.QObject
+    A declaration like every app: a widget registers on it in its constructor
+    (``app.action``, ``app.register_in_qt_loop``, ...), and a
+    :class:`~arkitekt.qt.MagicBar` runs it, through a runtime::
 
-    def register(self, *args: Any, **kwargs: Any) -> None:
-        """Register a function with the app (not in the Qt event loop)
+        app = QtApp("my-viewer", parent=window)
+        bar = MagicBar(connect(app))
 
-        This is useful for functions that do not need access to the Qt event loop
-        and can be run in a separate thread. This is the default behavior for
-        functions registered with the app.
+    Args:
+        identifier: The app's globally unique identifier. Defaults to the name of
+            the file that constructs it.
+        version: The app's version.
+        parent: The Qt object that owns what :meth:`wrap` creates.
+        logo: A public http url of the app's logo.
+        scopes: The scopes the app requests. Defaults to ``["openid"]``.
+        author: Who wrote the app.
+        public_sources: Public sources the app announces in its manifest.
+        services: The services the app uses (``[mikro_service]``).
+        registry: The registry to declare into. A fresh one by default.
+        app_context: The class of the app context, as for :class:`~arkitekt.App`.
+    """
 
+    @overload
+    def __init__(
+        self: "QtApp[None]",
+        identifier: Optional[str] = None,
+        version: str = "0.0.1",
+        *,
+        parent: Optional[Any] = None,
+        logo: Optional[str] = None,
+        scopes: Optional[List[str]] = None,
+        author: Optional[str] = None,
+        public_sources: Optional[List[PublicSource]] = None,
+        services: Sequence[Service[Any]] = (),
+        registry: Optional[AppRegistry] = None,
+        app_context: None = None,
+    ) -> None: ...
 
+    @overload
+    def __init__(
+        self,
+        identifier: Optional[str] = None,
+        version: str = "0.0.1",
+        *,
+        parent: Optional[Any] = None,
+        logo: Optional[str] = None,
+        scopes: Optional[List[str]] = None,
+        author: Optional[str] = None,
+        public_sources: Optional[List[PublicSource]] = None,
+        services: Sequence[Service[Any]] = (),
+        registry: Optional[AppRegistry] = None,
+        app_context: type[Ctx],
+    ) -> None: ...
+
+    def __init__(
+        self,
+        identifier: Optional[str] = None,
+        version: str = "0.0.1",
+        *,
+        # A QtCore.QObject. qtpy re-exports the binding's classes at runtime, so
+        # no checker can see the type; it is Any to them either way.
+        parent: Optional[Any] = None,
+        logo: Optional[str] = None,
+        scopes: Optional[List[str]] = None,
+        author: Optional[str] = None,
+        public_sources: Optional[List[PublicSource]] = None,
+        services: Sequence[Service[Any]] = (),
+        registry: Optional[AppRegistry] = None,
+        app_context: Optional[type[Ctx]] = None,
+    ) -> None:
+        super().__init__(  # type: ignore[misc]  # the overloads above are the contract
+            identifier or _caller_module_name(),
+            version,
+            logo=logo,
+            scopes=scopes,
+            author=author,
+            public_sources=public_sources,
+            services=services,
+            registry=registry,
+            app_context=app_context,
+        )
+        self.parent = parent
+
+    def _offer_with(
+        self,
+        actifier: Actifier,
+        function: Callable[P, R],
+        name: Optional[str],
+        description: Optional[str],
+        interface: Optional[str],
+        widgets: Optional[Dict[str, AssignWidgetInput]],
+        collections: Optional[List[str]],
+        locks: Optional[List[str]],
+    ) -> WrappedFunction[P, R]:
+        decorate: Callable[[Callable[P, R]], WrappedFunction[P, R]] = self.action(
+            actifier=actifier,
+            name=name,
+            description=description,
+            interface=interface,
+            widgets=widgets,
+            collections=collections,
+            locks=locks,
+        )
+        return decorate(function)
+
+    def register_in_qt_loop(
+        self,
+        function: Callable[P, R],
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        interface: Optional[str] = None,
+        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
+        collections: Optional[List[str]] = None,
+        locks: Optional[List[str]] = None,
+    ) -> WrappedFunction[P, R]:
+        """Offer a function that runs in the Qt event loop.
+
+        For functions that may block the main thread on purpose, e.g. to prompt
+        for input or show a modal dialog.
+
+        Args:
+            function: The function to offer.
+            name: Display name. Defaults to the function name.
+            description: Description. Defaults to the docstring.
+            interface: Interface the action is offered at.
+            widgets: Widgets per argument.
+            collections: Collections the action is grouped into.
+            locks: Locks held while an assignment runs.
+
+        Returns:
+            The function, registered.
         """
-        self.services["rekuest"].register(*args, **kwargs)
+        from rekuest.qt.builders import qtinloopactifier
 
-    def register_in_qt_loop(self, function: Callable[..., Any], **kwargs: Any):
-        """Register a function in the Qt event loop
-
-        This is useful for functions that need to be resolved in the Qt event loop and are
-        able to block the main thread (e.g. when prompting a necessary user input, or
-        when displaying a blocking dialog).
-
-        """
-
-        from rekuest.qt.builders import qtinloopactifier  # type: ignore
-
-        return self.services["rekuest"].register(
-            function, actifier=qtinloopactifier, **kwargs
+        return self._offer_with(
+            qtinloopactifier, function, name, description, interface, widgets, collections, locks
         )
 
-    def register_with_qt_future(self, function: Callable[..., Any], **kwargs: Any):
-        """Register a function with a future that can be resolved in the Qt event loop
+    def register_with_qt_future(
+        self,
+        function: Callable[P, R],
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        interface: Optional[str] = None,
+        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
+        collections: Optional[List[str]] = None,
+        locks: Optional[List[str]] = None,
+    ) -> WrappedFunction[P, R]:
+        """Offer a function that answers through a future resolved in the Qt loop.
 
-        This is useful for functions that need to be resolved in the Qt event loop, but
-        might cause a blocking call if they are run in the same thread.
+        The function's first parameter receives a ``QtFuture``; the assignment
+        completes when a widget resolves it, e.g. from an "Accept" button::
 
-        Example:
+            def ask(self, future: QtFuture[bool], question: str) -> None:
+                self.dialog.show()
+                self.pending = future       # on_accept: self.pending.resolve(True)
 
-        ```python
+            app.register_with_qt_future(self.ask)
 
-            class MyWidget(QtWidgets.QWidget):
+        Args:
+            function: The function to offer.
+            name: Display name. Defaults to the function name.
+            description: Description. Defaults to the docstring.
+            interface: Interface the action is offered at.
+            widgets: Widgets per argument.
+            collections: Collections the action is grouped into.
+            locks: Locks held while an assignment runs.
 
-                def __init__(self, app: QtApp):
-                    super().__init__()
-                    self.my_widget = QtWidgets.QWidget()
-                    self.my_widget.setWindowTitle("Do you accept?")
-                    self.my_widget.setWindowModality(QtCore.Qt.ApplicationModal)
-                    self.my_widget.setFixedSize(200, 100)
-
-                    self.my_widget.accept_button = QtWidgets.QPushButton("Accept")
-                    self.my_widget.reject_button = QtWidgets.QPushButton("Reject")
-                    self.my_widget.layout = QtWidgets.QVBoxLayout()
-                    self.my_widget.layout.addWidget(self.my_widget.accept_button)
-                    self.my_widget.layout.addWidget(self.my_widget.reject_button)
-
-                    self.app.register_with_qt_future(self.my_function)
-
-
-
-                def my_function(self, future: QtFuture, *args, **kwargs):
-                    self.my_widget.setText("Do you accept?")
-                    self.my_widget.show()
-
-                    self.current_future = future
-
-
-                def on_accept(self):
-                    self.current_future.set_result(True)
-
-                def on_reject(self):
-                    self.current_future.set_result(False)
-
-
+        Returns:
+            The function, registered.
         """
-        from rekuest.qt.builders import qtwithfutureactifier  # type: ignore
+        from rekuest.qt.builders import qtwithfutureactifier
 
-        return self.services["rekuest"].register(
-            function, actifier=qtwithfutureactifier, **kwargs
+        return self._offer_with(
+            qtwithfutureactifier, function, name, description, interface, widgets, collections, locks
         )
 
-    def register_with_qt_generator(self, function: Callable[..., Any], **kwargs: Any):
-        from rekuest.qt.builders import qtwithgeneratoractifier  # type: ignore
+    def register_with_qt_generator(
+        self,
+        function: Callable[P, R],
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        interface: Optional[str] = None,
+        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
+        collections: Optional[List[str]] = None,
+        locks: Optional[List[str]] = None,
+    ) -> WrappedFunction[P, R]:
+        """Offer a function that streams results through a generator driven from the Qt loop.
 
-        return self.services["rekuest"].register(
-            function, actifier=qtwithgeneratoractifier, **kwargs
+        The function's first parameter receives a ``QtGenerator``; each
+        ``next(value)`` yields a result, and ``stop()`` ends the assignment.
+
+        Args:
+            function: The function to offer.
+            name: Display name. Defaults to the function name.
+            description: Description. Defaults to the docstring.
+            interface: Interface the action is offered at.
+            widgets: Widgets per argument.
+            collections: Collections the action is grouped into.
+            locks: Locks held while an assignment runs.
+
+        Returns:
+            The function, registered.
+        """
+        from rekuest.qt.builders import qtwithgeneratoractifier
+
+        return self._offer_with(
+            qtwithgeneratoractifier, function, name, description, interface, widgets, collections, locks
         )
 
     def wrap(self, function: Callable[P, R]) -> async_to_qt[R, P]:
-        """ """
+        """Wrap a blocking function so Qt can run it off the main thread.
+
+        Args:
+            function: The blocking function.
+
+        Returns:
+            An ``async_to_qt`` task owned by :attr:`parent`: ``.run(...)`` starts it
+            in a worker thread, and its signals report the result or error.
+        """
 
         async def wrappable(*args: P.args, **kwargs: P.kwargs) -> R:
             return await run_threaded(function, *args, **kwargs)
 
         return async_to_qt(wrappable, parent=self.parent)
-
-    def run(self):
-        """Run the app"""
-        self.services["rekuest"].run()
-
-    async def __aenter__(self):
-        await super().__aenter__()
-        for service in self.services.values():
-            await service.__aenter__()
-
-        return self
-
-    async def __aexit__(
-        self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
-    ) -> None:
-        for service in self.services.values():
-            await service.__aexit__(exc_type, exc_value, traceback)

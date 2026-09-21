@@ -1,11 +1,11 @@
 """
- This example shows how to upload an image to the server
- and how to access it again.
+ This example shows the two ways to use an app: calling the API from a script,
+ and offering an action to others.
 
  It requires the following packages:
     arkitekt
     mikro
- 
+
  If you are not concerned about installing multiple packages, you can
   install them with:
 
@@ -16,34 +16,34 @@
 
 """
 
-from arkitekt import easy
-from mikro.api.schema import from_array_like
-import xarray as xr
-import numpy as np
+from arkitekt import App, easy, run
+from mikro import Mikro
+from mikro.api.schema import Folder
 
-app = easy("upload_test", url="localhost")
-# Create a new app with the name "upload_test", we here use the
-# default url "http://localhost:80", adjust this if you are running
-# the server on a different port or host ()
+app = App("upload_test", "0.1.0")
+# An app is a declaration: who it is and what it offers. Declaring connects
+# nothing, so this line is free.
 
 
-data = xr.DataArray(np.random.rand(100, 100), dims=["x", "y"])
-# Create random image and convert to xarray
-# Mikro will automatically inspect the xarray and its dimensions and convert
-# it to a 5D array with the following dimensions: (c, t, z, y, x)
+@app.action
+def make_folder(name: str, mikro: Mikro) -> Folder:
+    """Create a folder.
+
+    `mikro` is not a port: an app declares the services its actions ask for,
+    and the run injects its own client.
+    """
+    return mikro.create_folder(name=name)
 
 
-with app:
-    # Every app needs to be run in a context manager
+if __name__ == "__main__":
+    import sys
 
-    image = from_array_like(
-        data,
-        name="test",
-        tags=["test"],
-    )
-    # The from_xarray function will upload the xarray to the server
-    # and return a mikro Image object, which can be used to access the
-    # image on the server
-
-    print(image.id)  # Print the id of the image
-    # This is a unique identifier for the image on the server
+    if "--provide" in sys.argv:
+        # Offer `make_folder` to others until stopped.
+        run(app, url="localhost")
+    else:
+        # Or just call the API: `easy` declares an app for the script, connects it,
+        # and hands back the client, typed. Pass it to the action yourself.
+        with easy("upload_test", Mikro, url="localhost") as mikro:
+            folder = make_folder("test", mikro=mikro)
+            print(folder.id)

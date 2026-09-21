@@ -1,6 +1,4 @@
-from importlib import import_module
 import os
-import shutil
 from typing import Annotated, List, Optional
 
 import typer
@@ -8,11 +6,44 @@ import yaml
 
 from arkitekt.cli.constants import compile_services
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.interactive import require_interactive
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, import_target_or_exit
+from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import construct_codegen_welcome_panel
-from arkitekt.cli.utils import build_relative_dir
-from arkitekt.cli.vars import get_console, get_manifest, get_work_dir
-from arkitekt.service_registry import get_default_service_registry
+from arkitekt.cli.vars import get_console, get_work_dir
+from rekuest.service import Service
+
+#: The client packages whose service ``gen init`` can generate code for. Each
+#: exports its service from ``<name>.arkitekt`` under its own name. Discovered by
+#: importing, since nothing registers services process-wide: a package that is
+#: not installed is simply not offered.
+SERVICE_PACKAGES = (
+    "rekuest",
+    "mikro",
+    "elektro",
+    "kraph",
+    "fluss",
+    "kabinet",
+    "unlok",
+    "alpaka",
+    "lovekit",
+    "dokuments",
+)
+
+
+def installed_services() -> dict[str, Service]:
+    """The services of every client package that is installed, by name."""
+    import importlib
+
+    found: dict[str, Service] = {}
+    for name in SERVICE_PACKAGES:
+        try:
+            module = importlib.import_module(f"{name}.arkitekt")
+        except ImportError:
+            continue
+        declared = getattr(module, name, None)
+        if isinstance(declared, Service):
+            found[name] = declared
+    return found
 
 
 def check_services(value: List[str]) -> List[str]:
@@ -28,6 +59,7 @@ def check_services(value: List[str]) -> List[str]:
 
 def init(
     ctx: typer.Context,
+    target: TargetArgument = DEFAULT_TARGET,
     boring: Annotated[
         bool,
         typer.Option("--boring", help="Should we skip the welcome message?"),
@@ -85,25 +117,16 @@ def init(
     if not boring:
         console.print(construct_codegen_welcome_panel())
 
-    manifest = get_manifest(ctx)
-
-    entrypoint = manifest.entrypoint
-
-    with console.status("Loading entrypoint module..."):
-        try:
-            import_module(entrypoint)
-        except ModuleNotFoundError as e:
-            console.print(f"Could not find entrypoint module {entrypoint}")
-            raise e
-
-
+    # Importing the app's module imports its client packages, and importing a
+    # client package is what adds its service to the catalog offered below.
+    import_target_or_exit(ctx, target)
 
     app_directory = get_work_dir(ctx)
 
     # --path is prompted only when omitted; guard so a non-TTY run never blocks
     # on the option prompt (default is used as the prompt pre-fill).
     if path is None:
-        require_interactive(
+        require_tty(
             "Choosing the api output path",
             hint="Pass --path to set it non-interactively (default: api).",
         )
@@ -124,18 +147,18 @@ def init(
     # Initializing the config
     projects = {}
 
-    registry = get_default_service_registry()
+    available_services = installed_services()
 
-    chosen_services = registry.service_builders
+    chosen_services = available_services
 
     if services:
         chosen_services = {
             key: service
-            for key, service in registry.service_builders.items()
+            for key, service in available_services.items()
             if key in services
         }
     else:
-        require_interactive(
+        require_tty(
             "`gen init`",
             hint="Pass --service to choose the service non-interactively.",
         )
@@ -149,12 +172,12 @@ def init(
         chosen_services = {service: chosen_services[service]}
 
     if os.path.exists(config):
-        require_interactive(
+        require_tty(
             "`gen init`",
             hint="Remove or move the existing GraphQL config to run non-interactively.",
         )
         if typer.confirm(
-            f"GraphQL Config file already exists. Do you want to merge your choices?"
+            "GraphQL Config file already exists. Do you want to merge your choices?"
         ):
             file = yaml.load(open(config, "r"), Loader=yaml.FullLoader)
             projects = file.get("projects", {})
@@ -175,7 +198,7 @@ def init(
 
             if key in projects:
                 get_console(ctx).print(f"[red]Project {key} already exists [/]")
-                require_interactive(
+                require_tty(
                     "`gen init`",
                     hint="Remove the existing project to run non-interactively.",
                 )

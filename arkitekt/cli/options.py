@@ -1,7 +1,9 @@
 """Shared Typer option definitions.
 
-Connection options: `run dev|prod` and `call remote` all take the same
-fakts/builder options.
+Connection options: `run dev|prod` and `call remote` all take the same fakts
+options. They describe how a run connects, so they go to the runner
+(:func:`arkitekt.connect` / :func:`arkitekt.arun`), never onto the App: the App is
+the user's declaration and the command line does not rewrite it.
 
 Defining each once as an `Annotated` alias keeps flags, help, envvars and types
 identical across commands; each command still supplies its own default at the call
@@ -9,6 +11,7 @@ site (e.g. `url: UrlOption = DEFAULT_ARKITEKT_URL`).
 """
 
 from enum import Enum
+from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
@@ -32,17 +35,6 @@ UrlOption = Annotated[
         "-u",
         help="The fakts url for connection",
         envvar="FAKTS_URL",
-    ),
-]
-
-#: The dotted path to the builder function. Callers default to the easy builder.
-BuilderOption = Annotated[
-    str,
-    typer.Option(
-        "--builder",
-        "-b",
-        help="The builder for this run",
-        envvar="ARKITEKT_BUILDER",
     ),
 ]
 
@@ -117,13 +109,30 @@ NoCacheOption = Annotated[
     ),
 ]
 
-#: Override the app version. Callers default this to ``None``.
-VersionOption = Annotated[
+#: The app context, as ``module:attr``: an instance of the class the App declared
+#: (``App(..., app_context=Config)``), or a zero-argument factory of one.
+ContextOption = Annotated[
     Optional[str],
     typer.Option(
-        "--version",
-        "-v",
-        help="Override the version of the app",
-        envvar="ARKITEKT_VERSION",
+        "--context",
+        help=(
+            "The app context, as module:attr -- an instance of the class the App "
+            "declared with app_context=, or a zero-argument callable returning one."
+        ),
+    ),
+]
+
+#: A YAML or JSON file holding the app context, validated by the declared class.
+ContextFileOption = Annotated[
+    Optional[Path],
+    typer.Option(
+        "--context-file",
+        help=(
+            "A YAML or JSON file holding the app context; validated by the class "
+            "the App declared with app_context=, which must be a pydantic model."
+        ),
+        exists=True,
+        dir_okay=False,
+        readable=True,
     ),
 ]

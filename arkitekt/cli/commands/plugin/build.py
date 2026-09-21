@@ -1,8 +1,10 @@
 import sys
 from typing import Annotated
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.vars import get_console, get_manifest, get_work_dir
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
+from arkitekt.cli.vars import get_console, get_work_dir
 import os
+import shlex
 from rich.panel import Panel
 import subprocess
 import uuid
@@ -58,14 +60,19 @@ def inspect_docker_container(build_id: str) -> tuple[int, int]:
         raise InspectionError(f"An error occurred: {e.stdout}{e.stderr}") from e
 
 
-def inspect_all(build_id: str, url: str) -> Dict[str, Any]:
+def inspect_all(build_id: str, url: str, target: str = DEFAULT_TARGET) -> Dict[str, Any]:
+    """Run ``arkitekt inspect all`` on ``target`` inside the built image.
+
+    The target is passed explicitly: the image has to be inspected on the app it
+    was built for, which need not be the default ``app``.
+    """
     try:
         # No ``-it``: a TTY is meaningless when stdout/stderr are piped and it
         # keeps the read from cleanly ending on container exit.
         process = subprocess.Popen(
             " ".join([
                 "docker", "run", "--network", "host",
-                build_id, "arkitekt", "inspect", "all", "-mr",
+                build_id, "arkitekt", "inspect", "all", shlex.quote(target), "-mr",
             ]),
             shell=True,
             stdout=subprocess.PIPE,
@@ -143,17 +150,18 @@ def inspect_requirements(build_id: str) -> "List[RequirementInput]":
         raise InspectionError(f"An error occurred: {combined}") from e
 
 
-def inspect_build(build_id: str, url: str) -> "InspectionInput":
+def inspect_build(build_id: str, url: str, target: str = DEFAULT_TARGET) -> "InspectionInput":
     from .types import InspectionInput
 
     size, size_root_fs = inspect_docker_container(build_id)
-    runtime = inspect_all(build_id, url)
+    runtime = inspect_all(build_id, url, target)
     print("Runtime inspection result:", runtime)
     return InspectionInput(size=size, **runtime)
 
 
 def build(
     ctx: typer.Context,
+    target: TargetArgument = DEFAULT_TARGET,
     flavour: Annotated[
         Optional[str],
         typer.Option(
@@ -175,12 +183,17 @@ def build(
         typer.Option("--url", "-u", help="The fakts server to use."),
     ] = DEFAULT_ARKITEKT_URL,
 ) -> None:
-    """Builds the arkitekt app to Docker."""
-    from .io import generate_build, get_flavours
+    """Builds the arkitekt app to Docker.
 
-    manifest = get_manifest(ctx)
+    The app's identity (identifier, version, author, scopes, logo) is read off the
+    App the target declares and recorded with each build.
+    """
+    from .io import app_to_manifest_input, generate_build, get_flavours
+
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)
+    app = load_app_or_exit(ctx, target)
+    manifest = app_to_manifest_input(app, target)
 
     flavours = get_flavours(base_dir=work_dir, select=flavour)
 
@@ -205,7 +218,7 @@ def build(
 
         inspection = None
         if not no_inspect:
-            inspection = inspect_build(build_tag, url)
+            inspection = inspect_build(build_tag, url, target)
 
         generate_build(build_run, build_tag, key, inspected_flavour, manifest, inspection, base_dir=work_dir)
 

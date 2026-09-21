@@ -1,11 +1,16 @@
 """ An example of a simple template for Arkitekt"""
 
-from arkitekt import register
 import time
 from typing import Generator
 
+from arkitekt import App, run
 
-@register
+# The app is a declaration: who it is, and what it offers. `arkitekt run` finds it
+# in this module (as `app`) and runs it; so does `python app.py`, below.
+app = App(__APP_ARGUMENTS__)
+
+
+@app.action
 def generate_n_string(n: int = 10, timeout: int = 2) -> Generator[str, None, None]:
     """Generate N Strings
 
@@ -30,7 +35,7 @@ def generate_n_string(n: int = 10, timeout: int = 2) -> Generator[str, None, Non
         yield f"Hello {i}"
 
 
-@register
+@app.action
 def append_world(hello: str) -> str:
     """Append World
 
@@ -49,7 +54,7 @@ def append_world(hello: str) -> str:
     return hello + " World"
 
 
-@register
+@app.action
 def print_string(input: str) -> str:
     """Print String
 
@@ -68,3 +73,7 @@ def print_string(input: str) -> str:
     """
     print(input)
     return input
+
+
+if __name__ == "__main__":
+    run(app)

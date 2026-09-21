@@ -3,9 +3,7 @@ import uuid
 from arkitekt.utils import create_arkitekt_folder
 import os
 from typing import Optional, List, Dict
-from arkitekt.cli.types import (
-    Manifest,
-)
+from arkitekt.app.app import App
 
 from .types import (
     Build,
@@ -85,13 +83,23 @@ def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = Non
     }
 
 
-def manifest_to_input(manifest: Manifest) -> ManifestInput:
+#: The author recorded for an app that names none (the server's own default).
+UNKNOWN_AUTHOR = "unknown"
+
+
+def app_to_manifest_input(app: App, target: str) -> ManifestInput:
+    """What a build says it packages: the App's identity, and the target that finds it.
+
+    The target is recorded so the image is run (and inspected) on the same app
+    it was built for, not on whatever the default target happens to find.
+    """
     return ManifestInput(
-        identifier=manifest.identifier,
-        version=manifest.version,
-        author=manifest.author,
-        logo=manifest.logo,
-        scopes=tuple(manifest.scopes),
+        entrypoint=target,
+        identifier=app.identifier,
+        version=app.version,
+        author=app.author or UNKNOWN_AUTHOR,
+        logo=app.logo,
+        scopes=tuple(app.scopes),
     )
 
 
@@ -100,7 +108,7 @@ def generate_build(
     build_id: str,
     flavour_name: str,
     flavour: Flavour,
-    manifest: Manifest,
+    manifest: ManifestInput,
     inspection: Optional[InspectionInput],
     base_dir: Optional[str] = None,
 ) -> Build:
@@ -109,7 +117,7 @@ def generate_build(
     config_file = os.path.join(path, "builds.yaml")
 
     build = Build(
-        manifest=manifest_to_input(manifest),
+        manifest=manifest,
         flavour=flavour_name,
         selectors=flavour.selectors,
         build_id=build_id,

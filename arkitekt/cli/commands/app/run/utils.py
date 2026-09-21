@@ -1,47 +1,49 @@
-from importlib import import_module
-from typing import Callable
-from arkitekt.app.app import App
+from typing import Any, Dict, Iterable
 
-# Re-exported for backwards compatibility; the canonical definition now lives in
-# `arkitekt.cli.options` alongside the shared option aliases.
-from arkitekt.cli.options import LogLevel
+import typer
 
-__all__ = ["LogLevel", "import_builder", "run_app"]
+__all__ = [
+    "CONNECTION_OPTIONS",
+    "explicit_options",
+    "runner_options",
+]
 
 
-def import_builder(builder: str) -> Callable[..., App]:
-    """Import a builder function from a module.
+#: The command-line flags that change how a run connects. Only those the user
+#: actually passed reach the runner. ``--log-level`` is not one of them: it
+#: configures this process, which the command does before it runs anything.
+CONNECTION_OPTIONS = ("url", "token", "redeem_token", "force", "headless", "no_cache")
 
-    Parameters
-    ----------
-    builder : str
-        The builder function to import, in the format "module.function".
 
-    Returns
-    -------
-    Callable[..., App]
-        The imported builder function.
+#: Where a value came from when it was not passed. Compared by name: Typer vendors
+#: its own click, so its ``ParameterSource`` members are not ``click``'s, and an
+#: identity check against ``click.core.ParameterSource.DEFAULT`` never matches --
+#: which would count every default as passed.
+_NOT_PASSED = {"DEFAULT", "DEFAULT_MAP"}
 
+
+def explicit_options(ctx: typer.Context, names: Iterable[str]) -> Dict[str, Any]:
+    """The values of the options the user actually passed, leaving defaults out.
+
+    A flag's default must not override the runner's own resolution: an unpassed
+    ``--url`` leaves the url to ``FAKTS_URL`` and the runtime's default, instead
+    of pinning it to whatever default this command happens to show.
     """
+    explicit: Dict[str, Any] = {}
+    for name in names:
+        source = ctx.get_parameter_source(name)
+        if source is not None and source.name not in _NOT_PASSED:
+            explicit[name] = ctx.params[name]
+    return explicit
 
-    module_path, function_name = builder.rsplit(".", 1)
-    module = import_module(module_path)
-    function = getattr(module, function_name)
-    return function
 
+def runner_options(ctx: typer.Context, *, reauth: bool = False) -> Dict[str, Any]:
+    """The keyword arguments a run command hands to :func:`arkitekt.arun`.
 
-async def run_app(app: App) -> None:
-    """Run an app by entering its context and running the rekuest service.
-
-    Parameters
-    ----------
-    app : App
-        The app to run.
-
+    The explicitly passed connection flags. ``reauth`` skips the fakts cache, so
+    a fresh login runs.
     """
-    rekuest = app.services.get("rekuest")
-    if not rekuest:
-        raise Exception("No rekuest service found. We need this to run the app.")
-
-    async with app:
-        await rekuest.arun()
+    options = explicit_options(ctx, CONNECTION_OPTIONS)
+    if reauth:
+        options["no_cache"] = True
+    return options

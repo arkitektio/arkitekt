@@ -2,7 +2,9 @@
 
 This module owns the Typer root
 app and its callback, which seeds the per-invocation ``ctx.obj`` state that the command
-layer reads through :mod:`arkitekt.cli.vars` (console, work dir, manifest).
+layer reads through :mod:`arkitekt.cli.vars` (console, work dir). There is no
+project file to load here: each app command finds its app from its own
+``module[:attr]`` target (see :mod:`arkitekt.cli.target`).
 
 ``cli/main.py`` turns this app into a plain click command via
 :func:`typer.main.get_command` and mounts the command groups onto it. That keeps the
@@ -21,15 +23,8 @@ import typer
 from rich.console import Console
 
 from arkitekt.cli.docs import DOCS_BASE_URL
-from arkitekt.cli.io import load_manifest
 from arkitekt.cli.texts import LOGO
-from arkitekt.cli.vars import set_console, set_manifest, set_work_dir
-from arkitekt.utils import create_arkitekt_folder
-
-#: Root commands that operate on a scaffolded app project (a manifest inside the
-#: `.arkitekt` folder). They need the folder to exist and the manifest loaded
-#: into context; `init` is the command that creates that project, so it is excluded.
-APP_PROJECT_COMMANDS = {"run", "gen", "manifest", "inspect", "call"}
+from arkitekt.cli.vars import set_console, set_work_dir
 
 _ROOT_HELP = (
     f"[cyan]{LOGO}[/cyan]\n\n"
@@ -68,8 +63,7 @@ def main(
         is_eager=True,
         help="Working directory for the app. Defaults to the current directory.",
     ),
-    # Long flag only: `-v` is reserved for the app-version override on the run
-    # commands (see cli/options.py::VersionOption).
+    # Long flag only: `init` uses `-v` for the version it scaffolds.
     version: bool = typer.Option(
         False,
         "--version",
@@ -80,7 +74,8 @@ def main(
 ) -> None:
     # Seed the per-invocation state that the command layer reads via cli.vars. This
     # runs before any (Typer or mounted-click) subcommand, so ctx.obj is populated by
-    # the time get_console/get_work_dir are called downstream.
+    # the time get_console/get_work_dir are called downstream. The work dir goes
+    # first on sys.path because that is where an app target's module is imported from.
     work_dir = os.path.abspath(work_dir)
     sys.path.insert(0, work_dir)
 
@@ -88,9 +83,3 @@ def main(
     set_console(ctx, Console())
     set_work_dir(ctx, work_dir)
 
-    if ctx.invoked_subcommand in APP_PROJECT_COMMANDS:
-        create_arkitekt_folder(base_dir=work_dir)
-
-        manifest = load_manifest(base_dir=work_dir)
-        if manifest:
-            set_manifest(ctx, manifest)

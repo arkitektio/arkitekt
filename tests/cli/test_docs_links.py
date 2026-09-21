@@ -20,7 +20,6 @@ def test_routes_build_on_base_url():
         docs.RUN_DOCS,
         docs.GEN_DOCS,
         docs.PLUGIN_DOCS,
-        docs.MANIFEST_DOCS,
         docs.INSPECT_DOCS,
         docs.CALL_DOCS,
     ):
@@ -40,7 +39,6 @@ def test_help_epilog_renders_a_link():
         ["init"],
         ["run"],
         ["gen"],
-        ["manifest"],
         ["inspect"],
         ["call"],
         # Top-level groups.

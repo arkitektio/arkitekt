@@ -15,7 +15,7 @@ from .variables import variables
 from .implementations import implementations
 from .requirements import requirements
 from .services import services
-from .hooks import hooks
+from .structures import structures
 from .lifecycle import lifecycle
 from .all import all
 
@@ -24,5 +24,5 @@ inspect.command("variables")(variables)
 inspect.command("requirements")(requirements)
 inspect.command("implementations")(implementations)
 inspect.command("services")(services)
-inspect.command("hooks")(hooks)
+inspect.command("structures")(structures)
 inspect.command("lifecycle")(lifecycle)

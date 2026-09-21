@@ -1,7 +1,8 @@
-from rekuest import get_default_app_registry
 from functools import partial
-from importlib import import_module, reload
+from importlib import reload
+from types import ModuleType
 import asyncio
+from pathlib import Path
 
 from watchfiles import awatch, Change
 from rich.panel import Panel
@@ -10,29 +11,37 @@ from watchfiles.filters import PythonFilter
 import os
 import sys
 import inspect
-from pathlib import Path
-from rekuest.app import AppRegistry
-from rekuest.agents.hooks.registry import get_default_hook_registry
-from typing import Annotated, MutableSet, Optional, Tuple, Any, Set
+from typing import Annotated, Any, Iterable, List, Optional, Set, Tuple
 import typer
+from arkitekt import runtime
+from arkitekt.cli.context import load_context
+from arkitekt.cli.errors import cli_error
 from arkitekt.cli.ui import construct_changes_group, construct_app_group
-from arkitekt.cli.commands.app.run.utils import import_builder, run_app
+from arkitekt.cli.commands.app.run.utils import runner_options
 from arkitekt.cli.options import (
+    ContextFileOption,
+    ContextOption,
     LogLevel,
     UrlOption,
-    BuilderOption,
     TokenOption,
     RedeemTokenOption,
     ForceOption,
     HeadlessOption,
     LogLevelOption,
     NoCacheOption,
-    VersionOption,
 )
-from arkitekt.cli.types import Manifest
-from arkitekt.app.app import App
+from arkitekt.cli.target import (
+    DEFAULT_TARGET,
+    Target,
+    TargetArgument,
+    TargetError,
+    import_target,
+    parse_target,
+    require_app,
+)
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
-from arkitekt.cli.vars import get_console, get_manifest
+from arkitekt.cli.utils import configure_logging
+from arkitekt.cli.vars import get_console, get_work_dir
 
 
 class EntrypointFilter(PythonFilter):
@@ -92,9 +101,24 @@ class DeepFilter(PythonFilter):
         return super().__call__(change, path)
 
 
-def reload_modules(reloadable_modules) -> None:
-    """Reloads the modules in the reloadable_modules set"""
-    for module in reloadable_modules:
+def modules_to_reload(
+    changed: Iterable[str], entrypoint_module: str, deep: bool
+) -> List[str]:
+    """The modules to reload for a change, in the order to reload them.
+
+    The entrypoint always comes last, and always comes: it is what declares the
+    app, and only re-running it declares a new one from the changed code.
+    Reloading only its dependencies would hand back the old App, still holding
+    the functions registered from the old code. In deep mode the changed modules
+    come first, so the entrypoint sees them.
+    """
+    dependencies = sorted(set(changed) - {entrypoint_module}) if deep else []
+    return [*dependencies, entrypoint_module]
+
+
+def reload_modules(modules: Iterable[str]) -> None:
+    """Reload ``modules`` in order."""
+    for module in modules:
         reload(sys.modules[module])
 
 
@@ -134,50 +158,6 @@ def check_deeps(changes: Set[Tuple[Change, str]]) -> Set[str]:
     return reloadable_modules
 
 
-def reset_structure() -> None:
-    """Resets the default defintiion rgistry and all
-    regitered nodes"""
-    get_default_app_registry().actor_builders.clear()
-    get_default_hook_registry().reset()
-
-
-def is_entrypoint_change(
-    changes: MutableSet[Tuple[Any, str]], entrypoint_real_path: str
-) -> bool:
-    for change, path in changes:
-        if os.path.normpath(path) == entrypoint_real_path:
-            return True
-    return False
-
-
-def resolve_entrypoint(entrypoint: str) -> tuple[str, str]:
-    """Returns the importable module path and watched file path."""
-    cwd = Path.cwd()
-    normalized_entrypoint = entrypoint.strip()
-    has_path_separator = any(
-        separator in normalized_entrypoint
-        for separator in (os.sep, os.altsep)
-        if separator
-    )
-
-    if normalized_entrypoint.endswith(".py") or has_path_separator:
-        entrypoint_path = Path(normalized_entrypoint)
-        if entrypoint_path.is_absolute():
-            entrypoint_path = entrypoint_path.resolve().relative_to(cwd)
-
-        if entrypoint_path.suffix == ".py":
-            entrypoint_path = entrypoint_path.with_suffix("")
-
-        module_path = ".".join(entrypoint_path.parts)
-    else:
-        module_path = normalized_entrypoint.strip(".")
-        entrypoint_path = Path(*module_path.split("."))
-
-    entrypoint_file = str((cwd / entrypoint_path).with_suffix(".py").resolve())
-
-    return module_path, entrypoint_file
-
-
 def callback(console: Console, future: asyncio.Task[None]):
     if future.cancelled():
         return
@@ -198,159 +178,138 @@ def callback(console: Console, future: asyncio.Task[None]):
                 console.print(panel)
 
 
+def _start(
+    console: Console,
+    module: ModuleType,
+    target: Target,
+    options: dict[str, Any],
+    what: str,
+    *,
+    context: Optional[str] = None,
+    context_file: Optional[Path] = None,
+    work_dir: str = ".",
+) -> Optional[asyncio.Task[None]]:
+    """Find the module's (new) App and start running it, or report why it cannot run.
+
+    The App is looked up again on every start: a reload re-declares it, and the
+    old object still holds the functions of the old code. So is its app context:
+    a ``--context module:attr`` is re-imported and a ``--context-file`` re-validated
+    against the reloaded class.
+    """
+    try:
+        app = require_app(module, target.attribute)
+        console.print(Panel(construct_app_group(app), style="bold green", border_style="green"))
+        loaded = load_context(app, context, context_file, work_dir)
+        run_options = {**options, "context": loaded} if loaded is not None else options
+        # Through the module, so the runner stays replaceable (tests patch it).
+        run = asyncio.create_task(runtime.arun(app, **run_options))
+        run.add_done_callback(partial(callback, console))
+        return run
+    except Exception:
+        console.print_exception()
+        console.print(Panel(f"Error starting {what} App", style="bold red", border_style="red"))
+        return None
+
+
+async def _stop(console: Console, run: Optional[asyncio.Task[None]]) -> None:
+    if run is None or run.done():
+        return
+    run.cancel()
+    console.print(Panel("Cancelling latest version", style="bold yellow", border_style="yellow"))
+    try:
+        await run
+    except asyncio.CancelledError:
+        pass
+
+
+def _intro(console: Console, deep: bool) -> None:
+    message = "[not bold white]This is a development tool for arkitekt apps. It will watch your app for changes and reload it when it detects a change. It will also print out the current state of your app.[/]"
+    if deep:
+        message += "\n\n - [not bold white][b]Deep mode[/] is enabled. This will watch all your installed packages for changes and reload them if they are changed.[/]"
+    else:
+        message += "\n\n - [not bold white][b]Deep mode[/] is disabled. This will only watch your entrypoint for changes.[/]"
+    console.print(Panel(message, style="bold green", border_style="green", title="Arkitekt Dev Mode"))
+
+
 async def run_dev(
     console: Console,
-    manifest: Manifest,
-    entrypoint: str | None = None,
-    version: str | None = None,
-    builder: str = "arkitekt.builders.easy",
+    target: Target,
+    work_dir: str,
+    options: dict[str, Any] | None = None,
     deep: bool = False,
-    reauth: bool = False,
-    **builder_kwargs,
+    context: Optional[str] = None,
+    context_file: Optional[Path] = None,
 ):
-    entrypoint = entrypoint or manifest.entrypoint
-    version = version or "dev"
+    """Run the target's app, and run it again whenever its code changes.
 
-    entrypoint_module, entrypoint_file = resolve_entrypoint(entrypoint)
+    ``options`` are the connection flags for the runner: they go to every run,
+    never onto the App. ``context``/``context_file`` are the app-context flags,
+    resolved anew on every start.
+    """
+    options = options or {}
+    start = dict(context=context, context_file=context_file, work_dir=work_dir)
 
-    builder_func = import_builder(builder)
+    _intro(console, deep)
 
-    # Build the app from the manifest (identifier, logo, scopes, ...), overriding
-    # the version with the dev sentinel (or an explicit --version). Shared between
-    # the initial build and every hot reload so they can never diverge.
-    # --reauth implies skipping the fakts cache; never clobber an explicit --no-cache.
-    builder_args = {**manifest.to_builder_dict(), "version": version, **builder_kwargs}
-    builder_args["no_cache"] = bool(builder_args.get("no_cache")) or reauth
-
-    generation_message = "[not bold white]This is a development tool for arkitekt apps. It will watch your app for changes and reload it when it detects a change. It will also print out the current state of your app.[/]"
-
-    if deep:
-        generation_message += "\n\n - [not bold white][b]Deep mode[/] is enabled. This will watch all your installed packages for changes and reload them if they are changed.[/]"
-    else:
-        generation_message += "\n\n - [not bold white][b]Deep mode[/] is disabled. This will only watch your entrypoint for changes.[/]"
-
-    panel = Panel(
-        generation_message,
-        style="bold green",
-        border_style="green",
-        title="Arkitekt Dev Mode",
-    )
-    console.print(panel)
-
+    module: Optional[ModuleType]
     try:
-        module = import_module(entrypoint_module)
-
+        module = import_target(target)
     except Exception:
         console.print_exception()
-        panel = Panel(
-            f"Error while importing your entrypoint please fix your file {entrypoint_file} and save",
+        console.print(Panel(
+            f"Error while importing your app please fix your file {target.file} and save",
             style="bold red",
             border_style="red",
-        )
-        console.print(panel)
+        ))
         module = None
 
-    current_run: asyncio.Future[None] | None = None
-    # This is the main task that is running the app
-
-    try:
-        app: App = builder_func(**builder_args)
-        group = construct_app_group(app)
-        panel = Panel(group, style="bold green", border_style="green")
-        console.print(panel)
-
-        current_run = asyncio.create_task(run_app(app))
-        current_run.add_done_callback(partial(callback, console))
-    except Exception:
-        console.print_exception()
-        panel = Panel(
-            "Error building initial App", style="bold red", border_style="red"
-        )
-        console.print(panel)
+    current_run = _start(console, module, target, options, "initial", **start) if module else None
 
     async for changes in awatch(
-        ".",
-        watch_filter=EntrypointFilter(entrypoint_file) if not deep else DeepFilter(),
+        work_dir,
+        watch_filter=EntrypointFilter(target.file) if not deep else DeepFilter(),
         debounce=2000,
         step=500,
     ):
+        changed: Set[str] = set()
         if deep:
-            #
-            to_be_reloaded = check_deeps(changes)
-            if not to_be_reloaded:
+            changed = check_deeps(changes)
+            if not changed:
                 continue
-        else:
-            to_be_reloaded: Set[str] = set()
 
-        group = construct_changes_group(changes)
-        panel = Panel(group, style="bold blue", border_style="blue")
-        console.print(panel)
-        # Cancelling the app
-        if not current_run or current_run.done():
-            pass
+        console.print(Panel(construct_changes_group(changes), style="bold blue", border_style="blue"))
+        await _stop(console, current_run)
+        current_run = None
 
-        else:
-            current_run.cancel()
-            panel = Panel(
-                "Cancelling latest version", style="bold yellow", border_style="yellow"
-            )
-            console.print(panel)
-            try:
-                await current_run
-
-            except asyncio.CancelledError:
-                pass
-
-        # Restarting the app
         try:
             with console.status("Reloading module..."):
-                reset_structure()
-
-                if not module:
-                    module = import_module(entrypoint_module)
+                if module is None:
+                    module = import_target(target)
                 else:
-                    if deep:
-                        reload_modules(to_be_reloaded)
-                    else:
-                        reload(module)
+                    reload_modules(modules_to_reload(changed, target.module, deep))
+                    module = sys.modules[target.module]
         except Exception:
             console.print_exception()
-            panel = Panel(
+            console.print(Panel(
                 "Reload unsucessfull please fix your app and save",
                 style="bold red",
                 border_style="red",
-            )
-            console.print(panel)
+            ))
             continue
 
-        try:
-            app = builder_func(**builder_args)
-            group = construct_app_group(app)
-            panel = Panel(group, style="bold green", border_style="green")
-            console.print(panel)
-
-            current_run = asyncio.create_task(run_app(app))
-            current_run.add_done_callback(partial(callback, console))
-        except Exception:
-            console.print_exception()
-            panel = Panel(
-                "Error building reloaded App", style="bold red", border_style="red"
-            )
-            console.print(panel)
+        current_run = _start(console, module, target, options, "reloaded", **start)
 
 
 def dev(
     ctx: typer.Context,
-    entrypoint: Annotated[Optional[str], typer.Argument()] = None,
+    target: TargetArgument = DEFAULT_TARGET,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
-    builder: BuilderOption = "arkitekt.builders.easy",
     token: TokenOption = None,
     force: ForceOption = False,
     redeem_token: RedeemTokenOption = None,
     headless: HeadlessOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
     no_cache: NoCacheOption = False,
-    version: VersionOption = None,
     deep: Annotated[
         bool,
         typer.Option(
@@ -365,31 +324,32 @@ def dev(
             help="Force a fresh login: skip the fakts cache and re-run authentication.",
         ),
     ] = False,
+    context: ContextOption = None,
+    context_file: ContextFileOption = None,
 ) -> None:
     """Runs the app in dev mode (with hot reloading)
 
     Running the app in dev mode will automatically reload the app when changes are detected.
-    This is useful for development and debugging.
+    This is useful for development and debugging. Each reload re-imports the target
+    module and runs the App it declares then.
     """
 
-    manifest = get_manifest(ctx)
     console = get_console(ctx)
+    configure_logging(log_level.value)
+    work_dir = get_work_dir(ctx)
+    try:
+        parsed = parse_target(target, work_dir)
+    except TargetError as e:
+        cli_error(str(e))
 
     asyncio.run(
         run_dev(
             console,
-            manifest,
-            entrypoint=entrypoint,
-            url=url,
-            builder=builder,
-            token=token,
-            force=force,
-            redeem_token=redeem_token,
-            headless=headless,
-            log_level=log_level.value,
-            no_cache=no_cache,
-            version=version,
+            parsed,
+            work_dir,
+            options=runner_options(ctx, reauth=reauth),
             deep=deep,
-            reauth=reauth,
+            context=context,
+            context_file=context_file,
         )
     )

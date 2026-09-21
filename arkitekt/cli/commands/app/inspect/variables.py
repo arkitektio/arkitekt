@@ -1,4 +1,3 @@
-from importlib import import_module
 import inspect as pyinspect
 import json
 from typing import Annotated
@@ -7,11 +6,12 @@ import typer
 
 from arkitekt.cli.ui import construct_leaking_group
 from arkitekt.cli.utils import emit_machine_readable
-from arkitekt.cli.vars import get_console, get_manifest
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, import_target_or_exit
+from arkitekt.cli.vars import get_console
 from rich.panel import Panel
 
 
-def inspect_dangerous_variables(module_path):
+def inspect_dangerous_variables(module):
     """Inspect the module and return a dictionary of all the variables that are
     not upper case and that are not classes, modules, functions or builtins.
 
@@ -23,8 +23,6 @@ def inspect_dangerous_variables(module_path):
     and dirty solution.
 
     """
-
-    module = import_module(module_path)
 
     dangerous_variables = {}
 
@@ -48,13 +46,14 @@ def inspect_dangerous_variables(module_path):
     return dangerous_variables
 
 
-def scan_module(module_path):
+def scan_module(module):
     """Scan a module for dangerous variables."""
-    return inspect_dangerous_variables(module_path)
+    return inspect_dangerous_variables(module)
 
 
 def variables(
     ctx: typer.Context,
+    target: TargetArgument = DEFAULT_TARGET,
     pretty: Annotated[
         bool,
         typer.Option("--pretty", "-p", help="Should we just output json?"),
@@ -76,10 +75,10 @@ def variables(
     """
 
     console = get_console(ctx)
-    manifest = get_manifest(ctx)
-    entrypoint = manifest.entrypoint
+    # Only the module is scanned, so it need not declare an app.
+    module, _ = import_target_or_exit(ctx, target)
 
-    variables = scan_module(entrypoint)
+    variables = scan_module(module)
 
     # The values can be arbitrary objects; stringify anything JSON can't carry.
     serializable = {key: repr(value) for key, value in variables.items()}

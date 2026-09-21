@@ -1,8 +1,17 @@
-from click.testing import CliRunner
-from arkitekt.cli.main import cli
+import importlib.util
 import os
+import sys
 from unittest.mock import patch
+
 import pytest
+import typer
+from click.testing import CliRunner
+
+from arkitekt import App
+from arkitekt.cli.commands.app.init.main import render_app_arguments, render_template
+from arkitekt.cli.constants import compile_templates
+from arkitekt.cli.main import cli
+from arkitekt.cli.utils import build_relative_dir
 
 
 # ---------------------------------------------------------------------------
@@ -26,11 +35,7 @@ def test_init_uv():
             mock_run.assert_any_call(["uv", "add", "arkitekt[all]"], check=True, cwd=os.getcwd())
 
             assert os.path.exists("app.py")
-            assert os.path.exists(".arkitekt/manifest.yaml")
-
-            with open(".arkitekt/manifest.yaml") as f:
-                content = f.read()
-                assert "package_manager: uv" in content
+            assert not os.path.exists(".arkitekt/manifest.yaml")
 
 
 def test_init_yes():
@@ -42,7 +47,7 @@ def test_init_yes():
             print(result.exception)
         assert result.exit_code == 0
         assert os.path.exists("app.py")
-        assert os.path.exists(".arkitekt/manifest.yaml")
+        assert not os.path.exists(".arkitekt")
 
 
 def test_init_path():
@@ -56,11 +61,11 @@ def test_init_path():
         assert result.exit_code == 0
 
         assert os.path.exists(os.path.join(original_cwd, "myapp", "app.py"))
-        assert os.path.exists(os.path.join(original_cwd, "myapp", ".arkitekt", "manifest.yaml"))
+        assert not os.path.exists(os.path.join(original_cwd, "myapp", ".arkitekt", "manifest.yaml"))
 
-        with open(os.path.join(original_cwd, "myapp", ".arkitekt", "manifest.yaml")) as f:
-            content = f.read()
-            assert "identifier: myapp" in content
+        # The identifier prompt defaults to the directory name, and lands in the App.
+        with open(os.path.join(original_cwd, "myapp", "app.py")) as f:
+            assert "App('myapp', '0.0.1', author='me'" in f.read()
 
 
 def test_init_default_uv():
@@ -125,12 +130,11 @@ def test_init_work_dir(tmp_path):
 
     # Files were created in tmp_path, not in the original cwd
     assert (tmp_path / "app.py").exists()
-    assert (tmp_path / ".arkitekt" / "manifest.yaml").exists()
     assert os.getcwd() == original_cwd, "Process CWD must not change"
 
-    with open(tmp_path / ".arkitekt" / "manifest.yaml") as f:
-        content = f.read()
-        assert "identifier: com.workdir.app" in content
+    # The entrypoint is the only file: the identity is the App in it.
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["app.py"]
+    assert "App('com.workdir.app', '0.1.0', author='tester'" in (tmp_path / "app.py").read_text()
 
 
 def test_init_subdir_work_dir(tmp_path):
@@ -153,7 +157,7 @@ def test_init_subdir_work_dir(tmp_path):
     assert result.exit_code == 0
 
     assert (tmp_path / "mysubapp" / "app.py").exists()
-    assert (tmp_path / "mysubapp" / ".arkitekt" / "manifest.yaml").exists()
+    assert not (tmp_path / "mysubapp" / ".arkitekt").exists()
     assert os.getcwd() == original_cwd
 
 
@@ -255,31 +259,95 @@ def test_kabinet_init_work_dir(tmp_path):
 
 
 # ---------------------------------------------------------------------------
-# manifest commands — work-dir style
+# init writes the App's identity into the entrypoint
 # ---------------------------------------------------------------------------
 
-def test_manifest_version(tmp_path):
-    """manifest version set via --work-dir."""
-    runner = CliRunner()
-    runner.invoke(cli, [
+def _import_file(path, name):
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        sys.modules.pop(name, None)
+    return module
+
+
+@pytest.mark.parametrize("template", compile_templates())
+def test_every_template_scaffolds_an_importable_app(tmp_path, template):
+    result = CliRunner().invoke(cli, [
         "--work-dir", str(tmp_path),
         "init",
-        "--identifier", "com.test.app",
-        "--version", "0.0.1",
-        "--author", "me",
-        "--entrypoint", "app",
+        "--identifier", "com.example.thing",
+        "--version", "1.2.3",
+        "--author", "Jane O'Neil",
+        "--scopes", "read", "--scopes", "write",
+        "--logo", "https://example.com/logo.png",
+        "--template", template,
+        "--entrypoint", "main",
         "--package-manager", "pip",
     ])
+    assert result.exit_code == 0, result.output
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["main.py"]
 
-    result = runner.invoke(cli, [
-        "--work-dir", str(tmp_path),
-        "manifest", "version", "set", "1.2.3",
+    module = _import_file(tmp_path / "main.py", f"scaffolded_{template}")
+
+    app = module.app
+    assert isinstance(app, App)
+    assert (app.identifier, app.version, app.author) == ("com.example.thing", "1.2.3", "Jane O'Neil")
+    assert app.scopes == ["read", "write"]
+    assert app.logo == "https://example.com/logo.png"
+    # What it declares is valid: the snapshot a run would take succeeds.
+    assert app.snapshot().registry.get_implementations()
+
+
+def test_the_scaffolded_app_is_what_the_commands_find(tmp_path):
+    result = CliRunner().invoke(cli, [
+        "--work-dir", str(tmp_path), "init", "--yes", "--identifier", "com.found.app",
+        "--package-manager", "pip",
     ])
-    if result.exit_code != 0:
-        print(result.output)
-        print(result.exception)
-    assert result.exit_code == 0
+    assert result.exit_code == 0, result.output
 
-    with open(tmp_path / ".arkitekt" / "manifest.yaml") as f:
-        content = f.read()
-        assert "1.2.3" in content
+    result = CliRunner().invoke(cli, ["--work-dir", str(tmp_path), "inspect", "implementations", "-mr"])
+    assert result.exit_code == 0, result.output
+    assert "generate_n_string" in result.output
+
+
+def test_templates_keep_their_port_references():
+    """Filling a template must not `str.format` it: `{{n}}` is a port reference."""
+    with open(build_relative_dir("templates", "simple.py")) as f:
+        source = f.read()
+
+    rendered = render_template(source, render_app_arguments("x", "0.0.1"))
+
+    assert "{{n}}" in rendered and "App('x', '0.0.1')" in rendered
+
+
+def test_app_arguments_quote_anything():
+    arguments = render_app_arguments('we"ird', "0.0.1", author="a'b", scopes=["read"])
+
+    # It is Python source for the App(...) call: evaluating it gives the values back.
+    assert eval(f"(lambda *args, **kwargs: (args, kwargs))({arguments})") == (
+        ('we"ird', "0.0.1"),
+        {"author": "a'b", "scopes": ["read"]},
+    )
+
+
+def test_init_has_no_manifest_options():
+    result = CliRunner().invoke(cli, ["init", "--help"])
+
+    assert "--overwrite-manifest" not in result.output
+
+
+def test_the_plugin_group_says_what_to_install_without_kabinet():
+    """kabinet is an extra: without it `arkitekt plugin` explains, instead of failing at import."""
+    from arkitekt.cli.commands.plugin import KABINET_HINT, plugin_group
+
+    def no_kabinet() -> typer.Typer:
+        raise ImportError("No module named 'kabinet'")
+
+    group = plugin_group(load=no_kabinet)
+    result = CliRunner().invoke(typer.main.get_command(group), [])
+
+    assert result.exit_code == 1
+    assert KABINET_HINT in result.output

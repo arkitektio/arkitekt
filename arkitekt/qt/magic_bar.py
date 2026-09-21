@@ -4,8 +4,9 @@ from arkitekt.qt.types import QtApp
 from koil.qt import async_to_qt
 
 from arkitekt.app.app import App
+from arkitekt.runtime import Runtime
 from .utils import get_image_path
-from typing import Optional, Callable
+from typing import Any, Optional, Callable
 import logging
 import aiohttp
 from logging import LogRecord
@@ -92,9 +93,17 @@ class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
         )
 
     def emit(self, record: LogRecord) -> None:
-        """Emit a Qt signal when a log message is received."""
+        """Emit a Qt signal when a log message is received.
+
+        The handler sits on the root logger, which outlives the widget. Once Qt has
+        deleted the widget's side of it, it takes itself off instead of raising into
+        whatever logged next.
+        """
         msg = self.format(record)
-        self.appendPlainText.emit(msg)
+        try:
+            self.appendPlainText.emit(msg)
+        except RuntimeError:
+            logging.getLogger().removeHandler(self)
 
 
 class ArkitektLogs(QtWidgets.QDialog):
@@ -193,11 +202,15 @@ class Profile(QtWidgets.QDialog):
         super().__init__(*args, **{"parent": bar, **kwargs})
         self.app = app
         self.bar = bar
-        self.manifest = self.app.fakts.manifest
+        # Configuration, not built state: a bar is built before its app is
+        # entered, and `identifier`/`version`/`logo` answer from the moment the
+        # app is configured -- which is all a title bar needs.
+        identifier = self.app.identifier
+        version = self.app.version
 
         self.settings = QtCore.QSettings(
             "arkitekt",
-            f"{self.manifest.identifier}:{self.manifest.version}:profile",
+            f"{identifier}:{version}:profile",
         )
 
         self.setWindowTitle("Settings")
@@ -208,11 +221,11 @@ class Profile(QtWidgets.QDialog):
         self.setLayout(self.mylayout)
         self.mylayout.addLayout(self.infobar)
 
-        if self.manifest.logo:
-            self.infobar.addWidget(Logo(self.manifest.logo, parent=self))
+        if self.app.logo:
+            self.infobar.addWidget(Logo(self.app.logo, parent=self))
 
-        self.infobar.addWidget(QtWidgets.QLabel(self.manifest.identifier))
-        self.infobar.addWidget(QtWidgets.QLabel(self.manifest.version))
+        self.infobar.addWidget(QtWidgets.QLabel(identifier))
+        self.infobar.addWidget(QtWidgets.QLabel(version))
 
         self.unkonfigure_button = QtWidgets.QPushButton("Reconnect")
         self.unkonfigure_button.clicked.connect(lambda: self.bar.refresh_task.run())
@@ -291,7 +304,7 @@ class MagicBar(QtWidgets.QWidget):
 
     def __init__(
         self,
-        app: QtApp,
+        runtime: Runtime,
         dark_mode: bool = False,
         on_error: Optional[Callable[[Exception], None]] = None,
     ) -> None:
@@ -303,41 +316,50 @@ class MagicBar(QtWidgets.QWidget):
 
         Parameters
         ----------
-        app : QtApp
-            A qt app to use.
+        runtime : Runtime
+            The run of a (Qt) app to drive, as ``connect(app)`` returns it. Enter
+            it before the bar is used; the bar configures, logs in and provides
+            through it.
         dark_mode : bool, optional
             Should we use the dark mode, by default False
         on_error : Optional[Callable[[Exception], None]], optional
             And additinal callback if an error is raised, by default None
         """
         super().__init__()
-        self.app = app
+        self.runtime = runtime
+        self.app = runtime.app
 
         # assert isinstance(
         #     self.app.koil, QtPedanticKoil
         # ), f"Koil should be Qt Koil but is {type(self.app.koil)}"
         self.dark_mode = dark_mode
 
-        self.profile = Profile(app, self, dark_mode=dark_mode)
+        self.profile = Profile(self.app, self, dark_mode=dark_mode)
         self.profile.updated.connect(self.on_profile_updated)
 
-        self.configure_task = async_to_qt(self.app.fakts.aload)
+        # Every task below goes through a wrapper method rather than binding
+        # `runtime.fakts.<x>` here: a bar may be built before its runtime is
+        # entered, so fakts and the agent do not exist yet. Resolving them when
+        # the button is pressed is both correct and the only thing that works --
+        # `async_to_qt` wants a real coroutine function, so these cannot be lambdas.
+
+        self.configure_task = async_to_qt(self._aload)
         self.configure_task.errored.connect(self.configure_errored)
         self.configure_task.returned.connect(self.set_unlogined)
 
-        self.refresh_task = async_to_qt(self.app.fakts.arefresh)
+        self.refresh_task = async_to_qt(self._arefresh)
         self.refresh_task.errored.connect(self.configure_errored)
         self.refresh_task.returned.connect(self.set_unlogined)
 
-        self.get_token_task = async_to_qt(self.app.fakts.aget_token)
+        self.get_token_task = async_to_qt(self._aget_token)
         self.get_token_task.errored.connect(self.login_errored)
         self.get_token_task.returned.connect(self.set_unprovided)
 
-        self.refresh_token_task = async_to_qt(self.app.fakts.arefresh_token)
+        self.refresh_token_task = async_to_qt(self._arefresh_token)
         self.refresh_token_task.errored.connect(self.login_errored)
         self.refresh_token_task.returned.connect(self.set_unprovided)
 
-        self.provide_task = async_to_qt(self.app.services.get("rekuest").agent.aprovide)
+        self.provide_task = async_to_qt(self._aprovide)
         self.provide_task.errored.connect(self.provide_errored)
         self.provide_task.returned.connect(self.set_unprovided)
 
@@ -492,7 +514,7 @@ class MagicBar(QtWidgets.QWidget):
         defaults = ["go.arkitekt.live", "http://127.0.0.1:8000"]
         # Maybe check current url
         try:
-            current = self.app.fakts.grant.discovery.url
+            current = self.runtime.fakts.grant.discovery.url
             if current:
                 defaults.insert(0, current)
         except Exception:
@@ -518,7 +540,7 @@ class MagicBar(QtWidgets.QWidget):
 
     def connect_to_endpoint(self, url: str) -> None:
         try:
-            self.app.fakts.grant.discovery.url = url
+            self.runtime.fakts.grant.discovery.url = url
         except Exception as e:
             logger.error(f"Could not update fakts url: {e}")
 
@@ -571,3 +593,28 @@ class MagicBar(QtWidgets.QWidget):
                 self.provide_future.cancel()
                 self.set_unprovided()
                 return
+
+    # ------------------------------------------------------------------ #
+    # Built state, resolved when the button is pressed                   #
+    # ------------------------------------------------------------------ #
+    # A magic bar may be constructed before its runtime is entered, so fakts
+    # and the agent do not exist yet. These wrappers are what the tasks
+    # above are built from: real coroutine functions (`async_to_qt` requires
+    # one), each reaching for the app's built parts at the moment it runs.
+
+    async def _aload(self) -> Any:
+        return await self.runtime.fakts.aload()
+
+    async def _arefresh(self) -> Any:
+        return await self.runtime.fakts.arefresh()
+
+    async def _aget_token(self) -> Any:
+        return await self.runtime.fakts.aget_token()
+
+    async def _arefresh_token(self) -> Any:
+        return await self.runtime.fakts.arefresh_token()
+
+    async def _aprovide(self) -> Any:
+        # Through the runtime: it owns the agent, binds it to this run and
+        # applies the run's options (force) before providing.
+        return await self.runtime.arun()

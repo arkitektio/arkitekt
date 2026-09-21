@@ -1,4 +1,3 @@
-from importlib import import_module
 import json
 from typing import Annotated
 
@@ -6,10 +5,11 @@ import typer
 from rich.panel import Panel
 from rich.tree import Tree
 
+from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.utils import emit_machine_readable
-from arkitekt.cli.vars import get_console, get_manifest
-from rekuest.app import get_default_app_registry
+from arkitekt.cli.vars import get_console
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 
 
 def _records(hooks: dict) -> list:
@@ -25,6 +25,7 @@ def _records(hooks: dict) -> list:
 
 def lifecycle(
     ctx: typer.Context,
+    target: TargetArgument = DEFAULT_TARGET,
     pretty: Annotated[
         bool,
         typer.Option("--pretty", "-p", help="Should we just output json?"),
@@ -41,15 +42,14 @@ def lifecycle(
     the app registry without connecting to a server.
     """
     console = get_console(ctx)
-    manifest = get_manifest(ctx)
+    app = load_app_or_exit(ctx, target)
 
-    with console.status("Loading entrypoint module..."):
-        try:
-            import_module(manifest.entrypoint)
-        except ModuleNotFoundError as e:
-            cli_error(f"Could not import entrypoint module '{manifest.entrypoint}': {e}")
+    if app.registry.is_empty():
+        cli_error(NOTHING_TO_PROVIDE)
 
-    hooks_registry = get_default_app_registry().hooks_registry
+    # The hooks the app would run: those declared on it. Read off the declaration,
+    # not a snapshot: listing hooks needs no port validation.
+    hooks_registry = app.registry.hooks_registry
     data = {
         "startup": _records(hooks_registry.startup_hooks),
         "shutdown": _records(hooks_registry.shutdown_hooks),

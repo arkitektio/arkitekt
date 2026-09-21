@@ -1,29 +1,47 @@
+"""Open objects in the orkestrator desktop app."""
+
 import typing
-from rekuest.structures.default import get_default_structure_registry
-import subprocess
-import sys
 import webbrowser
-import os
+
 from rath.scalars import ID
 
+if typing.TYPE_CHECKING:
+    from arkitekt.app.app import App
+    from arkitekt.runtime import Runtime
 
-def open_orkestrator_link(link: str):
+
+def open_orkestrator_link(link: str) -> None:
+    """Open an ``orkestrator://`` link with the system's handler.
+
+    Args:
+        link: The link to open.
+    """
     webbrowser.open(link)
 
 
 class IDBearer(typing.Protocol):
+    """Anything with an ``id``: what the orkestrator can open."""
+
     id: ID
 
 
-def inspect(x: IDBearer) -> None:
+def inspect(x: IDBearer, app: "App | Runtime") -> None:
+    """Open ``x`` in the orkestrator.
+
+    Args:
+        x: The object to open; its class must be a structure ``app`` declares.
+        app: An app, or a run of one, whose structure registry names ``x``'s type.
+
+    Raises:
+        StructureRegistryError: If ``app`` declares no structure for ``type(x)``.
+        LookupError: If ``app`` is a runtime that was never entered.
     """
-    Inspects the given object by opening it in the orkestrator.
-
-
-
-    """
-    structure_reg = get_default_structure_registry()
-
-    identifier = structure_reg.get_identifier_for_cls(type(x))
-
+    registry = getattr(app, "registry", None)
+    if registry is None:
+        # A Runtime: what it serves is its snapshot, taken when it was entered.
+        snapshot = getattr(app, "snapshot", None)
+        registry = snapshot.registry if snapshot is not None else None
+    if registry is None:
+        raise LookupError("This runtime was never entered, so it has no registry yet.")
+    identifier = registry.structure_registry.get_identifier_for_cls(type(x))
     open_orkestrator_link(f"orkestrator://{identifier}/{x.id}")

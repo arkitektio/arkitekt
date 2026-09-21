@@ -1,4 +1,3 @@
-from importlib import import_module
 import json
 from typing import Annotated, Optional
 
@@ -9,8 +8,9 @@ from rich.table import Table
 
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.utils import emit_machine_readable
-from arkitekt.cli.vars import get_console, get_manifest
-from arkitekt.service_registry import get_default_service_registry
+from arkitekt.cli.vars import get_console
+from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 
 
 def _describe_service(name: str, svc: object) -> dict:
@@ -40,6 +40,7 @@ def _describe_service(name: str, svc: object) -> dict:
 
 def services(
     ctx: typer.Context,
+    target: TargetArgument = DEFAULT_TARGET,
     schema: Annotated[
         Optional[str],
         typer.Option(
@@ -58,28 +59,22 @@ def services(
 ):
     """Lists the service SDKs this app would connect through.
 
-    Imports the entrypoint (which registers the installed service packages) and
-    reports each registered service, its fakts requirements, and whether it
+    Loads the target's app and reports each service it declares, its fakts requirements, and whether it
     ships a GraphQL schema / turms project for codegen — all without touching a
     server.
     """
     console = get_console(ctx)
-    manifest = get_manifest(ctx)
-
-    with console.status("Loading entrypoint module..."):
-        try:
-            import_module(manifest.entrypoint)
-        except ModuleNotFoundError as e:
-            cli_error(f"Could not import entrypoint module '{manifest.entrypoint}': {e}")
-
-    registry = get_default_service_registry()
+    # The services a run of this app would build clients for: those it declares
+    # (`App(services=[...])`, `app.service(...)`) and the one its provider brings
+    # (rekuest's, when it offers something) -- not every one the process imported.
+    service_builders = run_snapshot_or_exit(load_app_or_exit(ctx, target)).services
 
     if schema is not None:
-        svc = registry.service_builders.get(schema)
+        svc = service_builders.get(schema)
         if svc is None:
             cli_error(
                 f"Unknown service '{schema}'. Available: "
-                + ", ".join(registry.service_builders.keys())
+                + ", ".join(service_builders.keys())
             )
         try:
             sdl = svc.get_graphql_schema()
@@ -90,7 +85,7 @@ def services(
 
     records = [
         _describe_service(name, svc)
-        for name, svc in registry.service_builders.items()
+        for name, svc in service_builders.items()
     ]
 
     if machine_readable:

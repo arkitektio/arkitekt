@@ -13,7 +13,6 @@ dependencies = [
     "click>=8.2.0",
     "typer>=0.15.0",
     "rekuest>=3",
-    "kabinet>=2",
     "semver>=3.0.4",
     "watchfiles>=1.0.5",
     "turms>=2.0.0",
@@ -38,8 +37,10 @@ kraph = [
 mikro = [
     "mikro>=3",
 ]
-# Historical no-op alias: kabinet is a core dependency (the plugin commands use it).
-kabinet = []
+# The plugin commands (`arkitekt plugin ...`) build and publish through kabinet.
+kabinet = [
+    "kabinet>=2",
+]
 elektro = [
     "elektro>=2.0.0",
 ]
@@ -51,6 +52,10 @@ lovekit = [
 ]
 unlok = [
     "unlok>=2.0.0",
+]
+# Serving an app over FastAPI (arkitekt.serve): rekuest's FastAPI integration.
+serve = [
+    "rekuest[fastapi]",
 ]
 # Qt integration (arkitekt.qt / the MagicBar). qtpy still needs an actual
 # binding (PyQt5/6 or PySide2/6) supplied by the application.

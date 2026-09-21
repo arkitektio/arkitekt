@@ -1,7 +1,6 @@
 from typing import Annotated, Optional
 import typer
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.vars import get_manifest
 import subprocess
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
@@ -20,22 +19,14 @@ def stage(
         str,
         typer.Option("--url", "-u", help="The fakts server to use"),
     ] = DEFAULT_ARKITEKT_URL,
-    builder: Annotated[
-        str,
-        typer.Option("--builder", help="The builder to use"),
-    ] = "arkitekt.builders.easy",
 ) -> None:
     """Stages the latest Build for testing
 
     Stages the current build for testing. This will create a temporary staged version
-    of the app that is run agains the local arkitekt instance. The builder will be changed
-    to the easy or provided builder to ensure that the app can be run headlessly
-
-
+    of the app that is run against the local arkitekt instance, headlessly, on the
+    app target the build recorded.
     """
     from .io import get_builds
-
-    get_manifest(ctx)
 
     builds = get_builds(build)
 

@@ -9,11 +9,10 @@ import typer
 import semver
 from rich.panel import Panel
 
-from arkitekt.cli.constants import compile_scopes, compile_templates
-from arkitekt.cli.errors import cli_error, confirm_or_abort
-from arkitekt.cli.interactive import require_interactive
-from arkitekt.cli.io import load_manifest, write_manifest
-from arkitekt.cli.types import Manifest
+from arkitekt.cli.constants import compile_scopes
+from arkitekt.cli.validators import validate_scopes, validate_template
+from arkitekt.cli.errors import cli_error
+from arkitekt.cli.tty import require_tty
 from arkitekt.cli.utils import build_relative_dir
 from arkitekt.cli.vars import get_console, get_work_dir
 
@@ -35,23 +34,46 @@ class PackageManager(str, enum.Enum):
     uv = "uv"
 
 
-def _validate_template(value: str) -> str:
-    valid = compile_templates()
-    if value not in valid:
-        raise typer.BadParameter(
-            f"'{value}' is not one of {', '.join(valid)}."
+#: The placeholder in a template that becomes the ``App(...)`` arguments.
+APP_ARGUMENTS_PLACEHOLDER = "__APP_ARGUMENTS__"
+
+
+def render_app_arguments(
+    identifier: str,
+    version: str,
+    author: Optional[str] = None,
+    scopes: Optional[List[str]] = None,
+    logo: Optional[str] = None,
+) -> str:
+    """The ``App(...)`` arguments that declare the app's identity, as Python source.
+
+    Built with ``repr`` so any identifier or author quotes correctly. The identity
+    lives in the code this writes, not in a project file next to it.
+    """
+    arguments = [repr(identifier), repr(version)]
+    if author:
+        arguments.append(f"author={author!r}")
+    if scopes:
+        arguments.append(
+            f"scopes={list(scopes)!r}"
+        )  # lets forget scopes as of now, i would like to have them be infered in the future from which service actions are needed (because scopes are service specific)
+    if logo:
+        arguments.append(f"logo={logo!r}")
+    return ", ".join(arguments)
+
+
+def render_template(template_source: str, app_arguments: str) -> str:
+    """Fill a template's ``App(...)`` placeholder.
+
+    A plain replace, not ``str.format``: the templates' docstrings carry
+    ``{{n}}``-style port references that rekuest reads, and formatting would
+    rewrite them.
+    """
+    if APP_ARGUMENTS_PLACEHOLDER not in template_source:
+        raise ValueError(
+            f"The template has no {APP_ARGUMENTS_PLACEHOLDER} placeholder."
         )
-    return value
-
-
-def _validate_scopes(value: List[str]) -> List[str]:
-    valid = compile_scopes()
-    for scope in value:
-        if scope not in valid:
-            raise typer.BadParameter(
-                f"'{scope}' is not one of {', '.join(valid)}."
-            )
-    return value
+    return template_source.replace(APP_ARGUMENTS_PLACEHOLDER, app_arguments)
 
 
 def init_command(
@@ -92,8 +114,8 @@ def init_command(
         typer.Option(
             "--scopes",
             "-s",
-            help="The scopes of the app. You can choose multiple for your app. For a list of scopes, run `arkitekt manifest scopes available`",
-            callback=_validate_scopes,
+            help=f"The scopes of the app. You can choose multiple for your app. Available: {', '.join(compile_scopes())}",
+            callback=validate_scopes,
         ),
     ] = ["read"],
     template: Annotated[
@@ -102,7 +124,7 @@ def init_command(
             "--template",
             "-t",
             help="The template to use. You can choose from a variety of preconfigured templates. They are just starting points and can be changed later.",
-            callback=_validate_template,
+            callback=validate_template,
         ),
     ] = "simple",
     entrypoint: Annotated[
@@ -110,17 +132,9 @@ def init_command(
         typer.Option(
             "--entrypoint",
             "-e",
-            help="The entrypoint of your app. This will be the name of the python file. Omit the .py ending",
+            help="The name of the python file to create, without the .py ending. Commands find the app in it through their 'module[:attr]' target, which defaults to 'app'.",
         ),
     ] = None,
-    overwrite_manifest: Annotated[
-        bool,
-        typer.Option(
-            "--overwrite-manifest",
-            "-om",
-            help="Should we overwrite the existing manifest if it already exists?",
-        ),
-    ] = False,
     overwrite_app: Annotated[
         bool,
         typer.Option(
@@ -155,16 +169,21 @@ def init_command(
 ):
     """Initializes an Arkitekt app
 
-    This command will create a new Arkitekt app in the current directory. It will
-    create a `.arkitekt` folder that will contain a manifest and a `app.py` file,
-    which will serve as the entrypoint for your app. By default, the app will be
-    initialized with a simple hello world app, but you can choose from a variety
-    of templates.
+    This command will create a new Arkitekt app in the current directory: an
+    `app.py` file (or the --entrypoint you choose) that declares the app with
+    `App(...)`, carrying its identifier, version, author, scopes and logo. That
+    file is the whole app; there is no separate manifest. By default, the app will
+    be initialized with a simple hello world app, but you can choose from a
+    variety of templates.
 
     """
 
     # Resolve at runtime (not at import) so auto-detection respects the current env.
-    package_manager = package_manager.value if package_manager is not None else get_default_package_manager()
+    package_manager = (
+        package_manager.value
+        if package_manager is not None
+        else get_default_package_manager()
+    )
 
     console = get_console(ctx)
     parent_work_dir = get_work_dir(ctx)
@@ -181,22 +200,23 @@ def init_command(
         if yes:
             identifier = default_identifier
         else:
-            require_interactive("`init`", hint=_INIT_HINT)
+            require_tty("`init`", hint=_INIT_HINT)
             identifier = typer.prompt("Your app identifier", default=default_identifier)
 
     if not author:
         if yes:
             author = getuser()
         else:
-            require_interactive("`init`", hint=_INIT_HINT)
+            require_tty("`init`", hint=_INIT_HINT)
             author = typer.prompt("Your name", default=getuser())
 
     if not entrypoint:
         if yes:
             entrypoint = "app"
         else:
-            require_interactive("`init`", hint=_INIT_HINT)
+            require_tty("`init`", hint=_INIT_HINT)
             entrypoint = typer.prompt("Your app file", default="app")
+    entrypoint = entrypoint.removesuffix(".py")
 
     if not semver.Version.is_valid(version):
         if yes:
@@ -204,7 +224,7 @@ def init_command(
                 f"Invalid version: {version}. Arkitekt versions need to follow semver."
             )
         else:
-            require_interactive("`init`", hint=_INIT_HINT)
+            require_tty("`init`", hint=_INIT_HINT)
             while not semver.Version.is_valid(version):
                 get_console(ctx).print(
                     "Arkitekt versions need to follow [link=https://semver.org]semver[/link]. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
@@ -213,29 +233,6 @@ def init_command(
                     "The version of your app",
                     default="0.0.1",
                 )
-
-    existing_manifest = load_manifest(base_dir=work_dir)
-    if existing_manifest and not overwrite_manifest:
-        if yes:
-            should_overwrite = True
-        else:
-            require_interactive("`init`", hint=_INIT_HINT)
-            confirm_or_abort(
-                f"Another Arkitekt app {existing_manifest.to_console_string()} exists already at {work_dir}?. Do you want to overwrite?"
-            )
-            should_overwrite = True
-        if not should_overwrite:
-            ctx.abort()
-
-    manifest = Manifest(
-        logo=logo,
-        author=author,
-        identifier=identifier,
-        version=version,
-        scopes=scopes,
-        entrypoint=entrypoint,
-        package_manager=package_manager,
-    )
 
     if package_manager == "uv":
         if not shutil.which("uv"):
@@ -251,9 +248,7 @@ def init_command(
                 cwd=work_dir,
             )
             extras_string = ",".join(with_extra)
-            package_spec = (
-                f"arkitekt[{extras_string}]" if with_extra else "arkitekt"
-            )
+            package_spec = f"arkitekt[{extras_string}]" if with_extra else "arkitekt"
             subprocess.run(["uv", "add", package_spec], check=True, cwd=work_dir)
             hello_py = os.path.join(work_dir, "hello.py")
             if os.path.exists(hello_py) and entrypoint != "hello":
@@ -264,14 +259,19 @@ def init_command(
             )
 
     with open(build_relative_dir("templates", f"{template}.py")) as f:
-        template_app = f.read()
+        template_app = render_template(
+            f.read(),
+            render_app_arguments(
+                identifier, version, author=author, scopes=scopes, logo=logo
+            ),
+        )
 
     entrypoint_file = os.path.join(work_dir, f"{entrypoint}.py")
     if os.path.exists(entrypoint_file) and not overwrite_app:
         if yes:
             should_overwrite = True
         else:
-            require_interactive("`init`", hint=_INIT_HINT)
+            require_tty("`init`", hint=_INIT_HINT)
             should_overwrite = typer.confirm(
                 "Entrypoint File already exists. Do you want to overwrite?"
             )
@@ -282,10 +282,13 @@ def init_command(
         with open(entrypoint_file, "w") as f:
             f.write(template_app)
 
-    write_manifest(manifest, base_dir=work_dir)
+    run_hint = (
+        "arkitekt run dev" if entrypoint == "app" else f"arkitekt run dev {entrypoint}"
+    )
     md = Panel(
-        f"{manifest.to_console_string()} was successfully initialized\n\n"
-        + "[not bold white]We are excited to see what you come up with!",
+        f"📦 {identifier} ({version}) by {author} was successfully initialized in "
+        f"{os.path.basename(entrypoint_file)}\n\n"
+        + f"[not bold white]Start it with `{run_hint}`. We are excited to see what you come up with!",
         border_style="green",
         style="green",
     )

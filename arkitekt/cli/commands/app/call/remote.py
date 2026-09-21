@@ -1,38 +1,74 @@
 import asyncio
-from importlib import import_module
-from typing import Annotated, List, Optional
+import json
+from typing import Annotated, Any, Dict, List, Optional
 
 import typer
 
-from arkitekt.app import App
+from arkitekt import runtime
+from arkitekt.app.app import App
+from arkitekt.cli.commands.app.run.utils import runner_options
+from arkitekt.cli.errors import cli_error
 from arkitekt.cli.options import (
-    LogLevel,
-    UrlOption,
-    BuilderOption,
-    TokenOption,
     HeadlessOption,
+    LogLevel,
     LogLevelOption,
     NoCacheOption,
+    TokenOption,
+    UrlOption,
 )
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.ui import construct_run_panel
-from arkitekt.cli.utils import import_builder
-from arkitekt.cli.vars import get_console, get_manifest
+from arkitekt.cli.utils import configure_logging
+from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 
-async def call_app(
-    app: App,
-    hash,
-    arg,
-):
-    async with app:
-        raise NotImplementedError("This is not implemented yet")
+def parse_call_args(args: List[str]) -> Dict[str, Any]:
+    """``["n=3", "name=bob"]`` -> ``{"n": 3, "name": "bob"}``.
+
+    Values are read as JSON when they parse as JSON (numbers, booleans, lists,
+    objects, quoted strings) and taken as plain strings otherwise, because the call
+    sends already-serialized arguments: what is typed is what the server gets.
+
+    Raises:
+        ValueError: If an argument has no ``=``.
+    """
+    parsed: Dict[str, Any] = {}
+    for arg in args:
+        key, sep, raw = arg.partition("=")
+        if not sep or not key:
+            raise ValueError(f"'{arg}' is not a 'key=value' argument.")
+        try:
+            parsed[key] = json.loads(raw)
+        except json.JSONDecodeError:
+            parsed[key] = raw
+    return parsed
+
+
+async def call_app(app: App, hash: str, kwargs: Dict[str, Any], options: Dict[str, Any]) -> Any:  # noqa: ANN401
+    """Connect ``app`` (without providing it), find the action by hash, and call it.
+
+    The call goes through the run's rekuest client, so only actions available on
+    the connected server can be called -- this app's own functions are not served.
+    """
+    from rekuest.rekuest import Rekuest
+
+    # Through the module, so the connection stays replaceable (tests patch it).
+    async with runtime.connect(app, **options) as rt:
+        rekuest = rt.get(Rekuest)
+        if rekuest is None:
+            raise LookupError(
+                f"The app '{app.identifier}' does not use rekuest, so it cannot call "
+                "actions. Declare an action on it, or `app.service(Rekuest)`."
+            )
+        action = await rekuest.afind(hash=hash)
+        return await rekuest.acall_raw(kwargs=kwargs, action=action)
 
 
 def remote(
     ctx: typer.Context,
+    target: TargetArgument = DEFAULT_TARGET,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
-    builder: BuilderOption = "arkitekt.builders.easy",
     token: TokenOption = None,
     headless: HeadlessOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
@@ -42,54 +78,52 @@ def remote(
         typer.Option(
             "--arg",
             "-a",
-            help="Key Value pairs for the setup",
+            help="An argument of the call, as key=value (the value is read as JSON when it parses).",
         ),
     ] = [],
     hash: Annotated[
         Optional[str],
         typer.Option(
             "--hash",
-            help="The hash of the node to run",
+            help="The hash of the action to run",
         ),
     ] = None,
 ):
-    """Call a node in a remote app and print its output.
+    """Call an action on the connected server and print its output.
 
     This is useful for debugging and testing. In this mode the app itself will not
-    be run, so local nodes cannot be called. Only nodes that are available on your
-    arkitekt server can be called.
-
+    be run, so local actions cannot be called. Only actions that are available on your
+    arkitekt server can be called. The app is used for its identity and services:
+    it is what connects.
     """
 
-    manifest = get_manifest(ctx)
     console = get_console(ctx)
-    entrypoint = manifest.entrypoint
+    configure_logging(log_level.value)
 
-    kwargs = dict(args or [])
+    if hash is None:
+        cli_error("Pass the --hash of the action to call.")
+    try:
+        kwargs = parse_call_args(args or [])
+    except ValueError as e:
+        cli_error(str(e))
 
-    builder_kwargs = {
-        "url": url,
-        "token": token,
-        "headless": headless,
-        "log_level": log_level.value,
-        "no_cache": no_cache,
-    }
+    app = load_app_or_exit(ctx, target)
+    console.print(construct_run_panel(app))
 
-    builder = import_builder(builder)
+    try:
+        result = asyncio.run(call_app(app, hash, kwargs, runner_options(ctx)))
+    except LookupError as e:
+        cli_error(str(e))
 
-    with console.status("Loading entrypoint module..."):
-        try:
-            import_module(entrypoint)
-        except ModuleNotFoundError as e:
-            console.print(f"Could not find entrypoint module {entrypoint}")
-            raise e
+    if _is_json(result):
+        console.print_json(data=result)
+    else:
+        console.print(result)
 
-    app = builder(
-        **manifest.to_builder_dict(),
-        **builder_kwargs,
-    )
 
-    panel = construct_run_panel(app)
-    console.print(panel)
-
-    asyncio.run(call_app(app, hash, kwargs))
+def _is_json(value: Any) -> bool:  # noqa: ANN401
+    try:
+        json.dumps(value)
+    except (TypeError, ValueError):
+        return False
+    return True

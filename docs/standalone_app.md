@@ -7,9 +7,11 @@ The standalone app is the easiest way to get started with Arkitekt. It allows yo
 To create a standalone app, you can use the `easy` builder from `arkitekt`.
 
 ```python
-from arkitekt import easy
+from arkitekt import App, easy
 
-@register
+app = App("my.app")
+
+@app.action
 def my_function():
     return "Hello from my standalone app!"
 

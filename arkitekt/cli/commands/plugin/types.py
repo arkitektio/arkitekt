@@ -5,6 +5,7 @@ from typing import List, Optional
 
 from string import Formatter
 import os
+import shlex
 
 from kabinet.api.schema import (
     AppImageInput,
@@ -119,9 +120,15 @@ class Build(BaseModel):
         return base_command
 
     def build_arkitekt_command(self, fakts_url: str):
-        """Builds the arkitekt command for this build."""
+        """Builds the arkitekt command for this build.
+
+        The target recorded at build time is passed on, so the container runs the
+        app the image was built for.
+        """
 
         base_command = list(self.base_arkitekt_command)
+        if self.manifest.entrypoint:
+            base_command = base_command + [shlex.quote(self.manifest.entrypoint)]
 
         base_command = base_command + ["--url", fakts_url]
 

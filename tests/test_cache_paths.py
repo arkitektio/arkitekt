@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Iterator
 
 import pytest
-from arkitekt.app.fakts import _adopt_legacy_cache, _cache_path
+from arkitekt.app.fakts import _cache_path
 from arkitekt.utils import create_arkitekt_folder
 from fakts.models import Manifest
 
@@ -81,75 +81,6 @@ def test_cache_path_separates_two_servers() -> None:
 
     assert lab != local
     assert os.path.dirname(lab) == os.path.dirname(local)
-
-
-def _legacy_cache(tmp_path: Path, manifest: Manifest, payload: str) -> Path:
-    legacy = tmp_path / ".arkitekt" / "cache"
-    legacy.mkdir(parents=True)
-    path = legacy / f"{manifest.identifier}-{manifest.version}_fakts_cache.json"
-    path.write_text(payload)
-    return path
-
-
-def test_legacy_cache_is_adopted_rather_than_orphaned(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """Relocating the cache must not cost one re-authentication per app."""
-    manifest = make_manifest()
-    monkeypatch.chdir(tmp_path)
-    _legacy_cache(tmp_path, manifest, '{"hello": "world"}')
-    new_path = tmp_path / "state" / "cache.json"
-    new_path.parent.mkdir()
-
-    _adopt_legacy_cache(manifest, str(new_path))
-
-    assert new_path.read_text() == '{"hello": "world"}'
-    if os.name == "posix":
-        assert stat.S_IMODE(new_path.stat().st_mode) == 0o600
-
-
-def test_adoption_leaves_the_legacy_file_in_place(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """So that rolling this change back keeps working."""
-    manifest = make_manifest()
-    monkeypatch.chdir(tmp_path)
-    legacy = _legacy_cache(tmp_path, manifest, "{}")
-    new_path = tmp_path / "state" / "cache.json"
-    new_path.parent.mkdir()
-
-    _adopt_legacy_cache(manifest, str(new_path))
-
-    assert legacy.exists()
-
-
-def test_adoption_never_overwrites_an_existing_session(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The legacy file is stale by definition once we have a new one; adopting
-    over it would roll the session back to a revoked refresh token."""
-    manifest = make_manifest()
-    monkeypatch.chdir(tmp_path)
-    _legacy_cache(tmp_path, manifest, '{"stale": true}')
-    new_path = tmp_path / "state" / "cache.json"
-    new_path.parent.mkdir()
-    new_path.write_text('{"current": true}')
-
-    _adopt_legacy_cache(manifest, str(new_path))
-
-    assert new_path.read_text() == '{"current": true}'
-
-
-def test_adoption_is_a_no_op_without_a_legacy_cache(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    monkeypatch.chdir(tmp_path)
-    new_path = tmp_path / "state" / "cache.json"
-    new_path.parent.mkdir()
-
-    _adopt_legacy_cache(make_manifest(), str(new_path))
-
-    assert not new_path.exists()
 
 
 def test_no_empty_cache_folder_is_created_by_default(tmp_path: Path) -> None:

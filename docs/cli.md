@@ -129,12 +129,11 @@ arkitekt run dev --url http://localhost:8000 --headless
 | `dev` | Runs the app with auto-reload on code changes. Best for iterating. |
 | `prod` | Runs the app without reloading, as it would run inside a container. |
 
-Common options (shared by `dev` and `prod`):
+Both run the app the entrypoint builds (`app = easy(...)`); an entrypoint without one is an error. Common options (shared by `dev` and `prod`), which override only what you pass:
 
 | Option | Description |
 | :--- | :--- |
 | `--url`, `-u` | The `fakts` URL of the Arkitekt instance to connect to. |
-| `--builder`, `-b` | The builder used to assemble the app. Defaults to `arkitekt.builders.easy`. |
 | `--token`, `-t` | A token for the `fakts` instance (skips interactive auth). |
 | `--instance-id`, `-i` | The instance id to register the app under. |
 | `--redeem-token`, `-r` | A redeem token used for unattended authentication. |
@@ -143,6 +142,17 @@ Common options (shared by `dev` and `prod`):
 
 `run dev` additionally accepts `--no-cache`/`-nc` to skip the fakts cache and
 `--deep` to watch the whole directory tree for changes.
+
+An App that declares an app context (`App(..., app_context=Config)`) does not run
+without one. Both commands take it from your code or from a file:
+
+| Option | Description |
+| --- | --- |
+| `--context module:attr` | An instance of the declared class, or a zero-argument callable returning one (`--context settings:config`). |
+| `--context-file path` | A YAML or JSON mapping validated by the declared class, which must be a pydantic model (`--context-file config.yaml`). |
+
+Either is resolved before anything connects, so a missing or mismatched context
+fails at the prompt. `run dev` resolves it again on every reload.
 
 📖 <https://arkitekt.live/docs/cli/run>
 
@@ -223,8 +233,7 @@ arkitekt inspect all --pretty
 | `variables` | Scans the entrypoint for dangerous global variables that can leak across reloads. |
 | `requirements` | Prints the service requirements of the app as JSON. |
 | `implementations` | Prints the registered implementations of the app. |
-| `services` | Lists the registered service SDKs, their requirements and codegen assets. `--schema <name>` dumps a service's raw GraphQL SDL. |
-| `hooks` | Lists the `@init` hooks in run order (with their CLI-only flag). |
+| `services` | Lists the service SDKs the app selected, their requirements and codegen assets. `--schema <name>` dumps a service's raw GraphQL SDL. |
 | `lifecycle` | Lists the agent's startup, shutdown and background hooks. |
 | `all` | Prints the complete agent manifest (implementations, states, locks, requirements, bloks), validated the way the server would validate it. |
 

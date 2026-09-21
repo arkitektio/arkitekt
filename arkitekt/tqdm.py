@@ -1,29 +1,26 @@
-"""Small extension to tqdm that reports progress to arkitekt through the
-assignation context"""
+"""Small extension to tqdm that reports progress to the task it is handed."""
 
 from typing import Any, Iterable, Mapping, TypeVar
 from tqdm import tqdm as _tqdm
-from rekuest.actors.vars import get_current_assignation_helper
+from rekuest.task import Task
 
 T = TypeVar("T")
 
 
 class tqdm(_tqdm[T]):
-    """A tqdm that reports progress to arkitekt through the
-    assignation context
+    """A tqdm that reports its progress to ``task``, and so to the Arkitekt UI.
 
-    This tqdm assigns the current progress to the current assignation helper
-    if it exists. This allows the progress to be reported to the user
-    through the Arkitekt UI.
+        def segment(images: list[Image], task: Task) -> ...:
+            for image in tqdm(images, task=task):
+                ...
 
-    TODO: Check if this works with the current and next versions of tqdm. Maybe
-    we should factor this out into the rekuest package
-
+    Without a task it is a plain tqdm.
     """
 
     def __init__(
         self,
         iterable: Iterable[T],
+        task: Task | None = None,
         desc: str | None = None,
         total: float | None = None,
         leave: bool | None = True,
@@ -80,13 +77,12 @@ class tqdm(_tqdm[T]):
             gui=gui,
         )
 
-        self._assignationhelper = get_current_assignation_helper()
+        self._task = task
 
         self.last_arkitekt_perc = 0
 
     def update(self, *args: Any, **kwargs: Any):
-        """An update method that reports progress to arkitekt through the
-        assignation context and the current assignation helper
+        """An update method that also reports progress to the task, if one was given
 
         Returns
         -------
@@ -94,13 +90,9 @@ class tqdm(_tqdm[T]):
         """
         z = super().update(*args, **kwargs)
 
-        self._assignationhelper = get_current_assignation_helper()
-
-        if self._assignationhelper:
+        if self._task is not None and self.total:
             if self.last_arkitekt_perc + 0.05 < self.last_print_n / self.total:
                 self.last_arkitekt_perc = self.last_print_n / self.total
-                self._assignationhelper.progress(
-                    int(self.last_arkitekt_perc * 100)
-                )
+                self._task.progress(int(self.last_arkitekt_perc * 100))
 
         return z

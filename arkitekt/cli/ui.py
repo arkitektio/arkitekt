@@ -6,13 +6,6 @@ from typing import MutableSet, Tuple, Any, Dict
 import os
 from .texts import LOGO, WELCOME_MESSAGE
 
-try:
-    from rekuest.definition.registry import get_default_definition_registry
-except ImportError:
-    get_default_definition_registry = lambda: None
-    pass
-
-
 def construct_codegen_welcome_panel() -> Panel:
     md = Panel(
         LOGO
@@ -47,7 +40,8 @@ def construct_changes_group(changes: MutableSet[Tuple[Any, str]]) -> Group:
 def construct_app_group(app: App) -> Group:
     """Construct a rich panel group for the app
 
-    It displays the registered definitions
+    It displays the app's identity and what it declares, read off the App itself:
+    the App is the only place the identity lives.
 
     Parameters
     ----------
@@ -59,19 +53,21 @@ def construct_app_group(app: App) -> Group:
     Group
         A rich panel group
     """
-    panel_header = f"Running App \n\n{app.fakts.manifest.identifier}:{app.fakts.manifest.version}\n"
+    by = f" by {app.author}" if app.author else ""
+    panel_header = f"Running App \n\n{app.identifier}:{app.version}{by}\n"
 
     actor_tree = Tree("Registered Definitions", style="white not bold")
     service_tree = Tree("Depends on services", style="white not bold")
 
-    for key, extension in app.services.items():
+    # Rendered from the declaration, not a snapshot: a declaration the run will
+    # reject is the run's error to report, not the panel's.
+    for key in app.services:
         service_tree.add(key)
 
-    rekuest = app.services.get("rekuest")
-    if rekuest is None:
+    if "rekuest" not in app.services:
         return Group(panel_header, service_tree)
 
-    default = app.rekuest.agent.app_registry.get_implementations()
+    default = app.registry.get_implementations()
 
     for template in default:
         actor_tree.add(template.interface + "-" + template.definition.name)

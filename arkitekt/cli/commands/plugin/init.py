@@ -2,19 +2,20 @@
 
 from importlib.metadata import version
 from typing import Annotated, Optional
-from arkitekt.cli.constants import compile_dockerfiles
+from arkitekt.cli.validators import validate_dockerfile
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.interactive import require_interactive
+from arkitekt.cli.tty import require_tty
 from arkitekt.cli.utils import build_relative_dir
 import typer
-from arkitekt.cli.vars import get_console, get_manifest, get_work_dir
+from arkitekt.cli.target import (
+    DEFAULT_TARGET,
+    TargetArgument,
+    infer_package_manager,
+    load_app_or_exit,
+)
+from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.utils import create_arkitekt_folder, create_devcontainer_file
 from rich.panel import Panel
-
-try:
-    pass
-except ImportError as e:
-    raise ImportError("Please install rekuest to use this feature") from e
 
 import os
 import re
@@ -53,34 +54,25 @@ def _detect_python_version(work_dir: str) -> str:
     return f"{sys.version_info.major}.{sys.version_info.minor}"
 
 
-def _detect_template(work_dir: str, manifest_package_manager: str) -> str:
-    """Detect the correct dockerfile template from project files, falling back to the manifest."""
-    if os.path.exists(os.path.join(work_dir, "uv.lock")):
+def _detect_template(work_dir: str) -> str:
+    """Detect the correct dockerfile template from the project files.
+
+    A uv project (a ``uv.lock``, or ``[tool.uv]`` in its pyproject) gets the uv
+    image, which installs from the lockfile; anything else the pip-based one.
+    """
+    if infer_package_manager(work_dir) == "uv":
         return "uv"
     if os.path.exists(os.path.join(work_dir, "pyproject.toml")):
         with open(os.path.join(work_dir, "pyproject.toml")) as f:
             content = f.read()
         if "[tool.uv]" in content:
             return "uv"
-    if manifest_package_manager == "uv":
-        return "uv"
     return "vanilla"
-
-
-def _validate_template(value: Optional[str]) -> Optional[str]:
-    """Validate ``--template`` against the dockerfile templates available at call time."""
-    if value is None:
-        return value
-    choices = compile_dockerfiles()
-    if value not in choices:
-        raise typer.BadParameter(
-            f"{value!r} is not one of {', '.join(choices)}."
-        )
-    return value
 
 
 def init(
     ctx: typer.Context,
+    target: TargetArgument = DEFAULT_TARGET,
     flavour: Annotated[
         str, typer.Option("--flavour", "-f", help="The flavour to use")
     ] = "vanilla",
@@ -102,7 +94,7 @@ def init(
             "--template",
             "-t",
             help="The dockerfile template to use",
-            callback=_validate_template,
+            callback=validate_dockerfile,
         ),
     ] = None,
     devcontainer: Annotated[
@@ -145,10 +137,8 @@ def init(
     config_file = os.path.join(flavour_folder, "config.yaml")
     dockerfile = os.path.join(flavour_folder, "Dockerfile")
 
-    manifest = get_manifest(ctx)
-
     if template is None:
-        template = _detect_template(work_dir, manifest.package_manager)
+        template = _detect_template(work_dir)
 
     fl = Flavour(
         selectors=[],
@@ -180,12 +170,14 @@ def init(
         ))
 
     if not devcontainer:
-        require_interactive(
+        require_tty(
             "Choosing whether to create a devcontainer.json",
             hint="Pass --devcontainer to create it non-interactively.",
         )
     if devcontainer or typer.confirm("Do you want to create a devcontainer.json file?"):
-        create_devcontainer_file(manifest, flavour, dockerfile)
+        # Only the devcontainer is named after the app, so only it loads the app.
+        app = load_app_or_exit(ctx, target)
+        create_devcontainer_file(app, flavour, dockerfile)
 
     panel = Panel(
         title=f"Created new flavour [bold]{flavour}[/bold]\n",
