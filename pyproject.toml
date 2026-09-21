@@ -7,15 +7,15 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "fakts>=2.1.0",
-    "koil>=3.3.2",
-    "rath>=3.12.0",
+    "fakts>=3",
+    "koil>=3.3.4",
+    "rath>=4",
     "click>=8.2.0",
     "typer>=0.15.0",
-    "rekuest>=3",
+    "rekuest>=4",
     "semver>=3.0.4",
     "watchfiles>=1.0.5",
-    "turms>=2.0.0",
+    "turms>=2.1.0",
     "platformdirs>=4.5.0",
     "py-machineid>=0.8.1",
     # Used eagerly by the base CLI (config/manifest/plugin IO), so it stays core.
@@ -26,29 +26,29 @@ dependencies = [
 
 [project.optional-dependencies]
 alpaka = [
-    "alpaka>=1.0.0",
+    "alpaka>=2",
 ]
 kraph = [
-    "kraph>=0.5.1",
+    "kraph>=3",
 ]
 mikro = [
-    "mikro>=3",
+    "mikro>=4",
 ]
 # The plugin commands (`arkitekt plugin ...`) build and publish through kabinet.
 kabinet = [
-    "kabinet>=2",
+    "kabinet>=3",
 ]
 elektro = [
-    "elektro>=2.0.0",
+    "elektro>=3",
 ]
 fluss = [
-    "fluss>=2",
+    "fluss>=3",
 ]
 lovekit = [
-    "lovekit>=1.2.1",
+    "lovekit>=2",
 ]
 unlok = [
-    "unlok>=2.0.0",
+    "unlok>=3",
 ]
 # Serving an app over FastAPI (arkitekt.serve): rekuest's FastAPI integration.
 serve = [
@@ -84,18 +84,18 @@ dev-dependencies = [
     "pytest-asyncio>=0.20.2,<0.21",
     "pytest-cov>=4.0.0,<5",
     "pytest-aiohttp>=1.0.4,<2",
-    "mikro>=3",
+    "mikro>=4",
     "python-semantic-release>=9.21.1",
     "qtpy>=2.4.3",
     "numpy>=1,<2",
-    "rekuest>=3",
-    "kabinet>=2",
-    "alpaka>=1.0.0",
-    "kraph>=0.5.1",
-    "fluss>=2",
-    "lovekit>=1.2.1",
-    "unlok>=2.0.0",
-    "elektro>=2.0.0",
+    "rekuest>=4",
+    "kabinet>=3",
+    "alpaka>=2",
+    "kraph>=3",
+    "fluss>=3",
+    "lovekit>=2",
+    "unlok>=3",
+    "elektro>=3",
 ]
 
 
