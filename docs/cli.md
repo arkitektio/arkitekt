@@ -3,7 +3,7 @@
 `arkitekt` is the command line for building and running Arkitekt **apps**:
 
 - **Build apps** from your Python code — scaffold, run, generate typed clients,
-  and call functions (`init`, `run`, `gen`, `manifest`, `inspect`, `call`).
+  and call functions (`init`, `run`, `gen`, `inspect`, `call`, `plugin`, `mesh`, `self`).
 - **Package plugins** — containerize an app into flavours and publish it
   (`plugin`).
 - **Join the mesh** — enroll a machine in the private WireGuard network that
@@ -23,7 +23,6 @@ from the terminal:
 arkitekt --help
 arkitekt run --help
 arkitekt mesh join --help
-arkitekt manifest version --help
 ```
 
 Each `--help` output also links to the matching page in the hosted
@@ -35,7 +34,7 @@ documentation. Those links live as constants in
 
 | Command | What it does | Hosted docs |
 | :--- | :--- | :--- |
-| `init` · `run` · `gen` · `manifest` · `inspect` · `call` | Build, run and deploy apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli> |
+| `init` · `run` · `gen` · `inspect` · `call` · `plugin` · `mesh` · `self` | Build, run and deploy apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli> |
 | `plugin` | Containerize an app into flavours and publish it. | <https://arkitekt.live/docs/cli/plugin> |
 | `mesh` | Join this machine to the deployment's WireGuard mesh. | <https://arkitekt.live/docs/cli/mesh> |
 | `self` | Manage the Arkitekt CLI / SDK installation itself. | <https://arkitekt.live/docs/cli/self> |
@@ -48,13 +47,12 @@ documentation. Those links live as constants in
 
 ```bash
 # Operate on a project located elsewhere without changing directories
-arkitekt --work-dir ./my-app manifest inspect
 ```
 
 > **Note:** The app commands operate on a scaffolded app project. Every one of
-> them except `init` expects an initialized app; they create the
-> `.arkitekt` folder if needed and load the manifest from the working
-> directory.
+> them except `init` expects an initialized app, and creates the `.arkitekt`
+> folder if it is missing. Each finds the app from its own `module[:attr]`
+> target rather than from a manifest.
 
 ---
 
@@ -66,9 +64,9 @@ below operates on the app in the current working directory (see `--work-dir`).
 
 ### `init` — Scaffold a new app
 
-Creates a new Arkitekt app in the working directory. It writes an
-entrypoint file (default `app.py`) seeded from a template and a
-`.arkitekt/manifest.yaml` describing the app.
+Creates a new Arkitekt app in the working directory: an entrypoint file
+(default `app.py`) seeded from a template. The app declares itself in that
+file -- there is no manifest to keep in step with it.
 
 ```bash
 # Interactive — prompts for identifier, author and entrypoint
@@ -101,7 +99,6 @@ Key options:
 | `--package-manager`, `-pm` | `pip` or `uv`. Defaults to `uv` if it is installed, otherwise `pip`. |
 | `--with-extra` | Extras to install with `arkitekt` when using `uv`. Defaults to `all`. |
 | `--yes`, `-y` | Accept all defaults without prompting. |
-| `--overwrite-manifest`, `-om` | Overwrite an existing manifest. |
 | `--overwrite-app`, `-oa` | Overwrite an existing entrypoint file. |
 
 When `--package-manager uv` is chosen, `uv` must be installed; the CLI runs
@@ -155,46 +152,6 @@ Either is resolved before anything connects, so a missing or mismatched context
 fails at the prompt. `run dev` resolves it again on every reload.
 
 📖 <https://arkitekt.live/docs/cli/run>
-
-### `manifest` — Manage the app manifest
-
-The manifest describes the app — its identifier, version, author and the
-**scopes** (rights) it requests. It is used to authenticate the app with the
-platform.
-
-```bash
-arkitekt manifest inspect               # print the manifest as a table
-
-arkitekt manifest version set 1.2.3     # set an explicit version
-arkitekt manifest version patch         # 1.2.3 -> 1.2.4
-arkitekt manifest version minor         # 1.2.3 -> 1.3.0
-arkitekt manifest version major         # 1.2.3 -> 2.0.0
-arkitekt manifest version prerelease    # 1.2.3 -> 1.2.3-rc.1
-arkitekt manifest version build         # 1.2.3 -> 1.2.3+build.1
-
-arkitekt manifest scopes list           # scopes this app requests
-arkitekt manifest scopes available      # all scopes the platform offers
-arkitekt manifest scopes add write      # request additional scopes
-arkitekt manifest scopes remove write
-```
-
-| Sub-command | Effect |
-| :--- | :--- |
-| `inspect` | Prints the current manifest as a table. |
-| `version set [VERSION]` | Sets an explicit version. Without an argument, prompts and suggests the next patch. |
-| `version patch` | Bumps the patch number — bugfixes and small changes. |
-| `version minor` | Bumps the minor number — new, backwards-compatible features. |
-| `version major` | Bumps the major number — breaking changes. |
-| `version prerelease` | Appends/bumps a prerelease segment (e.g. `-rc.1`). |
-| `version build` | Appends/bumps a build segment (e.g. `+build.1`). |
-| `scopes list` | Lists the scopes this app requests. |
-| `scopes available` | Lists all scopes the platform offers. |
-| `scopes add / remove <scope>` | Adds or removes a requested scope. |
-
-Scopes are validated against the platform's known scopes (currently `read` and
-`write`); passing an unknown scope fails the command.
-
-📖 <https://arkitekt.live/docs/cli/manifest>
 
 ### `gen` — Code generation
 
@@ -405,7 +362,6 @@ arkitekt run dev
 
 # 3. Prepare for distribution
 arkitekt plugin init --flavour vanilla --devcontainer
-arkitekt manifest version patch
 arkitekt plugin build
 arkitekt plugin publish
 ```

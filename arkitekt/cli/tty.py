@@ -1,11 +1,13 @@
 """Guard interactive prompts so the CLI never blocks on stdin in a non-TTY.
 
 Several commands drop into interactive prompts (``click.prompt`` /
-``click.confirm`` / ``inquirer.prompt``) to gather configuration. When stdin is
-not a terminal -- CI, a pipe, ``nohup`` -- those calls block forever with no way
-to abort. ``require_tty`` is the single guard to call before any such
-prompt: on a non-TTY it raises a clean :class:`click.ClickException` that names
-the non-interactive escape hatch instead of hanging.
+``click.confirm``) to gather configuration. When stdin is not a terminal -- CI, a
+pipe, ``nohup`` -- those calls block forever with no way to abort.
+``require_tty`` is the single guard to call before any such prompt: on a non-TTY
+it calls :func:`~arkitekt.cli.errors.cli_error`, which names the non-interactive
+escape hatch instead of hanging. (It does not raise ``click.ClickException`` --
+that is the very thing ``cli_error`` exists to replace under Typer's vendored
+click.)
 
 Named for the TTY, not for "interactive": :func:`arkitekt.interactive` means
 something else entirely -- a notebook session, where sync calls run inside a

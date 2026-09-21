@@ -2,8 +2,8 @@
 
 These are the separately versioned PyPI distributions that make up the Arkitekt
 SDK. The ``self upgrade`` command checks each installed one against PyPI and
-upgrades the outdated ones. Non-arkitekt libraries (click, semver, rich-click,
-watchfiles, platformdirs, py-machineid, ...) are intentionally excluded.
+upgrades the outdated ones. Non-arkitekt libraries (typer, semver, watchfiles,
+platformdirs, py-machineid, ...) are intentionally excluded.
 
 Names are the PyPI/distribution names (hyphenated).
 """
@@ -24,6 +24,5 @@ ARKITEKT_PACKAGES: List[str] = [
     "kraph",
     "alpaka",
     "turms",
-    "reaktion-next",
     "lovekit",
 ]

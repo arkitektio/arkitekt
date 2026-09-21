@@ -31,9 +31,9 @@ jobs:
           # ship a working docker daemon. macOS/Windows GitHub runners have none,
           # so deselect them there (they also auto-skip via conftest as a backstop).
           if [ "$RUNNER_OS" = "Linux" ]; then
-            uv run pytest -m "not integration"
+            uv run pytest
           else
-            uv run pytest -m "not integration and not needs_docker"
+            uv run pytest -m "not needs_docker"
           fi
 
   test-arm:
@@ -51,4 +51,4 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run tests
-        run: uv run pytest -m "not integration"
+        run: uv run pytest

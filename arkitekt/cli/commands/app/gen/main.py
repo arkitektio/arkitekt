@@ -1,8 +1,6 @@
-import importlib.util
 
 import typer
 
-from arkitekt.cli.errors import cli_error
 from .watch import watch
 from .compile import compile
 from .init import init
@@ -23,10 +21,6 @@ def gen_callback(ctx: typer.Context) -> None:
     for development.
 
     """
-    if importlib.util.find_spec("turms") is None:
-        cli_error(
-            "Turms is not installed. Install it with: pip install 'arkitekt[cli]'"
-        )
 
 
 gen.command("watch")(watch)

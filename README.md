@@ -72,8 +72,8 @@ mkdir my-app && cd my-app
 arkitekt init
 ```
 
-This walks you through creating an app and writes a manifest (identifier, version, entrypoint, scopes)
-into `.arkitekt/`.
+This walks you through creating an app and writes the entrypoint file it
+scaffolds. The app declares itself in that file; there is no separate manifest.
 
 ### 2. Register your functions
 
@@ -116,7 +116,7 @@ Standing up an Arkitekt server is the job of
 
 | Command | What it does |
 | --- | --- |
-| `init` · `run` · `gen` · `manifest` · `inspect` · `call` | Build, run and deploy apps from your Python code — scaffold, run locally (`run dev`/`run prod`), generate typed clients, manage the manifest, inspect, and call functions. |
+| `init` · `run` · `gen` · `inspect` · `call` · `plugin` · `mesh` · `self` | Build, run and deploy apps from your Python code — scaffold, run locally (`run dev`/`run prod`), generate typed clients, inspect, call functions, and build/publish plugins. |
 | `plugin` | Containerize your app into flavours and publish it as a deployable plugin. |
 | `mesh` | Join this machine to the deployment's private WireGuard mesh. |
 | `self` | Manage your Arkitekt install — upgrade the SDK, print versions, dump diagnostics. |

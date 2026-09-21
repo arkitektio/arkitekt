@@ -114,41 +114,6 @@ def assert_only_the_entrypoint_was_scaffolded(work_dir, entrypoint: str = "app")
 
 
 @pytest.fixture
-def initialized_app_cli_runner():
-    """A CliRunner inside an isolated filesystem that holds a scaffolded ``app.py``."""
-    runner = CliRunner()
-    with runner.isolated_filesystem() as work_dir:
-        result = runner.invoke(
-            cli,
-            [
-                "init",
-                "--identifier",
-                "arkitekt",
-                "--version",
-                "0.0.1",
-                "--author",
-                "arkitek",
-                "--template",
-                "simple",
-                "--scopes",
-                "read",
-                "--scopes",
-                "write",
-                "--package-manager",
-                "pip",
-            ],
-        )
-        assert result.exit_code == 0, result.output
-        assert_only_the_entrypoint_was_scaffolded(work_dir)
-        yield runner
-
-
-@pytest.fixture
-def cli_runner():
-    return CliRunner()
-
-
-@pytest.fixture
 def app_dir(tmp_path):
     """Temp dir with a scaffolded ``app.py``, using --work-dir (no os.chdir).
 

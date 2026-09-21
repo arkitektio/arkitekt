@@ -11,7 +11,7 @@ import uuid
 
 import typer
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 
@@ -119,33 +119,6 @@ def inspect_all(build_id: str, url: str, target: str = DEFAULT_TARGET) -> Dict[s
             raise InspectionError(
                 "Command `arkitekt inspect implementations` not found in container. "
                 "Did you forget to install arkitekt?"
-            )
-        raise InspectionError(f"An error occurred: {combined}") from e
-
-
-def inspect_requirements(build_id: str) -> "List[RequirementInput]":
-    try:
-        result = subprocess.run(
-            ["docker", "run", build_id, "arkitekt", "inspect", "requirements", "-mr"],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            check=True,
-            text=True,
-        )
-        correct_part = result.stdout.split("--START_REQUIREMENTS--")[1].split(
-            "--END_REQUIREMENTS--"
-        )[0]
-        try:
-            return json.loads(correct_part)
-        except json.decoder.JSONDecodeError as e:
-            raise InspectionError(
-                f"Could not decode requirements JSON. {result.stdout + result.stderr}"
-            ) from e
-    except subprocess.CalledProcessError as e:
-        combined = e.stdout + e.stderr
-        if "No such command" in combined:
-            raise InspectionError(
-                "Command `arkitekt inspect requirements` not found in container."
             )
         raise InspectionError(f"An error occurred: {combined}") from e
 

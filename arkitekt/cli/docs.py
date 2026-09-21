@@ -23,10 +23,6 @@ PLUGIN_DOCS = f"{CLI_DOCS_BASE}/plugin"
 
 MESH_DOCS = f"{CLI_DOCS_BASE}/mesh"
 
-#: Conceptual guides referenced from multiple commands.
-FLAVOURS_DOCS = f"{DOCS_BASE_URL}/docs/flavours"
-
-
 def help_epilog(url: str) -> str:
     """Render a Typer/rich epilogue that links to the hosted docs for a command.
 

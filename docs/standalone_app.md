@@ -1,37 +1,60 @@
 # Standalone App
 
-The standalone app is the easiest way to get started with Arkitekt. It allows you to write a python script that connects to an Arkitekt instance and provides functionality. This is great for development, testing, and simple scripts.
+The standalone app is the easiest way to get started with Arkitekt. It is a
+Python script that connects to an Arkitekt instance and offers functionality —
+good for development, testing and simple scripts.
 
-## Getting Started
+## Offering actions
 
-To create a standalone app, you can use the `easy` builder from `arkitekt`.
+Declare an `App`, register functions on it, and `run` it. `run` connects, offers
+the registered functions, and blocks until you stop it.
 
 ```python
-from arkitekt import App, easy
+from arkitekt import App, run
 
 app = App("my.app")
 
 @app.action
-def my_function():
+def my_function() -> str:
+    """Say hello."""
     return "Hello from my standalone app!"
 
-# This will connect to the default Arkitekt instance at localhost:8000
-# and register the app with the identifier "my.app"
-with easy("my.app", version="0.0.1") as app:
-    print("App is running")
-    app.run() # registered functions will be available during this call
-    print("App has stopped")
+if __name__ == "__main__":
+    run(app)   # offers `my_function` until interrupted
+```
+
+## Calling other apps
+
+`easy` is the other direction: it declares an app from the *services* you name
+and hands you their clients. Nothing connects until it is entered, and what you
+get back is the clients — one service gives you one client, several give you a
+tuple.
+
+```python
+from arkitekt import easy
+from mikro import mikro_service
+
+with easy("my.app", mikro_service) as mikro:
+    image = mikro.get_image("some-id")
 ```
 
 ## Configuration
 
-The `easy` builder accepts several parameters to configure your app:
+Both take the same keyword arguments:
 
-- `identifier`: The unique identifier for your app (e.g., "com.example.myapp").
-- `version`: The version of your app (default: "0.0.1").
-- `url`: The URL of the Arkitekt instance (default: "http://localhost:8000").
-- `redeem_token`: A redeem-token to authenticate with the Arkitekt instance (optional).
-- `headless`: If True, runs in headless mode (default: False).
+- `version` — the app's version (default `"0.0.1"`).
+- `url` — the fakts server. Defaults to `$FAKTS_URL`, then the public
+  deployment at `https://go.arkitekt.live`.
+- `scopes` — the scopes the app requests (default `["openid"]`).
+- `author`, `logo` — shown in the UI.
+- `redeem_token` — a token to provision a new app with.
+- `token` — a previously issued credential, `client_id:refresh_token`.
+- `headless` — print the device-code prompt instead of opening a browser.
+- `no_cache` — skip the fakts cache, and so authenticate again.
+- `force` — take over an existing agent connection of this app.
+
+The identifier defaults to the calling file's name, so `easy()` with no
+arguments works for a quick script.
 
 ## Limitations
 
