@@ -29,10 +29,12 @@ def get_or_set_device_id() -> str | None:
 
     try:
         return id()
-    except Exception as e:  # noqa: BLE001 -- any failure means "no machine id here"
+    except Exception as e:  # noqa: BLE001, any failure means "no machine id here"
         logger.warning(f"Could not get the machine id from the os: {e}")
 
     try:
+        # This is the last resort: make a random id and keep it in the user's config dir.
+        # Todo: check if we really want to do this?
         config_dir = user_config_dir(APP_NAME, APP_AUTHOR)
         device_id_file = os.path.join(config_dir, "device_id.txt")
         os.makedirs(config_dir, exist_ok=True)

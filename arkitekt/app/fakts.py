@@ -66,7 +66,7 @@ def _build_cache(
 
 def build_device_code_fakts(
     manifest: Manifest,
-    url: Optional[str] = None,
+    url: str,
     no_cache: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
@@ -78,9 +78,6 @@ def build_device_code_fakts(
     using a device code. The user will be prompted to open a browser
     and approve the application once; the resulting session is cached.
     """
-    if url is None:
-        raise ValueError("URL must be provided")
-
     authorizer = DeviceCodeAuthorizer(
         manifest=manifest,
         open_browser=not headless,

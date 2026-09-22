@@ -28,7 +28,6 @@ import inspect
 import logging
 from typing import (
     cast,
-    TYPE_CHECKING,
     Any,
     Callable,
     Dict,
@@ -62,14 +61,11 @@ from rekuest.protocol.schema import (
 from rekuest.app import AppRegistry
 from rekuest.catalogs import ComponentSpec, OperationSpec
 from rekuest.coercible_types import OptimisticCoercible
-from rekuest.register import WrappedFunction, register
-
-if TYPE_CHECKING:
-    from arkitekt.app.snapshot import RunSnapshot
-
-    from rekuest.provider import Provider
-    from rekuest.service import Service
-
+from rekuest.register import WrappedFunction
+from rekuest.provider import Provider
+from rekuest.service import Service
+from rekuest.structures.utils import id_shrink
+from arkitekt.app.snapshot import RunSnapshot
 
 logger = logging.getLogger(__name__)
 
@@ -243,8 +239,6 @@ class App(Generic[Ctx]):
                 class, say. There is no catalog to look one up in.
             ValueError: If a second service of an already registered name is given.
         """
-        from rekuest.service import Service
-
         for declared in services:
             if not isinstance(declared, Service):
                 shown = declared.__name__ if isinstance(declared, type) else repr(declared)
@@ -267,8 +261,6 @@ class App(Generic[Ctx]):
             TypeError: If something other than a provider is given.
             ValueError: If a different provider is registered already.
         """
-        from rekuest.provider import Provider
-
         for declared in providers:
             if not isinstance(declared, Provider):
                 shown = declared.__name__ if isinstance(declared, type) else repr(declared)
@@ -346,8 +338,6 @@ class App(Generic[Ctx]):
             StructureRegistryError: If a port names a structure this app cannot
                 resolve -- usually a service it does not declare.
         """
-        from arkitekt.app.snapshot import RunSnapshot
-
         registry = self.registry
         if provider is not None and provider.name not in registry.providers:
             registry = AppRegistry()
@@ -461,27 +451,33 @@ class App(Generic[Ctx]):
         """
 
         def offer(function: Callable[P, R]) -> WrappedFunction[P, R]:
-            decorate: Callable[[Callable[P, R]], WrappedFunction[P, R]] = register(
-                implementation_registry=self.registry,
-                name=name,
-                description=description,
-                actifier=actifier,
-                interface=interface,
-                stateful=stateful,
-                widgets=widgets,
-                collections=collections,
-                port_groups=port_groups,
-                effects=effects,
-                is_test_for=is_test_for,
-                validators=validators,
-                optimistics=optimistics,
-                in_process=in_process,
-                tracks=tracks,
-                locks=locks,
-                concurrency=concurrency,
-                policy=policy,
-                version=version,
-                catalogs=catalogs,
+            # Through the registry rather than rekuest's module-level decorator: the registry
+            # is what owns the declaration, and it supplies itself and its structures. The cast
+            # is because `AppRegistry.register` forwards `**kwargs` untyped -- this method's own
+            # overloads are what type the surface a user sees.
+            decorate = cast(
+                "Callable[[Callable[P, R]], WrappedFunction[P, R]]",
+                self.registry.register(
+                    name=name,
+                    description=description,
+                    actifier=actifier,
+                    interface=interface,
+                    stateful=stateful,
+                    widgets=widgets,
+                    collections=collections,
+                    port_groups=port_groups,
+                    effects=effects,
+                    is_test_for=is_test_for,
+                    validators=validators,
+                    optimistics=optimistics,
+                    in_process=in_process,
+                    tracks=tracks,
+                    locks=locks,
+                    concurrency=concurrency,
+                    policy=policy,
+                    version=version,
+                    catalogs=catalogs,
+                ),
             )
             return decorate(function)
 
@@ -849,8 +845,6 @@ class App(Generic[Ctx]):
             StructureDefinitionError: If the identifier is not ``@package/key``,
                 or the expander's parameters cannot be read or are not clients.
         """
-        from rekuest.structures.utils import id_shrink
-
         self.registry.structure_registry.register_as_structure(
             cls,
             identifier=identifier,

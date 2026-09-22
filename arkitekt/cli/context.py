@@ -14,6 +14,8 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
+from pydantic import BaseModel
+
 from arkitekt.app.app import App
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.target import TargetError, import_target, parse_target
@@ -86,8 +88,7 @@ def _from_target(app: App[Any], declared: type, context: str, work_dir: str) -> 
 
 
 def _from_file(app: App[Any], declared: type, path: Path) -> Any:  # noqa: ANN401
-    validate = getattr(declared, "model_validate", None)
-    if validate is None:
+    if not issubclass(declared, BaseModel):
         cli_error(
             f"App {app.identifier!r} declares its app context as {declared.__name__}, which is "
             "not a pydantic model, so --context-file cannot build it. Use --context module:attr."
@@ -104,7 +105,7 @@ def _from_file(app: App[Any], declared: type, path: Path) -> Any:  # noqa: ANN40
     if not isinstance(data, dict):
         cli_error(f"--context-file: {path} must hold a mapping of {declared.__name__}'s fields.")
     try:
-        return validate(data)
+        return declared.model_validate(data)
     except Exception as e:  # pydantic's ValidationError, spelled out for the prompt
         cli_error(f"--context-file: {path} is not a valid {declared.__name__}: {e}")
 

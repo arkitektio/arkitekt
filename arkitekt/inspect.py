@@ -5,9 +5,10 @@ import webbrowser
 
 from rath.scalars import ID
 
+from arkitekt.runtime import Runtime
+
 if typing.TYPE_CHECKING:
     from arkitekt.app.app import App
-    from arkitekt.runtime import Runtime
 
 
 def open_orkestrator_link(link: str) -> None:
@@ -36,12 +37,15 @@ def inspect(x: IDBearer, app: "App | Runtime") -> None:
         StructureRegistryError: If ``app`` declares no structure for ``type(x)``.
         LookupError: If ``app`` is a runtime that was never entered.
     """
-    registry = getattr(app, "registry", None)
-    if registry is None:
-        # A Runtime: what it serves is its snapshot, taken when it was entered.
-        snapshot = getattr(app, "snapshot", None)
-        registry = snapshot.registry if snapshot is not None else None
-    if registry is None:
-        raise LookupError("This runtime was never entered, so it has no registry yet.")
+    if isinstance(app, Runtime):
+        # What a runtime serves is its snapshot, taken when it was entered.
+        snapshot = app.snapshot
+        if snapshot is None:
+            raise LookupError(
+                "This runtime was never entered, so it has no registry yet."
+            )
+        registry = snapshot.registry
+    else:
+        registry = app.registry
     identifier = registry.structure_registry.get_identifier_for_cls(type(x))
     open_orkestrator_link(f"orkestrator://{identifier}/{x.id}")
