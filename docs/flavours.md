@@ -72,7 +72,23 @@ selectors:
     required: false
     weight: 10
 dockerfile: Dockerfile
+platforms:
+  - linux/amd64
+  - linux/arm64
 ```
+
+## Platforms
+
+`platforms` is what the image is *built* for, and defaults to `linux/amd64` and `linux/arm64`.
+`arkitekt plugin build` builds every one of them (this machine's is loaded locally, the rest go to
+the build cache) and `arkitekt plugin publish` pushes them as a single manifest list. Scaffold a
+single-architecture flavour with `arkitekt plugin init --no-multi-arch`, or name the platforms with
+`-p linux/amd64 -p linux/arm64`. Cross-building needs a `docker-container` buildx builder (created
+for you) and emulation on the host (`docker run --privileged --rm tonistiigi/binfmt --install all`).
+
+This is not a selector. A `cpu` selector with `arch` constrains *placement* — where a pod may run —
+while `platforms` says what was built. Setting both, so that an image built for two architectures is
+pinned to one, is contradictory; `arkitekt plugin validate` says so.
 
 ## Building Flavours
 

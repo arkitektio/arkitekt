@@ -18,7 +18,39 @@ ALLOWED_BUILDER_KEYS = [
     "tag",
     "dockerfile",
     "package_version",
+    "platform",
+    "output",
 ]
+
+#: What a flavour builds for unless it says otherwise: the two architectures an
+#: Arkitekt node is actually deployed on. A single-platform list is the opt-out
+#: (``arkitekt plugin init --no-multi-arch``).
+DEFAULT_PLATFORMS = ["linux/amd64", "linux/arm64"]
+
+#: The build command every flavour gets today. ``{platform}`` and ``{output}``
+#: are filled per pass: the host platform is ``--load``ed so it can be inspected
+#: and staged, the rest are built to cache and pushed as one manifest list.
+DEFAULT_BUILD_COMMAND = [
+    "docker",
+    "buildx",
+    "build",
+    "--platform",
+    "{platform}",
+    "{output}",
+    "-t",
+    "{tag}",
+    "-f",
+    "{dockerfile}",
+    ".",
+]
+
+#: Build commands written by an older CLI. A flavour still carrying one is not
+#: customised — it is just spelled the way the single-arch CLI spelled it — so it
+#: is migrated to :data:`DEFAULT_BUILD_COMMAND` on load rather than treated as a
+#: user's own command (see ``io.get_flavours``).
+LEGACY_BUILD_COMMANDS = (
+    ["docker", "build", "-t", "{tag}", "-f", "{dockerfile}", "."],
+)
 
 
 class Flavour(BaseModel):
@@ -26,17 +58,8 @@ class Flavour(BaseModel):
     selectors: List[SelectorInput]
     description: str = Field(default="")
     dockerfile: str = Field(default="Dockerfile")
-    build_command: List[str] = Field(
-        default_factory=lambda: [
-            "docker",
-            "build",
-            "-t",
-            "{tag}",
-            "-f",
-            "{dockerfile}",
-            ".",
-        ]
-    )
+    platforms: List[str] = Field(default_factory=lambda: list(DEFAULT_PLATFORMS))
+    build_command: List[str] = Field(default_factory=lambda: list(DEFAULT_BUILD_COMMAND))
 
     @field_validator("build_command", mode="before")
     def check_valid_template_name(cls, value):
@@ -53,12 +76,50 @@ class Flavour(BaseModel):
 
         return value
 
-    def generate_build_command(self, tag: str, relative_dir: str):
-        """Generates the build command for this flavour"""
+    def is_customized(self) -> bool:
+        """Whether someone edited ``build_command`` instead of taking the default.
+
+        A customised command is run verbatim, which means this CLI cannot place
+        the platform and output flags in it — so such a flavour builds for one
+        platform only.
+        """
+        return self.build_command not in (
+            DEFAULT_BUILD_COMMAND,
+            *LEGACY_BUILD_COMMANDS,
+        )
+
+    def generate_build_command(
+        self,
+        tag: str,
+        relative_dir: str,
+        platform: str = "",
+        output: str = "",
+        builder: Optional[str] = None,
+    ) -> List[str]:
+        """Generates the build command for this flavour.
+
+        ``platform`` is a comma-joined docker platform list and ``output`` a
+        buildx ``--load``/``--push``/``--output ...`` fragment; a customised
+        command names neither, and simply never has them rendered into it.
+
+        The builder is passed in, not stored: which builder can do a
+        multi-platform build is a property of the machine, not of the flavour.
+        """
 
         dockerfile = os.path.join(relative_dir, self.dockerfile)
 
-        return [v.format(tag=tag, dockerfile=dockerfile) for v in self.build_command]
+        rendered = [
+            v.format(tag=tag, dockerfile=dockerfile, platform=platform, output=output)
+            for v in self.build_command
+        ]
+        # ``{output}`` renders empty for a plain cache pass; an empty argument
+        # would reach docker as "" and be read as the build context.
+        rendered = [v for v in rendered if v != ""]
+
+        if builder and rendered[:3] == ["docker", "buildx", "build"]:
+            rendered = rendered[:3] + ["--builder", builder] + rendered[3:]
+
+        return rendered
 
     def check_relative_paths(self, flavour_folder: str):
         """Checks that the paths are relative to the flavour folder"""
@@ -92,6 +153,10 @@ class Build(BaseModel):
     description: str = Field(default="")
     selectors: List[SelectorInput] = Field(default_factory=list)
     flavour: str = Field(default="vanilla")
+    #: The platforms this build compiled. Only the host one was loaded locally;
+    #: publish pushes the whole list as a manifest list. Empty in a builds.yaml
+    #: written before multi-arch existed, which is the single-arch record it was.
+    platforms: List[str] = Field(default_factory=list)
     manifest: ManifestInput
     build_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
     base_docker_command: List[str] = Field(

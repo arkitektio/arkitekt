@@ -66,6 +66,10 @@ def _scaffold(runner: CliRunner, version: str = "0.0.1") -> None:
             "plugin", "init",
             "--flavour", "vanilla",
             "--arkitekt-version", "0.0.1",
+            # One architecture: cross-building the other needs QEMU on the host,
+            # which CI has no reason to install. The multi-platform argv is
+            # asserted without docker in test_plugin_multiarch.py.
+            "--no-multi-arch",
         ],
         input="n\n",  # decline the devcontainer.json prompt
     )
@@ -103,7 +107,13 @@ def _patched_push():
     real_run = subprocess.run
 
     def fake_run(cmd, *args, **kwargs):
-        if isinstance(cmd, (list, tuple)) and list(cmd[:2]) == ["docker", "push"]:
+        # Both shapes a push can take: the single-arch `docker push`, and the
+        # multi-arch `docker buildx build ... --push` that writes the manifest
+        # list. Letting either through would need a real registry.
+        pushes = isinstance(cmd, (list, tuple)) and (
+            list(cmd[:2]) == ["docker", "push"] or "--push" in cmd
+        )
+        if pushes:
             return subprocess.CompletedProcess(cmd, 0)
         return real_run(cmd, *args, **kwargs)
 

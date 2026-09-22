@@ -113,6 +113,23 @@ def init(
             help="Which Arkitekt-version should we use to mount in the container?",
         ),
     ] = None,
+    platform: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            "--platform",
+            "-p",
+            help="The platforms this flavour builds for, e.g. -p linux/amd64 -p linux/arm64. "
+            "Repeatable. Defaults to linux/amd64 and linux/arm64.",
+        ),
+    ] = None,
+    no_multi_arch: Annotated[
+        bool,
+        typer.Option(
+            "--no-multi-arch",
+            help="Build only for this machine's architecture, as before multi-arch. "
+            "Cross-building the other one needs emulation on the build host.",
+        ),
+    ] = False,
 ) -> None:
     """Initialize a plugin flavour for this app.
 
@@ -121,7 +138,21 @@ def init(
     an Arkitekt plugin. Must be run inside an initialized app directory.
     """
     import yaml
-    from arkitekt.cli.commands.plugin.types import Flavour
+    from arkitekt.cli.commands.plugin.buildx import host_platform
+    from arkitekt.cli.commands.plugin.types import DEFAULT_PLATFORMS, Flavour
+
+    if platform and no_multi_arch:
+        cli_error(
+            "--platform and --no-multi-arch say different things about what to build. "
+            "Pass the platforms you want, or --no-multi-arch for this machine's only."
+        )
+
+    if no_multi_arch:
+        platforms = [host_platform()]
+    elif platform:
+        platforms = list(platform)
+    else:
+        platforms = list(DEFAULT_PLATFORMS)
 
     work_dir = get_work_dir(ctx)
     arkitekt_folder = create_arkitekt_folder(base_dir=work_dir)
@@ -144,6 +175,7 @@ def init(
         selectors=[],
         description=description,
         dockerfile="Dockerfile",
+        platforms=platforms,
     )
 
     try:
@@ -181,7 +213,8 @@ def init(
 
     panel = Panel(
         title=f"Created new flavour [bold]{flavour}[/bold]\n",
-        renderable="You can now edit the Dockerfile and add selectors to the config.yaml file\n"
+        renderable=f"Builds for {', '.join(platforms)} (change `platforms:` in its config.yaml)\n"
+        + "You can now edit the Dockerfile and add selectors to the config.yaml file\n"
         + "To learn more about selectors and how flavours work, please visit [link=https://arkitekt.live]https://arkitekt.live[/link]",
         style="green",
     )

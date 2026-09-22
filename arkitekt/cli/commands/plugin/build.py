@@ -25,15 +25,98 @@ class InspectionError(Exception):
     pass
 
 
-def build_flavour(flavour_name: str, flavour: "Flavour", work_dir: str) -> str:
-    """Builds a flavour to a Docker image and returns the build_id (tag)."""
+def flavour_relative_dir(flavour_name: str) -> str:
+    """Where a flavour's Dockerfile lives, relative to the work dir."""
+    return os.path.join(".arkitekt", "flavours", flavour_name, "")
+
+
+def build_flavour(
+    flavour_name: str,
+    flavour: "Flavour",
+    work_dir: str,
+    platforms: Optional[list[str]] = None,
+    console: Any = None,
+) -> str:
+    """Build a flavour for every platform it targets; return the build_id (tag).
+
+    A manifest list cannot live in the local image store, so the platforms are
+    built in two passes: the host one is ``--load``ed, which is the image that
+    then gets inspected, staged and optionally retagged, and the rest are built
+    to the builder's cache. Nothing is exported for them here — they are pushed
+    as one manifest list by ``plugin publish``, which reuses this cache.
+
+    Building the foreign platforms now rather than at publish time is the point:
+    a dependency with no arm64 wheel fails here, next to the code that caused it.
+    """
+    from .buildx import ensure_builder, host_platform
+
     build_id = str(uuid.uuid4())
-    relative_dir = os.path.join(".arkitekt", "flavours", flavour_name, "")
-    command = flavour.generate_build_command(build_id, relative_dir)
-    docker_run = subprocess.run(" ".join(command), shell=True, cwd=work_dir)
-    if docker_run.returncode != 0:
-        cli_error("Could not build docker container")
+    relative_dir = flavour_relative_dir(flavour_name)
+    wanted = list(dict.fromkeys(platforms if platforms is not None else flavour.platforms))
+
+    if flavour.is_customized():
+        # A hand-written command is run as written; this CLI has nowhere to put
+        # the platform flags in it. Say so when the config claims more, instead
+        # of quietly building one architecture for a flavour that promises two.
+        if len(wanted) > 1 and console:
+            console.print(
+                f"[yellow]Flavour [bold]{flavour_name}[/bold] sets its own build_command, so it "
+                f"builds for this machine only — but its platforms say {', '.join(wanted)}. "
+                "Drop build_command from its config.yaml to build them all.[/yellow]"
+            )
+        _run_build(flavour.generate_build_command(build_id, relative_dir), work_dir, "build")
+        return build_id
+
+    host = host_platform()
+    builder = ensure_builder(wanted, console=console)
+
+    if host not in wanted:
+        # Nothing would be left in the local image store, and every step after
+        # this one (inspection, --tag, stage) reads it.
+        cli_error(
+            f"Flavour {flavour_name} builds {', '.join(wanted)}, none of which is this "
+            f"machine's platform ({host}), so nothing can be loaded, inspected or staged "
+            "locally. Add it to `platforms:` in the flavour's config.yaml."
+        )
+
+    _run_build(
+        flavour.generate_build_command(
+            build_id, relative_dir, platform=host, output="--load", builder=builder
+        ),
+        work_dir,
+        f"build for {host}",
+    )
+
+    foreign = [p for p in wanted if p != host]
+    if foreign:
+        if console:
+            console.print(f"Building for {', '.join(foreign)}...")
+        _run_build(
+            flavour.generate_build_command(
+                build_id,
+                relative_dir,
+                platform=",".join(foreign),
+                # Not exported: a multi-platform result cannot be loaded, and the
+                # cache this leaves is what publish pushes from.
+                output="--output=type=cacheonly",
+                builder=builder,
+            ),
+            work_dir,
+            f"build for {', '.join(foreign)}",
+        )
+
     return build_id
+
+
+def _run_build(command: list[str], work_dir: str, what: str) -> None:
+    """Run one docker build, naming which pass failed.
+
+    Argv form, not ``shell=True``: platform strings come out of a config file
+    and have no business being re-parsed by a shell.
+    """
+    docker_run = subprocess.run(command, cwd=work_dir)
+    if docker_run.returncode != 0:
+        cli_error(f"Could not {what} (`{' '.join(command)}` failed)")
 
 
 def inspect_docker_container(build_id: str) -> tuple[int, int]:
@@ -149,7 +232,21 @@ def build(
     ] = False,
     tag: Annotated[
         Optional[str],
-        typer.Option("--tag", "-t", help="Tag the build with a specific tag."),
+        typer.Option(
+            "--tag",
+            "-t",
+            help="Tag the build with a specific tag. Only this machine's architecture "
+            "is tagged; `arkitekt plugin publish` is what pushes a multi-arch image.",
+        ),
+    ] = None,
+    platform: Annotated[
+        Optional[list[str]],
+        typer.Option(
+            "--platform",
+            "-p",
+            help="Build for these platforms instead of the ones the flavour declares, "
+            "e.g. -p linux/amd64. Repeatable.",
+        ),
     ] = None,
     url: Annotated[
         str,
@@ -184,16 +281,35 @@ def build(
             subtitle_align="right",
         ))
 
-        build_tag = build_flavour(key, inspected_flavour, work_dir)
+        platforms = list(platform) if platform else list(inspected_flavour.platforms)
+
+        build_tag = build_flavour(
+            key, inspected_flavour, work_dir, platforms=platforms, console=console
+        )
 
         if tag:
+            if len(platforms) > 1:
+                console.print(
+                    f"[yellow]--tag names the {len(platforms)}-platform flavour's image for this "
+                    "machine only; pushing that tag by hand publishes one architecture. "
+                    "`arkitekt plugin publish` pushes the manifest list.[/yellow]"
+                )
             subprocess.run(["docker", "tag", build_tag, tag], check=True)
 
         inspection = None
         if not no_inspect:
             inspection = inspect_build(build_tag, url, target)
 
-        generate_build(build_run, build_tag, key, inspected_flavour, manifest, inspection, base_dir=work_dir)
+        generate_build(
+            build_run,
+            build_tag,
+            key,
+            inspected_flavour,
+            manifest,
+            inspection,
+            base_dir=work_dir,
+            platforms=platforms,
+        )
 
         console.print(Panel(
             "Built Flavour [bold]{}[/bold]".format(key),

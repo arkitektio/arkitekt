@@ -257,6 +257,8 @@ arkitekt plugin publish
 | `--arkitekt-version`, `-av` | The `arkitekt` version to pin in the generated Dockerfile. |
 | `--devcontainer`, `-dc` | Also generate a `.devcontainer/<flavour>/devcontainer.json`. |
 | `--overwrite`, `-o` | Overwrite an existing flavour of the same name. |
+| `--platform`, `-p` | Platforms this flavour builds for (repeatable). Default: `linux/amd64` and `linux/arm64`. |
+| `--no-multi-arch` | Build only for this machine's architecture. |
 
 `plugin build` options:
 
@@ -266,6 +268,36 @@ arkitekt plugin publish
 | `--tag`, `-t` | Tag the resulting image with a specific tag. |
 | `--no-inspect`, `-n` | Skip inspection of the app during the build. |
 | `--url`, `-u` | The `fakts` server to use during inspection. |
+| `--platform`, `-p` | Build these platforms instead of the flavour's (repeatable). |
+
+### Multi-architecture builds
+
+A flavour builds for `linux/amd64` and `linux/arm64` unless it says otherwise, so a plugin runs
+both on an x86 server and on an ARM node. The platforms live in the flavour's `config.yaml` and are
+chosen when it is scaffolded:
+
+```bash
+arkitekt plugin init --no-multi-arch            # this machine only
+arkitekt plugin init -p linux/amd64 -p linux/arm64
+```
+
+Because a multi-platform image cannot be loaded into the local docker daemon, the work is split:
+
+- `plugin build` builds **every** platform — this machine's is loaded, so it can be inspected,
+  tagged and `plugin stage`d, and the others are built to the builder's cache. A dependency with no
+  wheel for the other architecture therefore fails here, not after a publish.
+- `plugin publish` pushes them as one image (a manifest list), reusing that cache. It rebuilds from
+  the current sources, so publish from the tree you built.
+
+Two prerequisites, both reported with the command that fixes them:
+
+- a buildx builder with the `docker-container` driver — the CLI creates one named `arkitekt` on
+  first use, since docker's default builder cannot build multiple platforms;
+- emulation for the foreign architecture:
+  `docker run --privileged --rm tonistiigi/binfmt --install all`.
+
+`--tag` on `plugin build` names this machine's image only; `plugin publish` is what writes the
+multi-architecture one.
 
 `plugin selector add <flavour>` attaches a hardware requirement to a flavour.
 `--kind`/`-k` picks one of `cpu`, `ram`, `cuda`, `rocm`, `oneapi`, `label`;
