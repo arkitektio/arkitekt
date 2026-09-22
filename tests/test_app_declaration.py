@@ -44,6 +44,22 @@ def test_the_manifest_is_read_off_the_declaration() -> None:
     assert manifest.device_id is None, "the machine is the runtime's business"
 
 
+def test_the_description_reaches_the_manifest() -> None:
+    """What the app says it is travels to the agent through the manifest.
+
+    The agent that provides an app is built from the manifest, and takes its
+    description from here: the name identifies the agent, the description is
+    what tells two of them apart in the UI. An app that declares none leaves it
+    unset rather than blank, because the backend treats an omitted description
+    as "keep what you have".
+    """
+    described = App("com.test.described", description="What this app is.")
+    assert described.manifest.description == "What this app is."
+    assert described.snapshot().manifest.description == "What this app is."
+
+    assert App("com.test.plain").manifest.description is None
+
+
 def test_the_identifier_defaults_to_the_declaring_file() -> None:
     assert App().identifier == "test_app_declaration"
 

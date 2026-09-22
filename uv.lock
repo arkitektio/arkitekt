@@ -329,7 +329,7 @@ requires-dist = [
     { name = "pyyaml", specifier = ">=6.0.2" },
     { name = "qtpy", marker = "extra == 'qt'", specifier = ">=2.4.3" },
     { name = "rath", specifier = ">=4" },
-    { name = "rekuest", specifier = ">=5" },
+    { name = "rekuest", specifier = ">=5.1" },
     { name = "rekuest", extras = ["fastapi"], marker = "extra == 'serve'" },
     { name = "semver", specifier = ">=3.0.4" },
     { name = "tqdm", marker = "extra == 'tqdm'", specifier = ">=4.66" },
@@ -359,7 +359,7 @@ dev = [
     { name = "pytest-cov", specifier = ">=4.0.0,<5" },
     { name = "python-semantic-release", specifier = ">=9.21.1" },
     { name = "qtpy", specifier = ">=2.4.3" },
-    { name = "rekuest", specifier = ">=5" },
+    { name = "rekuest", specifier = ">=5.1" },
     { name = "ruff", specifier = ">=0.8" },
     { name = "unlok", specifier = ">=3" },
 ]
@@ -2230,7 +2230,7 @@ wheels = [
 
 [[package]]
 name = "rekuest"
-version = "5.0.0"
+version = "5.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docstring-parser" },
@@ -2244,9 +2244,9 @@ dependencies = [
     { name = "rath" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ed/03/c43b0d10819740b24c6c4e303ca81f937052f4e6504019e5754347dd22d5/rekuest-5.0.0.tar.gz", hash = "sha256:1809c7542b75f60587fd7e11f4e564dc114796f069d099b74d6b670b56c4741a", size = 367249, upload-time = "2026-09-22T14:26:46.48Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/51/70f73e61e9f2d7b2fb7496d2328299e6e2acce1599423ac8c2c831322aeb/rekuest-5.1.0.tar.gz", hash = "sha256:aac221f300bafd9eb16a37f47f933b737d550f276a5ab64dc2ecf53ee34ad650", size = 369285, upload-time = "2026-09-22T20:35:15.287Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3d/8e/acb68a614b9b03d8a0a571d766cad74c9b6aceed850d787969d14be73a38/rekuest-5.0.0-py3-none-any.whl", hash = "sha256:77933bbb577feb01c4a4a1baa199fcce88370caf039cf8679ee5da2bd9a408d9", size = 441775, upload-time = "2026-09-22T14:26:45.258Z" },
+    { url = "https://files.pythonhosted.org/packages/ef/11/46b82bb06644fd2c0e212f210558d889880ea60199be0045cadb803fc222/rekuest-5.1.0-py3-none-any.whl", hash = "sha256:0d41add3c64992011506d17a8ade73777458c4d527a201b3f32258de6d16f3fc", size = 443770, upload-time = "2026-09-22T20:35:13.648Z" },
 ]
 
 [package.optional-dependencies]

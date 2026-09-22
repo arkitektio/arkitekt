@@ -122,6 +122,10 @@ class App(Generic[Ctx]):
         identifier: The app's globally unique identifier. Defaults to the name of
             the file that constructs it.
         version: The app's version.
+        description: What the app is, in a sentence. It goes into the manifest
+            and, from there, onto the agent that provides the app -- shown
+            beside its name, which is what tells two agents of the same app
+            apart from what they are.
         logo: A public http url of the app's logo.
         scopes: The scopes the app requests. Defaults to ``["openid"]``.
         author: Who wrote the app. Used when packaging it.
@@ -148,6 +152,7 @@ class App(Generic[Ctx]):
         identifier: Optional[str] = None,
         version: str = "0.0.1",
         *,
+        description: Optional[str] = None,
         logo: Optional[str] = None,
         scopes: Optional[List[str]] = None,
         author: Optional[str] = None,
@@ -164,6 +169,7 @@ class App(Generic[Ctx]):
         identifier: Optional[str] = None,
         version: str = "0.0.1",
         *,
+        description: Optional[str] = None,
         logo: Optional[str] = None,
         scopes: Optional[List[str]] = None,
         author: Optional[str] = None,
@@ -179,6 +185,7 @@ class App(Generic[Ctx]):
         identifier: Optional[str] = None,
         version: str = "0.0.1",
         *,
+        description: Optional[str] = None,
         logo: Optional[str] = None,
         scopes: Optional[List[str]] = None,
         author: Optional[str] = None,
@@ -190,6 +197,7 @@ class App(Generic[Ctx]):
     ) -> None:
         self.identifier: str = identifier or _caller_module_name()
         self.version = version
+        self.description = description
         self.logo = logo
         self.scopes: List[str] = list(scopes) if scopes else ["openid"]
         self.author = author
@@ -307,6 +315,7 @@ class App(Generic[Ctx]):
         return Manifest(
             identifier=self.identifier,
             version=self.version,
+            description=self.description,
             scopes=list(self.scopes),
             logo=self.logo,
             requirements=self.requirements,
