@@ -41,6 +41,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    dataclass_transform,
     overload,
 )
 
@@ -62,6 +63,7 @@ from arkitekt_spec.declare.coercible_types import OptimisticCoercible
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
+from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.structures.utils import id_shrink
 from fakts.models import Manifest, PublicSource, Requirement
 
@@ -497,7 +499,15 @@ class App(Generic[Ctx]):
         return offer
 
     @overload
-    def state(self, cls: C, /) -> C: ...
+    def state(
+        self,
+        cls: C,
+        /,
+        *,
+        name: Optional[str] = None,
+        required_locks: Optional[List[str]] = None,
+        publish_interval: float = 0.1,
+    ) -> C: ...
 
     @overload
     def state(
@@ -509,6 +519,7 @@ class App(Generic[Ctx]):
         publish_interval: float = 0.1,
     ) -> Callable[[C], C]: ...
 
+    @dataclass_transform(field_specifiers=(model_field,))
     def state(
         self,
         cls: Optional[C] = None,
@@ -580,13 +591,16 @@ class App(Generic[Ctx]):
         return declare
 
     @overload
-    def model(self, cls: C, /) -> C: ...
+    def model(
+        self, cls: C, /, *, identifier: Optional[str] = None, description: Optional[str] = None
+    ) -> C: ...
 
     @overload
     def model(
         self, /, *, identifier: Optional[str] = None, description: Optional[str] = None
     ) -> Callable[[C], C]: ...
 
+    @dataclass_transform(field_specifiers=(model_field,))
     def model(
         self,
         cls: Optional[C] = None,
