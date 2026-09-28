@@ -49,7 +49,7 @@ from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
 from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
-from arkitekt_spec.declare.task import AssignmentHook, LogLevel, Task
+from arkitekt_spec.declare.task import AssignmentHook, HookInput, HookKind, LogLevel, Task
 from arkitekt_spec.declare.widgets import withEffect, withValidator
 
 from .app.app import App
@@ -81,6 +81,8 @@ __all__ = [
     "Task",
     "LogLevel",
     "AssignmentHook",
+    "HookInput",
+    "HookKind",
     "CallTarget",
     "ImplementationTarget",
     "NoCallerError",

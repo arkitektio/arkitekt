@@ -71,7 +71,7 @@ def main(path: Path) -> None:
             axes=list(squeezed.dims),
             anchors=CoordinateAnchorInput.histogram_anchors(squeezed),
         )
-        dataset.intrinsic_system.stage(name="Default")
+        dataset.stage(name="Default")
         print(f"uploaded {dataset.id}: {dataset.data.shape}")
 
 

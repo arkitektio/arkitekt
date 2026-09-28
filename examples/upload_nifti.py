@@ -61,7 +61,7 @@ def main(path: Path) -> None:
             axes=["z", "y", "x"],
             anchors=[CoordinateAnchorInput.histogram_anchor(volume)],
         )
-        dataset.intrinsic_system.stage(name="Default")
+        dataset.stage(name="Default")
         print(f"uploaded {dataset.id}: {dataset.data.shape}")
 
 

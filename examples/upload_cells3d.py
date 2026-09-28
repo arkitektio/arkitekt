@@ -60,7 +60,7 @@ def main() -> None:
 
         # A scene is what the frontend renders. Its kind is inferred from what
         # was recorded (a z axis makes this a volume), so nothing restates it.
-        dataset.intrinsic_system.stage(name="Default")
+        dataset.stage(name="Default")
         print(f"uploaded {dataset.id}: {dataset.data.shape}")
 
 
