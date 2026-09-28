@@ -1,4 +1,4 @@
-"""Serving an app over FastAPI is a run whose agent is rekuest's FastAPI agent.
+"""Serving an app over FastAPI is a run whose agent is arkitekt-fastapi's.
 
 The runtime builds it after the app's clients and owns it; the FastAPI lifespan
 enters the runtime and provides. An app with no requirements authenticates
@@ -17,7 +17,7 @@ from .fakes import PictureClient, PictureService  # noqa: E402
 
 
 def test_serving_installs_a_lifespan_that_runs_the_app(tmp_path) -> None:  # noqa: ANN001
-    from rekuest.contrib.fastapi import FastApiAgent
+    from arkitekt_fastapi import FastApiAgent
 
     app = App("served")
     seen: list = []
@@ -70,3 +70,28 @@ def test_a_served_app_with_services_builds_their_clients(tmp_path) -> None:  # n
         assert runtime.fakts is not None, "a service with a requirement resolves through fakts"
         assert isinstance(runtime.get(PictureClient), PictureClient)
         assert runtime.agent.bound_app is runtime
+
+
+@pytest.mark.asyncio
+async def test_a_served_action_runs_inside_raths_task_scope(tmp_path) -> None:  # noqa: ANN001
+    """What the clients an action is handed read to attribute their requests."""
+    from arkitekt_fastapi.testing import AsyncAgentTestClient
+    from rath.task import current_task
+
+    app = App("served-scope")
+
+    @app.action
+    def whose() -> str:
+        """Which task this runs as, as rath sees it."""
+        task = current_task.get()
+        return task.id if task is not None else "none"
+
+    fastapi_app = fastapi.FastAPI()
+    serve(app, fastapi_app, db_file=str(tmp_path / "scope.db"))
+
+    async with AsyncAgentTestClient(fastapi_app, as_user="tester") as client:
+        result = await client.assign("whose", {})
+        events = await client.collect_until_done(result.task_id, timeout=5)
+
+    (returned,) = [e.get_returns() for e in events if e.is_yield()]
+    assert returned == {"return0": result.task_id}

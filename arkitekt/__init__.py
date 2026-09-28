@@ -16,8 +16,8 @@ An app is declared with arkitekt-spec (:mod:`arkitekt_spec.declare`); what goes
 :mod:`arkitekt.widgets`.
 
 arkitekt does not depend on a runtime. ``run(app)`` runs the app in distributed mode
-through rekuest and ``serve(app, fastapi_app)`` serves it over HTTP (rekuest's FastAPI
-runtime): install ``arkitekt[rekuest]`` / ``arkitekt[serve]`` for those. Declaring,
+through rekuest and ``serve(app, fastapi_app)`` serves it over HTTP (arkitekt-fastapi):
+install ``arkitekt[rekuest]`` / ``arkitekt[serve]`` for those. Declaring,
 inspecting and building an app, and ``connect(app)`` to services, need neither.
 """
 

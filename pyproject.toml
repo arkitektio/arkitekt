@@ -28,7 +28,7 @@ dependencies = [
 
 [project.optional-dependencies]
 # The runtimes. arkitekt declares, inspects, builds and connects on its own; running
-# an app needs one: rekuest for distributed mode (`run`), its FastAPI runtime for
+# an app needs one: rekuest for distributed mode (`run`), arkitekt-fastapi for
 # server mode (`serve`).
 rekuest = [
     # The rekuest whose declaration layer is arkitekt-spec's (the 6.x line).
@@ -60,14 +60,16 @@ lovekit = [
 unlok = [
     "unlok>=3",
 ]
-# Serving an app over FastAPI (arkitekt.serve): rekuest's FastAPI integration.
+# Serving an app over FastAPI (arkitekt.serve): server mode, without rekuest.
 serve = [
-    "rekuest[fastapi]",
+    "arkitekt-fastapi>=0.1",
 ]
 # Qt integration (arkitekt.qt / the MagicBar). qtpy still needs an actual
 # binding (PyQt5/6 or PySide2/6) supplied by the application.
 qt = [
     "qtpy>=2.4.3",
+    # The Qt actifiers are the execution core's.
+    "arkitekt-runtime[qt]>=0.1",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.

@@ -2,7 +2,7 @@
 
 ``serve(app, fastapi_app)`` gives ``fastapi_app`` a lifespan that enters a
 :class:`~arkitekt.runtime.Runtime` of ``app`` and provides its offerings over the
-HTTP and websocket routes rekuest's FastAPI integration adds. The agent is the
+HTTP and websocket routes arkitekt-fastapi adds. The agent is the
 runtime's: built after the app's clients, bound to the run, driven by it. An app
 with no requirements authenticates nothing; one with services builds their
 clients as any run does, and its actions are handed them by annotation.
@@ -91,7 +91,7 @@ def serve(
         device_code_hook: Called with the device code instead of the default prompt.
         device_id: This device's identity. Defaults to the machine's id.
         **fastapi_options: Passed on to
-            :func:`rekuest.contrib.fastapi.configure_fastapi` (``db_file``,
+            :func:`arkitekt_fastapi.configure_fastapi` (``db_file``,
             ``expand_user_from_request``, the route paths, ...).
 
     Returns:
@@ -103,17 +103,22 @@ def serve(
             when the server starts.
     """
     app.registry.require_app_context(context, whose=f"App {app.identifier!r}")
-    from rekuest.contrib.fastapi import FastApiAgent
-    from rekuest.contrib.fastapi.routes import configure_fastapi
+    from arkitekt_fastapi import FastApiAgent
+    from arkitekt_fastapi.routes import configure_fastapi
+    from rath.task import task_scope
 
     registry = AppRegistry()
 
     @registry.provider()
     def fastapi_agent(registry: AppRegistry) -> FastApiAgent:
         """The agent serving the run's snapshot over ``fastapi_app``."""
-        return configure_fastapi(
+        agent = configure_fastapi(
             fastapi_app, app_registry=registry, lifespan=False, **fastapi_options
         )
+        # The runtime core knows no client library; rath's scope is what makes the
+        # clients an action is handed attribute their requests to its task.
+        agent.task_scopes.append(task_scope)
+        return agent
 
     runtime = Runtime(
         app=app,

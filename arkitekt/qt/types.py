@@ -152,7 +152,7 @@ class QtApp(App[Ctx]):
         Returns:
             The function, registered.
         """
-        from rekuest.qt.builders import qtinloopactifier
+        from arkitekt_runtime.qt.builders import qtinloopactifier
 
         return self._offer_with(
             qtinloopactifier, function, name, description, interface, widgets, collections, locks
@@ -192,7 +192,7 @@ class QtApp(App[Ctx]):
         Returns:
             The function, registered.
         """
-        from rekuest.qt.builders import qtwithfutureactifier
+        from arkitekt_runtime.qt.builders import qtwithfutureactifier
 
         return self._offer_with(
             qtwithfutureactifier, function, name, description, interface, widgets, collections, locks
@@ -226,7 +226,7 @@ class QtApp(App[Ctx]):
         Returns:
             The function, registered.
         """
-        from rekuest.qt.builders import qtwithgeneratoractifier
+        from arkitekt_runtime.qt.builders import qtwithgeneratoractifier
 
         return self._offer_with(
             qtwithgeneratoractifier, function, name, description, interface, widgets, collections, locks

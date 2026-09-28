@@ -86,3 +86,30 @@ def test_running_an_app_says_what_to_install() -> None:
     )
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "hint: True"
+
+
+def test_an_app_is_served_without_rekuest(tmp_path) -> None:  # noqa: ANN001
+    """Server mode is arkitekt-fastapi's, on the execution core: no rekuest at all."""
+    result = _run(
+        f"""
+        import fastapi
+        from fastapi.testclient import TestClient
+        from arkitekt import App, serve
+
+        app = App("served-bare")
+
+        @app.action
+        def ping(x: int) -> int:
+            \"\"\"Ping.\"\"\"
+            return x
+
+        fastapi_app = fastapi.FastAPI()
+        runtime = serve(app, fastapi_app, db_file={str(tmp_path / "bare.db")!r})
+        with TestClient(fastapi_app):
+            assert "ping" in runtime.agent.app_registry.implementations
+        assert not any(m.split(".")[0] == "rekuest" for m in sys.modules)
+        print("ok")
+        """
+    )
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "ok"

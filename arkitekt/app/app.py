@@ -421,7 +421,7 @@ class App(Generic[Ctx]):
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
         Parameters annotated with a client class (``mikro: Mikro``) or with
-        :class:`~rekuest.task.Task` are injected rather than becoming ports, and
+        :class:`~arkitekt_spec.declare.task.Task` are injected rather than becoming ports, and
         declare their service on this app.
 
         Args:
@@ -824,7 +824,7 @@ class App(Generic[Ctx]):
 
         For a type a *shared library* defines -- one that both the sending and the
         receiving app know, because both import it. A service's own types do not
-        go through here: those are :class:`~rekuest.structures.description.StructureDescription`
+        go through here: those are :class:`~arkitekt_spec.declare.structures.description.StructureDescription`
         in the service's ``structures=``, and are expanded by that service's client.
 
         The expander says what it needs by annotation, the same way an action

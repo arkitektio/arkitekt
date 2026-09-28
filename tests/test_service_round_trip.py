@@ -108,7 +108,7 @@ async def test_the_rekuest_provider_builds_its_agent_without_a_client() -> None:
     """The agent talks to rekuest over its own socket only; it takes no client."""
     from fakts.testing import build_testing_fakts
     from rekuest.agents.backend import SocketAgentBackend
-    from rekuest.agents.base import RekuestAgent
+    from rekuest.agents.agent import RekuestAgent
     from rekuest.arkitekt import rekuest_provider, rekuest_service
 
     aliases = {r.key: ADDRESSES[r.key] for r in rekuest_service.get_requirements()}
