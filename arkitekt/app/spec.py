@@ -8,7 +8,7 @@ reached a model that did not know it.
 """
 
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, TypeVar
 
 from arkitekt_spec import (
     DEFAULT_ENTRYPOINT,
@@ -17,10 +17,15 @@ from arkitekt_spec import (
     Inspection,
     Requirement,
 )
+from arkitekt_spec.actions import (
+    BlokImplementationInput,
+    ImplementationInput,
+    LockImplementationInput,
+    StateImplementationInput,
+)
+from pydantic import BaseModel
 
 if TYPE_CHECKING:
-    from pydantic import BaseModel
-
     from arkitekt.app.app import App
     from arkitekt.app.snapshot import RunSnapshot
 
@@ -49,7 +54,9 @@ def app_inspection(app: "App[Any]", run: "RunSnapshot") -> Inspection:
 
     ``run`` is the snapshot a run would serve (see ``App.snapshot``), so the
     provider's structures and requirements are in it. The action language is
-    validated by rekuest (``to_implement_agent_input``) and carried as JSON.
+    validated twice: by rekuest (``to_implement_agent_input``) as it is built, and by
+    the spec's :mod:`arkitekt_spec.actions` as it is converted -- so a field rekuest
+    emits that the spec does not know fails here, at build time, not at the server.
     """
     agent = run.registry.to_implement_agent_input(description=app.description)
     return Inspection(
@@ -58,13 +65,19 @@ def app_inspection(app: "App[Any]", run: "RunSnapshot") -> Inspection:
             Requirement.model_validate(requirement.model_dump())
             for requirement in run.manifest.requirements or []
         ],
-        implementations=entries(agent.implementations),
-        states=entries(agent.states),
-        locks=entries(agent.locks),
-        bloks=entries(agent.bloks),
+        implementations=convert(agent.implementations, ImplementationInput),
+        states=convert(agent.states, StateImplementationInput),
+        locks=convert(agent.locks, LockImplementationInput),
+        bloks=convert(agent.bloks, BlokImplementationInput),
     )
 
 
-def entries(items: "Sequence[BaseModel] | None") -> list[dict[str, Any]]:
-    """rekuest models as the JSON the spec carries: camelCase, unset fields left out."""
-    return [item.model_dump(mode="json", by_alias=True, exclude_none=True) for item in items or ()]
+SpecModel = TypeVar("SpecModel", bound=BaseModel)
+
+
+def convert(items: "Sequence[BaseModel] | None", into: type[SpecModel]) -> list[SpecModel]:
+    """rekuest's protocol models, re-read as the spec's (unset fields left to their defaults)."""
+    return [
+        into.model_validate(item.model_dump(mode="json", by_alias=True, exclude_none=True))
+        for item in items or ()
+    ]
