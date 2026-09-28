@@ -312,12 +312,12 @@ class App(Generic[Ctx]):
         It carries no device id: that names the device a run happens on, and the
         runtime adds it.
         """
+        from arkitekt.app.spec import app_manifest
+
+        # The login manifest is the spec's AppManifest plus the login-only fields,
+        # built from the same identity every other shape of the app is.
         return Manifest(
-            identifier=self.identifier,
-            version=self.version,
-            description=self.description,
-            scopes=list(self.scopes),
-            logo=self.logo,
+            **dict(app_manifest(self)),
             requirements=self.requirements,
             public_sources=list(self.public_sources),
         )

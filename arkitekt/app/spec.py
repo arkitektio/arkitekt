@@ -1,8 +1,10 @@
 """The App, said in the wire format every consumer reads (:mod:`arkitekt_spec`).
 
 This is the one place an :class:`~arkitekt.app.app.App` is turned into its spec
-models: the plugin build records :func:`app_manifest`, and ``arkitekt inspect all``
-(run inside the built image) emits :func:`app_inspection`. Both used to be assembled
+models. :func:`app_declaration` is the whole app as one document; the rest are views
+of it: the login manifest (``App.manifest``, built on :func:`app_manifest`), what the
+plugin build records (:func:`app_manifest`), and what ``arkitekt inspect all``
+emits inside the built image (:func:`app_inspection`). Both used to be assembled
 separately against kabinet's GraphQL inputs, which is how the agent ``description``
 reached a model that did not know it.
 """
@@ -12,9 +14,9 @@ from typing import TYPE_CHECKING, Any
 from arkitekt_spec import (
     DEFAULT_ENTRYPOINT,
     UNKNOWN_AUTHOR,
+    AppDeclaration,
     AppManifest,
     Inspection,
-    Requirement,
 )
 
 if TYPE_CHECKING:
@@ -41,24 +43,27 @@ def app_manifest(app: "App[Any]", entrypoint: str = DEFAULT_ENTRYPOINT) -> AppMa
     )
 
 
-def app_inspection(app: "App[Any]", run: "RunSnapshot") -> Inspection:
-    """What a run of the app declares, and the services it requires.
+def app_declaration(
+    app: "App[Any]", run: "RunSnapshot", entrypoint: str = DEFAULT_ENTRYPOINT
+) -> AppDeclaration:
+    """Everything the app is, as one document: the source of every other shape.
 
     ``run`` is the snapshot a run would serve (see ``App.snapshot``), so the
-    provider's structures and requirements are in it. The action language is
-    rekuest's declaration *is* the spec's action language: it is built from
-    :mod:`arkitekt_spec.actions` models, validated by their rules and by rekuest's
-    own checks (``to_implement_agent_input``), and carried over as it is.
+    provider's structures and requirements are in it. The action language comes
+    from ``to_implement_agent_input``, which builds it in :mod:`arkitekt_spec.actions`
+    models and runs rekuest's own checks on it.
     """
     agent = run.registry.to_implement_agent_input(description=app.description)
-    return Inspection(
-        description=app.description,
-        requirements=[
-            Requirement.model_validate(requirement.model_dump())
-            for requirement in run.manifest.requirements or []
-        ],
+    return AppDeclaration(
+        manifest=app_manifest(app, entrypoint),
+        requirements=list(run.manifest.requirements or ()),
         implementations=list(agent.implementations or ()),
         states=list(agent.states or ()),
         locks=list(agent.locks or ()),
         bloks=list(agent.bloks or ()),
     )
+
+
+def app_inspection(app: "App[Any]", run: "RunSnapshot") -> Inspection:
+    """What a built image records about the app: its declaration, as an inspection."""
+    return app_declaration(app, run).to_inspection()
