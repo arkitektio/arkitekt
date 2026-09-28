@@ -48,7 +48,7 @@ from fakts.models import Manifest, PublicSource, Requirement
 from rekuest.actors.actify import reactify
 from rekuest.actors.policy import KEEP, DisconnectPolicy
 from rekuest.actors.types import Actifier
-from rekuest.protocol.schema import (
+from arkitekt_spec.actions import (
     AgentDependencyInput,
     AssignWidgetInput,
     ComponentNodeInput,

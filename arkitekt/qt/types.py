@@ -6,7 +6,7 @@ from fakts.models import PublicSource
 from koil import run_threaded
 from koil.qt import async_to_qt
 from rekuest.actors.types import Actifier
-from rekuest.protocol.schema import AssignWidgetInput
+from arkitekt_spec.actions import AssignWidgetInput
 from rekuest.app import AppRegistry
 from rekuest.register import WrappedFunction
 

@@ -7,8 +7,7 @@ separately against kabinet's GraphQL inputs, which is how the agent ``descriptio
 reached a model that did not know it.
 """
 
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, Any, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from arkitekt_spec import (
     DEFAULT_ENTRYPOINT,
@@ -17,13 +16,6 @@ from arkitekt_spec import (
     Inspection,
     Requirement,
 )
-from arkitekt_spec.actions import (
-    BlokImplementationInput,
-    ImplementationInput,
-    LockImplementationInput,
-    StateImplementationInput,
-)
-from pydantic import BaseModel
 
 if TYPE_CHECKING:
     from arkitekt.app.app import App
@@ -54,9 +46,9 @@ def app_inspection(app: "App[Any]", run: "RunSnapshot") -> Inspection:
 
     ``run`` is the snapshot a run would serve (see ``App.snapshot``), so the
     provider's structures and requirements are in it. The action language is
-    validated twice: by rekuest (``to_implement_agent_input``) as it is built, and by
-    the spec's :mod:`arkitekt_spec.actions` as it is converted -- so a field rekuest
-    emits that the spec does not know fails here, at build time, not at the server.
+    rekuest's declaration *is* the spec's action language: it is built from
+    :mod:`arkitekt_spec.actions` models, validated by their rules and by rekuest's
+    own checks (``to_implement_agent_input``), and carried over as it is.
     """
     agent = run.registry.to_implement_agent_input(description=app.description)
     return Inspection(
@@ -65,19 +57,8 @@ def app_inspection(app: "App[Any]", run: "RunSnapshot") -> Inspection:
             Requirement.model_validate(requirement.model_dump())
             for requirement in run.manifest.requirements or []
         ],
-        implementations=convert(agent.implementations, ImplementationInput),
-        states=convert(agent.states, StateImplementationInput),
-        locks=convert(agent.locks, LockImplementationInput),
-        bloks=convert(agent.bloks, BlokImplementationInput),
+        implementations=list(agent.implementations or ()),
+        states=list(agent.states or ()),
+        locks=list(agent.locks or ()),
+        bloks=list(agent.bloks or ()),
     )
-
-
-SpecModel = TypeVar("SpecModel", bound=BaseModel)
-
-
-def convert(items: "Sequence[BaseModel] | None", into: type[SpecModel]) -> list[SpecModel]:
-    """rekuest's protocol models, re-read as the spec's (unset fields left to their defaults)."""
-    return [
-        into.model_validate(item.model_dump(mode="json", by_alias=True, exclude_none=True))
-        for item in items or ()
-    ]
