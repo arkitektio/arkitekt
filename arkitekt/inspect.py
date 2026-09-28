@@ -26,7 +26,7 @@ class IDBearer(typing.Protocol):
     id: ID
 
 
-def inspect(x: IDBearer, app: "App | Runtime") -> None:
+def inspect(x: IDBearer, app: "App[typing.Any] | Runtime[typing.Any]") -> None:
     """Open ``x`` in the orkestrator.
 
     Args:

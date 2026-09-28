@@ -11,8 +11,13 @@ import uuid
 
 import typer
 import json
-from typing import Any, Dict, Optional
+from typing import TYPE_CHECKING, Any, Dict, Optional
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
+
+if TYPE_CHECKING:
+    from arkitekt_spec import Inspection
+
+    from .types import Flavour
 
 
 #: How long to let the in-container ``arkitekt inspect all`` run before

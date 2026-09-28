@@ -30,10 +30,12 @@ def qapp() -> Any:
     return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
 
-def build_qt_app(identifier: str = "qt-app", **kwargs: Any) -> QtApp:
+def build_qt_app(identifier: str = "qt-app", **kwargs: Any) -> QtApp[Any]:
     from qtpy import QtCore
 
-    return QtApp(identifier, parent=QtCore.QObject(), **kwargs)
+    # qtpy re-exports the installed binding's classes at runtime; no checker sees them.
+    parent = QtCore.QObject()  # pyright: ignore[reportAttributeAccessIssue]
+    return QtApp(identifier, parent=parent, **kwargs)
 
 
 def test_a_qt_app_is_a_declaration(qapp: Any) -> None:

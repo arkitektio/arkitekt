@@ -4,7 +4,7 @@ These tests run a real ``docker build`` and therefore require a running docker
 daemon. They are marked with ``needs_docker`` so they are skipped automatically
 where docker is unavailable (see ``tests/conftest.py``).
 
-The whole flow runs inside ``runner.isolated_filesystem()`` (which ``chdir``s into a
+The whole flow runs inside ``isolated_filesystem()`` (which ``chdir``s into a
 temp dir) rather than ``--work-dir``, because ``kabinet publish`` resolves its
 builds/deployments against the current working directory.
 
@@ -23,10 +23,12 @@ import subprocess
 from unittest.mock import patch
 
 import pytest
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 from arkitekt.cli.commands.plugin.io import get_builds, get_deployments
+
+from .isolation import isolated_filesystem
 
 
 pytestmark = pytest.mark.needs_docker
@@ -48,7 +50,7 @@ _FAKE_RUNTIME = {
 def _scaffold(runner: CliRunner, version: str = "0.0.1") -> None:
     """Create an app (`init`) and a vanilla flavour (`kabinet init`) in the CWD."""
     result = runner.invoke(
-        cli,
+        cli_app,
         [
             "init",
             "--identifier", "com.test.app",
@@ -61,7 +63,7 @@ def _scaffold(runner: CliRunner, version: str = "0.0.1") -> None:
     assert result.exit_code == 0, result.output
 
     result = runner.invoke(
-        cli,
+        cli_app,
         [
             "plugin", "init",
             "--flavour", "vanilla",
@@ -130,10 +132,10 @@ def _patched_push():
 def test_kabinet_build_no_inspect():
     """`kabinet build --no-inspect` runs a real docker build and records it."""
     runner = CliRunner()
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         _scaffold(runner)
         try:
-            result = runner.invoke(cli, ["plugin", "build", "--no-inspect"])
+            result = runner.invoke(cli_app, ["plugin", "build", "--no-inspect"])
             if result.exit_code != 0:
                 print(result.output)
                 print(result.exception)
@@ -157,11 +159,11 @@ def test_kabinet_build_with_inspect():
     ``inspect all`` call is stubbed (see module docstring).
     """
     runner = CliRunner()
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         _scaffold(runner)
         try:
             with _patched_inspect_all():
-                result = runner.invoke(cli, ["plugin", "build"])
+                result = runner.invoke(cli_app, ["plugin", "build"])
             if result.exit_code != 0:
                 print(result.output)
                 print(result.exception)
@@ -185,15 +187,15 @@ def test_kabinet_full_lifecycle():
     """init -> kabinet init -> build -> publish: the full flow, push patched out."""
     tag = "localhost:5000/com.test.app:0.0.1-vanilla"
     runner = CliRunner()
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         _scaffold(runner)
         try:
             with _patched_inspect_all():
-                result = runner.invoke(cli, ["plugin", "build"])
+                result = runner.invoke(cli_app, ["plugin", "build"])
             assert result.exit_code == 0, result.output
 
             with _patched_push():
-                result = runner.invoke(cli, ["plugin", "publish", "--tag", tag])
+                result = runner.invoke(cli_app, ["plugin", "publish", "--tag", tag])
             if result.exit_code != 0:
                 print(result.output)
                 print(result.exception)
@@ -212,18 +214,18 @@ def test_kabinet_publish_rejects_duplicate():
     """Publishing the same build twice fails: a version/flavour can't be deployed twice."""
     tag = "localhost:5000/com.test.app:0.0.1-vanilla"
     runner = CliRunner()
-    with runner.isolated_filesystem():
+    with isolated_filesystem():
         _scaffold(runner)
         try:
             with _patched_inspect_all():
-                result = runner.invoke(cli, ["plugin", "build"])
+                result = runner.invoke(cli_app, ["plugin", "build"])
             assert result.exit_code == 0, result.output
 
             with _patched_push():
-                first = runner.invoke(cli, ["plugin", "publish", "--tag", tag])
+                first = runner.invoke(cli_app, ["plugin", "publish", "--tag", tag])
                 assert first.exit_code == 0, first.output
 
-                second = runner.invoke(cli, ["plugin", "publish", "--tag", tag])
+                second = runner.invoke(cli_app, ["plugin", "publish", "--tag", tag])
             assert second.exit_code != 0
             assert "already exists" in second.output
         finally:

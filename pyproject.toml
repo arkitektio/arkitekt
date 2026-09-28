@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=1.3",
+    "arkitekt-spec>=1.3.2",
 ]
 
 [project.optional-dependencies]
@@ -69,7 +69,7 @@ serve = [
 qt = [
     "qtpy>=2.4.3",
     # The Qt actifiers are the execution core's.
-    "arkitekt-runtime[qt]>=1.0.2",
+    "arkitekt-runtime[qt]>=3.0.1",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.
@@ -87,6 +87,12 @@ all = [
 
 [project.scripts]
 arkitekt = "arkitekt.cli.main:cli"
+
+[dependency-groups]
+# A Qt binding, for type-checking arkitekt.qt: qtpy's classes are invisible to a
+# checker without one. Only the typecheck job installs it (its arm64 wheels are
+# not a given), so the test matrix still skips the Qt tests.
+qt-binding = ["pyqt5>=5.15"]
 
 [tool.uv]
 dev-dependencies = [
@@ -130,7 +136,14 @@ fallback-version = "0.0.0"
 
 [tool.basedpyright]
 # tests/typing holds cases with deliberate errors; tests/test_typing.py checks them.
-exclude = ["**/node_modules", "**/__pycache__", "**/.*", "tests/typing"]
+exclude = [
+    "**/node_modules",
+    "**/__pycache__",
+    "**/.*",
+    "tests/typing",
+    # Rendered by string replacement (__APP_ARGUMENTS__), not importable modules.
+    "arkitekt/cli/templates",
+]
 executionEnvironments = [
     # The examples' own libraries (scipy, scikit-image, bioio, ...) are not
     # dependencies of arkitekt, so CI does not install them.

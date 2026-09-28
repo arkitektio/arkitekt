@@ -54,9 +54,9 @@ ADDRESSES = {
 }
 
 
-def _declared_services() -> List[Service]:
+def _declared_services() -> List[Service[Any]]:
     """The services of every candidate package that is installed and converted."""
-    found: List[Service] = []
+    found: List[Service[Any]] = []
     for name in CANDIDATES:
         try:
             module = importlib.import_module(f"{name}.arkitekt")
@@ -83,7 +83,7 @@ def test_at_least_rekuest_is_here() -> None:
 @pytest.mark.parametrize(
     "declared", SERVICES, ids=lambda s: s.name
 )
-async def test_a_declared_service_builds_its_client(declared: Service) -> None:
+async def test_a_declared_service_builds_its_client(declared: Service[Any]) -> None:
     unknown = [r.key for r in declared.get_requirements() if r.key not in ADDRESSES]
     assert not unknown, (
         f"'{declared.name}' requires {unknown}, which this test has no "
@@ -109,9 +109,10 @@ async def test_the_rekuest_provider_builds_its_agent_without_a_client() -> None:
     from fakts.testing import build_testing_fakts
     from rekuest.agents.backend import SocketAgentBackend
     from rekuest.agents.agent import RekuestAgent
+    from rekuest.agents.transport.websocket import WebsocketAgentTransport
     from rekuest.arkitekt import rekuest_provider, rekuest_service
 
-    aliases = {r.key: ADDRESSES[r.key] for r in rekuest_service.get_requirements()}
+    aliases: dict[str, Any] = {r.key: ADDRESSES[r.key] for r in rekuest_service.get_requirements()}
     async with build_testing_fakts(aliases=aliases) as fakts:
         registry = AppRegistry()
         agent = await rekuest_provider.build(fakts, registry, {})
@@ -119,4 +120,5 @@ async def test_the_rekuest_provider_builds_its_agent_without_a_client() -> None:
     assert isinstance(agent, RekuestAgent)
     assert agent.app_registry is registry
     assert isinstance(agent.backend, SocketAgentBackend)
+    assert isinstance(agent.transport, WebsocketAgentTransport)
     assert agent.transport.endpoint_url.endswith("/agi")

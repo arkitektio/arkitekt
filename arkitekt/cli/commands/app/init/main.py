@@ -179,10 +179,8 @@ def init_command(
     """
 
     # Resolve at runtime (not at import) so auto-detection respects the current env.
-    package_manager = (
-        package_manager.value
-        if package_manager is not None
-        else get_default_package_manager()
+    manager = (
+        package_manager.value if package_manager is not None else get_default_package_manager()
     )
 
     console = get_console(ctx)
@@ -201,21 +199,21 @@ def init_command(
             identifier = default_identifier
         else:
             require_tty("`init`", hint=_INIT_HINT)
-            identifier = typer.prompt("Your app identifier", default=default_identifier)
+            identifier = str(typer.prompt("Your app identifier", default=default_identifier))
 
     if not author:
         if yes:
             author = getuser()
         else:
             require_tty("`init`", hint=_INIT_HINT)
-            author = typer.prompt("Your name", default=getuser())
+            author = str(typer.prompt("Your name", default=getuser()))
 
     if not entrypoint:
         if yes:
             entrypoint = "app"
         else:
             require_tty("`init`", hint=_INIT_HINT)
-            entrypoint = typer.prompt("Your app file", default="app")
+            entrypoint = str(typer.prompt("Your app file", default="app"))
     entrypoint = entrypoint.removesuffix(".py")
 
     if not semver.Version.is_valid(version):
@@ -229,12 +227,14 @@ def init_command(
                 get_console(ctx).print(
                     "Arkitekt versions need to follow [link=https://semver.org]semver[/link]. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
                 )
-                version = typer.prompt(
-                    "The version of your app",
-                    default="0.0.1",
+                version = str(
+                    typer.prompt(
+                        "The version of your app",
+                        default="0.0.1",
+                    )
                 )
 
-    if package_manager == "uv":
+    if manager == "uv":
         if not shutil.which("uv"):
             cli_error(
                 "uv is not installed. Please install uv or choose another package manager."

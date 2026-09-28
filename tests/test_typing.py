@@ -16,7 +16,7 @@ CASES = sorted((Path(__file__).parent / "typing").glob("*_cases.py"))
 
 
 @pytest.mark.parametrize("cases", CASES, ids=[c.stem for c in CASES])
-def test_the_cases_type_check_as_annotated(cases: Path) -> None:
+def test_the_cases_type_check_as_annotated(cases: Path, tmp_path: Path) -> None:
     binary = shutil.which("basedpyright") or str(Path(sys.executable).parent / "basedpyright")
     if not Path(binary).exists():
         pytest.skip("basedpyright is not installed")
@@ -26,9 +26,19 @@ def test_the_cases_type_check_as_annotated(cases: Path) -> None:
         for number, line in enumerate(cases.read_text().splitlines(), start=1)
         if line.rstrip().endswith("# expect-error")
     }
-    # The interpreter running the tests, so the cases see the arkitekt under test.
+    # The interpreter running the tests, so the cases see the arkitekt under test;
+    # a project of its own, because the repo's excludes these deliberate errors.
+    (tmp_path / "pyrightconfig.json").write_text("{}")
     result = subprocess.run(
-        [binary, "--pythonpath", sys.executable, "--outputjson", str(cases)],
+        [
+            binary,
+            "--project",
+            str(tmp_path),
+            "--pythonpath",
+            sys.executable,
+            "--outputjson",
+            str(cases),
+        ],
         capture_output=True,
         text=True,
     )

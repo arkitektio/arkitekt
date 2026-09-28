@@ -69,18 +69,18 @@ class Easy(Generic[R]):
     """
 
     def __init__(
-        self, app: App, services: tuple["Service[Any]", ...], connection: Dict[str, Any]
+        self, app: App[Any], services: tuple["Service[Any]", ...], connection: Dict[str, Any]
     ) -> None:
         self.app = app
         self.services = services
         self._connection = connection
-        self._runtimes: List[Runtime] = []
+        self._runtimes: List[Runtime[Any]] = []
 
     def __repr__(self) -> str:
         names = ", ".join(declared.name for declared in self.services)
         return f"Easy({self.app.identifier!r}, {names})"
 
-    def runtime(self) -> Runtime:
+    def runtime(self) -> Runtime[Any]:
         """Make a fresh runtime for the app, connected the way this was configured.
 
         Returns:
@@ -88,7 +88,7 @@ class Easy(Generic[R]):
         """
         return connect(self.app, **self._connection)
 
-    def resolve(self, runtime: Runtime) -> R:
+    def resolve(self, runtime: Runtime[Any]) -> R:
         """Pick the named clients out of an entered runtime.
 
         Args:
@@ -110,7 +110,7 @@ class Easy(Generic[R]):
         return cast(R, found)
 
     @staticmethod
-    def _client_of(runtime: Runtime, declared: "Service[Any]") -> Any:  # noqa: ANN401
+    def _client_of(runtime: Runtime[Any], declared: "Service[Any]") -> Any:  # noqa: ANN401
         try:
             return runtime.clients[declared.name]
         except KeyError:
@@ -715,7 +715,7 @@ def aeasy(
 
 #: Runtimes entered by :func:`interactive`, by app identifier: one per app, left when
 #: the process exits.
-_interactive_runtimes: Dict[str, Runtime] = {}
+_interactive_runtimes: Dict[str, Runtime[Any]] = {}
 
 
 def _leave_interactive(identifier: Optional[str] = None) -> None:

@@ -37,6 +37,7 @@ from typing import (
     Mapping,
     Optional,
     ParamSpec,
+    Self,
     Sequence,
     TypeVar,
     Union,
@@ -226,7 +227,7 @@ class App(Generic[Ctx]):
     # Services                                                           #
     # ------------------------------------------------------------------ #
 
-    def service(self, *services: "Service[Any]") -> "App":
+    def service(self, *services: "Service[Any]") -> Self:
         """Use these services: ``app.service(mikro_service)``.
 
         Each is registered on this app's registry, which takes in its structures
@@ -260,7 +261,7 @@ class App(Generic[Ctx]):
             self.registry.register_service(declared)
         return self
 
-    def provider(self, *providers: "Provider[Any]") -> "App":
+    def provider(self, *providers: "Provider[Any]") -> Self:
         """Serve what this app offers through these providers: ``app.provider(...)``.
 
         A provider builds the agent a run drives; an app is served by one. Each

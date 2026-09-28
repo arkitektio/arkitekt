@@ -247,7 +247,6 @@ async def run_dev(
     resolved anew on every start.
     """
     options = options or {}
-    start = dict(context=context, context_file=context_file, work_dir=work_dir)
 
     _intro(console, deep)
 
@@ -263,7 +262,20 @@ async def run_dev(
         ))
         module = None
 
-    current_run = _start(console, module, target, options, "initial", **start) if module else None
+    current_run = (
+        _start(
+            console,
+            module,
+            target,
+            options,
+            "initial",
+            context=context,
+            context_file=context_file,
+            work_dir=work_dir,
+        )
+        if module
+        else None
+    )
 
     async for changes in awatch(
         work_dir,
@@ -297,7 +309,16 @@ async def run_dev(
             ))
             continue
 
-        current_run = _start(console, module, target, options, "reloaded", **start)
+        current_run = _start(
+            console,
+            module,
+            target,
+            options,
+            "reloaded",
+            context=context,
+            context_file=context_file,
+            work_dir=work_dir,
+        )
 
 
 def dev(

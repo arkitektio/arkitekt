@@ -8,14 +8,14 @@ here needs docker: the subprocess boundary is mocked.
 import json
 from unittest.mock import patch
 
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
 from arkitekt import App
 from arkitekt.cli.commands.plugin.build import inspect_all
 from arkitekt.cli.commands.plugin.io import app_to_manifest
 from arkitekt_spec import UNKNOWN_AUTHOR
 from arkitekt.cli.commands.plugin.types import Build
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 from arkitekt.cli.target import infer_package_manager
 
 
@@ -80,7 +80,7 @@ def test_plugin_init_picks_the_uv_image_for_a_uv_project_without_loading_the_app
     """No app module here at all: only the devcontainer needs the app."""
     (tmp_path / "uv.lock").write_text("")
 
-    result = CliRunner().invoke(cli, [
+    result = CliRunner().invoke(cli_app, [
         "--work-dir", str(tmp_path), "plugin", "init", "--arkitekt-version", "0.0.1",
     ], input="n\n")
 
@@ -92,7 +92,7 @@ def test_plugin_init_picks_the_uv_image_for_a_uv_project_without_loading_the_app
 def test_plugin_init_names_the_devcontainer_after_the_app(app_dir, monkeypatch):
     monkeypatch.chdir(app_dir)  # the devcontainer is written relative to the cwd
 
-    result = CliRunner().invoke(cli, [
+    result = CliRunner().invoke(cli_app, [
         "--work-dir", str(app_dir), "plugin", "init", "--devcontainer", "--arkitekt-version", "0.0.1",
     ])
 
@@ -104,7 +104,7 @@ def test_plugin_init_names_the_devcontainer_after_the_app(app_dir, monkeypatch):
 def test_plugin_init_devcontainer_without_an_app_is_a_clean_error(tmp_path, monkeypatch):
     monkeypatch.chdir(tmp_path)
 
-    result = CliRunner().invoke(cli, [
+    result = CliRunner().invoke(cli_app, [
         "--work-dir", str(tmp_path), "plugin", "init", "--devcontainer", "--arkitekt-version", "0.0.1",
     ])
 

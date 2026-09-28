@@ -11,10 +11,10 @@ import sys
 from types import ModuleType
 
 import pytest
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
 from arkitekt import App
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 from arkitekt.cli.target import (
     DEFAULT_TARGET,
     NoAppError,
@@ -202,7 +202,7 @@ def test_load_target_prefers_the_work_dir_over_a_cached_module(tmp_path, monkeyp
 
 def _requirements_via_cli(work_dir, *args, **kwargs):
     result = CliRunner().invoke(
-        cli, ["--work-dir", str(work_dir), "inspect", "requirements", *args, "-mr"], **kwargs
+        cli_app, ["--work-dir", str(work_dir), "inspect", "requirements", *args, "-mr"], **kwargs
     )
     return result
 

@@ -37,7 +37,7 @@ def construct_changes_group(changes: MutableSet[Tuple[Any, str]]) -> Group:
     return panel_group
 
 
-def construct_app_group(app: App) -> Group:
+def construct_app_group(app: App[Any]) -> Group:
     """Construct a rich panel group for the app
 
     It displays the app's identity and what it declares, read off the App itself:
@@ -70,7 +70,8 @@ def construct_app_group(app: App) -> Group:
     default = app.registry.get_implementations()
 
     for template in default:
-        actor_tree.add(template.interface + "-" + template.definition.name)
+        name = template.definition.name
+        actor_tree.add(f"{template.interface}-{name}" if template.interface else name)
 
     panel_group = Group(panel_header, service_tree, actor_tree)
 
@@ -111,7 +112,7 @@ def construct_leaking_group(variables: Dict[str, Any]) -> Group:
     return panel_group
 
 
-def construct_run_panel(app: App) -> Panel:
+def construct_run_panel(app: App[Any]) -> Panel:
     app_group = construct_app_group(app)
 
     return Panel(

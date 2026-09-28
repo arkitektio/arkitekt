@@ -19,10 +19,7 @@ jobs:
           python-version: "3.12"
 
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --all-extras --dev --group qt-binding
 
-      # Advisory for now: report typing issues without failing the build.
-      # Flip continue-on-error to false (or remove it) once the debt is cleared.
       - name: basedpyright
         run: uv run basedpyright
-        continue-on-error: true

@@ -46,7 +46,7 @@ class RunSnapshot(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True, extra="forbid")
 
     @property
-    def services(self) -> Dict[str, Service]:
+    def services(self) -> Dict[str, Service[Any]]:
         """The services the run may build clients for, by name: the registry's."""
         return self.registry.services
 

@@ -126,9 +126,11 @@ def publish(
                 "Choosing a docker tag",
                 hint="Pass --tag to set the tag non-interactively.",
             )
-            tag = typer.prompt(
-                "The tag to use",
-                default=f"{username}/{build_model.manifest.identifier}:{build_model.manifest.version}-{build_model.flavour}",
+            tag = str(
+                typer.prompt(
+                    "The tag to use",
+                    default=f"{username}/{build_model.manifest.identifier}:{build_model.manifest.version}-{build_model.flavour}",
+                )
             )
 
         console.print(Panel("Pushing Docker Container"))

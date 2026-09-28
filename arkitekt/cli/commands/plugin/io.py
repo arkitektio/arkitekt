@@ -2,7 +2,7 @@ import datetime
 import uuid
 from arkitekt.utils import create_arkitekt_folder
 import os
-from typing import Optional, List, Dict
+from typing import Any, Optional, List, Dict
 from arkitekt.app.app import App
 
 from .types import (
@@ -96,7 +96,7 @@ def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = Non
     }
 
 
-def app_to_manifest(app: App, target: str) -> AppManifest:
+def app_to_manifest(app: App[Any], target: str) -> AppManifest:
     """What a build says it packages: the App's identity, and the target that finds it.
 
     The target is recorded so the image is run (and inspected) on the same app
@@ -175,13 +175,14 @@ def generate_deployment(
     path = create_arkitekt_folder(base_dir=base_dir)
     config_file = os.path.join(path, "deployments.yaml")
 
+    # Aliased fields by alias: the name a type checker knows a pydantic field by.
     app_image = AppImage(
-        app_image_id=uuid.uuid4().hex,
+        appImageId=uuid.uuid4().hex,
         manifest=build.manifest,
-        flavour_name=build.flavour,
+        flavourName=build.flavour,
         selectors=build.selectors,
         inspection=build.inspection,
-        image=DockerImage(image_string=image, build_at=datetime.datetime.now()),
+        image=DockerImage(imageString=image, buildAt=datetime.datetime.now()),
     )
 
     config = get_deployments(base_dir=base_dir)

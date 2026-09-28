@@ -1,40 +1,22 @@
 import os
-from typing import Annotated, List, Optional
+from typing import Annotated, Any, List, Optional
 
 import typer
 import yaml
 from arkitekt_spec.declare.service import Service
 
-from arkitekt.cli.constants import compile_services
+from arkitekt.cli.constants import SERVICE_PACKAGES, compile_services
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, import_target_or_exit
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import construct_codegen_welcome_panel
 from arkitekt.cli.vars import get_console, get_work_dir
 
-#: The client packages whose service ``gen init`` can generate code for. Each
-#: exports its service from ``<name>.arkitekt`` under its own name. Discovered by
-#: importing, since nothing registers services process-wide: a package that is
-#: not installed is simply not offered.
-SERVICE_PACKAGES = (
-    "rekuest",
-    "mikro",
-    "elektro",
-    "kraph",
-    "fluss",
-    "kabinet",
-    "unlok",
-    "alpaka",
-    "lovekit",
-    "dokuments",
-)
-
-
-def installed_services() -> dict[str, Service]:
+def installed_services() -> dict[str, Service[Any]]:
     """The services of every client package that is installed, by name."""
     import importlib
 
-    found: dict[str, Service] = {}
+    found: dict[str, Service[Any]] = {}
     for name in SERVICE_PACKAGES:
         try:
             module = importlib.import_module(f"{name}.arkitekt")
@@ -130,9 +112,11 @@ def init(
             "Choosing the api output path",
             hint="Pass --path to set it non-interactively (default: api).",
         )
-        path = typer.prompt(
-            "Where should we generate the api? (relative to the current directory)",
-            default="api",
+        path = str(
+            typer.prompt(
+                "Where should we generate the api? (relative to the current directory)",
+                default="api",
+            )
         )
 
     app_api_path = os.path.join(app_directory, path)

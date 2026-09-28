@@ -16,9 +16,10 @@ mikro — see `upload_cells3d.py` and `denoise_volume.py`.
 """
 
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import numpy as np
+from numpy.typing import NDArray
 import tifffile
 from skimage import measure
 from skimage.filters import gaussian, threshold_otsu
@@ -52,7 +53,7 @@ def write_demo_tiff() -> str:
 
 
 @app.action
-def read_tiff(path: Annotated[str, Description("A TIFF on this machine")]) -> np.ndarray:
+def read_tiff(path: Annotated[str, Description("A TIFF on this machine")]) -> NDArray[Any]:
     """Read Tiff
 
     Reads a TIFF with tifffile. The array stays on this agent.
@@ -62,9 +63,9 @@ def read_tiff(path: Annotated[str, Description("A TIFF on this machine")]) -> np
 
 @app.action
 def segment(
-    image: np.ndarray,
+    image: NDArray[Any],
     sigma: Annotated[float, Description("Smoothing before thresholding")] = 2.0,
-) -> np.ndarray:
+) -> NDArray[Any]:
     """Segment
 
     Otsu-thresholds a smoothed copy and labels the connected components.
@@ -74,7 +75,7 @@ def segment(
 
 
 @app.action
-def count_objects(labels: np.ndarray) -> int:
+def count_objects(labels: NDArray[Any]) -> int:
     """Count Objects
 
     How many labels the mask carries, background excluded.

@@ -29,7 +29,7 @@ def requirements(
     console = get_console(ctx)
     app = load_app_or_exit(ctx, target)
 
-    requirements = run_snapshot_or_exit(app).manifest.requirements
+    requirements = run_snapshot_or_exit(app).manifest.requirements or []
     x = [item.model_dump(by_alias=True) for item in requirements]
 
     if machine_readable:

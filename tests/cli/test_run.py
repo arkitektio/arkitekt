@@ -9,10 +9,10 @@ the runner is replaced.
 from contextlib import asynccontextmanager
 
 import pytest
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
 from arkitekt.cli.commands.app.call.remote import parse_call_args
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def recorded_runs(monkeypatch):
 
 
 def _invoke(work_dir, *args):
-    return CliRunner().invoke(cli, ["--work-dir", str(work_dir), *args])
+    return CliRunner().invoke(cli_app, ["--work-dir", str(work_dir), *args])
 
 
 def test_prod_runs_the_targets_app_with_no_flags(app_dir, recorded_runs):

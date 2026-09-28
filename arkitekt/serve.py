@@ -17,7 +17,8 @@ from arkitekt_spec.declare.app import AppRegistry
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
 
 from arkitekt.app.app import App, Ctx
-from arkitekt.runtime import ConnectionOptions, Runtime
+from arkitekt.app.options import ConnectionOptions
+from arkitekt.runtime import Runtime
 
 if TYPE_CHECKING:
     from fastapi import FastAPI

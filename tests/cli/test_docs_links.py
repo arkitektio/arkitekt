@@ -6,9 +6,9 @@ These tests ensure the constants stay consistent and that each command group's
 """
 
 import pytest
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 from arkitekt.cli import docs
 
 
@@ -48,7 +48,7 @@ def test_help_epilog_renders_a_link():
     ],
 )
 def test_help_includes_docs_link(args):
-    result = CliRunner().invoke(cli, [*args, "--help"])
+    result = CliRunner().invoke(cli_app, [*args, "--help"])
     assert result.exit_code == 0, result.output
     assert "Learn more" in result.output
     # rich-click may wrap long URLs across lines, so check the host at least.

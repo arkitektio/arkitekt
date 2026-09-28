@@ -11,7 +11,7 @@ fastapi = pytest.importorskip("fastapi")
 
 from fastapi.testclient import TestClient  # noqa: E402
 
-from arkitekt import App, serve  # noqa: E402
+from arkitekt import App, Task, serve  # noqa: E402
 
 from .fakes import PictureClient, PictureService  # noqa: E402
 
@@ -20,7 +20,7 @@ def test_serving_installs_a_lifespan_that_runs_the_app(tmp_path) -> None:  # noq
     from arkitekt_fastapi import FastApiAgent
 
     app = App("served")
-    seen: list = []
+    seen: list[int] = []
 
     @app.action
     def ping(x: int) -> int:
@@ -36,6 +36,7 @@ def test_serving_installs_a_lifespan_that_runs_the_app(tmp_path) -> None:  # noq
         agent = runtime.agent
         assert isinstance(agent, FastApiAgent)
         assert agent.bound_app is runtime
+        assert runtime.snapshot is not None, "the lifespan has entered the run"
         assert agent.app_registry is runtime.snapshot.registry
         assert runtime.fakts is None, "an app with no requirements authenticates nothing"
         assert "ping" in agent.app_registry.implementations
@@ -52,7 +53,8 @@ def test_serving_refuses_a_missing_context_at_the_call() -> None:
 
     app = App("served-ctx", app_context=Config)
     with pytest.raises(AppContextError, match="none was given"):
-        serve(app, fastapi.FastAPI())
+        # The missing context is the point.
+        serve(app, fastapi.FastAPI())  # pyright: ignore[reportArgumentType]
 
 
 def test_a_served_app_with_services_builds_their_clients(tmp_path) -> None:  # noqa: ANN001
@@ -69,6 +71,7 @@ def test_a_served_app_with_services_builds_their_clients(tmp_path) -> None:  # n
     with TestClient(fastapi_app):
         assert runtime.fakts is not None, "a service with a requirement resolves through fakts"
         assert isinstance(runtime.get(PictureClient), PictureClient)
+        assert runtime.agent is not None, "the lifespan has built the agent"
         assert runtime.agent.bound_app is runtime
 
 
@@ -84,7 +87,7 @@ async def test_a_served_action_runs_inside_raths_task_scope(tmp_path) -> None:  
     def whose() -> str:
         """Which task this runs as, as rath sees it."""
         task = current_task.get()
-        return task.id if task is not None else "none"
+        return task.id if isinstance(task, Task) else "none"
 
     fastapi_app = fastapi.FastAPI()
     serve(app, fastapi_app, db_file=str(tmp_path / "scope.db"))

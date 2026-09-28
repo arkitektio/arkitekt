@@ -18,6 +18,7 @@ import subprocess
 import time
 import webbrowser
 from pathlib import Path
+from collections.abc import Sequence
 from typing import Annotated, Any, Dict, List, Optional, Tuple
 
 import typer
@@ -407,7 +408,7 @@ def _bring_up_via_socket(
     """
     command = ["tailscale", f"--socket={socket_path}", *up_args]
     console.print(f"Running: {' '.join(_redact(command))}", style="cyan")
-    last: Optional[subprocess.CompletedProcess] = None
+    last: Optional[subprocess.CompletedProcess[str]] = None
     timed_out = False
     for _ in range(attempts):
         try:
@@ -459,7 +460,7 @@ def _device_code_join(
     machine_name: Optional[str],
     description: Optional[str],
     ephemeral: bool,
-    tags: Tuple[str, ...],
+    tags: Sequence[str],
     expiration: int,
     open_browser: bool,
 ) -> Tuple[str, str, str]:

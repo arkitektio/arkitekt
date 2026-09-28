@@ -9,6 +9,9 @@ from .utils import get_image_path
 from typing import Any, Optional, Callable
 import logging
 import aiohttp
+from fakts import Fakts
+from fakts.grants.remote import RemoteGrant
+from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from logging import LogRecord
 
 logger = logging.getLogger(__name__)
@@ -70,12 +73,20 @@ class Logo(QtWidgets.QWidget):
                     return None
 
 
-class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
-    """A logging handler that will emit a Qt signal when a log message is received."""
+class _LogLines(QtCore.QObject):
+    """The Qt side of :class:`ArkitektLogsRetriever`: carries a line to the widget's thread."""
 
     appendPlainText = QtCore.Signal(str)
 
-    def __init__(self, widget: QtWidgets.QPlainTextEdit, *args, **kwargs) -> None:
+
+class ArkitektLogsRetriever(logging.Handler):
+    """A logging handler that will emit a Qt signal when a log message is received.
+
+    It holds its QObject rather than being one: a class that is both a Handler and a
+    QObject depends on each base's ``__init__`` being called by hand.
+    """
+
+    def __init__(self, widget: QtWidgets.QPlainTextEdit) -> None:
         """A logging handler that will emit a Qt signal when a log message is received.
 
         Parameters
@@ -84,8 +95,8 @@ class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
             A plain text edit widget to display the logs in.
         """
         super().__init__()
-        QtCore.QObject.__init__(self)
-        self.appendPlainText.connect(widget.appendPlainText)
+        self.lines = _LogLines()
+        self.lines.appendPlainText.connect(widget.appendPlainText)
         self.setFormatter(
             logging.Formatter(
                 "%(asctime)s %(levelname)s %(module)s %(funcName)s %(message)s"
@@ -101,7 +112,7 @@ class ArkitektLogsRetriever(logging.Handler, QtCore.QObject):
         """
         msg = self.format(record)
         try:
-            self.appendPlainText.emit(msg)
+            self.lines.appendPlainText.emit(msg)
         except RuntimeError:
             logging.getLogger().removeHandler(self)
 
@@ -181,7 +192,7 @@ class Profile(QtWidgets.QDialog):
 
     def __init__(
         self,
-        app: App,
+        app: App[Any],
         bar: "MagicBar",
         *args,
         dark_mode: bool = False,
@@ -228,7 +239,7 @@ class Profile(QtWidgets.QDialog):
         self.infobar.addWidget(QtWidgets.QLabel(version))
 
         self.unkonfigure_button = QtWidgets.QPushButton("Reconnect")
-        self.unkonfigure_button.clicked.connect(lambda: self.bar.refresh_task.run())
+        self.unkonfigure_button.clicked.connect(self._reconnect)
 
         button_bar = QtWidgets.QHBoxLayout()
         self.infobar.addLayout(button_bar)
@@ -250,6 +261,10 @@ class Profile(QtWidgets.QDialog):
         self.sidebar.addWidget(self.go_all_the_way_button)
         self.sidebar.addWidget(self.show_logs_button)
         self.sidebar.addStretch()
+
+    def _reconnect(self) -> None:
+        """Log in again: re-run the bar's refresh (the Reconnect button)."""
+        self.bar.refresh_task.run()
 
     def on_go_all_the_way_clicked(self, checked: bool) -> None:
         """Callback for when the go all the way button is clicked.
@@ -304,7 +319,7 @@ class MagicBar(QtWidgets.QWidget):
 
     def __init__(
         self,
-        runtime: Runtime,
+        runtime: Runtime[Any],
         dark_mode: bool = False,
         on_error: Optional[Callable[[Exception], None]] = None,
     ) -> None:
@@ -396,14 +411,18 @@ class MagicBar(QtWidgets.QWidget):
         if self.profile.go_all_the_way_down:
             self.set_unprovided()
 
-    def show_error(self, ex: Exception) -> None:
+    def show_error(self, ex: BaseException) -> None:
         """Show an error message
 
         Parameters
         ----------
-        ex : Exception
+        ex : BaseException
             The exception to show.
         """
+        if not isinstance(ex, Exception):
+            # A cancelled task (CancelledError and the like) ended; it did not fail.
+            logger.info(f"Task ended: {ex!r}")
+            return
         if self._on_error:
             self._on_error(ex)
         else:
@@ -424,15 +443,15 @@ class MagicBar(QtWidgets.QWidget):
         """
         raise ex
 
-    def configure_errored(self, ex: Exception) -> None:
+    def configure_errored(self, ex: BaseException) -> None:
         self.set_unkonfigured()
         self.show_error(ex)
 
-    def login_errored(self, ex: Exception) -> None:
+    def login_errored(self, ex: BaseException) -> None:
         self.set_unlogined()
         self.show_error(ex)
 
-    def provide_errored(self, ex: Exception) -> None:
+    def provide_errored(self, ex: BaseException) -> None:
         self.set_unprovided()
         self.show_error(ex)
 
@@ -472,7 +491,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Konfigure App")
 
-    def set_unlogined(self) -> None:
+    def set_unlogined(self, _result: object = None) -> None:
         self.state = AppState.DOWN
         self.process_state = ProcessState.UNLOGGED
         self.app_down.emit()
@@ -483,7 +502,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setDisabled(False)
         self.magicb.setText("Login")
 
-    def set_unprovided(self) -> None:
+    def set_unprovided(self, _result: object = None) -> None:
         self.state = AppState.UP
         self.process_state = ProcessState.UNPROVIDED
         self.app_up.emit()
@@ -512,13 +531,9 @@ class MagicBar(QtWidgets.QWidget):
         history = [str(h) for h in history]
 
         defaults = ["go.arkitekt.live", "http://127.0.0.1:8000"]
-        # Maybe check current url
-        try:
-            current = self.runtime.fakts.grant.discovery.url
-            if current:
-                defaults.insert(0, current)
-        except Exception:
-            pass
+        discovery = self._well_known()
+        if discovery is not None and discovery.url:
+            defaults.insert(0, discovery.url)
 
         # Merge and deduplicate
         all_endpoints = []
@@ -539,10 +554,11 @@ class MagicBar(QtWidgets.QWidget):
         settings.setValue("history", history)
 
     def connect_to_endpoint(self, url: str) -> None:
-        try:
-            self.runtime.fakts.grant.discovery.url = url
-        except Exception as e:
-            logger.error(f"Could not update fakts url: {e}")
+        discovery = self._well_known()
+        if discovery is None:
+            logger.error("Could not update the fakts url: this run does not discover its server")
+        else:
+            discovery.url = url
 
         self.add_to_history(url)
         self.configure_task.run()
@@ -554,6 +570,8 @@ class MagicBar(QtWidgets.QWidget):
 
         for endpoint in endpoints:
             action = menu.addAction(endpoint)
+            if action is None:
+                continue
             action.triggered.connect(
                 lambda checked, e=endpoint: self.connect_to_endpoint(e)
             )
@@ -602,17 +620,35 @@ class MagicBar(QtWidgets.QWidget):
     # above are built from: real coroutine functions (`async_to_qt` requires
     # one), each reaching for the app's built parts at the moment it runs.
 
+    def _fakts(self) -> Fakts:
+        """The run's fakts, which exist once its runtime is entered."""
+        fakts = self.runtime.fakts
+        if fakts is None:
+            raise RuntimeError(
+                "This app's runtime has no fakts: it is not entered yet, or the app "
+                "needs no service and so authenticates nothing."
+            )
+        return fakts
+
+    def _well_known(self) -> WellKnownDiscovery | None:
+        """How the run finds its server, when it is by url (the only way arkitekt builds)."""
+        fakts = self.runtime.fakts
+        grant = fakts.grant if fakts is not None else None
+        if isinstance(grant, RemoteGrant) and isinstance(grant.discovery, WellKnownDiscovery):
+            return grant.discovery
+        return None
+
     async def _aload(self) -> Any:
-        return await self.runtime.fakts.aload()
+        return await self._fakts().aload()
 
     async def _arefresh(self) -> Any:
-        return await self.runtime.fakts.arefresh()
+        return await self._fakts().arefresh()
 
     async def _aget_token(self) -> Any:
-        return await self.runtime.fakts.aget_token()
+        return await self._fakts().aget_token()
 
     async def _arefresh_token(self) -> Any:
-        return await self.runtime.fakts.arefresh_token()
+        return await self._fakts().arefresh_token()
 
     async def _aprovide(self) -> Any:
         # Through the runtime: it owns the agent, binds it to this run and

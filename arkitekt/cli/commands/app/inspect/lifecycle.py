@@ -1,5 +1,5 @@
 import json
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.panel import Panel
@@ -12,7 +12,7 @@ from arkitekt.cli.vars import get_console
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 
 
-def _records(hooks: dict) -> list:
+def _records(hooks: dict[str, Any]) -> list[dict[str, str]]:
     return [
         {
             "name": name,

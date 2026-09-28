@@ -22,6 +22,7 @@ from typing import (
     List,
     Mapping,
     Optional,
+    Self,
     Type,
     TypeVar,
     cast,
@@ -35,10 +36,11 @@ from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
 from koil import unkoil
 from koil.bridge import unkoil_task
 from koil.composition import KoiledModel
-from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
+from pydantic import ConfigDict, Field, PrivateAttr
 
 from arkitekt.app.app import App, Ctx
 from arkitekt.app.fakts import build_fakts
+from arkitekt.app.options import ConnectionOptions
 from arkitekt.app.snapshot import RunSnapshot
 from arkitekt.device_id import get_or_set_device_id
 
@@ -49,28 +51,6 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
-
-
-class ConnectionOptions(BaseModel):
-    """How a run connects. Everything here is about the deployment, nothing about the app.
-
-    What is passed wins; then the environment (``FAKTS_URL``, ``FAKTS_TOKEN``,
-    ``FAKTS_REDEEM_TOKEN``); then the defaults. :func:`connect` documents each.
-    """
-
-    url: Optional[str] = None
-    token: Optional[str] = None
-    redeem_token: Optional[str] = None
-    no_cache: bool = False
-    headless: bool = False
-    # Held as Any: pydantic cannot build a schema for the hook's callable type.
-    device_code_hook: Optional[Any] = None
-    force: bool = False
-    """Take over an existing registration of this app's agent. Applied to the
-    run's agent; the app and its clients know nothing of it."""
-    device_id: Optional[str] = None
-
-    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
 
 class Runtime(KoiledModel, Generic[Ctx]):
@@ -127,7 +107,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     # ------------------------------------------------------------------ #
 
     @property
-    def services(self) -> Mapping[str, "Service"]:
+    def services(self) -> Mapping[str, "Service[Any]"]:
         """The services this run declares, by name.
 
         The *declared* services, not the built clients: this is what rekuest's
@@ -238,7 +218,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     # Entering                                                           #
     # ------------------------------------------------------------------ #
 
-    async def __aenter__(self) -> "Runtime":
+    async def __aenter__(self) -> Self:
         """Build and connect everything: snapshot, fakts, resolve, then each client.
 
         Returns:
@@ -346,6 +326,10 @@ class Runtime(KoiledModel, Generic[Ctx]):
             LookupError: If the app offers nothing.
         """
         self._require_context(context)
+        await self._aprovide(context)
+
+    async def _aprovide(self, context: Optional[Ctx]) -> None:
+        """Provide the app's offerings with ``context``, already checked by the caller."""
         await self._require_agent().aprovide(context=context)
 
     @overload
@@ -361,7 +345,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
             LookupError: If the app offers nothing.
         """
         self._require_context(context)
-        unkoil(self.arun, context=context)
+        unkoil(self._aprovide, context)
 
     @overload
     def run_detached(self: "Runtime[None]", context: None = None) -> "KoilFuture[None]": ...
@@ -381,7 +365,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
         """
         self._require_context(context)
         self._require_agent()
-        return unkoil_task(self.arun, context=context)
+        return unkoil_task(self._aprovide, context)
 
 
 #: What ``run()`` says when an app offers something and no runtime is installed.
@@ -396,7 +380,7 @@ class RuntimeNotInstalledError(ImportError):
     """``run()`` was asked to serve an app, and no runtime (rekuest) is installed."""
 
 
-def _provider_for(app: App, *, required: bool = True) -> Optional[Provider[Any]]:
+def _provider_for(app: App[Any], *, required: bool = True) -> Optional[Provider[Any]]:
     """The provider a run of ``app`` builds its agent from: the app's own, or rekuest's.
 
     An app offering anything without declaring how it is served is served by
@@ -655,4 +639,4 @@ async def arun(
         await runtime.arun(context=context)
 
 
-__all__ = ["Runtime", "ConnectionOptions", "connect", "run", "arun"]
+__all__ = ["Runtime", "connect", "run", "arun"]

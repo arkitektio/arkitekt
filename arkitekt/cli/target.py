@@ -22,7 +22,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import typer
 
@@ -176,7 +176,7 @@ def import_target(target: Target) -> ModuleType:
     return importlib.import_module(target.module)
 
 
-def find_app(module: Optional[ModuleType], attribute: Optional[str] = None) -> Optional[App]:
+def find_app(module: Optional[ModuleType], attribute: Optional[str] = None) -> Optional[App[Any]]:
     """Find the App a module declares, or ``None`` if it declares none.
 
     With ``attribute`` that object is taken, and must be an App. Without it, the
@@ -224,7 +224,7 @@ def find_app(module: Optional[ModuleType], attribute: Optional[str] = None) -> O
     )
 
 
-def require_app(module: ModuleType, attribute: Optional[str] = None) -> App:
+def require_app(module: ModuleType, attribute: Optional[str] = None) -> App[Any]:
     """:func:`find_app`, where a module without an App is an error that shows the API.
 
     Args:
@@ -246,7 +246,7 @@ def require_app(module: ModuleType, attribute: Optional[str] = None) -> App:
     return app
 
 
-def load_target(target: str, work_dir: str) -> tuple[App, ModuleType, Target]:
+def load_target(target: str, work_dir: str) -> tuple[App[Any], ModuleType, Target]:
     """Parse, import and resolve ``target``.
 
     Args:
@@ -298,7 +298,7 @@ def import_target_or_exit(ctx: typer.Context, target: str) -> tuple[ModuleType, 
             cli_error(f"Importing '{parsed.module}' failed: {e}")
 
 
-def load_app_or_exit(ctx: typer.Context, target: str) -> App:
+def load_app_or_exit(ctx: typer.Context, target: str) -> App[Any]:
     """The App a command acts on; a missing module or app exits with guidance.
 
     Loading only imports and resolves: nothing is connected or built.

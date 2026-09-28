@@ -42,18 +42,20 @@ def test_arkitekt_tqdm_reports_to_the_task_it_is_handed() -> None:
     """The one thing the subclass exists for, never exercised until now."""
     pytest.importorskip("tqdm", reason="the `tqdm` extra is not installed")
 
+    from arkitekt_spec.declare.task import LocalTask
+
     from arkitekt.tqdm import tqdm
 
     reported: list[int] = []
 
-    class RecordingTask:
+    class RecordingTask(LocalTask):
         def progress(self, percentage: int, message: str | None = None) -> None:
             reported.append(percentage)
 
     # Not `disable=True`: tqdm's disabled `__iter__` is a fast path that never
     # calls `update`, so the reporting this exists for would never run.
     consumed = list(
-        tqdm(  # type: ignore[arg-type]
+        tqdm(
             range(100),
             task=RecordingTask(),
             file=io.StringIO(),

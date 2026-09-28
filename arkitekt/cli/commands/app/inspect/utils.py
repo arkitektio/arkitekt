@@ -1,5 +1,7 @@
 """What the inspect commands share: reading what a run of an App would serve, without running it."""
 
+from typing import Any
+
 from arkitekt_spec.declare.app import AppRegistry
 
 from arkitekt.app.app import App
@@ -10,7 +12,7 @@ from arkitekt.runtime import _provider_for
 NOTHING_TO_PROVIDE = "This app offers nothing: no action, state, hook or blok."
 
 
-def run_snapshot_or_exit(app: App) -> RunSnapshot:
+def run_snapshot_or_exit(app: App[Any]) -> RunSnapshot:
     """What a run of the App would serve; an invalid declaration exits cleanly.
 
     The snapshot is taken the way ``run(app)`` takes it: with the provider a run
@@ -30,6 +32,6 @@ def run_snapshot_or_exit(app: App) -> RunSnapshot:
         cli_error(f"The app '{app.identifier}' is not valid: {e}")
 
 
-def snapshot_or_exit(app: App) -> AppRegistry:
+def snapshot_or_exit(app: App[Any]) -> AppRegistry:
     """The registry a run of the App would serve; see :func:`run_snapshot_or_exit`."""
     return run_snapshot_or_exit(app).registry

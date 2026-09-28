@@ -7,6 +7,7 @@ builder; the fakts they resolve through is the offline one every test gets
 """
 
 import asyncio
+from typing import Any
 
 import pytest
 from arkitekt_spec.declare.errors import RegistryFrozenError
@@ -26,7 +27,7 @@ from .fakes import (
 )
 
 
-def picture_app(service: Service | None = None) -> App:
+def picture_app(service: Service[Any] | None = None) -> App[None]:
     """An app using pictures (and a fake rekuest provider, since it offers an action)."""
     app = App("runtime", services=[service or PictureService()], providers=[RekuestProvider()])
 
@@ -39,14 +40,14 @@ def picture_app(service: Service | None = None) -> App:
 
 
 def test_connect_builds_nothing_until_entered() -> None:
-    built: list = []
+    built: list[PictureClient] = []
     runtime = connect(picture_app(PictureService(built)))
     assert built == [] and runtime.clients == {}
 
 
 @pytest.mark.asyncio
 async def test_entering_builds_one_client_per_service() -> None:
-    built: list = []
+    built: list[PictureClient] = []
     async with connect(picture_app(PictureService(built))) as rt:
         assert built == [rt.get(PictureClient)]
         assert isinstance(rt.get(FakeRekuest), FakeRekuest)
@@ -59,6 +60,7 @@ async def test_a_run_binds_its_snapshot_to_its_own_clients() -> None:
 
     async with connect(app) as a:
         async with connect(app) as b:
+            assert a.snapshot is not None and b.snapshot is not None, "entered runs have one"
             from_a, from_b = await asyncio.gather(
                 a.snapshot.registry.structure_registry.get_fullfilled_structure("@pictures/picture").expand("1"),
                 b.snapshot.registry.structure_registry.get_fullfilled_structure("@pictures/picture").expand("2"),
@@ -68,6 +70,7 @@ async def test_a_run_binds_its_snapshot_to_its_own_clients() -> None:
     assert a.get(PictureClient) is not b.get(PictureClient)
     # The declaration is never bound: a run binds copies of its entries.
     declared = app.registry.structure_registry.get_fullfilled_structure("@pictures/picture")
+    assert a.snapshot is not None
     bound_in_a = a.snapshot.registry.structure_registry.get_fullfilled_structure("@pictures/picture")
     assert bound_in_a is not declared
     assert declared.aexpand is not bound_in_a.aexpand
@@ -77,6 +80,7 @@ async def test_a_run_binds_its_snapshot_to_its_own_clients() -> None:
 async def test_the_app_stays_open_while_its_run_is_frozen() -> None:
     app = picture_app()
     async with connect(app) as rt:
+        assert rt.snapshot is not None
 
         def later(x: int) -> int:
             """Declared while running."""
@@ -87,6 +91,7 @@ async def test_the_app_stays_open_while_its_run_is_frozen() -> None:
         app.action(later)
 
     assert "later" in app.registry.implementations
+    assert rt.snapshot is not None
     assert "later" not in rt.snapshot.registry.implementations
 
 
@@ -96,7 +101,7 @@ async def test_entering_enters_every_client_and_leaves_them_in_reverse() -> None
     app = App("order", services=[PictureService(log=log), OtherService(log=log)])
 
     async with connect(app) as rt:
-        assert rt.get(PictureClient).name == "pictures-1"
+        assert rt.require(PictureClient).name == "pictures-1"
 
     assert log == ["enter pictures-1", "enter other", "exit other", "exit pictures-1"]
 
@@ -129,13 +134,15 @@ async def test_a_failing_client_leaves_what_was_entered() -> None:
 @pytest.mark.asyncio
 async def test_the_run_builds_binds_and_drives_the_agent() -> None:
     app = picture_app()
+    # Declared on the registry, past the App's type parameter: the checker still
+    # sees App[None], so the context the run is handed is untyped here.
     app.registry.app_context(str)
     async with connect(app, provide=True, force=True) as rt:
         agent = rt.agent
         assert isinstance(agent, FakeAgent)
         assert agent.client is rt.get(FakeRekuest), "built from the run's own client"
         assert agent.bound_app is rt and agent.force is True
-        await rt.arun(context="ctx")
+        await rt.arun(context="ctx")  # pyright: ignore[reportCallIssue, reportArgumentType]
     assert agent.provided == ["ctx"]
 
 
@@ -151,10 +158,12 @@ async def test_a_run_refuses_the_wrong_context_before_the_agent_starts() -> None
     app = App("ctx", services=[PictureService()], providers=[RekuestProvider()], app_context=Config)
     async with connect(app, provide=True) as rt:
         agent = rt.agent
+        assert isinstance(agent, FakeAgent)
+        # The wrong contexts are the point: the checker refuses them too.
         with pytest.raises(AppContextError, match="none was given"):
-            await rt.arun()
+            await rt.arun()  # pyright: ignore[reportCallIssue]
         with pytest.raises(AppContextError, match="was given a str"):
-            await rt.arun(context="no")
+            await rt.arun(context="no")  # pyright: ignore[reportArgumentType]
         assert agent.provided == []
         await rt.arun(context=Config("yes"))
     assert [c.label for c in agent.provided] == ["yes"]
@@ -162,7 +171,7 @@ async def test_a_run_refuses_the_wrong_context_before_the_agent_starts() -> None
     plain = picture_app()
     async with connect(plain, provide=True) as rt:
         with pytest.raises(AppContextError, match="declares no app context"):
-            await rt.arun(context=Config())
+            await rt.arun(context=Config())  # pyright: ignore[reportCallIssue, reportArgumentType]
 
 
 def test_run_refuses_a_missing_context_before_logging_in(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -174,7 +183,8 @@ def test_run_refuses_a_missing_context_before_logging_in(monkeypatch: pytest.Mon
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
     app = App("ctx", services=[PictureService()], providers=[RekuestProvider()], app_context=Config)
     with pytest.raises(AppContextError, match="none was given"):
-        run(app)
+        # The missing context is the point.
+        run(app)  # pyright: ignore[reportArgumentType]
 
 
 @pytest.mark.asyncio
@@ -219,6 +229,7 @@ def test_running_an_app_that_declares_no_provider_serves_it_through_rekuest() ->
 
     snapshot = app.snapshot(provider=runtime.provider)
     assert "rekuest" in snapshot.services and snapshot.provider is rekuest_provider
+    assert snapshot.manifest.requirements is not None
     assert {r.key for r in snapshot.manifest.requirements} >= {"rekuest", "s3"}
     assert app.manifest.requirements == [], "the declaration is unchanged"
 
@@ -241,6 +252,7 @@ async def test_require_names_the_service_to_register() -> None:
 async def test_the_runtime_manifest_adds_the_device_id() -> None:
     app = App("node")
     async with connect(app, device_id="machine-1") as rt:
+        assert rt.snapshot is not None
         assert rt.snapshot.manifest.device_id == "machine-1"
         assert rt.snapshot.manifest.identifier == "node"
     assert app.manifest.device_id is None

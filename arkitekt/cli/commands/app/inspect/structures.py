@@ -17,7 +17,7 @@ def _widget_name(widget: Any) -> str | None:
     return type(widget).__name__.removesuffix("AssignWidgetInput").lower() or None
 
 
-def _describe_structure(structure: Any, used_by: dict[str, set[str]]) -> dict:
+def _describe_structure(structure: Any, used_by: dict[str, set[str]]) -> dict[str, Any]:
     """Project one structure into a JSON-friendly record."""
     cls = structure.cls
     widget = structure.default_widget

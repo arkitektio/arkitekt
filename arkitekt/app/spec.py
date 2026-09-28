@@ -9,7 +9,8 @@ separately against kabinet's GraphQL inputs, which is how the agent ``descriptio
 reached a model that did not know it.
 """
 
-from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Protocol
 
 from arkitekt_spec import (
     DEFAULT_ENTRYPOINT,
@@ -20,11 +21,44 @@ from arkitekt_spec import (
 )
 
 if TYPE_CHECKING:
-    from arkitekt.app.app import App
     from arkitekt.app.snapshot import RunSnapshot
 
 
-def app_manifest(app: "App[Any]", entrypoint: str = DEFAULT_ENTRYPOINT) -> AppManifest:
+class DeclaredApp(Protocol):
+    """Who an app is, as the spec shapes read it (an :class:`~arkitekt.app.app.App`)."""
+
+    @property
+    def identifier(self) -> str:
+        """Globally unique identifier."""
+        ...
+
+    @property
+    def version(self) -> str:
+        """The app's version."""
+        ...
+
+    @property
+    def author(self) -> str | None:
+        """Who wrote it."""
+        ...
+
+    @property
+    def description(self) -> str | None:
+        """What it is, in a sentence."""
+        ...
+
+    @property
+    def logo(self) -> str | None:
+        """A public url of its logo."""
+        ...
+
+    @property
+    def scopes(self) -> Sequence[str]:
+        """The scopes it requests."""
+        ...
+
+
+def app_manifest(app: DeclaredApp, entrypoint: str = DEFAULT_ENTRYPOINT) -> AppManifest:
     """Who the app is.
 
     Args:
@@ -44,7 +78,7 @@ def app_manifest(app: "App[Any]", entrypoint: str = DEFAULT_ENTRYPOINT) -> AppMa
 
 
 def app_declaration(
-    app: "App[Any]", run: "RunSnapshot", entrypoint: str = DEFAULT_ENTRYPOINT
+    app: DeclaredApp, run: "RunSnapshot", entrypoint: str = DEFAULT_ENTRYPOINT
 ) -> AppDeclaration:
     """Everything the app is, as one document: the source of every other shape.
 
@@ -64,6 +98,6 @@ def app_declaration(
     )
 
 
-def app_inspection(app: "App[Any]", run: "RunSnapshot") -> Inspection:
+def app_inspection(app: DeclaredApp, run: "RunSnapshot") -> Inspection:
     """What a built image records about the app: its declaration, as an inspection."""
     return app_declaration(app, run).to_inspection()

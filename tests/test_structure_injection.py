@@ -29,12 +29,12 @@ async def expand_thing(id: str, pictures: PictureClient) -> Thing:
     return Thing(id, pictures.name)
 
 
-def picture_app(*services: Service) -> App:
+def picture_app(*services: Service[Any]) -> App[None]:
     """An app using the pictures service (and a fake rekuest), and any others given."""
     return App("structures", services=[PictureService(), *services], providers=[RekuestProvider()])
 
 
-def bare_app() -> App:
+def bare_app() -> App[None]:
     """An app using no service at all."""
     return App("structures")
 
@@ -50,12 +50,13 @@ async def test_an_expander_is_handed_the_runs_client() -> None:
     app.register_structure(Thing, "@lib/thing", expand=expand_thing)
 
     async with connect(app) as rt:
+        assert rt.snapshot is not None
         structure = rt.snapshot.registry.structure_registry.get_fullfilled_structure(
             "@lib/thing"
         )
         thing = await structure.expand("1")
 
-    assert (thing.id, thing.owner) == ("1", rt.get(PictureClient).name)
+    assert (thing.id, thing.owner) == ("1", rt.require(PictureClient).name)
 
 
 @pytest.mark.asyncio

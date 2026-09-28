@@ -45,7 +45,9 @@ def parse_call_args(args: List[str]) -> Dict[str, Any]:
     return parsed
 
 
-async def call_app(app: App, hash: str, kwargs: Dict[str, Any], options: Dict[str, Any]) -> Any:  # noqa: ANN401
+async def call_app(
+    app: App[Any], hash: str, kwargs: Dict[str, Any], options: Dict[str, Any]
+) -> Any:  # noqa: ANN401
     """Connect ``app`` (without providing it), find the action by hash, and call it.
 
     The call goes through the run's rekuest client, so only actions available on

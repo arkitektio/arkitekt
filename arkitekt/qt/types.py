@@ -1,6 +1,6 @@
 """The Qt app: a declaration whose actions may run in, or talk to, the Qt event loop."""
 
-from typing import Any, Callable, Dict, List, Optional, ParamSpec, Sequence, TypeVar, overload
+from typing import Any, Callable, Dict, List, Optional, ParamSpec, Sequence, TypeVar, cast, overload
 
 from arkitekt_spec.actions import AssignWidgetInput
 from arkitekt_spec.declare.actors.types import Actifier
@@ -89,17 +89,33 @@ class QtApp(App[Ctx]):
         registry: Optional[AppRegistry] = None,
         app_context: Optional[type[Ctx]] = None,
     ) -> None:
-        super().__init__(  # type: ignore[misc]  # the overloads above are the contract
-            identifier or _caller_module_name(),
-            version,
-            logo=logo,
-            scopes=scopes,
-            author=author,
-            public_sources=public_sources,
-            services=services,
-            registry=registry,
-            app_context=app_context,
-        )
+        # Through App's overloads: with a context class, or without one.
+        if app_context is None:
+            # QtApp's overloads make Ctx None exactly when no context class is given;
+            # the checker cannot carry that into this branch.
+            App.__init__(
+                cast("App[None]", self),
+                identifier or _caller_module_name(),
+                version,
+                logo=logo,
+                scopes=scopes,
+                author=author,
+                public_sources=public_sources,
+                services=services,
+                registry=registry,
+            )
+        else:
+            super().__init__(
+                identifier or _caller_module_name(),
+                version,
+                logo=logo,
+                scopes=scopes,
+                author=author,
+                public_sources=public_sources,
+                services=services,
+                registry=registry,
+                app_context=app_context,
+            )
         self.parent = parent
 
     def _offer_with(

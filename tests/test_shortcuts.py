@@ -5,6 +5,8 @@ the shortcuts add: which app they declare, what they yield, and that each entry
 gets its own runtime. Runs resolve through the offline fakts every test gets.
 """
 
+from typing import Any
+
 import pytest
 
 from arkitekt import App, Easy, aeasy, easy, interactive
@@ -13,17 +15,19 @@ from arkitekt import shortcuts
 from .fakes import OtherClient, OtherService, PictureClient, PictureService
 
 
-def options(**extra: object) -> dict:
-    return dict(extra)
+def options() -> dict[str, Any]:
+    """Extra options every shortcut call here passes: none, today."""
+    return {}
 
 
-BUILT: list = []
+BUILT: list[PictureClient] = []
 PICTURES, OTHER = PictureService(BUILT), OtherService()
 
 
 def test_a_client_class_is_refused_where_a_service_is_expected() -> None:
     with pytest.raises(TypeError, match="is not a service"):
-        easy("class", PictureClient, **options())  # type: ignore[arg-type]
+        # The wrong type is the point.
+        easy("class", PictureClient, **options())  # pyright: ignore[reportArgumentType]
 
 
 def test_easy_declares_an_app_and_connects_nothing() -> None:
@@ -78,7 +82,8 @@ def test_connection_options_reach_the_runtime_not_the_app() -> None:
 
 def test_an_unknown_option_is_refused() -> None:
     with pytest.raises(TypeError, match="unexpected keyword argument"):
-        easy("bad", PICTURES, colour="blue", **options())  # type: ignore[call-arg]
+        # The unknown option is the point.
+        easy("bad", PICTURES, colour="blue", **options())  # pyright: ignore[reportCallIssue]
 
 
 def test_the_identifier_defaults_to_the_calling_file() -> None:
@@ -110,4 +115,5 @@ def test_interactive_holds_one_runtime_per_app() -> None:
 def test_the_runtime_configures_no_logging() -> None:
     """A library that reconfigures root logging behind the caller's back is a nuisance."""
     with pytest.raises(TypeError):
-        easy("x", log_level="DEBUG", **options())  # type: ignore[call-arg]
+        # There is no such option any more; that is the point.
+        easy("x", log_level="DEBUG", **options())  # pyright: ignore[reportCallIssue]

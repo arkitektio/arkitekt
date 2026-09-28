@@ -1,10 +1,11 @@
 import logging
 import os
 from hashlib import sha256
-from typing import TYPE_CHECKING, Optional
+from typing import Optional
 
 from platformdirs import user_state_dir
 
+from arkitekt.app.options import ConnectionOptions
 from arkitekt.constants import APP_AUTHOR, APP_NAME
 from fakts.cache.file import FileCache, ensure_private_dir
 from fakts.cache.nocache import NoCache
@@ -22,8 +23,6 @@ from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts.models import Manifest
 from fakts.protocols import FaktsCache
 
-if TYPE_CHECKING:
-    from arkitekt.runtime import ConnectionOptions
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +154,7 @@ def build_token_fakts(
     )
 
 
-def build_fakts(manifest: Manifest, options: "ConnectionOptions") -> Fakts:
+def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
     """Build the fakts a run authenticates through, choosing the grant.
 
     Which grant applies is decided here, next to the three builders, rather than

@@ -10,9 +10,9 @@ import subprocess
 import sys
 
 import pytest
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 
 # All tests in this file are local CLI tests (no server, no docker). Tagging the
 # module with the `cli` marker exempts them from the suite-wide skip in conftest.
@@ -22,7 +22,7 @@ pytestmark = pytest.mark.cli
 def _invoke(work_dir, *args, **kwargs):
     runner = CliRunner()
     # SDK commands now live under the `app` group.
-    result = runner.invoke(cli, ["--work-dir", str(work_dir), *args], **kwargs)
+    result = runner.invoke(cli_app, ["--work-dir", str(work_dir), *args], **kwargs)
     if result.exit_code != 0:
         print(result.output)
         print(result.exception)
@@ -159,10 +159,10 @@ def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
     file = DeploymentsFile(
         app_images=[
             AppImage(
-                app_image_id="x",
+                appImageId="x",
                 manifest=AppManifest(identifier="a", version="1"),
                 inspection=inspection,
-                image=DockerImage(image_string="me/a:1"),
+                image=DockerImage(imageString="me/a:1"),
             )
         ]
     )
@@ -232,14 +232,14 @@ def test_kabinet_validate(app_dir):
     """After scaffolding a flavour, validate reports it as valid."""
     # Flavours are scaffolded via the top-level `plugin init` (not under `app`).
     init_result = CliRunner().invoke(
-        cli,
+        cli_app,
         ["--work-dir", str(app_dir), "plugin", "init",
          "--flavour", "vanilla", "--arkitekt-version", "0.0.1"],
         input="n\n",  # decline the devcontainer prompt
     )
     assert init_result.exit_code == 0, init_result.output
 
-    result = CliRunner().invoke(cli, ["--work-dir", str(app_dir), "plugin", "validate"])
+    result = CliRunner().invoke(cli_app, ["--work-dir", str(app_dir), "plugin", "validate"])
     assert result.exit_code == 0
     assert "vanilla" in result.output
     assert "All flavours are valid" in result.output
@@ -247,7 +247,7 @@ def test_kabinet_validate(app_dir):
 
 def test_kabinet_validate_without_flavours_errors(app_dir):
     """validate fails cleanly when no flavours folder exists yet."""
-    result = CliRunner().invoke(cli, ["--work-dir", str(app_dir), "plugin", "validate"])
+    result = CliRunner().invoke(cli_app, ["--work-dir", str(app_dir), "plugin", "validate"])
     assert result.exit_code != 0
     assert "plugin init" in result.output
 
@@ -272,7 +272,7 @@ def test_kabinet_validate_without_flavours_errors(app_dir):
 )
 def test_help_for_command_groups(args):
     runner = CliRunner()
-    result = runner.invoke(cli, [*args, "--help"])
+    result = runner.invoke(cli_app, [*args, "--help"])
     assert result.exit_code == 0, result.output
     assert "Usage" in result.output or "Options" in result.output
 
@@ -370,7 +370,7 @@ def test_inspect_an_app_that_offers_nothing(app_dir, no_connecting):
 
 
 def test_the_manifest_group_is_gone():
-    result = CliRunner().invoke(cli, ["manifest", "--help"])
+    result = CliRunner().invoke(cli_app, ["manifest", "--help"])
 
     assert result.exit_code != 0
     assert "No such command" in result.output

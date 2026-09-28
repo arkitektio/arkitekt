@@ -17,7 +17,7 @@ from .fakes import OtherClient, OtherService, Picture, PictureClient, PictureSer
 
 
 def test_declaring_builds_nothing() -> None:
-    built: list = []
+    built: list[PictureClient] = []
     app = App("decl", services=[PictureService(built)])
 
     assert app.services == ["pictures"]
@@ -40,6 +40,7 @@ def test_the_manifest_is_read_off_the_declaration() -> None:
         ["read"],
         "http://logo",
     )
+    assert manifest.requirements is not None
     assert [r.key for r in manifest.requirements] == ["other", "pictures"]
     assert manifest.device_id is None, "the machine is the runtime's business"
 
@@ -138,9 +139,11 @@ def test_two_services_of_one_name_are_refused() -> None:
 def test_a_client_class_is_not_a_service() -> None:
     """There is no catalog to look a class up in: the service object is passed."""
     with pytest.raises(TypeError, match="PictureClient is not a service"):
-        App("class", services=[PictureClient])  # type: ignore[list-item]
+        # The wrong type is the point.
+        App("class", services=[PictureClient])  # pyright: ignore[reportArgumentType]
     with pytest.raises(TypeError, match="is not a service"):
-        App("name", services=["pictures"])  # type: ignore[list-item]
+        # The wrong type is the point.
+        App("name", services=["pictures"])  # pyright: ignore[reportArgumentType]
 
 
 def test_a_registered_action_is_still_callable_as_itself() -> None:
@@ -155,7 +158,7 @@ def test_a_registered_action_is_still_callable_as_itself() -> None:
 
 
 def test_snapshot_validates_without_connecting() -> None:
-    built: list = []
+    built: list[PictureClient] = []
     app = App("inspect", services=[PictureService(built)])
 
     @app.action

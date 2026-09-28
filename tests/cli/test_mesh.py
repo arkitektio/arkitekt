@@ -14,9 +14,9 @@ from unittest.mock import patch
 
 import pytest
 import typer
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 from arkitekt.cli.commands.mesh.main import TAILSCALE_UP_TIMEOUT_SECONDS
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
@@ -73,7 +73,7 @@ def _patch_flow(granted=GRANTED, well_known=WELL_KNOWN):
 
 
 def test_mesh_group_registered():
-    result = CliRunner().invoke(cli, ["mesh", "--help"])
+    result = CliRunner().invoke(cli_app, ["mesh", "--help"])
     assert result.exit_code == 0
     help_text = _plain(result.output)
     assert "join" in help_text
@@ -81,7 +81,7 @@ def test_mesh_group_registered():
 
 
 def test_join_help_has_device_code_options_and_no_force_reauth():
-    result = CliRunner().invoke(cli, ["mesh", "join", "--help"])
+    result = CliRunner().invoke(cli_app, ["mesh", "join", "--help"])
     assert result.exit_code == 0
     help_text = _plain(result.output)
     for opt in ("--name", "--description", "--ephemeral", "--tag", "--expiration"):
@@ -98,7 +98,7 @@ def test_join_runs_full_device_code_flow():
         f"{MESH}.subprocess.run", return_value=_ok()
     ) as mock_run:
         result = runner.invoke(
-            cli,
+            cli_app,
             ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser", "-n", "req-name"],
         )
 
@@ -128,7 +128,7 @@ def test_join_defaults_name_to_hostname():
         f"{MESH}.socket.gethostname", return_value="host42"
     ), patch(f"{MESH}.subprocess.run", return_value=_ok()):
         result = runner.invoke(
-            cli, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
         )
 
     assert result.exit_code == 0, result.output
@@ -140,7 +140,7 @@ def test_join_redacts_authkey_in_output():
     p_fetch, p_start, p_poll = _patch_flow()
     with p_fetch, p_start, p_poll, patch(f"{MESH}.subprocess.run", return_value=_ok()):
         result = runner.invoke(
-            cli, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
         )
 
     assert result.exit_code == 0, result.output
@@ -155,7 +155,7 @@ def test_join_uses_hint_options_in_payload():
         f"{MESH}.subprocess.run", return_value=_ok()
     ):
         result = runner.invoke(
-            cli,
+            cli_app,
             [
                 "mesh", "join", "-u", "http://fakts.example", "--no-open-browser",
                 "--description", "gpu box", "--ephemeral",
@@ -179,7 +179,7 @@ def test_join_falls_back_to_wellknown_coord_when_poll_omits_it():
         f"{MESH}.subprocess.run", return_value=_ok()
     ) as mock_run:
         result = runner.invoke(
-            cli, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
         )
 
     assert result.exit_code == 0, result.output
@@ -191,7 +191,7 @@ def test_join_errors_when_deployment_lacks_mesh_endpoints():
     with patch(f"{MESH}._fetch_well_known", return_value={"name": "F"}), patch(
         f"{MESH}.subprocess.run"
     ) as mock_run:
-        result = runner.invoke(cli, ["mesh", "join", "-u", "http://fakts.example"])
+        result = runner.invoke(cli_app, ["mesh", "join", "-u", "http://fakts.example"])
 
     assert result.exit_code != 0
     # "device-code" is a single token, so rich line-wrapping can't split it.
@@ -204,7 +204,7 @@ def test_join_not_installed_guides_install():
     with patch(f"{MESH}.shutil.which", return_value=None), patch(
         f"{MESH}._fetch_well_known"
     ) as mock_fetch, patch(f"{MESH}.subprocess.run") as mock_run:
-        result = runner.invoke(cli, ["mesh", "join", "-u", "http://fakts.example"])
+        result = runner.invoke(cli_app, ["mesh", "join", "-u", "http://fakts.example"])
 
     assert result.exit_code != 0
     assert "tailscale.com/download" in result.output
@@ -216,7 +216,7 @@ def test_join_not_installed_guides_install():
 def test_cert_self_fqdn():
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run:
-        result = runner.invoke(cli, ["mesh", "cert"])
+        result = runner.invoke(cli_app, ["mesh", "cert"])
 
     assert result.exit_code == 0, result.output
     mock_run.assert_called_once_with(["tailscale", "cert"], timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
@@ -225,7 +225,7 @@ def test_cert_self_fqdn():
 def test_cert_explicit_domain():
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run:
-        result = runner.invoke(cli, ["mesh", "cert", "host.ts.net"])
+        result = runner.invoke(cli_app, ["mesh", "cert", "host.ts.net"])
 
     assert result.exit_code == 0, result.output
     mock_run.assert_called_once_with(
@@ -238,7 +238,7 @@ def test_cert_not_installed_guides_install():
     with patch(f"{MESH}.shutil.which", return_value=None), patch(
         f"{MESH}.subprocess.run"
     ) as mock_run:
-        result = runner.invoke(cli, ["mesh", "cert"])
+        result = runner.invoke(cli_app, ["mesh", "cert"])
 
     assert result.exit_code != 0
     assert "tailscale.com/download" in result.output
@@ -250,7 +250,7 @@ def test_tailscale_sudo_fallback_on_nonzero_exit():
     with patch(
         f"{MESH}.subprocess.run", side_effect=[_ok(1), _ok(0)]
     ) as mock_run:
-        result = runner.invoke(cli, ["mesh", "cert"])
+        result = runner.invoke(cli_app, ["mesh", "cert"])
 
     assert result.exit_code == 0, result.output
     assert mock_run.call_count == 2
@@ -261,7 +261,7 @@ def test_tailscale_sudo_fallback_on_nonzero_exit():
 def test_tailscale_binary_missing_at_runtime():
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", side_effect=FileNotFoundError()):
-        result = runner.invoke(cli, ["mesh", "cert"])
+        result = runner.invoke(cli_app, ["mesh", "cert"])
 
     assert result.exit_code != 0
     assert "tailscale" in result.output
@@ -275,7 +275,7 @@ def test_tailscale_binary_missing_at_runtime():
 def test_leave_yes_runs_logout():
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run:
-        result = runner.invoke(cli, ["mesh", "leave", "--yes"])
+        result = runner.invoke(cli_app, ["mesh", "leave", "--yes"])
 
     assert result.exit_code == 0, result.output
     mock_run.assert_called_once_with(["tailscale", "logout"], timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
@@ -284,7 +284,7 @@ def test_leave_yes_runs_logout():
 def test_leave_without_yes_aborts_on_no():
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run") as mock_run:
-        result = runner.invoke(cli, ["mesh", "leave"], input="n\n")
+        result = runner.invoke(cli_app, ["mesh", "leave"], input="n\n")
 
     assert result.exit_code != 0  # aborted
     mock_run.assert_not_called()
@@ -295,7 +295,7 @@ def test_leave_not_installed_guides_install():
     with patch(f"{MESH}.shutil.which", return_value=None), patch(
         f"{MESH}.subprocess.run"
     ) as mock_run:
-        result = runner.invoke(cli, ["mesh", "leave", "--yes"])
+        result = runner.invoke(cli_app, ["mesh", "leave", "--yes"])
 
     assert result.exit_code != 0
     assert "tailscale.com/download" in result.output
@@ -339,7 +339,7 @@ def test_proxy_starts_daemon_and_brings_up(_tailscaled_found):
         f"{MESH}.subprocess.run", return_value=_ok()
     ) as mock_run, patch(f"{MESH}.time.sleep"):
         result = runner.invoke(
-            cli, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
         )
 
     assert result.exit_code == 0, result.output
@@ -374,7 +374,7 @@ def test_proxy_socks5_listen_adds_flag(_tailscaled_found):
         f"{MESH}.time.sleep"
     ):
         result = runner.invoke(
-            cli,
+            cli_app,
             [
                 "mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser",
                 "--socks5-listen", "localhost:1080",
@@ -395,7 +395,7 @@ def test_proxy_custom_listen(_tailscaled_found):
         f"{MESH}.time.sleep"
     ):
         result = runner.invoke(
-            cli,
+            cli_app,
             [
                 "mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser",
                 "--listen", "0.0.0.0:8080",
@@ -414,7 +414,7 @@ def test_proxy_tailscaled_missing_guides_install():
         f"{MESH}._fetch_well_known"
     ) as mock_fetch, patch(f"{MESH}.subprocess.Popen") as mock_popen:
         result = runner.invoke(
-            cli, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
         )
 
     assert result.exit_code != 0
@@ -434,7 +434,7 @@ def test_proxy_bringup_failure_raises(_tailscaled_found):
         f"{MESH}.time.sleep"
     ):
         result = runner.invoke(
-            cli, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
         )
 
     assert result.exit_code != 0
@@ -511,7 +511,7 @@ def test_tailscale_up_timeout_surfaces_clean_error():
         f"{MESH}.subprocess.run",
         side_effect=subprocess.TimeoutExpired(cmd="tailscale", timeout=TAILSCALE_UP_TIMEOUT_SECONDS),
     ):
-        result = runner.invoke(cli, ["mesh", "cert"])
+        result = runner.invoke(cli_app, ["mesh", "cert"])
 
     assert result.exit_code != 0
     assert "did not finish within" in result.output

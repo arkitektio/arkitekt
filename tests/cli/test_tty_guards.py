@@ -11,10 +11,10 @@ from unittest.mock import patch
 
 import pytest
 import typer
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
 from arkitekt.cli.tty import require_tty
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 
 INTERACTIVE = "arkitekt.cli.tty.is_tty"
 
@@ -41,7 +41,7 @@ def test_mesh_leave_aborts_without_tty_and_without_yes():
     with patch("arkitekt.cli.commands.mesh.main.shutil.which", return_value="/usr/bin/tailscale"), \
          patch(INTERACTIVE, return_value=False), \
          patch("arkitekt.cli.commands.mesh.main.subprocess.run") as mock_run:
-        result = runner.invoke(cli, ["mesh", "leave"])
+        result = runner.invoke(cli_app, ["mesh", "leave"])
 
     assert result.exit_code != 0
     assert "interactive terminal" in result.output

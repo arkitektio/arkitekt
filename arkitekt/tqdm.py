@@ -1,6 +1,6 @@
 """Small extension to tqdm that reports progress to the task it is handed."""
 
-from typing import Any, Generic, Iterable, Mapping, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, Iterable, Mapping, TypeVar
 
 from arkitekt_spec.declare.task import Task
 from tqdm import tqdm as _tqdm
@@ -8,7 +8,8 @@ from tqdm import tqdm as _tqdm
 T = TypeVar("T")
 
 
-class tqdm(_tqdm, Generic[T]):
+# tqdm's stubs make it generic in what it yields; the class itself is not subscriptable.
+class tqdm(_tqdm[T] if TYPE_CHECKING else _tqdm, Generic[T]):
     """A tqdm that reports its progress to ``task``, and so to the Arkitekt UI.
 
         def segment(images: list[Image], task: Task) -> ...:

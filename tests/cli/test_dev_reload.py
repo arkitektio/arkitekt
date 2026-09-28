@@ -85,9 +85,9 @@ def test_a_reload_runs_the_new_app_with_the_same_connection_flags(tmp_path, monk
 
 
 def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
-    from click.testing import CliRunner
+    from typer.testing import CliRunner
 
-    from arkitekt.cli.main import cli
+    from arkitekt.cli.main import cli_app
 
     seen = {}
 
@@ -97,7 +97,7 @@ def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
     monkeypatch.setattr(dev_module, "run_dev", fake_run_dev)
 
     result = CliRunner().invoke(
-        cli,
+        cli_app,
         ["--work-dir", str(app_dir), "run", "dev", "app.py", "--url", "http://u", "--reauth", "-l", "INFO"],
     )
 
@@ -110,13 +110,13 @@ def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
 
 @pytest.mark.parametrize("flag", ["--version", "-v"])
 def test_the_run_commands_no_longer_override_the_version(app_dir, flag):
-    from click.testing import CliRunner
+    from typer.testing import CliRunner
 
-    from arkitekt.cli.main import cli
+    from arkitekt.cli.main import cli_app
 
     for command in ("dev", "prod"):
         result = CliRunner().invoke(
-            cli, ["--work-dir", str(app_dir), "run", command, flag, "9.9.9"]
+            cli_app, ["--work-dir", str(app_dir), "run", command, flag, "9.9.9"]
         )
         assert result.exit_code != 0
         assert "No such option" in result.output

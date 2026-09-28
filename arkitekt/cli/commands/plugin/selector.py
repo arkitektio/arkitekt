@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 import typer
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
@@ -130,33 +130,31 @@ def add_selector(
 
     fl = Flavour(**data)
 
-    shared = {"required": required}
+    # Unset weight is left out so the selector keeps its own default.
+    shared: dict[str, Any] = {"required": required}
     if weight is not None:
         shared["weight"] = weight
 
     # A selector is a union discriminated on `kind`: construct the matching
-    # variant with only the fields that variant carries.
+    # variant with only the fields that variant carries. Aliased fields are
+    # passed by alias, the name a type checker knows them by.
     if kind == "cpu":
-        new_selector = CpuSelector(
-            min_count=min_count, frequency=frequency, arch=arch, **shared
-        )
+        new_selector = CpuSelector(minCount=min_count, frequency=frequency, arch=arch, **shared)
     elif kind == "ram":
         new_selector = RamSelector(min=memory, **shared)
     elif kind == "cuda":
         new_selector = CudaSelector(
-            compute_capability=compute_capability,
-            cuda_version=cuda_version,
+            computeCapability=compute_capability,
+            cudaVersion=cuda_version,
             memory=vram,
             count=count,
-            cuda_cores=cuda_cores,
+            cudaCores=cuda_cores,
             **shared,
         )
     elif kind == "rocm":
-        new_selector = RocmSelector(
-            api_version=api_version, api_thing=api_thing, **shared
-        )
+        new_selector = RocmSelector(apiVersion=api_version, apiThing=api_thing, **shared)
     elif kind == "oneapi":
-        new_selector = OneApiSelector(oneapi_version=one_api_version, **shared)
+        new_selector = OneApiSelector(oneapiVersion=one_api_version, **shared)
     elif kind == "label":
         if key is None:
             cli_error("A label selector needs --key")

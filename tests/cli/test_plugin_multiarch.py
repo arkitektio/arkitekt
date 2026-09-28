@@ -13,7 +13,7 @@ from unittest.mock import patch
 import pytest
 import typer
 import yaml
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
 from arkitekt.cli.commands.plugin import buildx
 from arkitekt.cli.commands.plugin.build import build_flavour
@@ -26,7 +26,7 @@ from arkitekt.cli.commands.plugin.types import (
     Build,
     Flavour,
 )
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 
 #: What ``docker buildx inspect --bootstrap`` prints for a builder that can do
 #: both architectures (the shape was captured from a real docker-container
@@ -47,7 +47,7 @@ def _config(tmp_path, flavour="vanilla"):
 
 def _init(tmp_path, *extra):
     return CliRunner().invoke(
-        cli,
+        cli_app,
         ["--work-dir", str(tmp_path), "plugin", "init", "--arkitekt-version", "0.0.1", *extra],
         input="n\n",
     )
@@ -300,7 +300,7 @@ def test_publishing_an_uninspected_build_is_refused_before_it_is_pushed(tmp_path
         "arkitekt.cli.commands.plugin.publish.subprocess.run"
     ) as run:
         result = CliRunner().invoke(
-            cli,
+            cli_app,
             ["--work-dir", str(tmp_path), "plugin", "publish", "--tag", "me/x:1"],
         )
 

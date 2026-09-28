@@ -2,6 +2,23 @@ from .utils import build_relative_dir
 from typing import List
 import os
 
+#: The client packages whose service ``gen init`` can generate code for. Each
+#: exports its service from ``<name>.arkitekt`` under its own name. Discovered by
+#: importing, since nothing registers services process-wide: a package that is
+#: not installed is simply not offered.
+SERVICE_PACKAGES = (
+    "rekuest",
+    "mikro",
+    "elektro",
+    "kraph",
+    "fluss",
+    "kabinet",
+    "unlok",
+    "alpaka",
+    "lovekit",
+    "dokuments",
+)
+
 
 def compile_scopes() -> List[str]:
     """Compile all available scopes"""
@@ -35,6 +52,4 @@ def compile_services() -> List[str]:
     seven names accepted here could not be resolved, and five real services were
     rejected.
     """
-    from arkitekt.cli.commands.app.gen.init import SERVICE_PACKAGES
-
     return sorted(SERVICE_PACKAGES)

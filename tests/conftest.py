@@ -14,8 +14,12 @@ import sys
 import tempfile
 
 import pytest
-from arkitekt.cli.main import cli
-from click.testing import CliRunner
+
+from arkitekt.cli.main import cli_app
+from typer.testing import CliRunner
+
+# Qt tests need no display: a binding may be installed (the typecheck group).
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 
 def docker_available() -> bool:
@@ -122,7 +126,7 @@ def app_dir(tmp_path):
     """
     runner = CliRunner()
     result = runner.invoke(
-        cli,
+        cli_app,
         [
             "--work-dir",
             str(tmp_path),

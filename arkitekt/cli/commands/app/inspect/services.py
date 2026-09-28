@@ -1,10 +1,12 @@
 import json
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import typer
 from rich.console import Group
 from rich.panel import Panel
 from rich.table import Table
+
+from arkitekt_spec.declare.service import Service
 
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.utils import emit_machine_readable
@@ -13,7 +15,7 @@ from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 
 
-def _describe_service(name: str, svc: object) -> dict:
+def _describe_service(name: str, svc: Service[Any]) -> dict[str, Any]:
     """Project one registered service into a JSON-friendly record."""
     schema = None
     turms_project = None

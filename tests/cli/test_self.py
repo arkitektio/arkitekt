@@ -3,9 +3,9 @@ import json
 import sys
 from unittest.mock import patch
 
-from click.testing import CliRunner
+from typer.testing import CliRunner
 
-from arkitekt.cli.main import cli
+from arkitekt.cli.main import cli_app
 
 MODULE = "arkitekt.cli.commands.self.upgrade"
 
@@ -30,7 +30,7 @@ def test_self_upgrade_pip_outdated():
         f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")
     ), patch(f"{MODULE}.subprocess.run") as mock_run:
         result = runner.invoke(
-            cli, ["self", "upgrade", "--package-manager", "pip", "--yes"]
+            cli_app, ["self", "upgrade", "--package-manager", "pip", "--yes"]
         )
         if result.exit_code != 0:
             print(result.output)
@@ -52,7 +52,7 @@ def test_self_upgrade_uv_outdated():
         f"{MODULE}.subprocess.run"
     ) as mock_run:
         result = runner.invoke(
-            cli, ["self", "upgrade", "--package-manager", "uv", "--yes"]
+            cli_app, ["self", "upgrade", "--package-manager", "uv", "--yes"]
         )
         if result.exit_code != 0:
             print(result.output)
@@ -73,7 +73,7 @@ def test_self_upgrade_uv_not_installed():
         f"{MODULE}.subprocess.run"
     ) as mock_run:
         result = runner.invoke(
-            cli, ["self", "upgrade", "--package-manager", "uv", "--yes"]
+            cli_app, ["self", "upgrade", "--package-manager", "uv", "--yes"]
         )
         assert result.exit_code != 0
         assert "uv is not installed" in result.output
@@ -87,7 +87,7 @@ def test_self_upgrade_up_to_date():
         f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")
     ), patch(f"{MODULE}.subprocess.run") as mock_run:
         result = runner.invoke(
-            cli, ["self", "upgrade", "--package-manager", "pip", "--yes"]
+            cli_app, ["self", "upgrade", "--package-manager", "pip", "--yes"]
         )
         if result.exit_code != 0:
             print(result.output)
@@ -104,7 +104,7 @@ def test_self_upgrade_confirm_no_aborts():
         f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")
     ), patch(f"{MODULE}.subprocess.run") as mock_run:
         result = runner.invoke(
-            cli, ["self", "upgrade", "--package-manager", "pip"], input="n\n"
+            cli_app, ["self", "upgrade", "--package-manager", "pip"], input="n\n"
         )
         assert result.exit_code != 0  # aborted
         assert mock_run.call_count == 0
