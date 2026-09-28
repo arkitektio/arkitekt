@@ -128,6 +128,16 @@ build-backend = "hatchling.build"
 source = "vcs"
 fallback-version = "0.0.0"
 
+[tool.basedpyright]
+# tests/typing holds cases with deliberate errors; tests/test_typing.py checks them.
+exclude = ["**/node_modules", "**/__pycache__", "**/.*", "tests/typing"]
+executionEnvironments = [
+    # The examples' own libraries (scipy, scikit-image, bioio, ...) are not
+    # dependencies of arkitekt, so CI does not install them.
+    { root = "examples", reportMissingImports = "none" },
+    { root = "." },
+]
+
 [tool.ruff]
 
 # Exclude a variety of commonly ignored directories.
