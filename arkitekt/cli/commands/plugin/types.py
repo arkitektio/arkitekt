@@ -7,12 +7,7 @@ from string import Formatter
 import os
 import shlex
 
-from kabinet.api.schema import (
-    AppImageInput,
-    InspectionInput,
-    SelectorInput,
-    ManifestInput,
-)
+from arkitekt_spec import AppManifest, Inspection, Selector
 
 ALLOWED_BUILDER_KEYS = [
     "tag",
@@ -55,7 +50,7 @@ LEGACY_BUILD_COMMANDS = (
 
 class Flavour(BaseModel):
     """ Flavour is a pydantic model that represents a flavour of an app image"""
-    selectors: List[SelectorInput]
+    selectors: List[Selector]
     description: str = Field(default="")
     dockerfile: str = Field(default="Dockerfile")
     platforms: List[str] = Field(default_factory=lambda: list(DEFAULT_PLATFORMS))
@@ -132,32 +127,18 @@ class Flavour(BaseModel):
             )
 
 
-class DeploymentsConfigFile(BaseModel):
-    """The ConfigFile is a pydantic model that represents the deployments.yaml file
-
-
-    Parameters
-    ----------
-    BaseModel : _type_
-        _description_
-    """
-
-    app_images: List[AppImageInput] = []
-    latest_app_image: Optional[str] = None
-
-
 class Build(BaseModel):
     build_run: str
     build_id: str
-    inspection: Optional[InspectionInput] = None
+    inspection: Optional[Inspection] = None
     description: str = Field(default="")
-    selectors: List[SelectorInput] = Field(default_factory=list)
+    selectors: List[Selector] = Field(default_factory=list)
     flavour: str = Field(default="vanilla")
     #: The platforms this build compiled. Only the host one was loaded locally;
     #: publish pushes the whole list as a manifest list. Empty in a builds.yaml
     #: written before multi-arch existed, which is the single-arch record it was.
     platforms: List[str] = Field(default_factory=list)
-    manifest: ManifestInput
+    manifest: AppManifest
     build_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
     base_docker_command: List[str] = Field(
         default_factory=lambda: ["docker", "run", "-it", "--net", "host"]

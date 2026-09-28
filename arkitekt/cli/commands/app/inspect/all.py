@@ -1,6 +1,7 @@
 from typing import Annotated
 import typer
 
+from arkitekt.app.spec import app_inspection
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE, run_snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.utils import emit_machine_readable
@@ -36,17 +37,10 @@ def all(
     # What a run would serve, validated the way a run validates it, with the
     # requirements that run's provider adds.
     run = run_snapshot_or_exit(app)
-    registry = run.registry
 
-    # Assemble the agent payload through ImplementAgentInput so it is validated
-    # the same way the server would validate it, instead of hand-rolling raw
-    # model_dump()s. `name`/`hash` are agent-instance concerns, and requirements
-    # are a fakts/manifest concept, so they stay out of / get added to the dump.
-    agent_input = registry.to_implement_agent_input()
-    agent = {
-        **agent_input.model_dump(exclude={"name", "hash"}),
-        "requirements": [item.model_dump(by_alias=True) for item in run.manifest.requirements],
-    }
+    # The spec's Inspection, which the build on the host reads back with the same
+    # model. The action language inside it is validated by rekuest on the way out.
+    agent = app_inspection(app, run).model_dump(mode="json", by_alias=True, exclude_none=True)
 
     if machine_readable:
         emit_machine_readable("AGENT", agent)

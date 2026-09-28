@@ -206,13 +206,13 @@ def inspect_all(build_id: str, url: str, target: str = DEFAULT_TARGET) -> Dict[s
         raise InspectionError(f"An error occurred: {combined}") from e
 
 
-def inspect_build(build_id: str, url: str, target: str = DEFAULT_TARGET) -> "InspectionInput":
-    from .types import InspectionInput
+def inspect_build(build_id: str, url: str, target: str = DEFAULT_TARGET) -> "Inspection":
+    from arkitekt_spec import Inspection
 
     size, size_root_fs = inspect_docker_container(build_id)
     runtime = inspect_all(build_id, url, target)
     print("Runtime inspection result:", runtime)
-    return InspectionInput(size=size, **runtime)
+    return Inspection.model_validate({**runtime, "size": size})
 
 
 def build(
@@ -258,12 +258,12 @@ def build(
     The app's identity (identifier, version, author, scopes, logo) is read off the
     App the target declares and recorded with each build.
     """
-    from .io import app_to_manifest_input, generate_build, get_flavours
+    from .io import app_to_manifest, generate_build, get_flavours
 
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)
     app = load_app_or_exit(ctx, target)
-    manifest = app_to_manifest_input(app, target)
+    manifest = app_to_manifest(app, target)
 
     flavours = get_flavours(base_dir=work_dir, select=flavour)
 

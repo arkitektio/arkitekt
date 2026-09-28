@@ -129,6 +129,46 @@ def test_inspect_all(app_dir):
         assert name in result.stdout
 
 
+def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
+    """The payload a container emits must survive the host's models, key for key.
+
+    Nothing checked this before: `inspect all` dumped rekuest's agent input while
+    the build validated it against kabinet's forbid-extra InspectionInput, so the
+    agent's `description` broke every inspected build.
+    """
+    from arkitekt_spec import (
+        AppImage,
+        AppManifest,
+        DeploymentsFile,
+        DockerImage,
+        Inspection,
+        dump_deployments,
+        load_deployments,
+    )
+
+    result = _run_cli(app_dir, "inspect", "all", "-mr")
+    assert result.returncode == 0, result.stderr
+    agent = _between(result.stdout, "--START_AGENT--", "--END_AGENT--")
+
+    known = {f.alias or name for name, f in Inspection.model_fields.items()}
+    assert set(agent) <= known, set(agent) - known
+
+    inspection = Inspection.model_validate({**agent, "size": 1})
+    assert len(inspection.implementations) >= 3
+
+    file = DeploymentsFile(
+        app_images=[
+            AppImage(
+                app_image_id="x",
+                manifest=AppManifest(identifier="a", version="1"),
+                inspection=inspection,
+                image=DockerImage(image_string="me/a:1"),
+            )
+        ]
+    )
+    assert load_deployments(dump_deployments(file)) == file
+
+
 def test_inspect_all_pretty(app_dir):
     """`inspect all --pretty` (no markers) exits cleanly and prints the manifest.
 

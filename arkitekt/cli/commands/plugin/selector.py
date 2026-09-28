@@ -99,13 +99,13 @@ def add_selector(
     a requirement, never a selector.
     """
     import yaml
-    from kabinet.api.schema import (
-        CpuSelectorInput,
-        CudaSelectorInput,
-        LabelSelectorInput,
-        OneApiSelectorInput,
-        RamSelectorInput,
-        RocmSelectorInput,
+    from arkitekt_spec import (
+        CpuSelector,
+        CudaSelector,
+        LabelSelector,
+        OneApiSelector,
+        RamSelector,
+        RocmSelector,
     )
     from .types import Flavour
 
@@ -134,16 +134,16 @@ def add_selector(
     if weight is not None:
         shared["weight"] = weight
 
-    # SelectorInput is a @oneOf union discriminated on `kind`: construct the
-    # matching variant with only the fields that variant carries.
+    # A selector is a union discriminated on `kind`: construct the matching
+    # variant with only the fields that variant carries.
     if kind == "cpu":
-        new_selector = CpuSelectorInput(
+        new_selector = CpuSelector(
             min_count=min_count, frequency=frequency, arch=arch, **shared
         )
     elif kind == "ram":
-        new_selector = RamSelectorInput(min=memory, **shared)
+        new_selector = RamSelector(min=memory, **shared)
     elif kind == "cuda":
-        new_selector = CudaSelectorInput(
+        new_selector = CudaSelector(
             compute_capability=compute_capability,
             cuda_version=cuda_version,
             memory=vram,
@@ -152,15 +152,15 @@ def add_selector(
             **shared,
         )
     elif kind == "rocm":
-        new_selector = RocmSelectorInput(
+        new_selector = RocmSelector(
             api_version=api_version, api_thing=api_thing, **shared
         )
     elif kind == "oneapi":
-        new_selector = OneApiSelectorInput(oneapi_version=one_api_version, **shared)
+        new_selector = OneApiSelector(oneapi_version=one_api_version, **shared)
     elif kind == "label":
         if key is None:
             cli_error("A label selector needs --key")
-        new_selector = LabelSelectorInput(key=key, value=value, **shared)
+        new_selector = LabelSelector(key=key, value=value, **shared)
     else:
         cli_error(f"Unknown selector kind '{kind}'. Available: {KINDS}")
 

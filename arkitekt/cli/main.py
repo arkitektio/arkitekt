@@ -28,7 +28,7 @@ from arkitekt.cli.commands.app.inspect.main import inspect
 from arkitekt.cli.commands.app.run.main import run
 from arkitekt.cli.commands.mesh.main import mesh
 from arkitekt.cli.commands.self.main import self_group
-from arkitekt.cli.commands.plugin import plugin_group
+from arkitekt.cli.commands.plugin.main import plugin
 
 # Mount every group onto the Typer root, then build the public click entry point
 # (project.scripts -> arkitekt.cli.main:cli). The root callback in cli/app.py seeds
@@ -46,7 +46,7 @@ cli_app.add_typer(inspect, name="inspect", epilog=help_epilog(INSPECT_DOCS))
 cli_app.add_typer(call, name="call", epilog=help_epilog(CALL_DOCS))
 cli_app.add_typer(mesh, name="mesh", epilog=help_epilog(MESH_DOCS))
 cli_app.add_typer(self_group, name="self", epilog=help_epilog(SELF_DOCS))
-cli_app.add_typer(plugin_group(), name="plugin", epilog=help_epilog(PLUGIN_DOCS))
+cli_app.add_typer(plugin, name="plugin", epilog=help_epilog(PLUGIN_DOCS))
 
 cli = typer.main.get_command(cli_app)
 

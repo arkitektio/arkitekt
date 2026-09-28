@@ -11,13 +11,16 @@ from .types import (
     Build,
     BuildsConfigFile,
     Flavour,
-    DeploymentsConfigFile,
 )
-from kabinet.api.schema import (
-    InspectionInput,
-    AppImageInput,
-    DockerImageInput,
-    ManifestInput,
+from arkitekt.app.spec import app_manifest
+from arkitekt_spec import (
+    AppImage,
+    AppManifest,
+    DeploymentsFile,
+    DockerImage,
+    Inspection,
+    dump_deployments,
+    load_deployments,
 )
 
 import yaml
@@ -93,24 +96,13 @@ def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = Non
     }
 
 
-#: The author recorded for an app that names none (the server's own default).
-UNKNOWN_AUTHOR = "unknown"
-
-
-def app_to_manifest_input(app: App, target: str) -> ManifestInput:
+def app_to_manifest(app: App, target: str) -> AppManifest:
     """What a build says it packages: the App's identity, and the target that finds it.
 
     The target is recorded so the image is run (and inspected) on the same app
     it was built for, not on whatever the default target happens to find.
     """
-    return ManifestInput(
-        entrypoint=target,
-        identifier=app.identifier,
-        version=app.version,
-        author=app.author or UNKNOWN_AUTHOR,
-        logo=app.logo,
-        scopes=tuple(app.scopes),
-    )
+    return app_manifest(app, entrypoint=target)
 
 
 def generate_build(
@@ -118,8 +110,8 @@ def generate_build(
     build_id: str,
     flavour_name: str,
     flavour: Flavour,
-    manifest: ManifestInput,
-    inspection: Optional[InspectionInput],
+    manifest: AppManifest,
+    inspection: Optional[Inspection],
     base_dir: Optional[str] = None,
     platforms: Optional[List[str]] = None,
 ) -> Build:
@@ -160,14 +152,14 @@ def generate_build(
     return build
 
 
-def get_deployments(base_dir: Optional[str] = None) -> DeploymentsConfigFile:
-    """Loads deployments.yaml; returns an empty config if the file does not exist."""
+def get_deployments(base_dir: Optional[str] = None) -> DeploymentsFile:
+    """Loads deployments.yaml; returns an empty file if it does not exist."""
     path = create_arkitekt_folder(base_dir=base_dir)
     config_file = os.path.join(path, "deployments.yaml")
     if os.path.exists(config_file):
         with open(config_file, "r") as file:
-            return DeploymentsConfigFile(**yaml.safe_load(file))
-    return DeploymentsConfigFile()
+            return load_deployments(file.read())
+    return DeploymentsFile()
 
 
 def generate_deployment(
@@ -175,35 +167,28 @@ def generate_deployment(
     build: Build,
     image: str,
     base_dir: Optional[str] = None,
-) -> AppImageInput:
+) -> AppImage:
     """Generates a deployment record from a build and appends it to deployments.yaml."""
+    if build.inspection is None:
+        cli_error(f"Build {build.build_id} was never inspected, so it cannot be deployed")
+
     path = create_arkitekt_folder(base_dir=base_dir)
     config_file = os.path.join(path, "deployments.yaml")
 
-    app_image = AppImageInput(
-        appImageId=uuid.uuid4().hex,
+    app_image = AppImage(
+        app_image_id=uuid.uuid4().hex,
         manifest=build.manifest,
-        flavourName=build.flavour,
+        flavour_name=build.flavour,
         selectors=build.selectors,
         inspection=build.inspection,
-        image=DockerImageInput(imageString=image, buildAt=datetime.datetime.now()),
+        image=DockerImage(image_string=image, build_at=datetime.datetime.now()),
     )
 
-    if os.path.exists(config_file):
-        with open(config_file, "r") as file:
-            config = DeploymentsConfigFile(**yaml.safe_load(file))
-            config.app_images.append(app_image)
-            config.latest_app_image = app_image.app_image_id
-    else:
-        config = DeploymentsConfigFile(
-            app_images=[app_image], latest_app_image=app_image.app_image_id
-        )
+    config = get_deployments(base_dir=base_dir)
+    config.app_images.append(app_image)
+    config.latest_app_image = app_image.app_image_id
 
     with open(config_file, "w") as file:
-        yaml.safe_dump(
-            json.loads(config.model_dump_json(exclude_none=True, by_alias=True)),
-            file,
-            sort_keys=True,
-        )
+        file.write(dump_deployments(config))
 
     return app_image

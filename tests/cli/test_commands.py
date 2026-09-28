@@ -4,7 +4,6 @@ import sys
 from unittest.mock import patch
 
 import pytest
-import typer
 from click.testing import CliRunner
 
 from arkitekt import App
@@ -337,17 +336,3 @@ def test_init_has_no_manifest_options():
     result = CliRunner().invoke(cli, ["init", "--help"])
 
     assert "--overwrite-manifest" not in result.output
-
-
-def test_the_plugin_group_says_what_to_install_without_kabinet():
-    """kabinet is an extra: without it `arkitekt plugin` explains, instead of failing at import."""
-    from arkitekt.cli.commands.plugin import KABINET_HINT, plugin_group
-
-    def no_kabinet() -> typer.Typer:
-        raise ImportError("No module named 'kabinet'")
-
-    group = plugin_group(load=no_kabinet)
-    result = CliRunner().invoke(typer.main.get_command(group), [])
-
-    assert result.exit_code == 1
-    assert KABINET_HINT in result.output

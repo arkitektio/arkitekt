@@ -12,32 +12,42 @@ from click.testing import CliRunner
 
 from arkitekt import App
 from arkitekt.cli.commands.plugin.build import inspect_all
-from arkitekt.cli.commands.plugin.io import UNKNOWN_AUTHOR, app_to_manifest_input
+from arkitekt.cli.commands.plugin.io import app_to_manifest
+from arkitekt_spec import UNKNOWN_AUTHOR
 from arkitekt.cli.commands.plugin.types import Build
 from arkitekt.cli.main import cli
 from arkitekt.cli.target import infer_package_manager
 
 
 def test_a_build_records_the_apps_identity_and_target():
-    manifest = app_to_manifest_input(
-        App("com.x", "1.2.3", author="me", scopes=["read"], logo="http://l"), "main:api"
+    manifest = app_to_manifest(
+        App(
+            "com.x",
+            "1.2.3",
+            author="me",
+            scopes=["read"],
+            logo="http://l",
+            description="What it is",
+        ),
+        "main:api",
     )
 
     assert (manifest.identifier, manifest.version, manifest.author) == ("com.x", "1.2.3", "me")
-    assert manifest.scopes == ("read",)
+    assert manifest.scopes == ["read"]
+    assert manifest.description == "What it is"
     assert manifest.logo == "http://l"
     assert manifest.entrypoint == "main:api"
 
 
 def test_an_app_without_an_author_is_recorded_as_unknown():
-    assert app_to_manifest_input(App("com.x"), "app").author == UNKNOWN_AUTHOR
+    assert app_to_manifest(App("com.x"), "app").author == UNKNOWN_AUTHOR
 
 
 def test_a_staged_build_runs_the_recorded_target():
     build = Build(
         build_run="run",
         build_id="image",
-        manifest=app_to_manifest_input(App("com.x"), "main:api"),
+        manifest=app_to_manifest(App("com.x"), "main:api"),
     )
 
     assert build.build_arkitekt_command("http://fakts") == [

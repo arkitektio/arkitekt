@@ -272,9 +272,9 @@ def test_publishing_a_multi_arch_build_pushes_one_image(tmp_path):
 
 def _manifest():
     from arkitekt import App
-    from arkitekt.cli.commands.plugin.io import app_to_manifest_input
+    from arkitekt.cli.commands.plugin.io import app_to_manifest
 
-    return app_to_manifest_input(App("com.x", "1.0.0"), "app")
+    return app_to_manifest(App("com.x", "1.0.0"), "app")
 
 
 class _Console:
