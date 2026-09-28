@@ -7,7 +7,7 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "fakts>=3",
+    "fakts>=4",
     "koil>=3.3.4",
     "rath>=4",
     "click>=8.2.0",
@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=0.1",
+    "arkitekt-spec>=1.1.1",
 ]
 
 [project.optional-dependencies]
@@ -35,41 +35,41 @@ rekuest = [
     "rekuest>=6",
 ]
 alpaka = [
-    "alpaka>=2",
+    "alpaka>=3",
 ]
 kraph = [
-    "kraph>=3",
+    "kraph>=4",
 ]
 mikro = [
-    "mikro>=5",
+    "mikro>=6",
 ]
 # The kabinet client, for apps that manage deployments. The plugin commands do not
 # need it: they speak arkitekt-spec.
 kabinet = [
-    "kabinet>=3",
+    "kabinet>=4",
 ]
 elektro = [
-    "elektro>=3",
+    "elektro>=4",
 ]
 fluss = [
-    "fluss>=3",
+    "fluss>=4",
 ]
 lovekit = [
-    "lovekit>=2",
+    "lovekit>=3",
 ]
 unlok = [
-    "unlok>=3",
+    "unlok>=4",
 ]
 # Serving an app over FastAPI (arkitekt.serve): server mode, without rekuest.
 serve = [
-    "arkitekt-fastapi>=0.1",
+    "arkitekt-fastapi>=1.0",
 ]
 # Qt integration (arkitekt.qt / the MagicBar). qtpy still needs an actual
 # binding (PyQt5/6 or PySide2/6) supplied by the application.
 qt = [
     "qtpy>=2.4.3",
     # The Qt actifiers are the execution core's.
-    "arkitekt-runtime[qt]>=0.1",
+    "arkitekt-runtime[qt]>=1.0.2",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.
@@ -97,18 +97,18 @@ dev-dependencies = [
     "pytest-asyncio>=0.20.2,<0.21",
     "pytest-cov>=4.0.0,<5",
     "pytest-aiohttp>=1.0.4,<2",
-    "mikro>=5",
+    "mikro>=6",
     "python-semantic-release>=9.21.1",
     "qtpy>=2.4.3",
     "numpy>=1,<2",
-    "rekuest>=5.1",
-    "kabinet>=3",
-    "alpaka>=2",
-    "kraph>=3",
-    "fluss>=3",
-    "lovekit>=2",
-    "unlok>=3",
-    "elektro>=3",
+    "rekuest>=6",
+    "kabinet>=4",
+    "alpaka>=3",
+    "kraph>=4",
+    "fluss>=4",
+    "lovekit>=3",
+    "unlok>=4",
+    "elektro>=4",
 ]
 
 
