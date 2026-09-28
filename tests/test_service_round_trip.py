@@ -47,6 +47,7 @@ ADDRESSES = {
     "kabinet": "http://kabinet-server",
     "alpaka": "http://alpaka-server",
     "lovekit": "http://lovekit-server",
+    "dokuments": "http://dokuments-server",
     "livekit": "http://livekit-server",
     "s3": "http://store",
     "datalayer": "http://store",

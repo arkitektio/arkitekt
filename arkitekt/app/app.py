@@ -453,7 +453,7 @@ class App(Generic[Ctx]):
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
-            :meth:`Task.local() <rekuest.task.Task.local>` to call it with no
+            :meth:`Task.local() <arkitekt_spec.declare.task.Task.local>` to call it with no
             runtime -- or, with options, a decorator returning it.
 
         Raises:
