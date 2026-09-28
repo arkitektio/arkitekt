@@ -135,6 +135,8 @@ source = "vcs"
 fallback-version = "0.0.0"
 
 [tool.basedpyright]
+# The gate is errors; the (many) warnings are advice, reported but not failing.
+failOnWarnings = false
 # tests/typing holds cases with deliberate errors; tests/test_typing.py checks them.
 exclude = [
     "**/node_modules",
