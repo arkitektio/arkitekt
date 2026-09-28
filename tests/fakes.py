@@ -2,12 +2,11 @@
 
 from typing import Annotated, Any, List, Optional
 
+from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.provider import Provider
+from arkitekt_spec.declare.service import Service
 from fakts import Alias, Require
 from rath.expansion import ExpandsStructures
-from rekuest.app import AppRegistry
-
-from rekuest.provider import Provider
-from rekuest.service import Service
 
 
 class FakeClient:

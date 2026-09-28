@@ -3,7 +3,7 @@
     from arkitekt.widgets import SearchWidget, withStateChoices
 """
 
-from rekuest.widgets import (
+from arkitekt_spec.declare.widgets import (
     ChoiceReturnWidget,
     ChoiceWidget,
     CustomReturnWidget,

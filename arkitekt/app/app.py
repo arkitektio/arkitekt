@@ -27,10 +27,10 @@ concurrently: each run takes its own snapshot of the registry.
 import inspect
 import logging
 from typing import (
-    cast,
     Any,
     Callable,
     Dict,
+    Generic,
     Iterable,
     List,
     Literal,
@@ -40,14 +40,10 @@ from typing import (
     Sequence,
     TypeVar,
     Union,
+    cast,
     overload,
-    Generic,
 )
 
-from fakts.models import Manifest, PublicSource, Requirement
-from rekuest.actors.actify import reactify
-from rekuest.actors.policy import KEEP, DisconnectPolicy
-from rekuest.actors.types import Actifier
 from arkitekt_spec.actions import (
     AgentDependencyInput,
     AssignWidgetInput,
@@ -58,13 +54,17 @@ from arkitekt_spec.actions import (
     TrackInput,
     ValidatorInput,
 )
-from rekuest.app import AppRegistry
-from rekuest.catalogs import ComponentSpec, OperationSpec
-from rekuest.coercible_types import OptimisticCoercible
-from rekuest.register import WrappedFunction
-from rekuest.provider import Provider
-from rekuest.service import Service
-from rekuest.structures.utils import id_shrink
+from arkitekt_spec.declare.actors.policy import KEEP, DisconnectPolicy
+from arkitekt_spec.declare.actors.types import Actifier
+from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.catalogs import ComponentSpec, OperationSpec
+from arkitekt_spec.declare.coercible_types import OptimisticCoercible
+from arkitekt_spec.declare.provider import Provider
+from arkitekt_spec.declare.register import WrappedFunction
+from arkitekt_spec.declare.service import Service
+from arkitekt_spec.declare.structures.utils import id_shrink
+from fakts.models import Manifest, PublicSource, Requirement
+
 from arkitekt.app.snapshot import RunSnapshot
 
 logger = logging.getLogger(__name__)
@@ -374,7 +374,7 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        actifier: Actifier = reactify,
+        actifier: Actifier | None = None,
         interface: Optional[str] = None,
         stateful: bool = False,
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
@@ -400,7 +400,7 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         description: Optional[str] = None,
-        actifier: Actifier = reactify,
+        actifier: Actifier | None = None,
         interface: Optional[str] = None,
         stateful: bool = False,
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
@@ -428,7 +428,9 @@ class App(Generic[Ctx]):
             function: The function, when used bare as ``@app.action``.
             name: Display name. Defaults to the function name.
             description: Description. Defaults to the docstring.
-            actifier: Turns the function into an actor builder.
+            actifier: A runtime's actifier, for actions a particular kind of actor
+                must run (the Qt helpers pass theirs). ``None`` leaves it to the
+                runtime that runs the app.
             interface: Interface the action is offered at. Defaults to one derived
                 from its name.
             stateful: Mark the definition stateful (set automatically when it uses

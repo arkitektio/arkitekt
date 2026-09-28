@@ -12,7 +12,6 @@ dependencies = [
     "rath>=4",
     "click>=8.2.0",
     "typer>=0.15.0",
-    "rekuest>=5.1",
     "semver>=3.0.4",
     "watchfiles>=1.0.5",
     "turms>=2.1.0",
@@ -28,6 +27,13 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+# The runtimes. arkitekt declares, inspects, builds and connects on its own; running
+# an app needs one: rekuest for distributed mode (`run`), its FastAPI runtime for
+# server mode (`serve`).
+rekuest = [
+    # The rekuest whose declaration layer is arkitekt-spec's (the 6.x line).
+    "rekuest>=6",
+]
 alpaka = [
     "alpaka>=2",
 ]
@@ -70,10 +76,11 @@ tqdm = [
 ]
 all = [
     # Self-referential extras keep `all` complete without duplicating (and drifting)
-    # version pins. Bundles every service client; the CLI is always included.
+    # version pins. Bundles every service client and the distributed runtime; the
+    # CLI is always included.
     # It used to omit alpaka, kraph and lovekit while claiming to be complete, and
     # a separate `extended` extra re-pinned two of them a third time.
-    "arkitekt[alpaka,elektro,fluss,kabinet,kraph,lovekit,mikro,unlok]",
+    "arkitekt[alpaka,elektro,fluss,kabinet,kraph,lovekit,mikro,rekuest,unlok]",
 ]
 
 [project.scripts]

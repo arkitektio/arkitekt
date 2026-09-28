@@ -9,8 +9,8 @@ builder; the fakts they resolve through is the offline one every test gets
 import asyncio
 
 import pytest
-from rekuest.errors import RegistryFrozenError
-from rekuest.service import Service
+from arkitekt_spec.declare.errors import RegistryFrozenError
+from arkitekt_spec.declare.service import Service
 
 from arkitekt import App, connect, run
 
@@ -146,7 +146,7 @@ class Config:
 
 @pytest.mark.asyncio
 async def test_a_run_refuses_the_wrong_context_before_the_agent_starts() -> None:
-    from rekuest.errors import AppContextError
+    from arkitekt_spec.declare.errors import AppContextError
 
     app = App("ctx", services=[PictureService()], providers=[RekuestProvider()], app_context=Config)
     async with connect(app, provide=True) as rt:
@@ -166,7 +166,7 @@ async def test_a_run_refuses_the_wrong_context_before_the_agent_starts() -> None
 
 
 def test_run_refuses_a_missing_context_before_logging_in(monkeypatch: pytest.MonkeyPatch) -> None:
-    from rekuest.errors import AppContextError
+    from arkitekt_spec.declare.errors import AppContextError
 
     def never(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
         raise AssertionError("fakts must not be built for a run that cannot start")

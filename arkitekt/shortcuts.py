@@ -34,12 +34,12 @@ import atexit
 from types import TracebackType
 from typing import Any, Dict, Generic, List, Optional, TypeVar, cast, overload
 
+from arkitekt_spec.declare.service import Service
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
 from koil import Koil
 
 from arkitekt.app.app import App, _caller_module_name
 from arkitekt.runtime import Runtime, connect
-from rekuest.service import Service
 
 R = TypeVar("R")
 T1 = TypeVar("T1")

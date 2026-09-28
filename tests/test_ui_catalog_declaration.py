@@ -1,9 +1,9 @@
 """The App's catalog facade. The rules themselves are rekuest's and are tested there."""
 
 import pytest
+from arkitekt_spec.declare.catalogs import ComponentSpec, OperationSpec, PropSpec
 
 from arkitekt import App
-from rekuest.catalogs import ComponentSpec, OperationSpec, PropSpec
 
 SLIDER = ComponentSpec(
     name="Slider",

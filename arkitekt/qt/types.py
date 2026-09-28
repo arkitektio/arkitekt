@@ -2,16 +2,16 @@
 
 from typing import Any, Callable, Dict, List, Optional, ParamSpec, Sequence, TypeVar, overload
 
+from arkitekt_spec.actions import AssignWidgetInput
+from arkitekt_spec.declare.actors.types import Actifier
+from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.register import WrappedFunction
+from arkitekt_spec.declare.service import Service
 from fakts.models import PublicSource
 from koil import run_threaded
 from koil.qt import async_to_qt
-from rekuest.actors.types import Actifier
-from arkitekt_spec.actions import AssignWidgetInput
-from rekuest.app import AppRegistry
-from rekuest.register import WrappedFunction
 
 from arkitekt.app.app import App, Ctx, _caller_module_name
-from rekuest.service import Service
 
 R = TypeVar("R")
 P = ParamSpec("P")

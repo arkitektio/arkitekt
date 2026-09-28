@@ -13,8 +13,8 @@ import contextlib
 from collections.abc import AsyncIterator
 from typing import TYPE_CHECKING, Any, Optional, overload
 
+from arkitekt_spec.declare.app import AppRegistry
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
-from rekuest.app import AppRegistry
 
 from arkitekt.app.app import App, Ctx
 from arkitekt.runtime import ConnectionOptions, Runtime

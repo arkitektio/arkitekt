@@ -1,8 +1,9 @@
 """Small extension to tqdm that reports progress to the task it is handed."""
 
 from typing import Any, Generic, Iterable, Mapping, TypeVar
+
+from arkitekt_spec.declare.task import Task
 from tqdm import tqdm as _tqdm
-from rekuest.task import Task
 
 T = TypeVar("T")
 

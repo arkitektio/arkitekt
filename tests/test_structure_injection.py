@@ -8,10 +8,10 @@ defines, fetched back through a client the run supplies.
 from typing import Any
 
 import pytest
-from rekuest.structures.errors import StructureDefinitionError
+from arkitekt_spec.declare.service import Service
+from arkitekt_spec.declare.structures.errors import StructureDefinitionError
 
 from arkitekt import App, connect
-from rekuest.service import Service
 
 from .fakes import PictureClient, PictureService, RekuestProvider
 

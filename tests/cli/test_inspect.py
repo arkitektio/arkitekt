@@ -11,8 +11,8 @@ import sys
 
 import pytest
 from click.testing import CliRunner
-from arkitekt.cli.main import cli
 
+from arkitekt.cli.main import cli
 
 # All tests in this file are local CLI tests (no server, no docker). Tagging the
 # module with the `cli` marker exempts them from the suite-wide skip in conftest.
@@ -287,7 +287,7 @@ from typing import Annotated
 from fakts import Alias, Require
 
 from arkitekt import App
-from rekuest.app import AppRegistry
+from arkitekt_spec.declare.app import AppRegistry
 
 
 class ExtraClient:

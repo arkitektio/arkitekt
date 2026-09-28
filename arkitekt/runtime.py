@@ -18,19 +18,22 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Dict,
+    Generic,
     List,
     Mapping,
     Optional,
     Type,
     TypeVar,
     cast,
-    Generic,
     overload,
 )
 
+from arkitekt_spec.declare.provider import Provider
+from arkitekt_spec.declare.service import Service
 from fakts import Fakts
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
 from koil import unkoil
+from koil.bridge import unkoil_task
 from koil.composition import KoiledModel
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
@@ -38,9 +41,6 @@ from arkitekt.app.app import App, Ctx
 from arkitekt.app.fakts import build_fakts
 from arkitekt.app.snapshot import RunSnapshot
 from arkitekt.device_id import get_or_set_device_id
-from koil.bridge import unkoil_task
-from rekuest.provider import Provider
-from rekuest.service import Service
 
 if TYPE_CHECKING:
     from koil import KoilFuture
@@ -384,19 +384,38 @@ class Runtime(KoiledModel, Generic[Ctx]):
         return unkoil_task(self.arun, context=context)
 
 
-def _provider_for(app: App) -> Optional[Provider[Any]]:
+#: What ``run()`` says when an app offers something and no runtime is installed.
+NO_RUNTIME_HINT = (
+    "This app offers actions, states or bloks, and running it needs a runtime that is "
+    "not installed. Install rekuest (pip install 'arkitekt[rekuest]') to run it in "
+    "distributed mode, or serve it with `serve(app, fastapi_app)` (arkitekt[serve])."
+)
+
+
+class RuntimeNotInstalledError(ImportError):
+    """``run()`` was asked to serve an app, and no runtime (rekuest) is installed."""
+
+
+def _provider_for(app: App, *, required: bool = True) -> Optional[Provider[Any]]:
     """The provider a run of ``app`` builds its agent from: the app's own, or rekuest's.
 
     An app offering anything without declaring how it is served is served by
-    rekuest; one offering nothing is not served at all.
+    rekuest; one offering nothing is not served at all. rekuest is not a dependency
+    of arkitekt: when it is missing, a run (``required``) raises
+    :class:`RuntimeNotInstalledError`, and an inspection gets ``None`` -- the app as
+    declared, without the requirements rekuest's provider would add.
     """
     declared = app.registry.provider_declaration
     if declared is not None:
         return declared
     if app.registry.is_empty():
         return None
-    from rekuest.arkitekt import rekuest_provider
-
+    try:
+        from rekuest.arkitekt import rekuest_provider
+    except ImportError as e:
+        if required:
+            raise RuntimeNotInstalledError(NO_RUNTIME_HINT) from e
+        return None
     return rekuest_provider
 
 

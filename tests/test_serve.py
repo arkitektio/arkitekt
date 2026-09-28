@@ -45,7 +45,7 @@ def test_serving_installs_a_lifespan_that_runs_the_app(tmp_path) -> None:  # noq
 
 
 def test_serving_refuses_a_missing_context_at_the_call() -> None:
-    from rekuest.errors import AppContextError
+    from arkitekt_spec.declare.errors import AppContextError
 
     class Config:
         pass

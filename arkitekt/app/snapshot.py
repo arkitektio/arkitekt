@@ -17,15 +17,13 @@ a single reference instead of an app *and* a registry that looks like the app's
 but is not (it is the frozen copy).
 """
 
-from typing import Dict
+from typing import Any, Dict, Optional
 
-from typing import Any, Optional
-
+from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.provider import Provider
+from arkitekt_spec.declare.service import Service
 from fakts.models import Manifest
 from pydantic import BaseModel, ConfigDict
-from rekuest.app import AppRegistry
-from rekuest.provider import Provider
-from rekuest.service import Service
 
 
 class RunSnapshot(BaseModel):

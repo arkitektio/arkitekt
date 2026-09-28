@@ -18,10 +18,9 @@ import importlib
 from typing import Any, Dict, List
 
 import pytest
+from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.service import Service
 from fakts.testing import build_testing_fakts
-from rekuest.app import AppRegistry
-
-from rekuest.service import Service
 
 #: Every package that declares a service, by the module and attribute it uses.
 CANDIDATES = [
@@ -107,9 +106,9 @@ async def test_a_declared_service_builds_its_client(declared: Service) -> None:
 async def test_the_rekuest_provider_builds_its_agent_without_a_client() -> None:
     """The agent talks to rekuest over its own socket only; it takes no client."""
     from fakts.testing import build_testing_fakts
-    from rekuest.arkitekt import rekuest_provider, rekuest_service
     from rekuest.agents.backend import SocketAgentBackend
     from rekuest.agents.base import RekuestAgent
+    from rekuest.arkitekt import rekuest_provider, rekuest_service
 
     aliases = {r.key: ADDRESSES[r.key] for r in rekuest_service.get_requirements()}
     async with build_testing_fakts(aliases=aliases) as fakts:

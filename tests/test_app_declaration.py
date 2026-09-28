@@ -8,8 +8,8 @@ manifest says, and that declaring never connects anything.
 from typing import Optional
 
 import pytest
-from rekuest.definition.errors import DefinitionError
-from rekuest.structures.errors import StructureRegistryError
+from arkitekt_spec.declare.definition.errors import DefinitionError
+from arkitekt_spec.declare.structures.errors import StructureRegistryError
 
 from arkitekt import App
 
@@ -219,7 +219,7 @@ def test_an_app_declares_its_context_class_on_its_registry() -> None:
 
 
 def test_an_app_over_a_declaring_registry_reports_its_context() -> None:
-    from rekuest.app import AppRegistry
+    from arkitekt_spec.declare.app import AppRegistry
 
     registry = AppRegistry()
     registry.app_context(Config)

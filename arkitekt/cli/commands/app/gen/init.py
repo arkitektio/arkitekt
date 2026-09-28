@@ -3,6 +3,7 @@ from typing import Annotated, List, Optional
 
 import typer
 import yaml
+from arkitekt_spec.declare.service import Service
 
 from arkitekt.cli.constants import compile_services
 from arkitekt.cli.errors import cli_error
@@ -10,7 +11,6 @@ from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, import_target_or
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import construct_codegen_welcome_panel
 from arkitekt.cli.vars import get_console, get_work_dir
-from rekuest.service import Service
 
 #: The client packages whose service ``gen init`` can generate code for. Each
 #: exports its service from ``<name>.arkitekt`` under its own name. Discovered by

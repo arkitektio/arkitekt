@@ -1,6 +1,6 @@
 """What the inspect commands share: reading what a run of an App would serve, without running it."""
 
-from rekuest.app import AppRegistry
+from arkitekt_spec.declare.app import AppRegistry
 
 from arkitekt.app.app import App
 from arkitekt.app.snapshot import RunSnapshot
@@ -20,9 +20,12 @@ def run_snapshot_or_exit(app: App) -> RunSnapshot:
     connects. It fails when a port names a structure the App cannot resolve
     (usually an undeclared service), which is worth a clear error rather than a
     traceback.
+
+    Without rekuest installed there is no provider to take it with: the snapshot is
+    then the app as declared, without the requirements rekuest's provider adds.
     """
     try:
-        return app.snapshot(provider=_provider_for(app))
+        return app.snapshot(provider=_provider_for(app, required=False))
     except Exception as e:
         cli_error(f"The app '{app.identifier}' is not valid: {e}")
 
