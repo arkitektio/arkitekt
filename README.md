@@ -10,7 +10,6 @@
   <a href="https://codecov.io/gh/jhnnsrs/arkitekt"><img src="https://codecov.io/gh/jhnnsrs/arkitekt/branch/master/graph/badge.svg?token=UGXEA2THBV" alt="codecov"></a>
   <a href="https://pypi.org/project/arkitekt/"><img src="https://badge.fury.io/py/arkitekt.svg" alt="PyPI version"></a>
   <a href="https://pypi.python.org/pypi/arkitekt/"><img src="https://img.shields.io/pypi/pyversions/arkitekt.svg" alt="PyPI pyversions"></a>
-  <a href="https://pypi.python.org/pypi/arkitekt/"><img src="https://img.shields.io/pypi/status/arkitekt.svg" alt="PyPI status"></a>
   <a href="https://arkitekt.live"><img src="https://img.shields.io/badge/docs-arkitekt.live-blue" alt="Documentation"></a>
 </p>
 
@@ -18,18 +17,12 @@
 
 ## What is Arkitekt?
 
-> **Renamed.** This client was published as `arkitekt-next` up to 1.4.2. From 2.0.0 it
-> is published as `arkitekt` again: the import root is `arkitekt` (`arkitekt_next` is
-> gone) and the CLI command is `arkitekt`, not `arkitekt-next`. Install `arkitekt>=2`.
-> Note the extras changed meaning too — `arkitekt[mikro]` now brings mikro 3.x, and the
-> `reaktion` extra is gone (the flow engine lives in `fluss[engine]`).
-
 [**Arkitekt**](https://arkitekt.live) is an open platform for building, connecting, and orchestrating
-computational apps. `arkitekt` is its Python client: a framework that takes your ordinary Python
-functions and exposes them as **remotely callable, orchestratable building blocks** — without you having
-to write servers, APIs, message queues, or UIs.
+computational apps. `arkitekt` is its Python client: it takes your ordinary Python functions and
+exposes them as **remotely callable, orchestratable building blocks** — without you having to write
+servers, APIs, message queues, or UIs.
 
-Annotate a function, run your app, and it becomes available on an Arkitekt server where it can be:
+Declare an app, run it, and its actions become available on an Arkitekt server where they can be:
 
 - **Called** from anywhere — other apps, notebooks, scripts, or the web UI.
 - **Composed** into real-time workflows that wire your functions together.
@@ -37,8 +30,8 @@ Annotate a function, run your app, and it becomes available on an Arkitekt serve
 - **Shared** with your team behind central authentication and permissions.
 - **Packaged and deployed** as a Docker container with a single command.
 
-Arkitekt grew out of the needs of data-intensive science (it has first-class extensions for microscopy,
-imaging, and graph data), but the core is **domain-agnostic** — any Python workload fits.
+Arkitekt grew out of the needs of data-intensive science (it has first-class clients for microscopy,
+electrophysiology and graph data), but the core is **domain-agnostic** — any Python workload fits.
 
 > 📚 The best place to understand the platform and its concepts is the documentation at **[arkitekt.live](https://arkitekt.live)**.
 
@@ -48,96 +41,168 @@ imaging, and graph data), but the core is **domain-agnostic** — any Python wor
 pip install "arkitekt[all]"
 ```
 
-This installs everything, including the `arkitekt` command line interface used to create, develop,
-containerize, and deploy apps.
+This installs the `arkitekt` command line interface, the runtime and every service client. Prefer a
+lean install? The CLI and packaging tooling are always included — pick only the extras you need:
 
-Prefer a lean install? The CLI and packaging tooling are always included — pick
-only the service extras you need:
+| Extra | Brings in |
+| --- | --- |
+| `rekuest` | the distributed runtime `run(app)` needs to offer actions |
+| `mikro` | microscopy and imaging data |
+| `elektro` | electrophysiology data and simulations |
+| `kraph` | knowledge graphs and measurements |
+| `fluss` | workflows, and the engine that runs them |
+| `kabinet` | managing deployments of apps |
+| `unlok` | users, clients, hubs and redeem tokens (lok) |
+| `alpaka` | LLMs and chat |
+| `lovekit` | WebRTC streams and rooms |
+| `serve` | serving an app from a FastAPI application (arkitekt-fastapi) |
+| `qt` | Qt integration (`arkitekt.qt`) |
+| `tqdm` | a `tqdm` that reports progress to the running task |
 
 ```bash
-pip install "arkitekt[mikro]"          # microscopy / imaging data
-pip install "arkitekt[fluss]"          # workflow orchestration
-pip install "arkitekt[elektro]"       # electrophysiology data
-pip install "arkitekt[alpaka]"         # want to talk to LLMs? This one's for you.
+pip install "arkitekt[rekuest,mikro]"
 ```
 
-`arkitekt` requires **Python 3.11+** and builds on the `asyncio` and `pydantic` stacks.
+Declaring, inspecting and packaging an app, and calling services with `easy`, need no runtime; offering
+actions with `run(app)` needs the `rekuest` extra. `arkitekt` requires **Python 3.11+**.
 
-## Quickstart
+## Offering actions
 
-### 1. Create an app
-
-```bash
-mkdir my-app && cd my-app
-arkitekt init
-```
-
-This walks you through creating an app and writes the entrypoint file it
-scaffolds. The app declares itself in that file; there is no separate manifest.
-
-### 2. Register your functions
-
-Any function you decorate with `@app.action` becomes a callable building block on the platform. Its
-arguments and return values are inferred from your type hints — which also drive validation,
-documentation, and the auto-generated GUI.
+An `App` is a declaration: its identifier, its version, and the actions it offers. Any function
+decorated with `@app.action` becomes a callable building block on the platform. Its arguments and
+return value are inferred from the type hints, which also drive validation, documentation and the
+generated GUI. The first line of the docstring becomes the action's title, the rest its description.
 
 ```python
-from arkitekt import App
+from typing import Annotated
 
-app = App("my.app")
+from arkitekt import App, Description, run
+
+app = App("hello", "0.1.0")
 
 
 @app.action
-def greet(name: str, excited: bool = False) -> str:
-    """Greet a person by name.
+def greet(
+    name: Annotated[str, Description("Who to greet")] = "world",
+    times: Annotated[int, Description("How often to say it")] = 1,
+) -> str:
+    """Greet
 
-    Args:
-        name: Who to greet.
-        excited: Add some enthusiasm.
+    Says hello.
     """
-    greeting = f"Hello, {name}"
-    return greeting + "!" if excited else greeting
+    return " ".join([f"Hello {name}!"] * times)
+
+
+if __name__ == "__main__":
+    run(app)
 ```
 
-### 3. Run it
+Nothing connects when the `App` is declared. `run(app)` authenticates (opening your browser the first
+time), registers the actions and blocks until you stop it. The server is taken from `$FAKTS_URL`, or
+passed explicitly with `run(app, url="localhost")`; `headless=True` prints a device code instead of
+opening a browser.
 
-```bash
-arkitekt run dev
+### Using a service inside an action
+
+Actions that need a service client name it in `services=` and take it by annotation — arkitekt injects
+the client, just like the running `Task`:
+
+```python
+from arkitekt import App, Task, run
+from mikro import Mikro, mikro_service
+from mikro.arkitekt.specs import Volume
+
+app = App("inspect-volume", "0.1.0", services=[mikro_service])
+
+
+@app.action
+def describe(volume: Volume, mikro: Mikro, task: Task) -> str:
+    """Describe Volume"""
+    task.progress(50, "Reading")
+    return f"{volume.data.shape}"
+
+
+if __name__ == "__main__":
+    run(app)
 ```
 
-`run dev` connects your app to a local or remote Arkitekt server with **hot reloading** — edit your
-code and the app reloads automatically. When you are ready for production, use `arkitekt run prod`.
+Beyond actions, an app can declare `@app.model` result types, `@app.state` that the platform publishes
+live, `@app.startup`/`@app.shutdown` hooks and `@app.background` tasks, and a typed app context
+(`App(..., app_context=Setup)` together with `run(app, context=Setup(...))`). The
+[examples](examples/README.md) show one each.
+
+## Calling services
+
+Scripts and notebooks that only *call* the platform don't declare actions. `easy` declares an app for
+you, connects it, and hands back the clients of the services you name:
+
+```python
+from arkitekt import easy
+from mikro import mikro_service
+
+with easy("my-script", mikro_service) as mikro:
+    folder = mikro.create_folder(name="examples")
+```
+
+Name several services and you get a tuple back, in the same order:
+
+```python
+from arkitekt import aeasy, interactive
+from fluss import fluss_service
+from mikro import mikro_service
+
+async with aeasy("my-script", mikro_service, fluss_service) as (mikro, fluss):
+    ...
+
+# In Jupyter: connects once and stays connected.
+mikro = interactive("notebook", mikro_service)
+```
+
+Every service client exposes each operation as a method, in a blocking and an `a`-prefixed async
+flavour (`mikro.create_folder(...)`, `await mikro.acreate_folder(...)`).
 
 ## The CLI
 
-`arkitekt` is the command line for building and running Arkitekt apps.
-Standing up an Arkitekt server is the job of
-[konstruktor](https://github.com/arkitektio/konstruktor):
+`arkitekt` is the command line for building, running and packaging apps. Standing up an Arkitekt
+server is the job of [konstruktor](https://github.com/arkitektio/konstruktor).
 
 | Command | What it does |
 | --- | --- |
-| `init` · `run` · `gen` · `inspect` · `call` · `plugin` · `mesh` · `self` | Build, run and deploy apps from your Python code — scaffold, run locally (`run dev`/`run prod`), generate typed clients, inspect, call functions, and build/publish plugins. |
-| `plugin` | Containerize your app into flavours and publish it as a deployable plugin. |
+| `init` | Scaffold an app: an entrypoint file that declares it. There is no separate manifest. |
+| `run dev` · `run prod` | Run the app — with hot reloading while you develop, or as it runs in a container. |
+| `gen` | Generate typed clients. |
+| `inspect` | Show what the app would register, without connecting. |
+| `call` | Call an action of the app. |
+| `plugin` | Containerize the app into flavours and publish it as a deployable plugin. |
 | `mesh` | Join this machine to the deployment's private WireGuard mesh. |
-| `self` | Manage your Arkitekt install — upgrade the SDK, print versions, dump diagnostics. |
+| `self` | Manage your install — upgrade the SDK, print versions, dump diagnostics. |
 
 ```bash
-arkitekt init         # scaffold an app
-arkitekt run dev      # run it with hot reloading
-konstruktor hub create         # stand up a server to run it against (separate tool)
+mkdir my-app && cd my-app
+arkitekt init          # scaffold an app
+arkitekt run dev       # run it with hot reloading
 ```
 
-See the full reference in **[docs/cli.md](docs/cli.md)**.
+See the full reference in **[docs/cli.md](docs/cli.md)**, and
+[docs/app_types.md](docs/app_types.md) for choosing between a standalone and a plugin app.
 
 ## Working with data
 
-Arkitekt automatically serializes and documents standard Python types — `str`, `bool`, `int`, `float`,
-`Enum`, `list`, and `dict`. For heavier data (images, arrays, large objects), the platform follows a
-**store-by-reference** model: data lives in a central, scalable store and only a lightweight reference
-travels between apps. Extensions like [`mikro`](https://arkitekt.live) provide ready-made structures for
-this, and you can define your own.
+Arkitekt serializes and documents standard Python types — `str`, `bool`, `int`, `float`, `Enum`,
+`list`, `dict`, and pydantic models or dataclasses declared with `@app.model`. For heavier data
+(images, arrays, large objects), the platform follows a **store-by-reference** model: data lives in a
+central, scalable store and only a lightweight reference travels between apps. Service clients like
+`mikro` and `elektro` provide ready-made structures for this; within one app,
+`app.memory_structure(...)` lets arbitrary objects cross actions without leaving the agent.
 
-See the documentation for details on custom data structures and storage backends.
+## Examples
+
+[`examples/`](examples/README.md) holds small, self-contained scripts — one per thing an app can do.
+Each declares its dependencies in a PEP 723 header, so there is nothing to install:
+
+```bash
+uv run --script examples/hello.py
+```
 
 ## Documentation & links
 
