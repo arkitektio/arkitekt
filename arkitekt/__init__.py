@@ -57,7 +57,16 @@ from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
 from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
-from arkitekt_spec.declare.task import AssignmentHook, HookInput, HookKind, LogLevel, StateRef, Task
+from arkitekt_spec.declare.task import (
+    AssignmentHook,
+    HookInput,
+    HookKind,
+    LogLevel,
+    StateRef,
+    Task,
+    aretry,
+    retry,
+)
 from arkitekt_spec.declare.widgets import withEffect, withValidator
 from fakts.mesh import MeshOptions, MeshProxy
 
@@ -68,11 +77,6 @@ from .serve import serve
 from .shortcuts import Easy, aeasy, easy, interactive
 
 __all__ = [
-    "AgentLost",
-    "NonDeterministicWorkflow",
-    "NotAWorkflowError",
-    "StateChanged",
-    "StateRef",
     # the app and its runs
     "App",
     "Runtime",
@@ -103,6 +107,14 @@ __all__ = [
     "CallTarget",
     "ImplementationTarget",
     "NoCallerError",
+    # what a workflow uses when a step is lost or the world moved
+    "AgentLost",
+    "NonDeterministicWorkflow",
+    "NotAWorkflowError",
+    "StateChanged",
+    "StateRef",
+    "aretry",
+    "retry",
     # what @app.action takes
     "PortGroupInput",
     "EffectInput",

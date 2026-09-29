@@ -32,21 +32,5 @@ services (`easy(...)` — it does its thing and exits). Most of these show one o
 
 The mikro and elektro scripts need those services deployed on the server you connect to.
 
-## Reading them in order
-
-`hello.py` first, then `measure_nuclei.py` — together they are the whole offering side: a function,
-its types, and what the UI makes of them. `upload_cells3d.py` is the calling side. After that pick
-whichever of state, context or data layer you actually need.
-
-## Checking one without a server
-
-The CLI loads an app without connecting it, which is the quickest way to see what a script would
-register:
-
-```bash
-arkitekt -w examples inspect implementations measure_nuclei.py
-arkitekt -w examples inspect implementations in_memory_pipeline.py
-```
-
-That prints the definitions the server would be sent — port kinds, defaults, descriptions — without
-authenticating. It works for the scripts in the offer direction — those are the ones that declare an `app`.
+`recovery/` shows what happens when an agent dies mid-task: workflows that resume, `AgentLost`,
+`task.retry`/`hold`/`guard`, and what an action's `effects=` tells whoever decides.
