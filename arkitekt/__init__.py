@@ -40,6 +40,7 @@ from arkitekt_spec.actions import (
 from arkitekt_spec.declare.actors.policy import CancelOnDisconnect, DisconnectPolicy, OnDisconnect
 from arkitekt_spec.declare.actors.types import Actifier
 from arkitekt_spec.declare.agents.errors import NoCallerError
+from arkitekt_spec.declare.errors import AgentLost
 from arkitekt_spec.declare.annotations import Default, Description, Provides, Requires, Units
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
@@ -61,6 +62,7 @@ from .serve import serve
 from .shortcuts import Easy, aeasy, easy, interactive
 
 __all__ = [
+    "AgentLost",
     # the app and its runs
     "App",
     "Runtime",
