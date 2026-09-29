@@ -209,7 +209,9 @@ def init(
     if devcontainer or typer.confirm("Do you want to create a devcontainer.json file?"):
         # Only the devcontainer is named after the app, so only it loads the app.
         app = load_app_or_exit(ctx, target)
-        create_devcontainer_file(app, flavour, dockerfile)
+        create_devcontainer_file(
+            app, flavour, dockerfile, devcontainer_path=os.path.join(work_dir, ".devcontainer")
+        )
 
     panel = Panel(
         title=f"Created new flavour [bold]{flavour}[/bold]\n",

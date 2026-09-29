@@ -26,6 +26,7 @@ concurrently: each run takes its own snapshot of the registry.
 
 import inspect
 import logging
+from pathlib import Path
 from typing import (
     Any,
     Callable,
@@ -115,7 +116,8 @@ def _caller_module_name(depth: int = 2) -> str:
         That module's file name without ``.py``, used as a default identifier.
     """
     frame = inspect.stack()[depth]
-    return frame.filename.split("/")[-1].replace(".py", "")
+    # Path, not "/": on Windows a frame's filename uses backslashes.
+    return Path(frame.filename).stem
 
 
 class App(Generic[Ctx]):

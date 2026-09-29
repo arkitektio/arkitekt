@@ -8,6 +8,7 @@ the CLI works with is read off the App. Nothing here connects anywhere.
 import json
 import subprocess
 import sys
+from pathlib import Path
 from types import ModuleType
 
 import pytest
@@ -109,7 +110,8 @@ def test_a_package_target_watches_its_init(tmp_path):
     (tmp_path / "pkg").mkdir()
     (tmp_path / "pkg" / "__init__.py").write_text("")
 
-    assert parse_target("pkg", str(tmp_path)).file.endswith("pkg/__init__.py")
+    found = Path(parse_target("pkg", str(tmp_path)).file)
+    assert found.resolve() == (tmp_path / "pkg" / "__init__.py").resolve()
 
 
 @pytest.mark.parametrize("raw", ["", "  ", "app:", "not a module", "1app"])

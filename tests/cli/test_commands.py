@@ -256,6 +256,8 @@ def test_kabinet_init_work_dir(tmp_path):
         print(result.exception)
     assert result.exit_code == 0
     assert (tmp_path / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile").exists()
+    # The devcontainer belongs to the work dir too, not to wherever the CLI runs.
+    assert (tmp_path / ".devcontainer" / "vanilla" / "devcontainer.json").exists()
     assert os.getcwd() == original_cwd
 
 
