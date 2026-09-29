@@ -227,3 +227,57 @@ def test_an_app_over_a_declaring_registry_reports_its_context() -> None:
     registry = AppRegistry()
     registry.app_context(Config)
     assert App("over", registry=registry).app_context is Config
+
+
+def test_a_workflow_is_offered_like_an_action_and_may_call_other_apps() -> None:
+    from typing import Protocol
+
+    from arkitekt import Effects, Execution
+
+    app = App("orchestrator", effects=Effects.IRREVERSIBLE)
+
+    @app.declare(app="lab")
+    class Lab(Protocol):
+        def ping(self, n: int) -> int:
+            """Ping."""
+            ...
+
+    @app.workflow
+    def twice(lab: Lab, n: int) -> int:
+        """Ping twice."""
+        return lab.ping(lab.ping(n))
+
+    @app.action(effects=Effects.NONE)
+    def local(n: int) -> int:
+        """Local."""
+        return n
+
+    implementations = app.registry.implementations
+    assert implementations["twice"].execution == Execution.WORKFLOW
+    # The app's default for what doesn't say; an action's own claim wins.
+    assert implementations["twice"].effects == Effects.IRREVERSIBLE
+    assert (implementations["local"].execution, implementations["local"].effects) == (
+        Execution.PLAIN,
+        Effects.NONE,
+    )
+
+
+def test_a_plain_action_calling_another_app_is_refused() -> None:
+    from typing import Protocol
+
+    from arkitekt_spec.declare.definition.errors import DefinitionError
+
+    app = App("plain")
+
+    @app.declare(app="lab")
+    class Lab(Protocol):
+        def ping(self, n: int) -> int:
+            """Ping."""
+            ...
+
+    with pytest.raises(DefinitionError, match="@app.workflow"):
+
+        @app.action
+        def calls(lab: Lab, n: int) -> int:
+            """Calls the lab."""
+            return lab.ping(n)

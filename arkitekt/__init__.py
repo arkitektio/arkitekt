@@ -27,6 +27,8 @@ from arkitekt_spec.actions import (
     ComponentNodeInput,
     ComponentPropInput,
     EffectInput,
+    Effects,
+    Execution,
     OptimisticInput,
     PortGroupInput,
     PortKind,
@@ -89,6 +91,8 @@ __all__ = [
     # what @app.action takes
     "PortGroupInput",
     "EffectInput",
+    "Effects",
+    "Execution",
     "ValidatorInput",
     "UtilCallInput",
     "TrackInput",

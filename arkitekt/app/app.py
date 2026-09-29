@@ -52,6 +52,8 @@ from arkitekt_spec.actions import (
     AssignWidgetInput,
     ComponentNodeInput,
     EffectInput,
+    Effects,
+    Execution,
     PortGroupInput,
     TestTargetInput,
     TrackInput,
@@ -145,6 +147,10 @@ class App(Generic[Ctx]):
             annotated with it receives. An app declaring one is ``App[Config]``
             and every run of it must pass an instance; one declaring none is
             ``App[None]`` and a run passes nothing.
+        effects: What running an action again would do to the world, for the
+            actions that don't say themselves. A robot sets
+            ``Effects.IRREVERSIBLE`` once. Informational: shown to whoever
+            decides about a lost task.
 
     Raises:
         TypeError: If something other than a service is given.
@@ -166,6 +172,7 @@ class App(Generic[Ctx]):
         providers: Sequence["Provider[Any]"] = (),
         registry: Optional[AppRegistry] = None,
         app_context: None = None,
+        effects: Optional[Effects] = None,
     ) -> None: ...
 
     @overload
@@ -183,6 +190,7 @@ class App(Generic[Ctx]):
         providers: Sequence["Provider[Any]"] = (),
         registry: Optional[AppRegistry] = None,
         app_context: type[Ctx],
+        effects: Optional[Effects] = None,
     ) -> None: ...
 
     def __init__(
@@ -199,6 +207,7 @@ class App(Generic[Ctx]):
         providers: Sequence["Provider[Any]"] = (),
         registry: Optional[AppRegistry] = None,
         app_context: Optional[type[Ctx]] = None,
+        effects: Optional[Effects] = None,
     ) -> None:
         self.identifier: str = identifier or _caller_module_name()
         self.version = version
@@ -210,6 +219,9 @@ class App(Generic[Ctx]):
         self.registry: AppRegistry = registry if registry is not None else AppRegistry()
         if app_context is not None:
             self.registry.app_context(app_context)
+        if effects is not None:
+            # What running an action again would do, for the actions that don't say.
+            self.registry.default_effects = effects
         self.service(*services)
         self.provider(*providers)
 
@@ -396,6 +408,7 @@ class App(Generic[Ctx]):
         policy: DisconnectPolicy = KEEP,
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
+        effects: Optional[Effects] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def action(
@@ -422,6 +435,7 @@ class App(Generic[Ctx]):
         policy: DisconnectPolicy = KEEP,
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
+        effects: Optional[Effects] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
@@ -455,6 +469,9 @@ class App(Generic[Ctx]):
                 disconnects.
             version: Version of the definition.
             catalogs: Catalogs the action is listed in.
+            effects: What running it again would do to the world. Informational:
+                shown to whoever decides about a lost task. Defaults to the app's
+                ``effects``.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -493,6 +510,155 @@ class App(Generic[Ctx]):
                     policy=policy,
                     version=version,
                     catalogs=catalogs,
+                    effects=effects,
+                ),
+            )
+            return decorate(function)
+
+        if function is not None:
+            return offer(function)
+        return offer
+
+    @overload
+    def workflow(self, function: Callable[P, R], /) -> WrappedFunction[P, R]: ...
+
+    @overload
+    def workflow(
+        self,
+        /,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        actifier: Actifier | None = None,
+        interface: Optional[str] = None,
+        stateful: bool = False,
+        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
+        collections: Optional[List[str]] = None,
+        port_groups: Optional[List[PortGroupInput]] = None,
+        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
+        is_test_for: Optional[List[TestTargetInput]] = None,
+        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
+        optimistics: Optional[List[OptimisticCoercible]] = None,
+        in_process: bool = False,
+        tracks: Optional[List[TrackInput]] = None,
+        locks: Optional[List[str]] = None,
+        concurrency: Literal["parallel", "serial"] = "serial",
+        policy: DisconnectPolicy = KEEP,
+        version: Optional[str] = None,
+        catalogs: Optional[List[str]] = None,
+        effects: Optional[Effects] = None,
+    ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
+
+    def workflow(
+        self,
+        function: Optional[Callable[P, R]] = None,
+        /,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        actifier: Actifier | None = None,
+        interface: Optional[str] = None,
+        stateful: bool = False,
+        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
+        collections: Optional[List[str]] = None,
+        port_groups: Optional[List[PortGroupInput]] = None,
+        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
+        is_test_for: Optional[List[TestTargetInput]] = None,
+        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
+        optimistics: Optional[List[OptimisticCoercible]] = None,
+        in_process: bool = False,
+        tracks: Optional[List[TrackInput]] = None,
+        locks: Optional[List[str]] = None,
+        concurrency: Literal["parallel", "serial"] = "serial",
+        policy: DisconnectPolicy = KEEP,
+        version: Optional[str] = None,
+        catalogs: Optional[List[str]] = None,
+        effects: Optional[Effects] = None,
+    ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
+        """Offer a workflow: an action that may call other actions. ``@app.workflow``.
+
+        It is called exactly like an action. What differs is what happens when its
+        agent dies: it is resumed, not lost. Calls it already made return their
+        recorded results instead of running again, and values it took through the
+        task (``task.now()``, ``task.record(...)``) come back the same. So its code
+        must be deterministic: outside values come in only through calls and the task.
+
+        A step whose own agent dies raises ``AgentLost`` at the call; handle it like
+        any exception, or with ``task.retry(...)`` / ``task.hold(...)``.
+
+        Parameters annotated with a client class (``mikro: Mikro``) or with
+        :class:`~arkitekt_spec.declare.task.Task` are injected rather than becoming ports, and
+        declare their service on this app.
+
+        Args:
+            function: The function, when used bare as ``@app.action``.
+            name: Display name. Defaults to the function name.
+            description: Description. Defaults to the docstring.
+            actifier: A runtime's actifier, for actions a particular kind of actor
+                must run (the Qt helpers pass theirs). ``None`` leaves it to the
+                runtime that runs the app.
+            interface: Interface the action is offered at. Defaults to one derived
+                from its name.
+            stateful: Mark the definition stateful (set automatically when it uses
+                states).
+            widgets: Widgets per argument.
+            collections: Collections the action is grouped into.
+            port_groups: Port group assignments.
+            port_effects: UI effects per port (hide, disable, … as its values change).
+            is_test_for: Actions this one tests.
+            validators: Input validation rules per argument.
+            optimistics: Optimistic outputs.
+            in_process: Run in the event loop instead of a worker thread.
+            tracks: Tracks the implementation follows.
+            locks: Locks held while an assignment runs.
+            concurrency: Whether assignments may run concurrently.
+            policy: What happens to a running assignment when its caller
+                disconnects.
+            version: Version of the definition.
+            catalogs: Catalogs the action is listed in.
+            effects: What running it again would do to the world. Informational:
+                shown to whoever decides about a lost task. Defaults to the app's
+                ``effects``.
+
+        Returns:
+            The function, still callable as itself -- pass it its clients and a
+            :meth:`Task.local() <arkitekt_spec.declare.task.Task.local>` to call it with no
+            runtime -- or, with options, a decorator returning it.
+
+        Raises:
+            DefinitionError: If a parameter cannot become a port, e.g. a
+                structure of a service this app does not declare.
+        """
+
+        def offer(function: Callable[P, R]) -> WrappedFunction[P, R]:
+            # Through the registry rather than rekuest's module-level decorator: the registry
+            # is what owns the declaration, and it supplies itself and its structures. The cast
+            # is because `AppRegistry.register` forwards `**kwargs` untyped -- this method's own
+            # overloads are what type the surface a user sees.
+            decorate = cast(
+                "Callable[[Callable[P, R]], WrappedFunction[P, R]]",
+                self.registry.register(
+                    name=name,
+                    description=description,
+                    actifier=actifier,
+                    interface=interface,
+                    stateful=stateful,
+                    widgets=widgets,
+                    collections=collections,
+                    port_groups=port_groups,
+                    port_effects=port_effects,
+                    is_test_for=is_test_for,
+                    validators=validators,
+                    optimistics=optimistics,
+                    in_process=in_process,
+                    tracks=tracks,
+                    locks=locks,
+                    concurrency=concurrency,
+                    policy=policy,
+                    version=version,
+                    catalogs=catalogs,
+                    effects=effects,
+                    execution=Execution.WORKFLOW,
                 ),
             )
             return decorate(function)
