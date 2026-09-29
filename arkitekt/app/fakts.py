@@ -3,10 +3,6 @@ import os
 from hashlib import sha256
 from typing import Optional
 
-from platformdirs import user_state_dir
-
-from arkitekt.app.options import ConnectionOptions
-from arkitekt.constants import APP_AUTHOR, APP_NAME
 from fakts.cache.file import FileCache, ensure_private_dir
 from fakts.cache.nocache import NoCache
 from fakts.fakts import Fakts
@@ -20,9 +16,13 @@ from fakts.grants.remote.authorizers.device_code import (
 from fakts.grants.remote.authorizers.redeem import RedeemAuthorizer
 from fakts.grants.remote.authorizers.static import StaticAuthorizer
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
+from fakts.mesh import MeshOptions, MeshProxy
 from fakts.models import Manifest
 from fakts.protocols import FaktsCache
+from platformdirs import user_state_dir
 
+from arkitekt.app.options import ConnectionOptions
+from arkitekt.constants import APP_AUTHOR, APP_NAME
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +70,7 @@ def build_device_code_fakts(
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     allow_insecure_transport: bool = False,
+    mesh: MeshOptions | MeshProxy | None = None,
 ) -> Fakts:
     """Builds a Fakts instance for device code authentication.
 
@@ -83,6 +84,8 @@ def build_device_code_fakts(
         requested_client_kind=ClientKind.DEVELOPMENT,
         device_code_hook=device_code_hook if device_code_hook else display_in_terminal,
         allow_insecure_transport=allow_insecure_transport,
+        # Only a node of our own needs a key to join with; a proxy is already on the mesh.
+        request_auth_key=isinstance(mesh, MeshOptions) and mesh.requests_key(),
     )
 
     return Fakts(
@@ -93,6 +96,7 @@ def build_device_code_fakts(
         manifest=manifest,
         cache=_build_cache(manifest, url, no_cache),
         allow_insecure_transport=allow_insecure_transport,
+        mesh=mesh,
     )
 
 
@@ -102,6 +106,7 @@ def build_redeem_fakts(
     url: str,
     no_cache: bool = False,
     allow_insecure_transport: bool = False,
+    mesh: MeshOptions | MeshProxy | None = None,
 ) -> Fakts:
     """Builds a Fakts instance that redeems a provisioning token.
 
@@ -120,6 +125,7 @@ def build_redeem_fakts(
         manifest=manifest,
         cache=_build_cache(manifest, url, no_cache),
         allow_insecure_transport=allow_insecure_transport,
+        mesh=mesh,
     )
 
 
@@ -129,6 +135,7 @@ def build_token_fakts(
     url: str,
     no_cache: bool = False,
     allow_insecure_transport: bool = False,
+    mesh: MeshOptions | MeshProxy | None = None,
 ) -> Fakts:
     """Builds a Fakts instance from a credential issued earlier.
 
@@ -151,7 +158,56 @@ def build_token_fakts(
         manifest=manifest,
         cache=_build_cache(manifest, url, no_cache),
         allow_insecure_transport=allow_insecure_transport,
+        mesh=mesh,
     )
+
+
+_MESH_ON = ("1", "true", "yes", "on", "native")
+_MESH_OFF = ("0", "false", "no", "off")
+_MESH_AUTO = ("", "auto")
+
+
+def mesh_from_env() -> MeshOptions | MeshProxy | None:
+    """The mesh the environment asks for, as the Rust client reads it.
+
+    ``ARKITEKT_MESH_PROXY=<url>`` goes through that running proxy. Otherwise
+    ``ARKITEKT_MESH``: unset or ``auto`` uses the mesh when it is available
+    (the bindings are installed and the server granted a key) and stays quiet
+    when not; ``1`` (or ``native``) runs a node and reports what is missing;
+    ``0`` turns it off. A proxy wins when both are set: it is the more
+    specific instruction.
+
+    Raises:
+        ValueError: ``ARKITEKT_MESH`` is set to something unrecognised -- a
+            typo there would otherwise silently pick a mode.
+    """
+    proxy = os.getenv("ARKITEKT_MESH_PROXY")
+    if proxy:
+        return MeshProxy(url=proxy)
+    value = os.getenv("ARKITEKT_MESH", "").strip().lower()
+    if value in _MESH_AUTO:
+        return MeshOptions(auto=True)
+    if value in _MESH_ON:
+        return MeshOptions()
+    if value in _MESH_OFF:
+        return None
+    raise ValueError(
+        f"ARKITEKT_MESH={value!r} is not understood: use auto (the default), 1/native "
+        f"to always run a mesh node, 0 to turn it off, or set ARKITEKT_MESH_PROXY=<url> "
+        f"to use a running proxy."
+    )
+
+
+def resolve_mesh(mesh: MeshOptions | MeshProxy | bool | None) -> MeshOptions | MeshProxy | None:
+    """What was passed wins (``True`` is ``MeshOptions()``, ``False`` is off);
+    ``None`` defers to :func:`mesh_from_env`."""
+    if mesh is None:
+        return mesh_from_env()
+    if mesh is True:
+        return MeshOptions()
+    if mesh is False:
+        return None
+    return mesh
 
 
 def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
@@ -172,10 +228,11 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
     url = options.url or os.getenv("FAKTS_URL") or DEFAULT_ARKITEKT_URL
     token = options.token or os.getenv("FAKTS_TOKEN")
     redeem_token = options.redeem_token or os.getenv("FAKTS_REDEEM_TOKEN")
+    mesh = resolve_mesh(options.mesh)
 
     if token:
         return build_token_fakts(
-            manifest=manifest, token=token, url=url, no_cache=options.no_cache
+            manifest=manifest, token=token, url=url, no_cache=options.no_cache, mesh=mesh
         )
     if redeem_token:
         return build_redeem_fakts(
@@ -183,6 +240,7 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
             redeem_token=redeem_token,
             url=url,
             no_cache=options.no_cache,
+            mesh=mesh,
         )
     return build_device_code_fakts(
         manifest=manifest,
@@ -190,4 +248,5 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
         no_cache=options.no_cache,
         headless=options.headless,
         device_code_hook=options.device_code_hook,
+        mesh=mesh,
     )

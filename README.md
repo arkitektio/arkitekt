@@ -161,6 +161,23 @@ mikro = interactive("notebook", mikro_service)
 Every service client exposes each operation as a method, in a blocking and an `a`-prefixed async
 flavour (`mikro.create_folder(...)`, `await mikro.acreate_folder(...)`).
 
+### Services on the deployment's mesh
+
+Some deployments serve services only over their private mesh. With `pip install "arkitekt[mesh]"`
+those services resolve like any other: the login asks the server for a key to join the mesh with,
+and a mesh node starts only when a service is reachable no other way. Whether a key comes is up to
+the server — you can opt out of the mesh there, and an organization without one grants none;
+mesh-only services are then simply not reachable.
+
+```bash
+ARKITEKT_MESH=0 python my_app.py                                 # never use the mesh
+ARKITEKT_MESH=1 python my_app.py                                 # use it, and report what is missing
+ARKITEKT_MESH_PROXY=http://localhost:1055 python my_app.py       # go through a running `arkitekt mesh proxy`
+```
+
+The same in code, which wins over the environment: `run(app, mesh=False)`, `mesh=True` (or
+`MeshOptions(...)`), or `easy("my-script", mikro_service, mesh=MeshProxy(url=...))`.
+
 ## The CLI
 
 `arkitekt` is the command line for building, running and packaging apps. Standing up an Arkitekt

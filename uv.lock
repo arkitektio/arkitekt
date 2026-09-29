@@ -329,8 +329,8 @@ requires-dist = [
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=4.1" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=4.1" },
-    { name = "fakts", specifier = ">=4.1" },
-    { name = "fakts", extras = ["mesh"], marker = "extra == 'mesh'", specifier = ">=4.1" },
+    { name = "fakts", specifier = ">=5.2" },
+    { name = "fakts", extras = ["mesh"], marker = "extra == 'mesh'", specifier = ">=5.2" },
     { name = "fluss", marker = "extra == 'all'", specifier = ">=4" },
     { name = "fluss", marker = "extra == 'fluss'", specifier = ">=4" },
     { name = "kabinet", marker = "extra == 'all'", specifier = ">=4" },
@@ -804,7 +804,7 @@ wheels = [
 
 [[package]]
 name = "fakts"
-version = "4.1.0"
+version = "5.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -813,9 +813,9 @@ dependencies = [
     { name = "koil" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c5/41/810f97bfe2d2e685ade64e72615195d7882f6590f0518cac15d939061f06/fakts-4.1.0.tar.gz", hash = "sha256:2d05f953bbc539d570285831962c715915333aea8a9a21321e7005399802e130", size = 88203, upload-time = "2026-09-29T11:41:32.595Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/82/33/1e60eb66abca828723ca90ca615eaf796a8fc4efafc1a785a0104d708867/fakts-5.2.0.tar.gz", hash = "sha256:669fbfb8c10bdb1df55aba773560f0a8ca691ef8bbd0f96aea34fba5e9081627", size = 94995, upload-time = "2026-09-29T21:21:19.847Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c2/52/8920beb03196c0d1e91ff9f5b41ba43eb98b1c2b9a74a688241f49248d3f/fakts-4.1.0-py3-none-any.whl", hash = "sha256:502e83303fdc5ec40eaac914f0c2e45fc884e7ef7dc4ff6c9c87a0bb94cf6578", size = 95605, upload-time = "2026-09-29T11:41:31.377Z" },
+    { url = "https://files.pythonhosted.org/packages/b4/39/5a354b9347762878e28260ee31ba96d3dc9cbe667f373116bc70ebd8758e/fakts-5.2.0-py3-none-any.whl", hash = "sha256:f9bcce32f01f8b23bd20c0bb92ae339b95766e35175281f80bf650b921ae7758", size = 102178, upload-time = "2026-09-29T21:21:18.512Z" },
 ]
 
 [package.optional-dependencies]

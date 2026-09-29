@@ -11,10 +11,11 @@ clients as any run does, and its actions are handed them by annotation.
 import asyncio
 import contextlib
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, Optional, overload
+from typing import TYPE_CHECKING, Any, Optional, Union, overload
 
 from arkitekt_spec.declare.app import AppRegistry
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
+from fakts.mesh import MeshOptions, MeshProxy
 
 from arkitekt.app.app import App, Ctx
 from arkitekt.app.options import ConnectionOptions
@@ -37,6 +38,7 @@ def serve(
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[None]: ...
 @overload
@@ -52,6 +54,7 @@ def serve(
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[Ctx]: ...
 
@@ -68,6 +71,7 @@ def serve(
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[Any]:
     """Provide ``app``'s offerings over ``fastapi_app`` for as long as it runs.
@@ -91,6 +95,11 @@ def serve(
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the device code instead of the default prompt.
         device_id: This device's identity. Defaults to the machine's id.
+        mesh: How to reach services only on the deployment's mesh:
+            ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
+            ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
+            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
+            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
         **fastapi_options: Passed on to
             :func:`arkitekt_fastapi.configure_fastapi` (``db_file``,
             ``expand_user_from_request``, the route paths, ...).
@@ -131,6 +140,7 @@ def serve(
             headless=headless,
             device_code_hook=device_code_hook,
             device_id=device_id,
+            mesh=mesh,
         ),
         provider=fastapi_agent,
     )

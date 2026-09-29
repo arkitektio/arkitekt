@@ -32,10 +32,11 @@ These are for *calling* the API. An app that offers actions is declared with
 
 import atexit
 from types import TracebackType
-from typing import Any, Dict, Generic, List, Optional, TypeVar, cast, overload
+from typing import Any, Dict, Generic, List, Optional, TypeVar, Union, cast, overload
 
 from arkitekt_spec.declare.service import Service
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
+from fakts.mesh import MeshOptions, MeshProxy
 from koil import Koil
 
 from arkitekt.app.app import App, _caller_module_name
@@ -188,6 +189,7 @@ def _build(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> "Easy[Any]":
     # Three frames up: the caller of easy()/aeasy()/interactive(), not this module.
     app = App(
@@ -207,6 +209,7 @@ def _build(
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        mesh=mesh,
     )
     return Easy(app, services, connection)
 
@@ -228,6 +231,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[None]: ...
 
 
@@ -249,6 +253,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[T1]: ...
 
 
@@ -270,6 +275,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2]]: ...
 
 
@@ -291,6 +297,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3]]: ...
 
 
@@ -312,6 +319,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4]]: ...
 
 
@@ -333,6 +341,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4, T5]]: ...
 
 
@@ -354,6 +363,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6]]: ...
 
 
@@ -375,6 +385,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6, T7]]: ...
 
 
@@ -396,6 +407,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6, T7, T8]]: ...
 
 
@@ -415,6 +427,7 @@ def easy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> "Easy[Any]":
     """Declare an app using these clients' services; enter it for the clients.
 
@@ -436,6 +449,11 @@ def easy(
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
         device_id: The machine's identity. Defaults to one stored for this machine.
+        mesh: How to reach services only on the deployment's mesh:
+            ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
+            ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
+            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
+            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Returns:
         An :class:`Easy`: enter it for the clients -- ``None`` for no classes,
@@ -459,6 +477,7 @@ def easy(
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        mesh=mesh,
     )
 
 
@@ -479,6 +498,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[None]: ...
 
 
@@ -500,6 +520,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[T1]: ...
 
 
@@ -521,6 +542,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2]]: ...
 
 
@@ -542,6 +564,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3]]: ...
 
 
@@ -563,6 +586,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4]]: ...
 
 
@@ -584,6 +608,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4, T5]]: ...
 
 
@@ -605,6 +630,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6]]: ...
 
 
@@ -626,6 +652,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6, T7]]: ...
 
 
@@ -647,6 +674,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6, T7, T8]]: ...
 
 
@@ -666,6 +694,7 @@ def aeasy(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> "Easy[Any]":
     """Declare an app using these clients' services; enter it for the clients.
 
@@ -687,6 +716,11 @@ def aeasy(
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
         device_id: The machine's identity. Defaults to one stored for this machine.
+        mesh: How to reach services only on the deployment's mesh:
+            ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
+            ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
+            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
+            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Returns:
         An :class:`Easy`: enter it for the clients -- ``None`` for no classes,
@@ -710,6 +744,7 @@ def aeasy(
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        mesh=mesh,
     )
 
 
@@ -756,6 +791,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
 
 
@@ -777,6 +813,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> T1: ...
 
 
@@ -798,6 +835,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> tuple[T1, T2]: ...
 
 
@@ -819,6 +857,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> tuple[T1, T2, T3]: ...
 
 
@@ -840,6 +879,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> tuple[T1, T2, T3, T4]: ...
 
 
@@ -861,6 +901,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> tuple[T1, T2, T3, T4, T5]: ...
 
 
@@ -882,6 +923,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> tuple[T1, T2, T3, T4, T5, T6]: ...
 
 
@@ -903,6 +945,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> tuple[T1, T2, T3, T4, T5, T6, T7]: ...
 
 
@@ -924,6 +967,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> tuple[T1, T2, T3, T4, T5, T6, T7, T8]: ...
 
 
@@ -943,6 +987,7 @@ def interactive(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Any:  # noqa: ANN401 -- typed by the overloads
     """Connect and stay connected; return the clients. For notebooks.
 
@@ -966,6 +1011,11 @@ def interactive(
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
         device_id: The machine's identity. Defaults to one stored for this machine.
+        mesh: How to reach services only on the deployment's mesh:
+            ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
+            ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
+            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
+            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Returns:
         ``None`` for no classes, the client for one, a tuple for several.
@@ -988,6 +1038,7 @@ def interactive(
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        mesh=mesh,
     )
     # One connection per app: calling this again for the same identifier (a
     # re-run notebook cell) leaves the previous one instead of piling them up.

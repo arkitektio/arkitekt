@@ -40,13 +40,13 @@ from arkitekt_spec.actions import (
 from arkitekt_spec.declare.actors.policy import CancelOnDisconnect, DisconnectPolicy, OnDisconnect
 from arkitekt_spec.declare.actors.types import Actifier
 from arkitekt_spec.declare.agents.errors import NoCallerError
-from arkitekt_spec.declare.errors import AgentLost
 from arkitekt_spec.declare.annotations import Default, Description, Provides, Requires, Units
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
 from arkitekt_spec.declare.blok.validate import validate_blok
 from arkitekt_spec.declare.catalogs import CatalogView, ComponentSpec, Diagnostic, OperationSpec
 from arkitekt_spec.declare.coercible_types import ToOptimisticProtocol
+from arkitekt_spec.declare.errors import AgentLost
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
@@ -54,6 +54,7 @@ from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
 from arkitekt_spec.declare.task import AssignmentHook, HookInput, HookKind, LogLevel, Task
 from arkitekt_spec.declare.widgets import withEffect, withValidator
+from fakts.mesh import MeshOptions, MeshProxy
 
 from .app.app import App
 from .inspect import inspect
@@ -75,6 +76,9 @@ __all__ = [
     "aeasy",
     "interactive",
     "inspect",
+    # how a run reaches services on the deployment's mesh
+    "MeshOptions",
+    "MeshProxy",
     # what goes inside a declaration
     "AppRegistry",
     "Service",

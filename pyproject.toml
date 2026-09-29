@@ -7,7 +7,7 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "fakts>=4.1",
+    "fakts>=5.2",
     "koil>=3.3.4",
     "rath>=4",
     "click>=8.2.0",
@@ -78,7 +78,7 @@ tqdm = [
 ]
 # Reach services over the hub's private mesh (a native mesh node, via fakts).
 mesh = [
-    "fakts[mesh]>=4.1",
+    "fakts[mesh]>=5.2",
 ]
 all = [
     # Self-referential extras keep `all` complete without duplicating (and drifting)

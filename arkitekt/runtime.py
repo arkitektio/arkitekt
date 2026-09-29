@@ -25,6 +25,7 @@ from typing import (
     Self,
     Type,
     TypeVar,
+    Union,
     cast,
     overload,
 )
@@ -33,6 +34,7 @@ from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.service import Service
 from fakts import Fakts
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
+from fakts.mesh import MeshOptions, MeshProxy
 from koil import unkoil
 from koil.bridge import unkoil_task
 from koil.composition import KoiledModel
@@ -415,6 +417,7 @@ def connect(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Runtime[Ctx]:
     """Make a runtime for ``app`` that connects when entered.
 
@@ -444,6 +447,11 @@ def connect(
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
         device_id: This device's identity. Defaults to the machine's id.
+        mesh: How to reach services only on the deployment's mesh:
+            ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
+            ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
+            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
+            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Returns:
         The runtime, not yet entered.
@@ -459,6 +467,7 @@ def connect(
             device_code_hook=device_code_hook,
             force=force,
             device_id=device_id,
+            mesh=mesh,
         ),
         provider=_provider_for(app) if provide else None,
     )
@@ -477,6 +486,7 @@ def run(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
 @overload
 def run(
@@ -491,6 +501,7 @@ def run(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
 
 
@@ -506,6 +517,7 @@ def run(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None:
     """Connect ``app`` and provide its offerings until stopped: the rekuest runtime.
 
@@ -532,6 +544,11 @@ def run(
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
         device_id: This device's identity. Defaults to the machine's id.
+        mesh: How to reach services only on the deployment's mesh:
+            ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
+            ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
+            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
+            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Raises:
         AppContextError: If ``context`` is not what the app declared. Raised
@@ -550,6 +567,7 @@ def run(
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        mesh=mesh,
     )
     # Entered synchronously, around the unkoil rather than inside it: koil
     # establishes its loop when the runtime is entered.
@@ -570,6 +588,7 @@ async def arun(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
 @overload
 async def arun(
@@ -584,6 +603,7 @@ async def arun(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
 
 
@@ -599,6 +619,7 @@ async def arun(
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     device_id: Optional[str] = None,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None:
     """Connect ``app`` and provide its actions until stopped, asynchronously.
 
@@ -616,6 +637,11 @@ async def arun(
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
         device_id: This device's identity. Defaults to the machine's id.
+        mesh: How to reach services only on the deployment's mesh:
+            ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
+            ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
+            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
+            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Raises:
         AppContextError: If ``context`` is not what the app declared. Raised
@@ -634,6 +660,7 @@ async def arun(
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        mesh=mesh,
     )
     async with runtime:
         await runtime.arun(context=context)
