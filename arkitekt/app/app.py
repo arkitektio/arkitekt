@@ -385,7 +385,7 @@ class App(Generic[Ctx]):
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
         collections: Optional[List[str]] = None,
         port_groups: Optional[List[PortGroupInput]] = None,
-        effects: Optional[Dict[str, List[EffectInput]]] = None,
+        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
         is_test_for: Optional[List[TestTargetInput]] = None,
         validators: Optional[Dict[str, List[ValidatorInput]]] = None,
         optimistics: Optional[List[OptimisticCoercible]] = None,
@@ -411,7 +411,7 @@ class App(Generic[Ctx]):
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
         collections: Optional[List[str]] = None,
         port_groups: Optional[List[PortGroupInput]] = None,
-        effects: Optional[Dict[str, List[EffectInput]]] = None,
+        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
         is_test_for: Optional[List[TestTargetInput]] = None,
         validators: Optional[Dict[str, List[ValidatorInput]]] = None,
         optimistics: Optional[List[OptimisticCoercible]] = None,
@@ -443,7 +443,7 @@ class App(Generic[Ctx]):
             widgets: Widgets per argument.
             collections: Collections the action is grouped into.
             port_groups: Port group assignments.
-            effects: Effects per port.
+            port_effects: UI effects per port (hide, disable, … as its values change).
             is_test_for: Actions this one tests.
             validators: Input validation rules per argument.
             optimistics: Optimistic outputs.
@@ -482,7 +482,7 @@ class App(Generic[Ctx]):
                     widgets=widgets,
                     collections=collections,
                     port_groups=port_groups,
-                    effects=effects,
+                    port_effects=port_effects,
                     is_test_for=is_test_for,
                     validators=validators,
                     optimistics=optimistics,
