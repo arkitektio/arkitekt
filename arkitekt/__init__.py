@@ -46,13 +46,18 @@ from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
 from arkitekt_spec.declare.blok.validate import validate_blok
 from arkitekt_spec.declare.catalogs import CatalogView, ComponentSpec, Diagnostic, OperationSpec
 from arkitekt_spec.declare.coercible_types import ToOptimisticProtocol
-from arkitekt_spec.declare.errors import AgentLost
+from arkitekt_spec.declare.errors import (
+    AgentLost,
+    NonDeterministicWorkflow,
+    NotAWorkflowError,
+    StateChanged,
+)
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
 from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
-from arkitekt_spec.declare.task import AssignmentHook, HookInput, HookKind, LogLevel, Task
+from arkitekt_spec.declare.task import AssignmentHook, HookInput, HookKind, LogLevel, StateRef, Task
 from arkitekt_spec.declare.widgets import withEffect, withValidator
 from fakts.mesh import MeshOptions, MeshProxy
 
@@ -64,6 +69,10 @@ from .shortcuts import Easy, aeasy, easy, interactive
 
 __all__ = [
     "AgentLost",
+    "NonDeterministicWorkflow",
+    "NotAWorkflowError",
+    "StateChanged",
+    "StateRef",
     # the app and its runs
     "App",
     "Runtime",
