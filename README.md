@@ -131,6 +131,45 @@ live, `@app.startup`/`@app.shutdown` hooks and `@app.background` tasks, and a ty
 (`App(..., app_context=Setup)` together with `run(app, context=Setup(...))`). The
 [examples](examples/README.md) show one each.
 
+### Workflows: actions that call other apps
+
+Only a **workflow** may call other actions. Name what it needs of another app as a protocol with
+`@app.declare`, and take it by annotation; the platform resolves it to a running agent of that app:
+
+```python
+from typing import AsyncGenerator, Protocol
+
+from arkitekt import App, Task, run
+
+app = App("shouter", "0.1.0")
+
+
+@app.declare(app="testo", auto_resolvable=True, min=1)
+class Testo(Protocol):
+    async def stream_words(self, text: str) -> AsyncGenerator[str, None]:
+        """Stream Words"""
+        ...
+
+
+@app.workflow
+async def shout_words(testo: Testo, text: str, *, task: Task) -> AsyncGenerator[str, None]:
+    """Shout Words"""
+    async for word in testo.stream_words(text=text):  # streams every yield
+        yield word.upper()
+
+
+if __name__ == "__main__":
+    run(app)
+```
+
+A workflow is called like any action, and it is the one kind of action that survives its agent
+dying: it is **resumed**, and the calls it already made return their recorded results rather than
+running again. A plain action whose agent dies ends **LOST** instead, and `call` raises `AgentLost`
+with what is known, for whoever called to decide. `effects=` on an action or an `App` says what running
+it again would do (`Effects.NONE` … `Effects.IRREVERSIBLE`), as information for that decision. Inside
+a workflow, `task.retry`, `task.hold` and `task.guard` cover the usual answers to a lost step:
+[examples/recovery](examples/recovery/README.md) walks through them.
+
 ## Calling services
 
 Scripts and notebooks that only *call* the platform don't declare actions. `easy` declares an app for
