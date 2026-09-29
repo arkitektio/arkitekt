@@ -82,7 +82,8 @@ def test_the_all_extra_bundles_every_service_client() -> None:
     services = {
         name
         for name in extras
-        if name not in {"all", "cli", "qt", "serve", "tqdm"}
+        # mesh is a transport (a native node), not a service client.
+        if name not in {"all", "cli", "mesh", "qt", "serve", "tqdm"}
     }
     (bundle,) = extras["all"]
     named = set(bundle.partition("[")[2].rstrip("]").split(","))
