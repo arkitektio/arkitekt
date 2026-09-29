@@ -45,8 +45,8 @@ from arkitekt import AgentLost, App, StateChanged, Task, run
 app = App("plate-workflow", "0.1.0", services=[mikro_service])
 
 
-class PlateState:
-    """What the workflow reads of the robot's plate."""
+class PlateState(Protocol):
+    """What the workflow reads of the robot's plate: the fields its ``plate`` state must have."""
 
     barcode: str
     dispensed_ul: dict[str, float]

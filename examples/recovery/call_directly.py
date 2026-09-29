@@ -15,7 +15,7 @@ The action and dataset ids come from the UI ("Copy id") to keep this short.
 """
 
 from mikro import mikro_service
-from rekuest import rekuest_service
+from rekuest.arkitekt import rekuest_service
 
 from arkitekt import AgentLost, easy, retry
 

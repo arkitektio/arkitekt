@@ -29,7 +29,7 @@ from arkitekt import App, Effects, Task, run
 app = App("liquid-handler", "0.1.0", effects=Effects.IRREVERSIBLE)
 
 
-@app.state
+@app.state(name="plate")  # the key a workflow's `plate:` demand asks for
 class Plate:
     """The plate on the deck, and what has gone into it."""
 
