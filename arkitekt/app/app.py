@@ -885,6 +885,7 @@ class App(Generic[Ctx]):
             Union[Mapping[str, type], Sequence[AgentDependencyInput]]
         ] = None,
         catalog: Optional[str] = None,
+        local_state: Optional[Dict[str, Any]] = None,
     ) -> None:
         r"""Declare a blok, a UI component tree: ``app.blok("monitor", "<Card/>")``.
 
@@ -900,9 +901,14 @@ class App(Generic[Ctx]):
             catalog: The UI catalog the blok renders against. When this app has
                 declared it with :meth:`ui_catalog`, the tree's components, props
                 and util operations are checked against it now.
+            local_state: The blok's own UI state and its initial values, e.g.
+                ``{"form": {"iterations": 15}}``: roots the tree binds controls
+                to (``bind="form.iterations"``) and reads back in a call
+                (``@self.run(iterations=form.iterations)``).
 
         Raises:
-            ValueError: If ``name`` is empty, or a declared catalog rejects the tree.
+            ValueError: If ``name`` is empty, a declared catalog rejects the tree,
+                or a ``local_state`` key is reserved or names a dependency.
         """
         self.registry.register_blok(
             name,
@@ -911,6 +917,7 @@ class App(Generic[Ctx]):
             demo_state=demo_state,
             dependencies=dependencies,
             catalog=catalog,
+            local_state=local_state,
         )
 
     def ui_catalog(

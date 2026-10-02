@@ -50,3 +50,15 @@ def test_a_catalog_may_not_shadow_a_base_operation() -> None:
         app.ui_catalog(
             "rogue", operations=[OperationSpec(name="gt", returns="BOOL", arguments=())]
         )
+
+
+def test_blok_passes_its_local_state_through() -> None:
+    app = App("demo")
+    app.blok(
+        "form",
+        '<Slider bind="form.iterations" />',
+        local_state={"form": {"iterations": 15}},
+    )
+
+    assert app.registry.registered_bloks["form"].local_state == {"form": {"iterations": 15}}
+    assert app.registry.get_declared_bloks()["form"].demo_state == {"form": {"iterations": 15}}
