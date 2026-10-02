@@ -21,7 +21,7 @@ def _flat(output: str) -> str:
 
 
 def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(capsys) -> None:
-    asyncio.run(login_prompt(opened_browser=True)(ENDPOINT, "ABCD-EFGH"))
+    asyncio.run(login_prompt(opened_browser=True)(ENDPOINT, "ABCD-EFGH"))  # pyright: ignore[reportArgumentType]
 
     out = capsys.readouterr().out
     assert out.startswith("■ Log in to Lab")
@@ -32,7 +32,7 @@ def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(capsys) -
 
 
 def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys) -> None:
-    asyncio.run(login_prompt(opened_browser=False)(ENDPOINT, "ABCD-EFGH"))
+    asyncio.run(login_prompt(opened_browser=False)(ENDPOINT, "ABCD-EFGH"))  # pyright: ignore[reportArgumentType]
 
     assert "open this link to approve the app" in _flat(capsys.readouterr().out)
 
@@ -40,7 +40,7 @@ def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys) -> None:
 def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(capsys) -> None:
     bare = FaktsEndpoint(base_url="https://lab.example/f/", name="Lab")
 
-    asyncio.run(login_prompt()(bare, "ABCD-EFGH"))
+    asyncio.run(login_prompt()(bare, "ABCD-EFGH"))  # pyright: ignore[reportArgumentType]
 
     out = capsys.readouterr().out
     assert "https://lab.example/f/" in out and "code ABCD-EFGH" in out

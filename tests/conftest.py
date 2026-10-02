@@ -16,8 +16,13 @@ import tempfile
 
 import pytest
 
-from arkitekt.cli.main import cli_app
-from typer.testing import CliRunner
+# Typer forces a terminal on GitHub Actions (and under FORCE_COLOR), so the help
+# these tests read would be wrapped in escape codes there and nowhere else. Read
+# when typer is imported, so it is set before the CLI is.
+os.environ.setdefault("_TYPER_FORCE_DISABLE_TERMINAL", "1")
+
+from arkitekt.cli.main import cli_app  # noqa: E402
+from typer.testing import CliRunner  # noqa: E402
 
 # Qt tests need no display: a binding may be installed (the typecheck group).
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")

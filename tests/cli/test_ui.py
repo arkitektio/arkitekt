@@ -15,7 +15,8 @@ from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 def _console(encoding: str = "utf-8") -> tuple[Console, io.BytesIO]:
     raw = io.BytesIO()
-    stream = io.TextIOWrapper(raw, encoding=encoding, write_through=True)
+    # newline="": what the console writes is what is read back, on Windows too.
+    stream = io.TextIOWrapper(raw, encoding=encoding, write_through=True, newline="")
     return Console(file=stream, width=80, color_system=None), raw
 
 
