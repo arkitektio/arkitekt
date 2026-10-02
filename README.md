@@ -217,25 +217,38 @@ ARKITEKT_MESH_PROXY=http://localhost:1055 python my_app.py       # go through a 
 The same in code, which wins over the environment: `run(app, mesh=False)`, `mesh=True` (or
 `MeshOptions(...)`), or `easy("my-script", mikro_service, mesh=MeshProxy(url=...))`.
 
+To log in again — another user, or a session that went stale — run `arkitekt login --reauth` in
+the app's folder, pass `run(app, reauth=True)`, `--reauth` on a run, or:
+
+```bash
+ARKITEKT_REAUTH=1 python my_app.py
+```
+
+The fresh session is cached, so the next plain start reuses it. `skip_cache=True` (`--skip-cache`)
+instead neither reads nor writes the cache: every start logs in, and the session lives in memory only.
+
 ## The CLI
 
-`arkitekt` is the command line for building, running and packaging apps. Standing up an Arkitekt
-server is the job of [konstruktor](https://github.com/arkitektio/konstruktor).
+`arkitekt` is the command line for building, running and packaging apps. It works on the app in
+the current folder: `arkitekt --help` lists `create` and `self` where there is none, and the rest
+once there is. Standing up an Arkitekt server is the job of
+[konstruktor](https://github.com/arkitektio/konstruktor).
 
 | Command | What it does |
 | --- | --- |
-| `init` | Scaffold an app: an entrypoint file that declares it. There is no separate manifest. |
+| `create` | Scaffold an app: an entrypoint file that declares it. There is no separate manifest. |
 | `run dev` · `run prod` | Run the app — with hot reloading while you develop, or as it runs in a container. |
 | `gen` | Generate typed clients. |
 | `inspect` | Show what the app would register, without connecting. |
-| `call` | Call an action of the app. |
+| `call` | Call an action on the server. |
+| `login` · `logout` · `status` | Log the app in this folder in or out, and see whether it is. |
 | `plugin` | Containerize the app into flavours and publish it as a deployable plugin. |
 | `mesh` | Join this machine to the deployment's private WireGuard mesh. |
-| `self` | Manage your install — upgrade the SDK, print versions, dump diagnostics. |
+| `self` | Manage your install — upgrade the SDK, print versions, dump diagnostics, list saved logins. |
 
 ```bash
 mkdir my-app && cd my-app
-arkitekt init          # scaffold an app
+arkitekt create          # scaffold an app
 arkitekt run dev       # run it with hot reloading
 ```
 

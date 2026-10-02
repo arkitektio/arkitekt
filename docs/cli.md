@@ -1,15 +1,28 @@
 # The Arkitekt CLI
 
-`arkitekt` is the command line for building and running Arkitekt **apps**:
+`arkitekt` is the command line for building and running Arkitekt **apps**. It
+works on **the app in the current folder**, and its menu follows the folder:
+
+| Where you are | `arkitekt --help` lists |
+| :--- | :--- |
+| A folder with an app | `run` · `login` · `logout` · `status` · `inspect` · `gen` · `call` · `plugin` · `mesh` · `self` |
+| Anywhere else | `create` · `self` |
+
+A folder has an app when its entrypoint (`app.py`, or the module named by
+`$ARKITEKT_APP`) exists and mentions `arkitekt`. The file is only read, never
+imported, to decide this. Nothing is taken away: a command off the list still
+runs when you type it, and one that needs an app says so when there is none.
 
 - **Build apps** from your Python code — scaffold, run, generate typed clients,
-  and call functions (`init`, `run`, `gen`, `inspect`, `call`, `plugin`, `mesh`, `self`).
+  and call functions (`create`, `run`, `gen`, `inspect`, `call`).
+- **Log in and out** — see and end the saved session of the app in this folder
+  (`login`, `logout`, `status`).
 - **Package plugins** — containerize an app into flavours and publish it
   (`plugin`).
 - **Join the mesh** — enroll a machine in the private WireGuard network that
   fronts a deployment (`mesh`).
-- **Manage your install** — upgrade the SDK, print versions, dump diagnostics
-  (`self`).
+- **Manage your install** — upgrade the SDK, print versions, dump diagnostics,
+  list the logins saved on this machine (`self`).
 
 Standing up an Arkitekt **server** (hub, coordinator, engine) is the job of
 [konstruktor](https://github.com/arkitektio/konstruktor) — the CLI and desktop
@@ -34,7 +47,8 @@ documentation. Those links live as constants in
 
 | Command | What it does | Hosted docs |
 | :--- | :--- | :--- |
-| `init` · `run` · `gen` · `inspect` · `call` · `plugin` · `mesh` · `self` | Build, run and deploy apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli> |
+| `create` · `run` · `gen` · `inspect` · `call` | Build and run apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli> |
+| `login` · `logout` · `status` | The saved session of the app in this folder. | <https://arkitekt.live/docs/cli/session> |
 | `plugin` | Containerize an app into flavours and publish it. | <https://arkitekt.live/docs/cli/plugin> |
 | `mesh` | Join this machine to the deployment's WireGuard mesh. | <https://arkitekt.live/docs/cli/mesh> |
 | `self` | Manage the Arkitekt CLI / SDK installation itself. | <https://arkitekt.live/docs/cli/self> |
@@ -43,16 +57,15 @@ documentation. Those links live as constants in
 
 | Option | Description |
 | :--- | :--- |
-| `--work-dir`, `-w` | The working directory. Defaults to the current directory. The app commands read and write the `.arkitekt` project folder relative to this directory, so you can operate on a project without `cd`-ing into it. |
+| `--work-dir`, `-w` | The working directory. Defaults to the current directory. The app commands look for the app there, and the menu follows it, so you can operate on a project without `cd`-ing into it. |
 
 ```bash
 # Operate on a project located elsewhere without changing directories
 ```
 
-> **Note:** The app commands operate on a scaffolded app project. Every one of
-> them except `init` expects an initialized app, and creates the `.arkitekt`
-> folder if it is missing. Each finds the app from its own `module[:attr]`
-> target rather than from a manifest.
+> **Note:** Every app command except `create` expects an app in the working
+> directory, and finds it from its own `module[:attr]` target rather than from a
+> manifest. Without one it stops with a hint to run `arkitekt create`.
 
 ---
 
@@ -62,7 +75,7 @@ The app commands and the `plugin` group are the client-side SDK: they turn your
 Python code into an Arkitekt app and package it for distribution. Every command
 below operates on the app in the current working directory (see `--work-dir`).
 
-### `init` — Scaffold a new app
+### `create` — Scaffold a new app
 
 Creates a new Arkitekt app in the working directory: an entrypoint file
 (default `app.py`) seeded from a template. The app declares itself in that
@@ -70,13 +83,13 @@ file -- there is no manifest to keep in step with it.
 
 ```bash
 # Interactive — prompts for identifier, author and entrypoint
-arkitekt init
+arkitekt create
 
 # Non-interactive — accept all defaults
-arkitekt init --yes --package-manager pip
+arkitekt create --yes --package-manager pip
 
 # Fully specified
-arkitekt init myapp \
+arkitekt create myapp \
   --identifier com.example.myapp \
   --version 0.1.0 \
   --author "Jane Doe" \
@@ -104,7 +117,7 @@ Key options:
 When `--package-manager uv` is chosen, `uv` must be installed; the CLI runs
 `uv init` and `uv add arkitekt[all]` for you.
 
-📖 <https://arkitekt.live/docs/cli/init>
+📖 <https://arkitekt.live/docs/cli/create>
 
 ### `run` — Run your app locally
 
@@ -126,19 +139,39 @@ arkitekt run dev --url http://localhost:8000 --headless
 | `dev` | Runs the app with auto-reload on code changes. Best for iterating. |
 | `prod` | Runs the app without reloading, as it would run inside a container. |
 
-Both run the app the entrypoint builds (`app = easy(...)`); an entrypoint without one is an error. Common options (shared by `dev` and `prod`), which override only what you pass:
+Both run the App the entrypoint declares (`app = App(...)`); an entrypoint
+without one is an error. The connection options are shared by `dev` and `prod`,
+grouped in `--help` the same way, and only what you pass is overridden:
 
-| Option | Description |
-| :--- | :--- |
-| `--url`, `-u` | The `fakts` URL of the Arkitekt instance to connect to. |
-| `--token`, `-t` | A token for the `fakts` instance (skips interactive auth). |
-| `--instance-id`, `-i` | The instance id to register the app under. |
-| `--redeem-token`, `-r` | A redeem token used for unattended authentication. |
-| `--headless`, `-h` | Run without opening a browser for authentication. |
-| `--log-level`, `-l` | The log level (e.g. `INFO`, `DEBUG`). |
+| Group | Option | Description |
+| :--- | :--- | :--- |
+| Server | `--url`, `-u` | The Arkitekt server to connect to (`$FAKTS_URL`). |
+| Login | `--token`, `-t` | A previously issued credential, `client_id:refresh_token`: no browser login. |
+| Login | `--redeem-token`, `-r` | A redeem token: provisions the app and logs it in without a browser. |
+| Login | `--headless` | Print the login link instead of opening a browser. |
+| Session | `--reauth` | Log in again and replace the saved session (wrong user or organization). |
+| Session | `--skip-cache` | Ignore the saved session and save none: log in, for this run only. |
+| Agent | `--force`, `-f` | Take over when another instance of this app is already connected. |
+| | `--log-level`, `-l` | The log level (e.g. `INFO`, `DEBUG`). |
 
-`run dev` additionally accepts `--no-cache`/`-nc` to skip the fakts cache and
-`--deep` to watch the whole directory tree for changes.
+`run dev` additionally accepts `--deep` to also watch your installed packages.
+
+After the banner a run says how it got its session and what happens to its
+connection, one line each:
+
+```text
+◆ Session reused  logged in 3 days ago · `arkitekt logout` ends it
+◆ Registered  providing 3 actions
+□ Connection lost, reconnecting
+◆ Reconnected
+```
+
+A failure you can act on is one line too, with what to do about it, rather than
+a traceback:
+
+```text
+✕ Another instance of this app is already connected  pass --force to take over
+```
 
 An App that declares an app context (`App(..., app_context=Config)`) does not run
 without one. Both commands take it from your code or from a file:
@@ -159,13 +192,12 @@ Generates fully typed Python code for your GraphQL API documents using
 [turms](https://github.com/jhnnsrs/turms). Requires `turms` to be installed.
 
 ```bash
-arkitekt gen init      # scaffold a graphql.config.yaml
 arkitekt gen compile   # generate code once
 arkitekt gen watch     # regenerate whenever documents change
 ```
 
 `gen compile` accepts `--config` to point at a specific GraphQL config file
-(defaults to the `graphql.config.yaml` created by `gen init`).
+(defaults to the `graphql.config.yaml` in the app directory).
 
 📖 <https://arkitekt.live/docs/cli/gen>
 
@@ -199,16 +231,44 @@ The JSON-emitting commands accept `--pretty`/`-p` for indented output and
 
 📖 <https://arkitekt.live/docs/cli/inspect>
 
-### `call` — Call functions in your app
+### `call` — Call an action on the server
 
-Calls functions defined in your app, either locally (no server needed) or
-remotely (through a rekuest server).
+Calls an action available on the connected server and prints what it returns.
+The action is named by its hash; without an app argument the call is made as the
+`arkitekt-cli` app.
 
 ```bash
-arkitekt call remote <function> ...
+arkitekt call remote --hash <hash> -a n=41 -a name=bob
 ```
 
+It takes the same Server, Login and Session options as `run`.
+
 📖 <https://arkitekt.live/docs/cli/call>
+
+---
+
+### `login` · `logout` · `status` — The app's saved session
+
+A login leaves a session behind, saved per app, version and server in your
+per-user state directory (not in the project folder). A run logs in by itself
+the first time; these commands do it, undo it and show it without running the app.
+
+```bash
+arkitekt status            # the app, and whether it is logged in
+arkitekt login             # log in now; --reauth replaces a saved session
+arkitekt logout            # forget the saved session; the next run logs in again
+arkitekt logout --url http://localhost:8000   # ... the one for that server
+```
+
+| Command | Description |
+| :--- | :--- |
+| `status` | Shows the app in this folder and its session: where, since when, and whether it is still usable. |
+| `login` | Logs the app in and saves the session. Takes `--url`, `--token`, `--redeem-token`, `--headless`, `--reauth`. |
+| `logout` | Forgets the saved session. Local only: nothing is revoked on the server, and an instance of the app that is still running saves its session back. |
+
+Logged in as the wrong user? `arkitekt login --reauth`.
+
+📖 <https://arkitekt.live/docs/cli/session>
 
 ---
 
@@ -368,6 +428,7 @@ specific app or deployment.
 arkitekt self version    # print the installed version
 arkitekt self upgrade    # upgrade the installed Arkitekt SDK packages
 arkitekt self info       # dump environment diagnostics
+arkitekt self sessions   # every login saved on this machine
 ```
 
 | Sub-command | Description |
@@ -375,6 +436,7 @@ arkitekt self info       # dump environment diagnostics
 | `version` | Prints the installed `arkitekt` version. |
 | `upgrade` | Checks PyPI for newer versions of the Arkitekt ecosystem packages and upgrades the outdated ones using the project's package manager (`uv` or `pip`). |
 | `info` | Dumps environment diagnostics (installed versions, package manager, paths). |
+| `sessions` | Lists the logins saved on this machine, of every app. `--forget NAME` forgets one app's (on every server), `--all` every one (`--yes` skips the question). Local only, like `logout`. |
 
 📖 <https://arkitekt.live/docs/cli/self>
 
@@ -386,7 +448,7 @@ Develop and ship an app:
 
 ```bash
 # 1. Create the app
-arkitekt init myapp --identifier com.example.myapp --package-manager uv
+arkitekt create myapp --identifier com.example.myapp --package-manager uv
 cd myapp
 
 # 2. Iterate locally

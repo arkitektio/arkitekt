@@ -4,10 +4,10 @@ Plugin apps are the recommended way to build and distribute Arkitekt application
 
 ## Initialization
 
-To create a new plugin app, use the `arkitekt init` command. This will guide you through the setup process and create the necessary files (manifest, entrypoint, etc.).
+To create a new plugin app, use the `arkitekt create` command. This will guide you through the setup process and create the necessary files (manifest, entrypoint, etc.).
 
 ```bash
-arkitekt init
+arkitekt create
 ```
 
 You will be prompted to enter details about your app, such as:
@@ -64,7 +64,7 @@ This command will:
 
 ## Workflow Summary
 
-1. **Init**: `arkitekt init` - Create project structure.
+1. **Init**: `arkitekt create` - Create project structure.
 2. **Code**: Write your application logic.
 3. **Build**: `arkitekt build` - Create Docker image.
 4. **Publish**: `arkitekt publish` - Push to registry.

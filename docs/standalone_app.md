@@ -35,7 +35,7 @@ from arkitekt import easy
 from mikro import mikro_service
 
 with easy("my.app", mikro_service) as mikro:
-    image = mikro.get_image("some-id")
+    dataset = mikro.get_array_dataset("some-id")
 ```
 
 ## Configuration
@@ -50,7 +50,10 @@ Both take the same keyword arguments:
 - `redeem_token` — a token to provision a new app with.
 - `token` — a previously issued credential, `client_id:refresh_token`.
 - `headless` — print the device-code prompt instead of opening a browser.
-- `no_cache` — skip the fakts cache, and so authenticate again.
+- `skip_cache` — neither read nor write the fakts cache: log in, and keep the
+  session in memory only.
+- `reauth` — log in again even when a session is cached, and cache the new one.
+  Defaults to `$ARKITEKT_REAUTH`.
 - `force` — take over an existing agent connection of this app.
 
 The identifier defaults to the calling file's name, so `easy()` with no
