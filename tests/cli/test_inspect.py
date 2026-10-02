@@ -260,7 +260,7 @@ def test_kabinet_validate_without_flavours_errors(app_dir):
     "args",
     [
         [],
-        ["init"],
+        ["create"],
         ["run"],
         ["gen"],
         ["plugin"],

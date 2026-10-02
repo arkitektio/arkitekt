@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt>=3", "scikit-image>=0.24", "numpy>=1.26", "pooch>=1.8"]
+# dependencies = ["arkitekt[rekuest]>=5", "scikit-image>=0.24", "numpy>=1.26", "pooch>=1.8"]
 # ///
 """Offering: a real bioimage computation behind a plain signature.
 

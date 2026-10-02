@@ -88,7 +88,7 @@ def test_the_magic_bar_builds_on_an_unentered_runtime(qapp: Any) -> None:
     from arkitekt.qt.magic_bar import MagicBar
 
     app = build_qt_app("bar", version="1.2", logo=None)
-    runtime = connect(app, provide=True, token="token", url="http://127.0.0.1:1", no_cache=True)
+    runtime = connect(app, provide=True, token="token", url="http://127.0.0.1:1", skip_cache=True)
     bar = MagicBar(runtime)
 
     assert bar.profile.app is app

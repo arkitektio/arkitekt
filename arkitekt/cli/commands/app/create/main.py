@@ -7,18 +7,18 @@ from typing import Annotated, List, Optional
 
 import typer
 import semver
-from rich.panel import Panel
 
 from arkitekt.cli.constants import compile_scopes
 from arkitekt.cli.validators import validate_scopes, validate_template
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
+from arkitekt.cli.ui import done, escape, notice
 from arkitekt.cli.utils import build_relative_dir
 from arkitekt.cli.vars import get_console, get_work_dir
 
 
-#: Non-interactive escape hatch surfaced when `init` needs to prompt.
-_INIT_HINT = "Pass --yes to accept the defaults, or provide the fields as options."
+#: Non-interactive escape hatch surfaced when `create` needs to prompt.
+_CREATE_HINT = "Pass --yes to accept the defaults, or provide the fields as options."
 
 
 def get_default_package_manager():
@@ -28,7 +28,7 @@ def get_default_package_manager():
 
 
 class PackageManager(str, enum.Enum):
-    """The package managers supported by ``init``."""
+    """The package managers supported by ``create``."""
 
     pip = "pip"
     uv = "uv"
@@ -76,7 +76,7 @@ def render_template(template_source: str, app_arguments: str) -> str:
     return template_source.replace(APP_ARGUMENTS_PLACEHOLDER, app_arguments)
 
 
-def init_command(
+def create_command(
     ctx: typer.Context,
     path: Annotated[str, typer.Argument()] = ".",
     identifier: Annotated[
@@ -167,13 +167,13 @@ def init_command(
         ),
     ] = ["all"],
 ):
-    """Initializes an Arkitekt app
+    """Creates an Arkitekt app in this folder
 
     This command will create a new Arkitekt app in the current directory: an
     `app.py` file (or the --entrypoint you choose) that declares the app with
     `App(...)`, carrying its identifier, version, author, scopes and logo. That
     file is the whole app; there is no separate manifest. By default, the app will
-    be initialized with a simple hello world app, but you can choose from a
+    be created as a simple hello world app, but you can choose from a
     variety of templates.
 
     """
@@ -198,21 +198,21 @@ def init_command(
         if yes:
             identifier = default_identifier
         else:
-            require_tty("`init`", hint=_INIT_HINT)
+            require_tty("`create`", hint=_CREATE_HINT)
             identifier = str(typer.prompt("Your app identifier", default=default_identifier))
 
     if not author:
         if yes:
             author = getuser()
         else:
-            require_tty("`init`", hint=_INIT_HINT)
+            require_tty("`create`", hint=_CREATE_HINT)
             author = str(typer.prompt("Your name", default=getuser()))
 
     if not entrypoint:
         if yes:
             entrypoint = "app"
         else:
-            require_tty("`init`", hint=_INIT_HINT)
+            require_tty("`create`", hint=_CREATE_HINT)
             entrypoint = str(typer.prompt("Your app file", default="app"))
     entrypoint = entrypoint.removesuffix(".py")
 
@@ -222,7 +222,7 @@ def init_command(
                 f"Invalid version: {version}. Arkitekt versions need to follow semver."
             )
         else:
-            require_tty("`init`", hint=_INIT_HINT)
+            require_tty("`create`", hint=_CREATE_HINT)
             while not semver.Version.is_valid(version):
                 get_console(ctx).print(
                     "Arkitekt versions need to follow [link=https://semver.org]semver[/link]. Please choose a correct format (examples: 0.0.0, 0.1.0, 0.0.0-alpha.1)"
@@ -271,7 +271,7 @@ def init_command(
         if yes:
             should_overwrite = True
         else:
-            require_tty("`init`", hint=_INIT_HINT)
+            require_tty("`create`", hint=_CREATE_HINT)
             should_overwrite = typer.confirm(
                 "Entrypoint File already exists. Do you want to overwrite?"
             )
@@ -285,15 +285,12 @@ def init_command(
     run_hint = (
         "arkitekt run dev" if entrypoint == "app" else f"arkitekt run dev {entrypoint}"
     )
-    md = Panel(
-        f"📦 {identifier} ({version}) by {author} was successfully initialized in "
-        f"{os.path.basename(entrypoint_file)}\n\n"
-        + f"[not bold white]Start it with `{run_hint}`. We are excited to see what you come up with!",
-        border_style="green",
-        style="green",
+    by = f" · {escape(author)}" if author else ""
+    done(
+        console,
+        f"{escape(identifier)} {escape(version)}{by} was created in "
+        f"{escape(os.path.basename(entrypoint_file))}",
     )
-    console.print(md)
+    notice(console, f"Start it with `{run_hint}`. We are excited to see what you come up with!")
 
 
-init = typer.Typer(help=init_command.__doc__)
-init.command()(init_command)

@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt[elektro]>=3", "scipy>=1.13", "xarray>=2024.3.0", "numpy>=1.26"]
+# dependencies = ["arkitekt[rekuest,elektro]>=5", "scipy>=1.13", "xarray>=2024.3.0", "numpy>=1.26"]
 # ///
 """Offering: spike detection over a trace that already lives in elektro.
 

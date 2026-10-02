@@ -20,6 +20,8 @@ from arkitekt.cli.commands.app.run.dev import (
 from arkitekt.cli.target import import_target, parse_target
 from rich.console import Console
 
+from ..fakes import recording_connect
+
 
 def test_deep_mode_reloads_the_entrypoint_even_when_only_a_dependency_changed() -> None:
     assert modules_to_reload({"mypkg.helpers"}, "app", deep=True) == ["mypkg.helpers", "app"]
@@ -56,10 +58,7 @@ def test_a_reload_runs_the_new_app_with_the_same_connection_flags(tmp_path, monk
     """The App is looked up again after a reload; the flags go to the runner each time."""
     runs = []
 
-    async def fake_arun(app, **options):
-        runs.append((app, options))
-
-    monkeypatch.setattr("arkitekt.runtime.arun", fake_arun)
+    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect(runs))
     monkeypatch.syspath_prepend(str(tmp_path))
     entry = tmp_path / "devreloaded.py"
     _declare(entry, "before")
@@ -84,6 +83,36 @@ def test_a_reload_runs_the_new_app_with_the_same_connection_flags(tmp_path, monk
     assert all(options == {"url": "http://x"} for _, options in runs)
 
 
+def test_a_failure_the_user_can_act_on_is_one_line_in_the_dev_loop(tmp_path, monkeypatch):
+    errors = pytest.importorskip("rekuest.agents.transport.errors")
+
+    async def busy(run):
+        raise errors.AgentIsAlreadyBusy("busy")
+
+    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], during=busy))
+    monkeypatch.syspath_prepend(str(tmp_path))
+    entry = tmp_path / "devbusy.py"
+    _declare(entry, "busy-app")
+    target = parse_target("devbusy", str(tmp_path))
+    out = io.StringIO()
+    console = Console(file=out, width=200)
+
+    async def scenario():
+        run = _start(console, import_target(target), target, {}, "initial")
+        assert run is not None
+        await asyncio.wait([run])
+        await asyncio.sleep(0)  # the done-callback reports
+
+    try:
+        asyncio.run(scenario())
+    finally:
+        sys.modules.pop("devbusy", None)
+
+    assert "Another instance of this app is already connected" in out.getvalue()
+    assert "--force" in out.getvalue()
+    assert "Traceback" not in out.getvalue()
+
+
 def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
     from typer.testing import CliRunner
 
@@ -104,7 +133,7 @@ def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
     assert result.exit_code == 0, result.output
     assert seen["target"].module == "app"
     assert seen["work_dir"] == str(app_dir)
-    assert seen["options"] == {"url": "http://u", "no_cache": True}
+    assert seen["options"] == {"url": "http://u", "reauth": True}
     assert seen["context"] is None
 
 

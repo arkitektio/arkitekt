@@ -1,6 +1,5 @@
 import logging
 import os
-from hashlib import sha256
 from typing import Optional
 
 from fakts.cache.file import FileCache, ensure_private_dir
@@ -11,62 +10,82 @@ from fakts.grants.remote.authorizers.device_code import (
     ClientKind,
     DeviceCodeAuthorizer,
     DeviceCodeHook,
-    display_in_terminal,
 )
 from fakts.grants.remote.authorizers.redeem import RedeemAuthorizer
 from fakts.grants.remote.authorizers.static import StaticAuthorizer
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts.mesh import MeshOptions, MeshProxy
-from fakts.models import Manifest
+from fakts.models import ActiveFakts, Manifest
 from fakts.protocols import FaktsCache
-from platformdirs import user_state_dir
 
 from arkitekt.app.options import ConnectionOptions
-from arkitekt.constants import APP_AUTHOR, APP_NAME
+from arkitekt.app.sessions import session_path
+from arkitekt.app.terminal import logged_in, login_prompt
+from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 logger = logging.getLogger(__name__)
 
 
 def _cache_path(manifest: Manifest, url: str) -> str:
-    """Where this app's session lives: one private per-user directory.
-
-    It follows the user, beside the device id that already uses platformdirs,
-    never the working directory: the same app run from two directories is one
-    app with one session.
-
-    The url is in the *filename*, not only in the cache's `hash=` binding.
-    Without it, one app pointed at two servers (a lab and a local stack)
-    would collide on one file, and since a different url invalidates the
-    hash, each run would evict the other's session -- turning a shared path
-    into a device-code prompt on every single start.
-    """
-    url_key = sha256(url.encode()).hexdigest()[:6]
-    name = f"{manifest.identifier}-{manifest.version}-{url_key}_fakts_cache.json"
-    return os.path.join(user_state_dir(APP_NAME, APP_AUTHOR), "cache", name)
+    """Where this app's session lives (see :func:`arkitekt.app.sessions.session_path`)."""
+    return session_path(manifest.identifier, manifest.version, url)
 
 
 def _build_cache(
-    manifest: Manifest, url: str, no_cache: bool = False
+    manifest: Manifest, url: str, skip_cache: bool = False, reauth: bool = False
 ) -> FaktsCache:
     """Cache the granted session per app and per server.
 
     Under fakts protocol v2 this file holds a live, rotating refresh token,
     not just configuration — so an app without a cache re-authenticates on
-    every start.
+    every start. ``skip_cache`` keeps the session in memory only; ``reauth``
+    ignores the cached session but still caches the new one.
     """
-    if no_cache:
+    if skip_cache:
         return NoCache()
 
     cache_file = _cache_path(manifest, url)
     ensure_private_dir(os.path.dirname(cache_file))
 
-    return FileCache(cache_file=cache_file, hash=manifest.hash() + url)
+    cache = FileCache(cache_file=cache_file, hash=manifest.hash() + url)
+    return ReauthCache(cache=cache) if reauth else cache
+
+
+class ReauthCache(FaktsCache):
+    """A cache that hides what it held until this run has written to it.
+
+    The first load misses, so the grant runs and a fresh login happens; its
+    result is written through, and from then on every read and write goes to
+    the wrapped cache as usual -- fakts re-reads the cache mid-run to adopt
+    sibling rotations and to refuse stale writes, which must keep working.
+    Nothing is deleted up front: a login that fails leaves the old session.
+    """
+
+    def __init__(self, cache: FaktsCache) -> None:
+        self.cache = cache
+        self.written = False
+
+    async def aload(self) -> ActiveFakts | None:
+        """Miss until this run wrote a session, then read through."""
+        if not self.written:
+            return None
+        return await self.cache.aload()
+
+    async def aset(self, value: ActiveFakts) -> None:
+        """Write through, and stop hiding the cache."""
+        await self.cache.aset(value)
+        self.written = True
+
+    async def areset(self) -> None:
+        """Reset the wrapped cache."""
+        await self.cache.areset()
 
 
 def build_device_code_fakts(
     manifest: Manifest,
     url: str,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     allow_insecure_transport: bool = False,
@@ -82,7 +101,9 @@ def build_device_code_fakts(
         manifest=manifest,
         open_browser=not headless,
         requested_client_kind=ClientKind.DEVELOPMENT,
-        device_code_hook=device_code_hook if device_code_hook else display_in_terminal,
+        # Ours, not fakts' boxed one: a run asks in the look of the rest of it.
+        device_code_hook=device_code_hook or login_prompt(opened_browser=not headless),
+        granted_hook=logged_in,
         allow_insecure_transport=allow_insecure_transport,
         # Only a node of our own needs a key to join with; a proxy is already on the mesh.
         request_auth_key=isinstance(mesh, MeshOptions) and mesh.requests_key(),
@@ -94,7 +115,7 @@ def build_device_code_fakts(
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
         ),
         manifest=manifest,
-        cache=_build_cache(manifest, url, no_cache),
+        cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
     )
@@ -104,7 +125,8 @@ def build_redeem_fakts(
     manifest: Manifest,
     redeem_token: str,
     url: str,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     allow_insecure_transport: bool = False,
     mesh: MeshOptions | MeshProxy | None = None,
 ) -> Fakts:
@@ -123,7 +145,7 @@ def build_redeem_fakts(
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
         ),
         manifest=manifest,
-        cache=_build_cache(manifest, url, no_cache),
+        cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
     )
@@ -133,7 +155,8 @@ def build_token_fakts(
     manifest: Manifest,
     token: str,
     url: str,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     allow_insecure_transport: bool = False,
     mesh: MeshOptions | MeshProxy | None = None,
 ) -> Fakts:
@@ -156,7 +179,7 @@ def build_token_fakts(
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
         ),
         manifest=manifest,
-        cache=_build_cache(manifest, url, no_cache),
+        cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
     )
@@ -210,11 +233,43 @@ def resolve_mesh(mesh: MeshOptions | MeshProxy | bool | None) -> MeshOptions | M
     return mesh
 
 
+_REAUTH_ON = ("1", "true", "yes", "on")
+_REAUTH_OFF = ("", "0", "false", "no", "off")
+
+
+def reauth_from_env() -> bool:
+    """Whether ``ARKITEKT_REAUTH`` asks this run to log in again.
+
+    The fresh session is still cached, so the next run without the variable
+    reuses it (``skip_cache`` is the one that caches nothing).
+
+    Raises:
+        ValueError: ``ARKITEKT_REAUTH`` is set to something unrecognised -- a
+            typo there would otherwise silently keep the old session.
+    """
+    value = os.getenv("ARKITEKT_REAUTH", "").strip().lower()
+    if value in _REAUTH_ON:
+        return True
+    if value in _REAUTH_OFF:
+        return False
+    raise ValueError(
+        f"ARKITEKT_REAUTH={value!r} is not understood: use 1 to log in again, 0 (or unset) "
+        f"to reuse the cached session."
+    )
+
+
+def resolve_url(url: Optional[str] = None) -> str:
+    """The fakts server a run connects to: what is passed, then ``$FAKTS_URL``,
+    then the public deployment."""
+    return url or os.getenv("FAKTS_URL") or DEFAULT_ARKITEKT_URL
+
+
 def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
     """Build the fakts a run authenticates through, choosing the grant.
 
     Which grant applies is decided here, next to the three builders, rather than
     in the runtime: what is passed wins, then the environment, then a device code.
+    ``reauth`` (or ``ARKITEKT_REAUTH=1``) logs in again and caches the result.
 
     Args:
         manifest: What the app tells the server it is, node id already resolved.
@@ -223,29 +278,35 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
     Returns:
         The fakts, not yet entered.
     """
-    from arkitekt.constants import DEFAULT_ARKITEKT_URL
-
-    url = options.url or os.getenv("FAKTS_URL") or DEFAULT_ARKITEKT_URL
+    url = resolve_url(options.url)
     token = options.token or os.getenv("FAKTS_TOKEN")
     redeem_token = options.redeem_token or os.getenv("FAKTS_REDEEM_TOKEN")
     mesh = resolve_mesh(options.mesh)
+    reauth = options.reauth or reauth_from_env()
 
     if token:
         return build_token_fakts(
-            manifest=manifest, token=token, url=url, no_cache=options.no_cache, mesh=mesh
+            manifest=manifest,
+            token=token,
+            url=url,
+            skip_cache=options.skip_cache,
+            reauth=reauth,
+            mesh=mesh,
         )
     if redeem_token:
         return build_redeem_fakts(
             manifest=manifest,
             redeem_token=redeem_token,
             url=url,
-            no_cache=options.no_cache,
+            skip_cache=options.skip_cache,
+            reauth=reauth,
             mesh=mesh,
         )
     return build_device_code_fakts(
         manifest=manifest,
         url=url,
-        no_cache=options.no_cache,
+        skip_cache=options.skip_cache,
+        reauth=reauth,
         headless=options.headless,
         device_code_hook=options.device_code_hook,
         mesh=mesh,

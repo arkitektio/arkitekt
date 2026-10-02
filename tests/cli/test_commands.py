@@ -7,7 +7,7 @@ import pytest
 from typer.testing import CliRunner
 
 from arkitekt import App
-from arkitekt.cli.commands.app.init.main import render_app_arguments, render_template
+from arkitekt.cli.commands.app.create.main import render_app_arguments, render_template
 from arkitekt.cli.constants import compile_templates
 from arkitekt.cli.main import cli_app
 from arkitekt.cli.utils import build_relative_dir
@@ -25,7 +25,7 @@ def test_init_uv():
         with patch("shutil.which") as mock_which, patch("subprocess.run") as mock_run:
             mock_which.return_value = "/usr/bin/uv"
 
-            result = runner.invoke(cli_app, ["init", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+            result = runner.invoke(cli_app, ["create", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
             if result.exit_code != 0:
                 print(result.output)
                 print(result.exception)
@@ -42,7 +42,7 @@ def test_init_uv():
 def test_init_yes():
     runner = CliRunner()
     with isolated_filesystem():
-        result = runner.invoke(cli_app, ["init", "--yes", "--package-manager", "pip"])
+        result = runner.invoke(cli_app, ["create", "--yes", "--package-manager", "pip"])
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -55,7 +55,7 @@ def test_init_path():
     runner = CliRunner()
     with isolated_filesystem():
         original_cwd = os.getcwd()
-        result = runner.invoke(cli_app, ["init", "myapp", "--package-manager", "pip", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"], input="\n")
+        result = runner.invoke(cli_app, ["create", "myapp", "--package-manager", "pip", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"], input="\n")
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -75,7 +75,7 @@ def test_init_default_uv():
         with patch("shutil.which") as mock_which, patch("subprocess.run") as mock_run:
             mock_which.return_value = "/usr/bin/uv"
 
-            result = runner.invoke(cli_app, ["init", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+            result = runner.invoke(cli_app, ["create", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
 
             assert result.exit_code == 0
             assert mock_run.call_count == 2
@@ -88,7 +88,7 @@ def test_init_default_pip():
         with patch("shutil.which") as mock_which:
             mock_which.return_value = None
 
-            result = runner.invoke(cli_app, ["init", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+            result = runner.invoke(cli_app, ["create", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
 
             assert result.exit_code == 0
             assert os.path.exists("app.py")
@@ -101,7 +101,7 @@ def test_init_uv_not_installed():
         with patch("shutil.which") as mock_which:
             mock_which.return_value = None
 
-            result = runner.invoke(cli_app, ["init", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+            result = runner.invoke(cli_app, ["create", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
             assert result.exit_code != 0
             assert "uv is not installed" in result.output
 
@@ -117,7 +117,7 @@ def test_init_work_dir(tmp_path):
 
     result = runner.invoke(cli_app, [
         "--work-dir", str(tmp_path),
-        "init",
+        "create",
         "--identifier", "com.workdir.app",
         "--version", "0.1.0",
         "--author", "tester",
@@ -145,7 +145,7 @@ def test_init_subdir_work_dir(tmp_path):
 
     result = runner.invoke(cli_app, [
         "--work-dir", str(tmp_path),
-        "init", "mysubapp",
+        "create", "mysubapp",
         "--identifier", "com.sub.app",
         "--version", "0.1.0",
         "--author", "tester",
@@ -169,7 +169,7 @@ def test_init_subdir_work_dir(tmp_path):
 def test_kabinet_init():
     runner = CliRunner()
     with isolated_filesystem():
-        runner.invoke(cli_app, ["init", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+        runner.invoke(cli_app, ["create", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
 
         result = runner.invoke(cli_app, ["plugin", "init", "--flavour", "vanilla", "--devcontainer", "--arkitekt-version", "0.0.1"])
         if result.exit_code != 0:
@@ -187,7 +187,7 @@ def test_kabinet_init():
 def test_kabinet_init_uv():
     runner = CliRunner()
     with isolated_filesystem():
-        runner.invoke(cli_app, ["init", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+        runner.invoke(cli_app, ["create", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
 
         result = runner.invoke(cli_app, ["plugin", "init", "--flavour", "uv_flavour", "--devcontainer", "--arkitekt-version", "0.0.1"])
         if result.exit_code != 0:
@@ -204,7 +204,7 @@ def test_kabinet_init_uv():
 def test_kabinet_flavour_commands():
     runner = CliRunner()
     with isolated_filesystem():
-        runner.invoke(cli_app, ["init", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+        runner.invoke(cli_app, ["create", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
 
         result = runner.invoke(cli_app, ["plugin", "flavour", "add", "--flavour", "gpu", "--description", "GPU flavour"], input="n\n")
         if result.exit_code != 0:
@@ -236,7 +236,7 @@ def test_kabinet_init_work_dir(tmp_path):
 
     runner.invoke(cli_app, [
         "--work-dir", str(tmp_path),
-        "init",
+        "create",
         "--identifier", "com.test.app",
         "--version", "0.0.1",
         "--author", "me",
@@ -281,7 +281,7 @@ def _import_file(path, name):
 def test_every_template_scaffolds_an_importable_app(tmp_path, template):
     result = CliRunner().invoke(cli_app, [
         "--work-dir", str(tmp_path),
-        "init",
+        "create",
         "--identifier", "com.example.thing",
         "--version", "1.2.3",
         "--author", "Jane O'Neil",
@@ -307,7 +307,7 @@ def test_every_template_scaffolds_an_importable_app(tmp_path, template):
 
 def test_the_scaffolded_app_is_what_the_commands_find(tmp_path):
     result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "init", "--yes", "--identifier", "com.found.app",
+        "--work-dir", str(tmp_path), "create", "--yes", "--identifier", "com.found.app",
         "--package-manager", "pip",
     ])
     assert result.exit_code == 0, result.output
@@ -338,6 +338,6 @@ def test_app_arguments_quote_anything():
 
 
 def test_init_has_no_manifest_options():
-    result = CliRunner().invoke(cli_app, ["init", "--help"])
+    result = CliRunner().invoke(cli_app, ["create", "--help"])
 
     assert "--overwrite-manifest" not in result.output

@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt>=3", "koil>=3.3.4", "numpy>=1.26"]
+# dependencies = ["arkitekt[rekuest]>=5", "koil>=3.3.4", "numpy>=1.26"]
 # ///
 """Stateful: a simulated microscope stage others can watch and drive.
 

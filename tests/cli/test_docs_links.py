@@ -16,19 +16,22 @@ def test_routes_build_on_base_url():
     """Every per-command route is derived from the configurable base URL."""
     assert docs.CLI_DOCS_BASE.startswith(docs.DOCS_BASE_URL)
     for route in (
-        docs.INIT_DOCS,
+        docs.CREATE_DOCS,
         docs.RUN_DOCS,
         docs.GEN_DOCS,
         docs.PLUGIN_DOCS,
         docs.INSPECT_DOCS,
         docs.CALL_DOCS,
+        docs.SELF_DOCS,
+        docs.MESH_DOCS,
+        docs.SESSION_DOCS,
     ):
         assert route.startswith(docs.CLI_DOCS_BASE)
 
 
 def test_help_epilog_renders_a_link():
-    epilog = docs.help_epilog(docs.INIT_DOCS)
-    assert docs.INIT_DOCS in epilog
+    epilog = docs.help_epilog(docs.CREATE_DOCS)
+    assert docs.CREATE_DOCS in epilog
     assert "[link=" in epilog
 
 
@@ -36,7 +39,7 @@ def test_help_epilog_renders_a_link():
     "args",
     [
         # SDK commands live at the root.
-        ["init"],
+        ["create"],
         ["run"],
         ["gen"],
         ["inspect"],
@@ -45,6 +48,9 @@ def test_help_epilog_renders_a_link():
         ["plugin"],
         ["mesh"],
         ["self"],
+        ["login"],
+        ["logout"],
+        ["status"],
     ],
 )
 def test_help_includes_docs_link(args):

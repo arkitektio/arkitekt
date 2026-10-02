@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#   "arkitekt[mikro]>=3",
+#   "arkitekt[rekuest,mikro]>=5",
 #   "scipy>=1.13",
 #   "xarray>=2024.3.0",
 #   "numpy>=1.26",

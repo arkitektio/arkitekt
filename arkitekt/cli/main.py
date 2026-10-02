@@ -12,22 +12,24 @@ except ImportError:
 from arkitekt.cli.app import cli_app
 from arkitekt.cli.docs import (
     CALL_DOCS,
+    CREATE_DOCS,
     GEN_DOCS,
-    INIT_DOCS,
     INSPECT_DOCS,
     MESH_DOCS,
     PLUGIN_DOCS,
     RUN_DOCS,
     SELF_DOCS,
+    SESSION_DOCS,
     help_epilog,
 )
 from arkitekt.cli.commands.app.call.main import call
 from arkitekt.cli.commands.app.gen.main import gen
-from arkitekt.cli.commands.app.init.main import init_command
+from arkitekt.cli.commands.app.create.main import create_command
 from arkitekt.cli.commands.app.inspect.main import inspect
 from arkitekt.cli.commands.app.run.main import run
 from arkitekt.cli.commands.mesh.main import mesh
 from arkitekt.cli.commands.self.main import self_group
+from arkitekt.cli.commands.session.main import login, logout, status
 from arkitekt.cli.commands.plugin.main import plugin
 
 # Mount every group onto the Typer root, then build the public click entry point
@@ -37,9 +39,15 @@ from arkitekt.cli.commands.plugin.main import plugin
 # construction and deployment live in konstruktor
 # (https://github.com/arkitektio/konstruktor), not here.
 
-# `init` is a single leaf command (not a group), so register it directly rather than
+# Everything is mounted, and stays callable; which of it `--help` lists depends on
+# whether the work dir holds an app (see `FolderGroup` in cli/app.py).
+
+# `create` is a single leaf command (not a group), so register it directly rather than
 # as a sub-Typer (add_typer would turn its positional PATH arg into a subcommand slot).
-cli_app.command("init", epilog=help_epilog(INIT_DOCS))(init_command)
+cli_app.command("create", epilog=help_epilog(CREATE_DOCS))(create_command)
+cli_app.command("login", epilog=help_epilog(SESSION_DOCS))(login)
+cli_app.command("logout", epilog=help_epilog(SESSION_DOCS))(logout)
+cli_app.command("status", epilog=help_epilog(SESSION_DOCS))(status)
 cli_app.add_typer(run, name="run", epilog=help_epilog(RUN_DOCS))
 cli_app.add_typer(gen, name="gen", epilog=help_epilog(GEN_DOCS))
 cli_app.add_typer(inspect, name="inspect", epilog=help_epilog(INSPECT_DOCS))

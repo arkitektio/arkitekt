@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt[mikro]>=3", "numpy>=1.26", "scikit-image>=0.24", "xarray>=2024.3.0"]
+# dependencies = ["arkitekt[rekuest,mikro]>=5", "numpy>=1.26", "scikit-image>=0.24", "xarray>=2024.3.0"]
 # ///
 """An analysis app says what its actions do to the world.
 

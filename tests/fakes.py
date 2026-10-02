@@ -1,6 +1,7 @@
 """Fake services and clients for the app and runtime tests: no fakts, no server."""
 
-from typing import Annotated, Any, List, Optional
+from contextlib import asynccontextmanager
+from typing import Annotated, Any, AsyncIterator, Dict, List, Optional
 
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.provider import Provider
@@ -142,3 +143,95 @@ def RekuestProvider(log: Optional[List[str]] = None) -> "Provider[FakeAgent]":  
         return FakeAgent(client, log)
 
     return rekuest_agent
+
+
+class RecordedRun:
+    """Stands in for the runtime a CLI command connects: records what it is asked to run."""
+
+    def __init__(
+        self,
+        app: Any,
+        options: Dict[str, Any],
+        runs: List[Any],
+        listener: Any = None,
+        fakts: Any = None,
+        during: Any = None,
+    ) -> None:
+        self.app = app
+        self.options = options
+        self.runs = runs
+        self.listener = listener
+        self.fakts = fakts
+        self.during = during
+
+    async def arun(self, context: Any = None) -> None:  # noqa: ANN401
+        """Record the run as the user asked for it; then do what the test wants of it."""
+        asked = {**self.options, "context": context} if context is not None else self.options
+        self.runs.append((self.app, asked))
+        if self.during is not None:
+            await self.during(self)
+
+
+def recording_connect(runs: List[Any], fakts: Any = None, during: Any = None) -> Any:  # noqa: ANN401
+    """A stand-in for ``arkitekt.runtime.connect`` that connects nothing.
+
+    ``runs`` collects ``(app, options)`` of every run, the options being what the
+    user passed: what the CLI adds for itself (``provide``, the connection
+    listener) is kept apart, on the yielded :class:`RecordedRun`. ``during`` is
+    awaited with it inside the run, to raise or to drive the listener.
+    """
+
+    @asynccontextmanager
+    async def fake_connect(
+        app: Any, provide: bool = False, connection_listener: Any = None, **options: Any  # noqa: ANN401
+    ) -> AsyncIterator[RecordedRun]:
+        yield RecordedRun(app, options, runs, listener=connection_listener, fakts=fakts, during=during)
+
+    return fake_connect
+
+
+def write_session(
+    identifier: str,
+    version: str,
+    url: str,
+    logged_in_at: Optional[float] = None,
+    refreshed_at: Optional[float] = None,
+    deployment: str = "Lab",
+    manifest_hash: str = "0" * 64,
+) -> str:
+    """Save a session as a run would have, and return its path. Its tokens are
+    recognisable, so a test can tell that none of them is ever shown."""
+    import os
+    import time
+
+    from arkitekt.app.sessions import session_path
+    from fakts.cache.file import CacheFile
+
+    now = time.time()
+    cached = CacheFile.model_validate(
+        {
+            "fakts": {
+                "self": {
+                    "deployment_name": deployment,
+                    "alias": {"id": "a", "host": "h", "port": 1, "ssl": True, "path": "p", "challenge": "c", "kind": "k"},
+                },
+                "auth": {
+                    "client_id": "client",
+                    "token_endpoint": f"{url}/o/token/",
+                    "refresh_token": "SECRET-REFRESH",
+                    "access_token": "SECRET-ACCESS",
+                    "chain_started_at": now if logged_in_at is None else logged_in_at,
+                    "refresh_issued_at": now if refreshed_at is None else refreshed_at,
+                },
+                "instances": {},
+                "statuses": {},
+            },
+            "created": "2026-10-01T10:00:00Z",
+            "hash": manifest_hash + url,
+        }
+    )
+    path = session_path(identifier, version, url)
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    with open(path, "w", encoding="utf-8") as file:
+        file.write(cached.model_dump_json())
+    return path

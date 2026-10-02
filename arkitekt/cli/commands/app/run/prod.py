@@ -2,9 +2,10 @@ import asyncio
 
 import typer
 
-from arkitekt import runtime
+from arkitekt.app.fakts import resolve_url
 from arkitekt.cli.context import load_context
 from arkitekt.cli.errors import cli_error
+from arkitekt.cli.failures import report_failure
 from arkitekt.cli.options import (
     ContextFileOption,
     ContextOption,
@@ -12,13 +13,15 @@ from arkitekt.cli.options import (
     HeadlessOption,
     LogLevel,
     LogLevelOption,
-    NoCacheOption,
+    ReauthOption,
+    SkipCacheOption,
     RedeemTokenOption,
     TokenOption,
     UrlOption,
 )
+from arkitekt.cli.running import arun_app
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.ui import construct_run_panel
+from arkitekt.cli.ui import construct_app_banner
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -35,7 +38,8 @@ def prod(
     force: ForceOption = False,
     headless: HeadlessOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-    no_cache: NoCacheOption = False,
+    skip_cache: SkipCacheOption = False,
+    reauth: ReauthOption = False,
     context: ContextOption = None,
     context_file: ContextFileOption = None,
 ) -> None:
@@ -50,19 +54,19 @@ def prod(
     configure_logging(log_level.value)
     app = load_app_or_exit(ctx, target)
     options = runner_options(ctx)
-    # Resolved before the run panel and the connection: an App that declares an
+    # Resolved before the banner and the connection: an App that declares an
     # app context does not run without one, and that is a prompt-time error.
     loaded = load_context(app, context, context_file, get_work_dir(ctx))
-    if loaded is not None:
-        options["context"] = loaded
 
-    console.print(construct_run_panel(app))
+    console.print(construct_app_banner(app, resolve_url(options.get("url"))))
 
     try:
-        # Through the module, so the runner stays replaceable (tests patch it).
-        asyncio.run(runtime.arun(app, **options))
+        asyncio.run(arun_app(console, app, options, context=loaded))
     except KeyboardInterrupt:
         pass
-    except Exception:
+    except Exception as e:
+        # A failure the user can act on is one line; anything else is a crash.
+        if report_failure(console, e):
+            raise typer.Exit(code=1) from None
         console.print_exception()
         cli_error("App crashed while running. See the traceback above.")

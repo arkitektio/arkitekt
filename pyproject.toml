@@ -7,7 +7,7 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "fakts>=5.2",
+    "fakts>=5.3",
     "koil>=3.3.4",
     "rath>=4",
     "click>=8.2.0",
@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=2.0.1",
+    "arkitekt-spec>=3.2",
 ]
 
 [project.optional-dependencies]
@@ -31,8 +31,10 @@ dependencies = [
 # an app needs one: rekuest for distributed mode (`run`), arkitekt-fastapi for
 # server mode (`serve`).
 rekuest = [
-    # The rekuest whose declaration layer is arkitekt-spec's (the 6.x line).
-    "rekuest>=7.1",
+    # The rekuest that speaks to the server and takt pair, on the runtime whose
+    # agent reports its connection (the CLI says when it is registered).
+    "rekuest>=8",
+    "arkitekt-runtime>=4.2",
 ]
 alpaka = [
     "alpaka>=3",
@@ -69,7 +71,7 @@ serve = [
 qt = [
     "qtpy>=2.4.3",
     # The Qt actifiers are the execution core's.
-    "arkitekt-runtime[qt]>=4.1.1",
+    "arkitekt-runtime[qt]>=4.2",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.
@@ -78,7 +80,7 @@ tqdm = [
 ]
 # Reach services over the hub's private mesh (a native mesh node, via fakts).
 mesh = [
-    "fakts[mesh]>=5.2",
+    "fakts[mesh]>=5.3",
 ]
 all = [
     # Self-referential extras keep `all` complete without duplicating (and drifting)
@@ -111,7 +113,7 @@ dev-dependencies = [
     "python-semantic-release>=9.21.1",
     "qtpy>=2.4.3",
     "numpy>=2",
-    "rekuest>=7.1",
+    "rekuest>=8",
     "kabinet>=4",
     "alpaka>=3",
     "kraph>=4",
@@ -197,6 +199,7 @@ markers = [
     "qt: marks tests that require a running qt application",
     "cli: marks tests that require a running cli",
     "needs_docker: marks tests that require a running docker daemon",
+    "integration: marks tests that run an app against a real deployment (needs docker and konstruktor)",
 ]
 
 

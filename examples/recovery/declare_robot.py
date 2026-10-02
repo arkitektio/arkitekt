@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt>=3", "koil>=3.3.4"]
+# dependencies = ["arkitekt[rekuest]>=5", "koil>=3.3.4"]
 # ///
 """A robot, whose actions can't be taken back.
 

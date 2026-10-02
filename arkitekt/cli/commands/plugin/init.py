@@ -15,7 +15,7 @@ from arkitekt.cli.target import (
 )
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.utils import create_arkitekt_folder, create_devcontainer_file
-from rich.panel import Panel
+from arkitekt.cli.ui import done, escape, notice
 
 import os
 import re
@@ -213,12 +213,15 @@ def init(
             app, flavour, dockerfile, devcontainer_path=os.path.join(work_dir, ".devcontainer")
         )
 
-    panel = Panel(
-        title=f"Created new flavour [bold]{flavour}[/bold]\n",
-        renderable=f"Builds for {', '.join(platforms)} (change `platforms:` in its config.yaml)\n"
-        + "You can now edit the Dockerfile and add selectors to the config.yaml file\n"
-        + "To learn more about selectors and how flavours work, please visit [link=https://arkitekt.live]https://arkitekt.live[/link]",
-        style="green",
+    console = get_console(ctx)
+    done(
+        console,
+        f"Created new flavour [bold]{escape(flavour)}[/bold]",
+        f"builds for {escape(', '.join(platforms))} (change `platforms:` in its config.yaml)",
     )
-
-    get_console(ctx).print(panel)
+    notice(console, "You can now edit the Dockerfile and add selectors to the config.yaml file")
+    notice(
+        console,
+        "To learn more about selectors and how flavours work, please visit "
+        "[link=https://arkitekt.live]https://arkitekt.live[/link]",
+    )

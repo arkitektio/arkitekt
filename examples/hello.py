@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt>=3"]
+# dependencies = ["arkitekt[rekuest]>=5"]
 # ///
 """Offering: the smallest possible app — one action, offered until you stop it.
 

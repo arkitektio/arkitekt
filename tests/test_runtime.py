@@ -269,3 +269,17 @@ async def test_a_run_writes_nothing_into_the_working_directory(
         pass
 
     assert list(tmp_path.iterdir()) == []
+
+
+@pytest.mark.asyncio
+async def test_a_run_hands_its_connection_listener_to_its_agent() -> None:
+    async def listener(state: Any) -> None:  # noqa: ANN401
+        return None
+
+    async with connect(picture_app(), provide=True, connection_listener=listener) as rt:
+        assert rt.agent is not None
+        assert rt.agent.connection_listener is listener
+
+    # None given: the agent is left as its provider built it.
+    async with connect(picture_app(), provide=True) as rt:
+        assert not hasattr(rt.agent, "connection_listener")

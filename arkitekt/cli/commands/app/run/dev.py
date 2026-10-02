@@ -5,7 +5,6 @@ import asyncio
 from pathlib import Path
 
 from watchfiles import awatch, Change
-from rich.panel import Panel
 from rich.console import Console
 from watchfiles.filters import PythonFilter
 import os
@@ -13,10 +12,19 @@ import sys
 import inspect
 from typing import Annotated, Any, Iterable, List, Optional, Set, Tuple
 import typer
-from arkitekt import runtime
+from arkitekt.app.fakts import resolve_url
 from arkitekt.cli.context import load_context
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.ui import construct_changes_group, construct_app_group
+from arkitekt.cli.failures import report_failure
+from arkitekt.cli.running import arun_app
+from arkitekt.cli.ui import (
+    construct_app_banner,
+    construct_changes_group,
+    done,
+    escape,
+    fail,
+    notice,
+)
 from arkitekt.cli.commands.app.run.utils import runner_options
 from arkitekt.cli.options import (
     ContextFileOption,
@@ -28,7 +36,8 @@ from arkitekt.cli.options import (
     ForceOption,
     HeadlessOption,
     LogLevelOption,
-    NoCacheOption,
+    ReauthOption,
+    SkipCacheOption,
 )
 from arkitekt.cli.target import (
     DEFAULT_TARGET,
@@ -165,17 +174,16 @@ def callback(console: Console, future: asyncio.Task[None]):
         has_exception = future.exception()
 
         if not has_exception:
-            panel = Panel(
-                "App finished running", style="bold yellow", border_style="yellow"
-            )
-            console.print(panel)
+            done(console, "App finished running")
         else:
+            # A failure the user can act on is one line; anything else is a crash.
+            if report_failure(console, has_exception):
+                return
             try:
                 raise has_exception
             except Exception:
                 console.print_exception()
-                panel = Panel("Error running App", style="bold red", border_style="red")
-                console.print(panel)
+                fail(console, "Error running App")
 
 
 def _start(
@@ -198,16 +206,14 @@ def _start(
     """
     try:
         app = require_app(module, target.attribute)
-        console.print(Panel(construct_app_group(app), style="bold green", border_style="green"))
+        console.print(construct_app_banner(app, resolve_url(options.get("url"))))
         loaded = load_context(app, context, context_file, work_dir)
-        run_options = {**options, "context": loaded} if loaded is not None else options
-        # Through the module, so the runner stays replaceable (tests patch it).
-        run = asyncio.create_task(runtime.arun(app, **run_options))
+        run = asyncio.create_task(arun_app(console, app, options, context=loaded))
         run.add_done_callback(partial(callback, console))
         return run
     except Exception:
         console.print_exception()
-        console.print(Panel(f"Error starting {what} App", style="bold red", border_style="red"))
+        fail(console, f"Error starting {what} App")
         return None
 
 
@@ -215,20 +221,20 @@ async def _stop(console: Console, run: Optional[asyncio.Task[None]]) -> None:
     if run is None or run.done():
         return
     run.cancel()
-    console.print(Panel("Cancelling latest version", style="bold yellow", border_style="yellow"))
+    notice(console, "Cancelling latest version")
     try:
         await run
     except asyncio.CancelledError:
         pass
 
 
-def _intro(console: Console, deep: bool) -> None:
-    message = "[not bold white]This is a development tool for arkitekt apps. It will watch your app for changes and reload it when it detects a change. It will also print out the current state of your app.[/]"
-    if deep:
-        message += "\n\n - [not bold white][b]Deep mode[/] is enabled. This will watch all your installed packages for changes and reload them if they are changed.[/]"
-    else:
-        message += "\n\n - [not bold white][b]Deep mode[/] is disabled. This will only watch your entrypoint for changes.[/]"
-    console.print(Panel(message, style="bold green", border_style="green", title="Arkitekt Dev Mode"))
+def _intro(console: Console, target: Target, deep: bool) -> None:
+    watching = (
+        "all your installed packages"
+        if deep
+        else f"{escape(os.path.basename(target.file))} (--deep watches installed packages too)"
+    )
+    notice(console, "Dev mode", f"reloads on change, watching {watching}")
 
 
 async def run_dev(
@@ -248,18 +254,14 @@ async def run_dev(
     """
     options = options or {}
 
-    _intro(console, deep)
+    _intro(console, target, deep)
 
     module: Optional[ModuleType]
     try:
         module = import_target(target)
     except Exception:
         console.print_exception()
-        console.print(Panel(
-            f"Error while importing your app please fix your file {target.file} and save",
-            style="bold red",
-            border_style="red",
-        ))
+        fail(console, f"Error while importing your app, please fix {escape(target.file)} and save")
         module = None
 
     current_run = (
@@ -289,7 +291,7 @@ async def run_dev(
             if not changed:
                 continue
 
-        console.print(Panel(construct_changes_group(changes), style="bold blue", border_style="blue"))
+        console.print(construct_changes_group(changes))
         await _stop(console, current_run)
         current_run = None
 
@@ -302,11 +304,7 @@ async def run_dev(
                     module = sys.modules[target.module]
         except Exception:
             console.print_exception()
-            console.print(Panel(
-                "Reload unsucessfull please fix your app and save",
-                style="bold red",
-                border_style="red",
-            ))
+            fail(console, "Reload unsuccessful, please fix your app and save")
             continue
 
         current_run = _start(
@@ -326,23 +324,17 @@ def dev(
     target: TargetArgument = DEFAULT_TARGET,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
     token: TokenOption = None,
-    force: ForceOption = False,
     redeem_token: RedeemTokenOption = None,
+    force: ForceOption = False,
     headless: HeadlessOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-    no_cache: NoCacheOption = False,
+    skip_cache: SkipCacheOption = False,
+    reauth: ReauthOption = False,
     deep: Annotated[
         bool,
         typer.Option(
             "--deep",
-            help="Should we check the whole directory for changes and reload them when changes?",
-        ),
-    ] = False,
-    reauth: Annotated[
-        bool,
-        typer.Option(
-            "--reauth",
-            help="Force a fresh login: skip the fakts cache and re-run authentication.",
+            help="Also watch your installed packages, and reload the ones that change",
         ),
     ] = False,
     context: ContextOption = None,
@@ -363,14 +355,17 @@ def dev(
     except TargetError as e:
         cli_error(str(e))
 
-    asyncio.run(
-        run_dev(
-            console,
-            parsed,
-            work_dir,
-            options=runner_options(ctx, reauth=reauth),
-            deep=deep,
-            context=context,
-            context_file=context_file,
+    try:
+        asyncio.run(
+            run_dev(
+                console,
+                parsed,
+                work_dir,
+                options=runner_options(ctx),
+                deep=deep,
+                context=context,
+                context_file=context_file,
+            )
         )
-    )
+    except KeyboardInterrupt:
+        pass

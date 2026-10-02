@@ -20,7 +20,7 @@ plugin = typer.Typer(
     publish the image (`build`, `publish`), validate flavours (`validate`), and
     manage flavours/selectors. These commands operate on the app in the current
     working directory and therefore require an already-initialized app — run
-    `arkitekt init` first.
+    `arkitekt create` first.
     """,
 )
 
@@ -34,7 +34,7 @@ def plugin_callback(ctx: typer.Context) -> None:
     publish the image (`build`, `publish`), validate flavours (`validate`), and
     manage flavours/selectors. These commands operate on the app in the current
     working directory and therefore require an already-initialized app — run
-    `arkitekt init` first.
+    `arkitekt create` first.
     """
     # Flavours, builds and deployments live in the `.arkitekt` folder. The app
     # itself is not loaded here: only the commands that need its identity (`init`

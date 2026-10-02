@@ -5,7 +5,7 @@ from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.vars import get_console, get_work_dir
 import os
 import shlex
-from rich.panel import Panel
+from arkitekt.cli.ui import done, escape, step
 import subprocess
 import uuid
 
@@ -272,19 +272,16 @@ def build(
 
     flavours = get_flavours(base_dir=work_dir, select=flavour)
 
-    console.print(Panel(
-        "Starting to Build Containers for App [bold]{}[/bold]".format(manifest.identifier),
-        subtitle="Selected Flavours: {}".format(", ".join(flavours.keys())),
-    ))
+    step(
+        console,
+        f"Building containers for [bold]{escape(manifest.identifier)}[/bold]",
+        "flavours: " + escape(", ".join(flavours.keys())),
+    )
 
     build_run = str(uuid.uuid4())
 
     for key, inspected_flavour in flavours.items():
-        console.print(Panel(
-            "Building Flavour [bold]{}[/bold]".format(key),
-            subtitle="This may take a while...",
-            subtitle_align="right",
-        ))
+        step(console, f"Building flavour [bold]{escape(key)}[/bold]", "this may take a while...")
 
         platforms = list(platform) if platform else list(inspected_flavour.platforms)
 
@@ -316,8 +313,4 @@ def build(
             platforms=platforms,
         )
 
-        console.print(Panel(
-            "Built Flavour [bold]{}[/bold]".format(key),
-            subtitle="Build ID: {}".format(build_run),
-            subtitle_align="right",
-        ))
+        done(console, f"Built flavour [bold]{escape(key)}[/bold]", f"build {build_run}")

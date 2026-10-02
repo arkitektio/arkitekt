@@ -13,7 +13,7 @@ DOCS_BASE_URL = "https://arkitekt.live"
 CLI_DOCS_BASE = f"{DOCS_BASE_URL}/docs/cli"
 
 # --- Per-command documentation routes --------------------------------------
-INIT_DOCS = f"{CLI_DOCS_BASE}/init"
+CREATE_DOCS = f"{CLI_DOCS_BASE}/create"
 RUN_DOCS = f"{CLI_DOCS_BASE}/run"
 GEN_DOCS = f"{CLI_DOCS_BASE}/gen"
 INSPECT_DOCS = f"{CLI_DOCS_BASE}/inspect"
@@ -22,6 +22,8 @@ SELF_DOCS = f"{CLI_DOCS_BASE}/self"
 PLUGIN_DOCS = f"{CLI_DOCS_BASE}/plugin"
 
 MESH_DOCS = f"{CLI_DOCS_BASE}/mesh"
+#: `login`, `logout` and `status` share one page.
+SESSION_DOCS = f"{CLI_DOCS_BASE}/session"
 
 def help_epilog(url: str) -> str:
     """Render a Typer/rich epilogue that links to the hosted docs for a command.

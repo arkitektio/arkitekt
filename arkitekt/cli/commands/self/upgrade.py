@@ -22,7 +22,7 @@ from rich.table import Table
 from arkitekt.cli.errors import cli_error, confirm_or_abort
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.vars import get_console, get_work_dir
-from arkitekt.cli.commands.app.init.main import get_default_package_manager
+from arkitekt.cli.commands.app.create.main import get_default_package_manager
 from arkitekt.cli.target import infer_package_manager
 from .constants import ARKITEKT_PACKAGES
 

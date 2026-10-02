@@ -12,7 +12,15 @@ __all__ = [
 #: The command-line flags that change how a run connects. Only those the user
 #: actually passed reach the runner. ``--log-level`` is not one of them: it
 #: configures this process, which the command does before it runs anything.
-CONNECTION_OPTIONS = ("url", "token", "redeem_token", "force", "headless", "no_cache")
+CONNECTION_OPTIONS = (
+    "url",
+    "token",
+    "redeem_token",
+    "force",
+    "headless",
+    "skip_cache",
+    "reauth",
+)
 
 
 #: Where a value came from when it was not passed. Compared by name: Typer vendors
@@ -37,13 +45,7 @@ def explicit_options(ctx: typer.Context, names: Iterable[str]) -> Dict[str, Any]
     return explicit
 
 
-def runner_options(ctx: typer.Context, *, reauth: bool = False) -> Dict[str, Any]:
-    """The keyword arguments a run command hands to :func:`arkitekt.arun`.
-
-    The explicitly passed connection flags. ``reauth`` skips the fakts cache, so
-    a fresh login runs.
-    """
-    options = explicit_options(ctx, CONNECTION_OPTIONS)
-    if reauth:
-        options["no_cache"] = True
-    return options
+def runner_options(ctx: typer.Context) -> Dict[str, Any]:
+    """The keyword arguments a run command hands to :func:`arkitekt.arun`: the
+    explicitly passed connection flags."""
+    return explicit_options(ctx, CONNECTION_OPTIONS)

@@ -47,6 +47,8 @@ from arkitekt.app.snapshot import RunSnapshot
 from arkitekt.device_id import get_or_set_device_id
 
 if TYPE_CHECKING:
+    from arkitekt_runtime.agents.connection import ConnectionListener
+    from fakts.models import ActiveFakts, Manifest
     from koil import KoilFuture
 
 
@@ -214,6 +216,14 @@ class Runtime(KoiledModel, Generic[Ctx]):
         # Bound before entered: the agent reads `bound_app` while registering.
         agent.bound_app = self
         agent.force = self.options.force
+        # Only when given: an agent that takes no listener is left as it was built.
+        if self.options.connection_listener is not None:
+            try:
+                agent.connection_listener = self.options.connection_listener
+            except (AttributeError, ValueError):
+                # An agent of a runtime that predates the listener: the run goes
+                # on, it just has nobody to report its connection to.
+                logger.debug("%r takes no connection listener", type(agent).__name__)
         return agent
 
     # ------------------------------------------------------------------ #
@@ -253,7 +263,8 @@ class Runtime(KoiledModel, Generic[Ctx]):
                 if hasattr(client, "__aenter__"):
                     await client.__aenter__()
                     self._entered.append(client)
-            # After the clients: the agent's socket opens last and closes first.
+            # After the clients, so it closes first. Its socket opens only when it
+            # provides (`arun`): entering it connects nothing.
             if self.agent is not None and hasattr(self.agent, "__aenter__"):
                 await self.agent.__aenter__()
                 self._entered.append(self.agent)
@@ -412,10 +423,12 @@ def connect(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
+    connection_listener: Optional["ConnectionListener"] = None,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> Runtime[Ctx]:
@@ -442,10 +455,15 @@ def connect(
             Defaults to ``$FAKTS_TOKEN``.
         redeem_token: A token to provision a new app with. Defaults to
             ``$FAKTS_REDEEM_TOKEN``.
-        no_cache: Skip the fakts cache, and so authenticate again.
+        skip_cache: Neither read nor write the fakts cache: log in, and keep the
+            session in memory only.
+        reauth: Log in again even when a session is cached, and cache the new
+            one. Defaults to ``$ARKITEKT_REAUTH``.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
+        connection_listener: Told when the server acknowledges the app's agent and
+            when the link to it drops.
         device_id: This device's identity. Defaults to the machine's id.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
@@ -462,10 +480,12 @@ def connect(
             url=url,
             token=token,
             redeem_token=redeem_token,
-            no_cache=no_cache,
+            skip_cache=skip_cache,
+            reauth=reauth,
             headless=headless,
             device_code_hook=device_code_hook,
             force=force,
+            connection_listener=connection_listener,
             device_id=device_id,
             mesh=mesh,
         ),
@@ -481,10 +501,12 @@ def run(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
+    connection_listener: Optional["ConnectionListener"] = None,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
@@ -496,10 +518,12 @@ def run(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
+    connection_listener: Optional["ConnectionListener"] = None,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
@@ -512,10 +536,12 @@ def run(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
+    connection_listener: Optional["ConnectionListener"] = None,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None:
@@ -539,10 +565,15 @@ def run(
             Defaults to ``$FAKTS_TOKEN``.
         redeem_token: A token to provision a new app with. Defaults to
             ``$FAKTS_REDEEM_TOKEN``.
-        no_cache: Skip the fakts cache, and so authenticate again.
+        skip_cache: Neither read nor write the fakts cache: log in, and keep the
+            session in memory only.
+        reauth: Log in again even when a session is cached, and cache the new
+            one. Defaults to ``$ARKITEKT_REAUTH``.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
+        connection_listener: Told when the server acknowledges the app's agent and
+            when the link to it drops.
         device_id: This device's identity. Defaults to the machine's id.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
@@ -562,10 +593,12 @@ def run(
         url=url,
         token=token,
         redeem_token=redeem_token,
-        no_cache=no_cache,
+        skip_cache=skip_cache,
+        reauth=reauth,
         headless=headless,
         device_code_hook=device_code_hook,
         force=force,
+        connection_listener=connection_listener,
         device_id=device_id,
         mesh=mesh,
     )
@@ -583,10 +616,12 @@ async def arun(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
+    connection_listener: Optional["ConnectionListener"] = None,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
@@ -598,10 +633,12 @@ async def arun(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
+    connection_listener: Optional["ConnectionListener"] = None,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None: ...
@@ -614,10 +651,12 @@ async def arun(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
+    connection_listener: Optional["ConnectionListener"] = None,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
 ) -> None:
@@ -632,10 +671,15 @@ async def arun(
             Defaults to ``$FAKTS_TOKEN``.
         redeem_token: A token to provision a new app with. Defaults to
             ``$FAKTS_REDEEM_TOKEN``.
-        no_cache: Skip the fakts cache, and so authenticate again.
+        skip_cache: Neither read nor write the fakts cache: log in, and keep the
+            session in memory only.
+        reauth: Log in again even when a session is cached, and cache the new
+            one. Defaults to ``$ARKITEKT_REAUTH``.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
+        connection_listener: Told when the server acknowledges the app's agent and
+            when the link to it drops.
         device_id: This device's identity. Defaults to the machine's id.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
@@ -655,10 +699,12 @@ async def arun(
         url=url,
         token=token,
         redeem_token=redeem_token,
-        no_cache=no_cache,
+        skip_cache=skip_cache,
+        reauth=reauth,
         headless=headless,
         device_code_hook=device_code_hook,
         force=force,
+        connection_listener=connection_listener,
         device_id=device_id,
         mesh=mesh,
     )
@@ -666,4 +712,73 @@ async def arun(
         await runtime.arun(context=context)
 
 
-__all__ = ["Runtime", "connect", "run", "arun"]
+def run_manifest(app: App[Any], device_id: Optional[str] = None) -> "Manifest":
+    """The manifest a run of ``app`` sends: what the server is asked to approve.
+
+    A session is saved for exactly this manifest: an app declared differently
+    (another scope, another service, another device) logs in again. It is the
+    providing run's, so it carries what the app's provider requires too.
+
+    Args:
+        app: The app.
+        device_id: This device's identity. Defaults to the machine's id.
+
+    Returns:
+        The manifest.
+    """
+    return connect(app, provide=True, device_id=device_id)._prepare().manifest
+
+
+async def alogin(
+    app: App[Any],
+    *,
+    url: Optional[str] = None,
+    token: Optional[str] = None,
+    redeem_token: Optional[str] = None,
+    skip_cache: bool = False,
+    reauth: bool = False,
+    headless: bool = False,
+    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_id: Optional[str] = None,
+) -> "ActiveFakts":
+    """Log ``app`` in and cache the session, without connecting anything else.
+
+    What a run does first, on its own: no client is built and no agent, so a
+    service that is down does not stand in the way of logging in. It logs in as
+    the run would -- with the manifest the run sends, its provider's requirements
+    included -- so the session saved is the one the run finds.
+
+    Args:
+        app: The app to log in.
+        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
+            deployment.
+        token: A previously issued credential, ``client_id:refresh_token``.
+            Defaults to ``$FAKTS_TOKEN``.
+        redeem_token: A token to provision a new app with. Defaults to
+            ``$FAKTS_REDEEM_TOKEN``.
+        skip_cache: Neither read nor write the fakts cache.
+        reauth: Log in again even when a session is cached, and cache the new
+            one. Defaults to ``$ARKITEKT_REAUTH``.
+        headless: Print the device-code prompt instead of opening a browser.
+        device_code_hook: Called with the device code instead of the default prompt.
+        device_id: This device's identity. Defaults to the machine's id.
+
+    Returns:
+        The session the app is logged in with.
+    """
+    options = ConnectionOptions(
+        url=url,
+        token=token,
+        redeem_token=redeem_token,
+        skip_cache=skip_cache,
+        reauth=reauth,
+        headless=headless,
+        device_code_hook=device_code_hook,
+        device_id=device_id,
+    )
+    fakts = build_fakts(run_manifest(app, device_id=device_id), options)
+    async with fakts:
+        return await fakts.aload()
+
+
+__all__ = ["Runtime", "alogin", "connect", "run", "run_manifest", "arun"]

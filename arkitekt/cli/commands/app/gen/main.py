@@ -3,7 +3,6 @@ import typer
 
 from .watch import watch
 from .compile import compile
-from .init import init
 
 
 gen = typer.Typer(no_args_is_help=True)
@@ -25,4 +24,3 @@ def gen_callback(ctx: typer.Context) -> None:
 
 gen.command("watch")(watch)
 gen.command("compile")(compile)
-gen.command("init")(init)

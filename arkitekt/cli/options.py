@@ -1,7 +1,7 @@
 """Shared Typer option definitions.
 
-Connection options: `run dev|prod` and `call remote` all take the same fakts
-options. They describe how a run connects, so they go to the runner
+Connection options: `run dev|prod`, `call remote` and `login` take the same fakts
+options (`--force` is the agent's, so only a run has it). They describe how a run connects, so they go to the runner
 (:func:`arkitekt.connect` / :func:`arkitekt.arun`), never onto the App: the App is
 the user's declaration and the command line does not rewrite it.
 
@@ -15,6 +15,14 @@ from pathlib import Path
 from typing import Annotated, Optional
 
 import typer
+
+
+#: The panels `--help` groups the connection options into: where, as whom, with
+#: which saved session, and how the agent registers.
+SERVER_PANEL = "Server"
+LOGIN_PANEL = "Login"
+SESSION_PANEL = "Session"
+AGENT_PANEL = "Agent"
 
 
 class LogLevel(str, Enum):
@@ -33,8 +41,9 @@ UrlOption = Annotated[
     typer.Option(
         "--url",
         "-u",
-        help="The fakts url for connection",
+        help="The Arkitekt server to connect to",
         envvar="FAKTS_URL",
+        rich_help_panel=SERVER_PANEL,
     ),
 ]
 
@@ -52,6 +61,7 @@ TokenOption = Annotated[
             "app instead, use --redeem-token."
         ),
         envvar="FAKTS_TOKEN",
+        rich_help_panel=LOGIN_PANEL,
     ),
 ]
 
@@ -61,8 +71,9 @@ RedeemTokenOption = Annotated[
     typer.Option(
         "--redeem-token",
         "-r",
-        help="The redeem token used to authenticate against the fakts instance",
+        help="A redeem token: provisions this app and logs it in without a browser",
         envvar="FAKTS_REDEEM_TOKEN",
+        rich_help_panel=LOGIN_PANEL,
     ),
 ]
 
@@ -72,8 +83,9 @@ ForceOption = Annotated[
     typer.Option(
         "--force",
         "-f",
-        help="Force registration, kicking any existing connection for this agent and taking over",
+        help="Take over when another instance of this app is already connected (it is disconnected)",
         envvar="ARKITEKT_FORCE",
+        rich_help_panel=AGENT_PANEL,
     ),
 ]
 
@@ -82,8 +94,9 @@ HeadlessOption = Annotated[
     bool,
     typer.Option(
         "--headless",
-        help="Should we start headless",
+        help="Print the login link instead of opening a browser (the login itself is the same)",
         envvar="ARKITEKT_HEADLESS",
+        rich_help_panel=LOGIN_PANEL,
     ),
 ]
 
@@ -98,14 +111,28 @@ LogLevelOption = Annotated[
     ),
 ]
 
-#: Skip the fakts cache. Callers default this to ``False``.
-NoCacheOption = Annotated[
+#: Neither read nor write the fakts cache. Callers default this to ``False``.
+SkipCacheOption = Annotated[
     bool,
     typer.Option(
-        "--no-cache",
-        "-nc",
-        help="Should we skip the cache",
-        envvar="ARKITEKT_NO_CACHE",
+        "--skip-cache",
+        help="Ignore the saved session and save none: log in, for this run only",
+        envvar="ARKITEKT_SKIP_CACHE",
+        rich_help_panel=SESSION_PANEL,
+    ),
+]
+
+#: Log in again even when a session is cached, and cache the new one.
+ReauthOption = Annotated[
+    bool,
+    typer.Option(
+        "--reauth",
+        help=(
+            "Log in again and replace the saved session: for a wrong user or "
+            "organization. `arkitekt logout` forgets it instead."
+        ),
+        envvar="ARKITEKT_REAUTH",
+        rich_help_panel=SESSION_PANEL,
     ),
 ]
 

@@ -22,10 +22,10 @@ from collections.abc import Sequence
 from typing import Annotated, Any, Dict, List, Optional, Tuple
 
 import typer
-from rich.panel import Panel
 
 from arkitekt.cli.errors import cli_error, confirm_or_abort
 from arkitekt.cli.tty import require_tty
+from arkitekt.cli.ui import done, step
 from arkitekt.cli.options import UrlOption
 from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -225,15 +225,12 @@ def _display_configure_prompt(
                 webbrowser.open_new(configure_url)
             except Exception:
                 pass  # headless boxes have no browser; the printed URL is enough
+        step(console, "An organization member must authorize this machine to join the mesh")
         console.print(
-            Panel.fit(
-                "An organization member must authorize this machine to join the mesh.\n"
-                "Open the following page and approve the request:\n"
-                f"[bold green][link={configure_url}]{configure_url}[/link][/bold green]\n\n"
-                f"Join code: [bold blue]{code}[/bold blue]",
-                title="Mesh Join Authorization",
-                title_align="center",
-            )
+            "  Open the following page and approve the request:\n"
+            f"  [bold green][link={configure_url}]{configure_url}[/link][/bold green]\n"
+            f"  Join code: [bold blue]{code}[/bold blue]",
+            highlight=False,
         )
     else:
         console.print(
@@ -716,18 +713,15 @@ def proxy(
             ],
         )
 
-        proxy_lines = f"HTTP proxy: [green]http://{listen}[/green]"
+        proxy_lines = f"  HTTP proxy: [green]http://{listen}[/green]"
         if socks5_listen:
-            proxy_lines += f"\nSOCKS5 proxy: [green]socks5://{socks5_listen}[/green]"
+            proxy_lines += f"\n  SOCKS5 proxy: [green]socks5://{socks5_listen}[/green]"
+        done(console, f"Joined the mesh as [green]{hostname}[/green]")
         console.print(
-            Panel.fit(
-                f"Joined the mesh as [green]{hostname}[/green].\n\n"
-                f"{proxy_lines}\n\n"
-                "Set HTTP_PROXY / HTTPS_PROXY (or ALL_PROXY) to route into the mesh.\n"
-                "Press Ctrl-C to stop.",
-                title="Mesh Proxy",
-                title_align="center",
-            )
+            f"{proxy_lines}\n"
+            "  Set HTTP_PROXY / HTTPS_PROXY (or ALL_PROXY) to route into the mesh.\n"
+            "  Press Ctrl-C to stop.",
+            highlight=False,
         )
         proc.wait()
     except KeyboardInterrupt:

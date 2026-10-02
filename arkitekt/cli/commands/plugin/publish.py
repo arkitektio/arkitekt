@@ -4,7 +4,7 @@ import subprocess
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.vars import get_console, get_work_dir
-from rich.panel import Panel
+from arkitekt.cli.ui import done, escape, notice, step
 import uuid
 
 if TYPE_CHECKING:
@@ -133,7 +133,7 @@ def publish(
                 )
             )
 
-        console.print(Panel("Pushing Docker Container"))
+        step(console, "Pushing docker container", escape(tag))
 
         if len(build_model.platforms) > 1:
             push_multi_arch(build_model, tag, work_dir, console)
@@ -153,13 +153,9 @@ def publish(
             base_dir=work_dir,
         )
 
-        md = Panel(
-            f"[bold green] Sucessfully pushed {tag} your plugin to dockerhub"
-            + "We have also generated a deployment file for you. "
-            + "Make sure to commit and push your changes to github to make them available to others.",
-            title="Yeah! Success",
-            title_align="center",
-            border_style="green",
-            style="green",
+        done(console, f"Successfully pushed [bold]{escape(tag)}[/bold] to dockerhub")
+        notice(
+            console,
+            "We have also generated a deployment file for you. Make sure to commit and "
+            "push your changes to github to make them available to others.",
         )
-        console.print(md)

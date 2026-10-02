@@ -4,11 +4,10 @@ from typing import Annotated
 
 import typer
 
-from arkitekt.cli.ui import construct_leaking_group
+from arkitekt.cli.ui import construct_leaking_group, done
 from arkitekt.cli.utils import emit_machine_readable
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, import_target_or_exit
 from arkitekt.cli.vars import get_console
-from rich.panel import Panel
 
 
 def inspect_dangerous_variables(module):
@@ -91,19 +90,7 @@ def variables(
         return
 
     if not variables:
-        console.print(
-            Panel(
-                "No dangerous variables found. You are good to go!  🎉",
-                style="green",
-                border_style="green",
-                title="Arkitekt Scan",
-            )
-        )
+        done(console, "No dangerous variables found. You are good to go!")
         return
 
-    group = construct_leaking_group(variables)
-
-    panel = Panel(
-        group, title="Arkitekt Scan", expand=True, border_style="red", style="red"
-    )
-    console.print(panel)
+    console.print(construct_leaking_group(variables))

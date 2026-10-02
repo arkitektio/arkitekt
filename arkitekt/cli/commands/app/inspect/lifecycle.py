@@ -2,7 +2,6 @@ import json
 from typing import Annotated, Any
 
 import typer
-from rich.panel import Panel
 from rich.tree import Tree
 
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE
@@ -63,9 +62,9 @@ def lifecycle(
         console.print(json.dumps(data, indent=2))
         return
 
-    tree = Tree("Lifecycle hooks")
+    tree = Tree("[bold]Lifecycle hooks[/]")
     for section, rows in data.items():
         branch = tree.add(f"[bold]{section}[/] ({len(rows)})")
         for row in rows:
             branch.add(f"{row['name']}  [dim]{row['module']}.{row['qualname']}[/dim]")
-    console.print(Panel(tree, border_style="green"))
+    console.print(tree)

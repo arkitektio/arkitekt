@@ -6,8 +6,7 @@ run = typer.Typer(
 
     Running your app locally is the first step to developing your app. You can run your app in
     development mode, which will automatically reload your app when you change the code, or in
-    production mode, which not reload your app when you change the code, but allows you to
-    scale your app to multiple processes.
+    production mode, which does not reload your app when you change the code.
 
 
 

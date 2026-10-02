@@ -29,7 +29,7 @@ def watch(
     config = config or scan_folder_for_single_config(app_directory)
     if not config:
         cli_error(
-            f"No config file found. Please run `arkitekt gen init` in {app_directory} to create a default config file or specify a config file with the --config flag"
+            f"No GraphQL config file found in {app_directory}. Create a graphql.config.yaml there (see the turms docs), or point at one with --config."
         )
 
     projects = load_projects_from_configpath(config)

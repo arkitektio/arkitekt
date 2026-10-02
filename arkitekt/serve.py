@@ -34,7 +34,8 @@ def serve(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     device_id: Optional[str] = None,
@@ -50,7 +51,8 @@ def serve(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     device_id: Optional[str] = None,
@@ -67,7 +69,8 @@ def serve(
     url: Optional[str] = None,
     token: Optional[str] = None,
     redeem_token: Optional[str] = None,
-    no_cache: bool = False,
+    skip_cache: bool = False,
+    reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     device_id: Optional[str] = None,
@@ -91,7 +94,10 @@ def serve(
             ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
         redeem_token: A token to provision a new app with.
-        no_cache: Skip the fakts cache, and so authenticate again.
+        skip_cache: Neither read nor write the fakts cache: log in, and keep the
+            session in memory only.
+        reauth: Log in again even when a session is cached, and cache the new
+            one. Defaults to ``$ARKITEKT_REAUTH``.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the device code instead of the default prompt.
         device_id: This device's identity. Defaults to the machine's id.
@@ -136,7 +142,8 @@ def serve(
             url=url,
             token=token,
             redeem_token=redeem_token,
-            no_cache=no_cache,
+            skip_cache=skip_cache,
+            reauth=reauth,
             headless=headless,
             device_code_hook=device_code_hook,
             device_id=device_id,

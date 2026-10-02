@@ -73,12 +73,12 @@ def test_the_device_code_run_asks_for_a_key_only_for_its_own_node(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("ARKITEKT_MESH", "1")
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, no_cache=True))
+    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True))
     assert fakts.mesh == MeshOptions()
     assert asks_for_mesh_key(fakts) is True
 
     proxy = MeshProxy(url=PROXY)
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, no_cache=True, mesh=proxy))
+    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mesh=proxy))
     assert fakts.mesh == proxy, "what is passed wins over the environment"
     assert asks_for_mesh_key(fakts) is False
 
@@ -86,8 +86,8 @@ def test_the_device_code_run_asks_for_a_key_only_for_its_own_node(
 @pytest.mark.parametrize(
     "options",
     [
-        ConnectionOptions(url=URL, no_cache=True, token="client:refresh"),
-        ConnectionOptions(url=URL, no_cache=True, redeem_token="redeem-me"),
+        ConnectionOptions(url=URL, skip_cache=True, token="client:refresh"),
+        ConnectionOptions(url=URL, skip_cache=True, redeem_token="redeem-me"),
     ],
     ids=["token", "redeem"],
 )
@@ -104,13 +104,13 @@ def test_by_default_the_mesh_is_used_when_it_is_available(
     """Whether a key comes is the server's call: the user can opt out of the
     mesh, and an organization without one grants none."""
     monkeypatch.setattr("fakts.mesh.bindings_installed", lambda: True)
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, no_cache=True))
+    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True))
     assert fakts.mesh == MeshOptions(auto=True)
     assert asks_for_mesh_key(fakts) is True
 
     # Without the bindings, no node could use a key: do not ask for one.
     monkeypatch.setattr("fakts.mesh.bindings_installed", lambda: False)
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, no_cache=True))
+    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True))
     assert asks_for_mesh_key(fakts) is False
 
 
@@ -119,5 +119,5 @@ def test_a_bool_turns_it_on_or_off_whatever_the_environment_says(
     monkeypatch: pytest.MonkeyPatch, passed: bool, expected: MeshOptions | None
 ) -> None:
     monkeypatch.setenv("ARKITEKT_MESH", "0" if passed else "1")
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, no_cache=True, mesh=passed))
+    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mesh=passed))
     assert fakts.mesh == expected

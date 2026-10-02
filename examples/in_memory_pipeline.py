@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt>=3", "tifffile>=2024.5.22", "scikit-image>=0.24", "numpy>=1.26"]
+# dependencies = ["arkitekt[rekuest]>=5", "tifffile>=2024.5.22", "scikit-image>=0.24", "numpy>=1.26"]
 # ///
 """Offering: three actions that hand a numpy array to each other, on the agent.
 

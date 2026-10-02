@@ -2,7 +2,8 @@
 
 Repo-local CLI runner fixtures and the marker gating. Server-backed fixtures are
 gone along with the server-construction code: deployments are konstruktor's job
-(https://github.com/arkitektio/konstruktor).
+(https://github.com/arkitektio/konstruktor). The tests that do need a server are
+in ``tests/integration``, and get one from konstruktor's own pytest fixture.
 """
 
 from __future__ import annotations
@@ -117,6 +118,21 @@ def assert_only_the_entrypoint_was_scaffolded(work_dir, entrypoint: str = "app")
     assert not os.path.exists(os.path.join(work_dir, ".arkitekt", "manifest.yaml"))
 
 
+@pytest.fixture(autouse=True)
+def _private_session_state(tmp_path_factory, monkeypatch):
+    """Keep the saved sessions of a test out of the user's own state directory.
+
+    Sessions live under the per-user state dir; a test that builds a cache, logs
+    in or lists sessions would otherwise read and write the real one.
+    """
+    state = tmp_path_factory.mktemp("state")
+    monkeypatch.setenv("XDG_STATE_HOME", str(state))
+    # Only Linux honours the variable; elsewhere the sessions are redirected by hand.
+    monkeypatch.setattr(
+        "arkitekt.app.sessions.cache_dir", lambda: str(state / "arkitekt" / "cache")
+    )
+
+
 @pytest.fixture
 def app_dir(tmp_path):
     """Temp dir with a scaffolded ``app.py``, using --work-dir (no os.chdir).
@@ -130,7 +146,7 @@ def app_dir(tmp_path):
         [
             "--work-dir",
             str(tmp_path),
-            "init",
+            "create",
             "--identifier",
             "com.test.app",
             "--version",

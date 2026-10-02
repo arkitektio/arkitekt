@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt[mikro]>=3"]
+# dependencies = ["arkitekt[rekuest,mikro]>=5"]
 # ///
 """A workflow that survives its own crash and its steps'.
 

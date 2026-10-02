@@ -3,12 +3,13 @@ from typing import Annotated, Any, Optional
 
 import typer
 from rich.console import Group
-from rich.panel import Panel
+from rich.padding import Padding
 from rich.table import Table
 
 from arkitekt_spec.declare.service import Service
 
 from arkitekt.cli.errors import cli_error
+from arkitekt.cli.ui import construct_section
 from arkitekt.cli.utils import emit_machine_readable
 from arkitekt.cli.vars import get_console
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
@@ -109,13 +110,6 @@ def services(
         )
         table.add_row("GraphQL schema", "yes" if record["has_schema"] else "no")
         table.add_row("Turms project", "yes" if record["has_turms_project"] else "no")
-        renderables.append(Group(f"[bold green]{record['name']}[/]", table))
+        renderables.append(Group(f"[bold cyan]{record['name']}[/]", Padding(table, (0, 0, 1, 2))))
 
-    console.print(
-        Panel(
-            Group(*renderables),
-            title="Registered services",
-            border_style="green",
-            style="white",
-        )
-    )
+    console.print(construct_section("Registered services", Group(*renderables)))

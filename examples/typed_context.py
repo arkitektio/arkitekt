@@ -1,6 +1,6 @@
 # /// script
 # requires-python = ">=3.11"
-# dependencies = ["arkitekt>=3", "tifffile>=2024.5.22", "numpy>=1.26"]
+# dependencies = ["arkitekt[rekuest]>=5", "tifffile>=2024.5.22", "numpy>=1.26"]
 # ///
 """Offering: configuration that belongs to the run, not to the caller.
 

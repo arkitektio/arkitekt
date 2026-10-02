@@ -149,6 +149,31 @@ def parse_target(target: str, work_dir: str) -> Target:
     return Target(module=".".join(parts), attribute=attribute, file=str(file))
 
 
+def default_target() -> str:
+    """The target a command uses when none is given: ``$ARKITEKT_APP``, else ``app``."""
+    return os.environ.get(TARGET_ENVVAR) or DEFAULT_TARGET
+
+
+def has_app(work_dir: str) -> Optional[str]:
+    """The file of the app in ``work_dir``, or None when there is no app there.
+
+    An app is there when the default target's file exists and mentions
+    ``arkitekt``. The file is only read, never imported: this decides what
+    ``--help`` lists, which must be instant and must not run the user's code.
+    A file that mentions arkitekt and declares no App counts, and a command
+    that needs the App then says so.
+    """
+    try:
+        file = parse_target(default_target(), work_dir).file
+    except TargetError:
+        return None
+    try:
+        with open(file, encoding="utf-8", errors="ignore") as source:
+            return file if "arkitekt" in source.read() else None
+    except OSError:
+        return None
+
+
 def import_target(target: Target) -> ModuleType:
     """Import the target's module, from the work dir rather than from a stale cache.
 
@@ -293,7 +318,8 @@ def import_target_or_exit(ctx: typer.Context, target: str) -> tuple[ModuleType, 
                 cli_error(
                     f"Could not find the app module '{parsed.module}' in "
                     f"'{get_work_dir(ctx)}' (expected {parsed.file}). Pass the "
-                    "target as 'module[:attr]', or set --work-dir."
+                    "target as 'module[:attr]', or set --work-dir. "
+                    "`arkitekt create` scaffolds an app."
                 )
             cli_error(f"Importing '{parsed.module}' failed: {e}")
 
