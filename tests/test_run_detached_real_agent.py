@@ -97,7 +97,7 @@ def _assign(task: str, interface: str, **args: object) -> messages.Assign:
     return messages.Assign(
         task=task,
         interface=interface,
-        args=args,
+        args=args,  # pyright: ignore[reportArgumentType]
         implementation="impl-1",
         action="action-1",
         reference="ref-1",

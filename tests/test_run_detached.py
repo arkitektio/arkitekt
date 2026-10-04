@@ -215,7 +215,7 @@ def test_the_context_is_checked_at_the_call_not_on_the_runs_thread() -> None:
         return x
 
     with pytest.raises(AppContextError):
-        run_detached(app)  # pyright: ignore[reportCallIssue]
+        run_detached(app)  # pyright: ignore[reportArgumentType]
 
 
 def test_a_pending_login_is_handed_to_the_hook_and_then_reported() -> None:
@@ -305,7 +305,7 @@ async def test_logout_revokes_the_login_where_the_server_can() -> None:
     revoked: List[dict[str, str]] = []
 
     async def revoke(request: web.Request) -> web.Response:
-        revoked.append(dict(await request.post()))
+        revoked.append(dict(await request.post()))  # pyright: ignore[reportArgumentType]
         return web.json_response({})
 
     server = web.Application()
@@ -354,7 +354,7 @@ async def test_a_login_stored_before_servers_said_where_to_revoke_is_still_revok
         )
 
     async def revoke(request: web.Request) -> web.Response:
-        revoked.append(dict(await request.post()))
+        revoked.append(dict(await request.post()))  # pyright: ignore[reportArgumentType]
         return web.json_response({})
 
     server = web.Application()

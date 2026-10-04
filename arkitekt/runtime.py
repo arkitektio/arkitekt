@@ -957,7 +957,7 @@ class DetachedRun(Generic[Ctx]):
         try:
             await self._set(ConnectionState.CONNECTING)
             async with runtime:
-                await runtime.arun(self._context)  # type: ignore[arg-type]
+                await runtime.arun(self._context)  # pyright: ignore[reportArgumentType]
         except asyncio.CancelledError:
             await self._set(ConnectionState.STOPPED)
         except Exception as e:

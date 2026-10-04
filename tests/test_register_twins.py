@@ -70,7 +70,7 @@ def test_state_startup_and_background_are_registered_by_call() -> None:
     assert app.register_shutdown(park) is park
 
     assert "stage" in app.registry.states
-    assert Stage(x=1.0).x == 1.0, "made a dataclass, as the decorator does"
+    assert Stage(x=1.0).x == 1.0, "made a dataclass, as the decorator does"  # pyright: ignore[reportCallIssue]
     app.snapshot()  # the declaration validates: the state has its startup hook
 
 
@@ -97,7 +97,7 @@ def test_a_model_travels_as_its_apps_own_by_default() -> None:
         x: float
 
     class Limits:
-        low: float
+        low: float  # pyright: ignore[reportUninitializedInstanceVariable]
 
     app.register_model(Limits)
     declared = app.registry.structure_registry
