@@ -7,8 +7,8 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "fakts>=5.3",
-    "koil>=3.3.4",
+    "fakts>=5.4",
+    "koil>=3.3.6",
     "rath>=4",
     "click>=8.2.0",
     "typer>=0.15.0",
@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=3.2",
+    "arkitekt-spec>=3.4",
 ]
 
 [project.optional-dependencies]
@@ -33,45 +33,45 @@ dependencies = [
 rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
-    "rekuest>=8",
-    "arkitekt-runtime>=4.2",
+    "rekuest>=8.0.1",
+    "arkitekt-runtime>=4.3",
 ]
 alpaka = [
-    "alpaka>=3",
+    "alpaka>=3.1.1",
 ]
 kraph = [
-    "kraph>=4",
+    "kraph>=4.1.1",
 ]
 mikro = [
-    "mikro>=6.1",
+    "mikro>=7",
 ]
 # The kabinet client, for apps that manage deployments. The plugin commands do not
 # need it: they speak arkitekt-spec.
 kabinet = [
-    "kabinet>=4",
+    "kabinet>=5.0.1",
 ]
 elektro = [
-    "elektro>=4.1",
+    "elektro>=5",
 ]
 fluss = [
-    "fluss>=4",
+    "fluss>=4.3.2",
 ]
 lovekit = [
-    "lovekit>=3",
+    "lovekit>=3.1.1",
 ]
 unlok = [
-    "unlok>=4",
+    "unlok>=4.2.1",
 ]
 # Serving an app over FastAPI (arkitekt.serve): server mode, without rekuest.
 serve = [
-    "arkitekt-fastapi>=2.0",
+    "arkitekt-fastapi>=2.0.2",
 ]
 # Qt integration (arkitekt.qt / the MagicBar). qtpy still needs an actual
 # binding (PyQt5/6 or PySide2/6) supplied by the application.
 qt = [
     "qtpy>=2.4.3",
     # The Qt actifiers are the execution core's.
-    "arkitekt-runtime[qt]>=4.2",
+    "arkitekt-runtime[qt]>=4.3",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.
@@ -80,7 +80,7 @@ tqdm = [
 ]
 # Reach services over the hub's private mesh (a native mesh node, via fakts).
 mesh = [
-    "fakts[mesh]>=5.3",
+    "fakts[mesh]>=5.4",
 ]
 all = [
     # Self-referential extras keep `all` complete without duplicating (and drifting)
@@ -109,18 +109,18 @@ dev-dependencies = [
     "pytest-asyncio>=0.20.2,<0.21",
     "pytest-cov>=4.0.0,<5",
     "pytest-aiohttp>=1.0.4,<2",
-    "mikro>=6.1",
+    "mikro>=7",
     "python-semantic-release>=9.21.1",
     "qtpy>=2.4.3",
     "numpy>=2",
-    "rekuest>=8",
-    "kabinet>=4",
-    "alpaka>=3",
-    "kraph>=4",
-    "fluss>=4",
-    "lovekit>=3",
-    "unlok>=4",
-    "elektro>=4.1",
+    "rekuest>=8.0.1",
+    "kabinet>=5.0.1",
+    "alpaka>=3.1.1",
+    "kraph>=4.1.1",
+    "fluss>=4.3.2",
+    "lovekit>=3.1.1",
+    "unlok>=4.2.1",
+    "elektro>=5",
 ]
 
 
