@@ -67,6 +67,7 @@ from arkitekt_spec.declare.coercible_types import OptimisticCoercible
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
+from arkitekt_spec.declare.structures.convert import model_identifier
 from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.structures.utils import id_shrink
 from fakts.models import Manifest, PublicSource, Requirement
@@ -484,40 +485,102 @@ class App(Generic[Ctx]):
         """
 
         def offer(function: Callable[P, R]) -> WrappedFunction[P, R]:
-            # Through the registry rather than rekuest's module-level decorator: the registry
-            # is what owns the declaration, and it supplies itself and its structures. The cast
-            # is because `AppRegistry.register` forwards `**kwargs` untyped -- this method's own
-            # overloads are what type the surface a user sees.
-            decorate = cast(
-                "Callable[[Callable[P, R]], WrappedFunction[P, R]]",
-                self.registry.register(
-                    name=name,
-                    description=description,
-                    actifier=actifier,
-                    interface=interface,
-                    stateful=stateful,
-                    widgets=widgets,
-                    collections=collections,
-                    port_groups=port_groups,
-                    port_effects=port_effects,
-                    is_test_for=is_test_for,
-                    validators=validators,
-                    optimistics=optimistics,
-                    in_process=in_process,
-                    tracks=tracks,
-                    locks=locks,
-                    concurrency=concurrency,
-                    policy=policy,
-                    version=version,
-                    catalogs=catalogs,
-                    effects=effects,
-                ),
+            return self.register_action(
+                function,
+                name=name,
+                description=description,
+                actifier=actifier,
+                interface=interface,
+                stateful=stateful,
+                widgets=widgets,
+                collections=collections,
+                port_groups=port_groups,
+                port_effects=port_effects,
+                is_test_for=is_test_for,
+                validators=validators,
+                optimistics=optimistics,
+                in_process=in_process,
+                tracks=tracks,
+                locks=locks,
+                concurrency=concurrency,
+                policy=policy,
+                version=version,
+                catalogs=catalogs,
+                effects=effects,
             )
-            return decorate(function)
 
         if function is not None:
             return offer(function)
         return offer
+
+    def register_action(
+        self,
+        function: Callable[P, R],
+        /,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        actifier: Actifier | None = None,
+        interface: Optional[str] = None,
+        stateful: bool = False,
+        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
+        collections: Optional[List[str]] = None,
+        port_groups: Optional[List[PortGroupInput]] = None,
+        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
+        is_test_for: Optional[List[TestTargetInput]] = None,
+        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
+        optimistics: Optional[List[OptimisticCoercible]] = None,
+        in_process: bool = False,
+        tracks: Optional[List[TrackInput]] = None,
+        locks: Optional[List[str]] = None,
+        concurrency: Literal["parallel", "serial"] = "serial",
+        policy: DisconnectPolicy = KEEP,
+        version: Optional[str] = None,
+        catalogs: Optional[List[str]] = None,
+        effects: Optional[Effects] = None,
+    ) -> WrappedFunction[P, R]:
+        """Offer a function as an action, as a plain call: ``app.register_action(function, name=...)``.
+
+        The twin of :meth:`action`, with the same options, for a function that is
+        declared somewhere else or offered only under a condition.
+
+        Returns:
+            The function, still callable as itself.
+
+        Raises:
+            DefinitionError: If a parameter cannot become a port, e.g. a
+                structure of a service this app does not declare.
+        """
+        # Through the registry rather than rekuest's module-level decorator: the registry
+        # is what owns the declaration, and it supplies itself and its structures. The cast
+        # is because `AppRegistry.register` forwards `**kwargs` untyped -- this method's own
+        # signature is what types the surface a user sees.
+        decorate = cast(
+            "Callable[[Callable[P, R]], WrappedFunction[P, R]]",
+            self.registry.register(
+                name=name,
+                description=description,
+                actifier=actifier,
+                interface=interface,
+                stateful=stateful,
+                widgets=widgets,
+                collections=collections,
+                port_groups=port_groups,
+                port_effects=port_effects,
+                is_test_for=is_test_for,
+                validators=validators,
+                optimistics=optimistics,
+                in_process=in_process,
+                tracks=tracks,
+                locks=locks,
+                concurrency=concurrency,
+                policy=policy,
+                version=version,
+                catalogs=catalogs,
+                effects=effects,
+            ),
+        )
+        return decorate(function)
 
     @overload
     def workflow(self, function: Callable[P, R], /) -> WrappedFunction[P, R]: ...
@@ -631,41 +694,103 @@ class App(Generic[Ctx]):
         """
 
         def offer(function: Callable[P, R]) -> WrappedFunction[P, R]:
-            # Through the registry rather than rekuest's module-level decorator: the registry
-            # is what owns the declaration, and it supplies itself and its structures. The cast
-            # is because `AppRegistry.register` forwards `**kwargs` untyped -- this method's own
-            # overloads are what type the surface a user sees.
-            decorate = cast(
-                "Callable[[Callable[P, R]], WrappedFunction[P, R]]",
-                self.registry.register(
-                    name=name,
-                    description=description,
-                    actifier=actifier,
-                    interface=interface,
-                    stateful=stateful,
-                    widgets=widgets,
-                    collections=collections,
-                    port_groups=port_groups,
-                    port_effects=port_effects,
-                    is_test_for=is_test_for,
-                    validators=validators,
-                    optimistics=optimistics,
-                    in_process=in_process,
-                    tracks=tracks,
-                    locks=locks,
-                    concurrency=concurrency,
-                    policy=policy,
-                    version=version,
-                    catalogs=catalogs,
-                    effects=effects,
-                    execution=Execution.WORKFLOW,
-                ),
+            return self.register_workflow(
+                function,
+                name=name,
+                description=description,
+                actifier=actifier,
+                interface=interface,
+                stateful=stateful,
+                widgets=widgets,
+                collections=collections,
+                port_groups=port_groups,
+                port_effects=port_effects,
+                is_test_for=is_test_for,
+                validators=validators,
+                optimistics=optimistics,
+                in_process=in_process,
+                tracks=tracks,
+                locks=locks,
+                concurrency=concurrency,
+                policy=policy,
+                version=version,
+                catalogs=catalogs,
+                effects=effects,
             )
-            return decorate(function)
 
         if function is not None:
             return offer(function)
         return offer
+
+    def register_workflow(
+        self,
+        function: Callable[P, R],
+        /,
+        *,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        actifier: Actifier | None = None,
+        interface: Optional[str] = None,
+        stateful: bool = False,
+        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
+        collections: Optional[List[str]] = None,
+        port_groups: Optional[List[PortGroupInput]] = None,
+        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
+        is_test_for: Optional[List[TestTargetInput]] = None,
+        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
+        optimistics: Optional[List[OptimisticCoercible]] = None,
+        in_process: bool = False,
+        tracks: Optional[List[TrackInput]] = None,
+        locks: Optional[List[str]] = None,
+        concurrency: Literal["parallel", "serial"] = "serial",
+        policy: DisconnectPolicy = KEEP,
+        version: Optional[str] = None,
+        catalogs: Optional[List[str]] = None,
+        effects: Optional[Effects] = None,
+    ) -> WrappedFunction[P, R]:
+        """Offer a function as a workflow, as a plain call: ``app.register_workflow(function, name=...)``.
+
+        The twin of :meth:`workflow`, with the same options, for a function that is
+        declared somewhere else or offered only under a condition.
+
+        Returns:
+            The function, still callable as itself.
+
+        Raises:
+            DefinitionError: If a parameter cannot become a port, e.g. a
+                structure of a service this app does not declare.
+        """
+        # Through the registry rather than rekuest's module-level decorator: the registry
+        # is what owns the declaration, and it supplies itself and its structures. The cast
+        # is because `AppRegistry.register` forwards `**kwargs` untyped -- this method's own
+        # signature is what types the surface a user sees.
+        decorate = cast(
+            "Callable[[Callable[P, R]], WrappedFunction[P, R]]",
+            self.registry.register(
+                name=name,
+                description=description,
+                actifier=actifier,
+                interface=interface,
+                stateful=stateful,
+                widgets=widgets,
+                collections=collections,
+                port_groups=port_groups,
+                port_effects=port_effects,
+                is_test_for=is_test_for,
+                validators=validators,
+                optimistics=optimistics,
+                in_process=in_process,
+                tracks=tracks,
+                locks=locks,
+                concurrency=concurrency,
+                policy=policy,
+                version=version,
+                catalogs=catalogs,
+                effects=effects,
+                execution=Execution.WORKFLOW,
+            ),
+        )
+        return decorate(function)
 
     @overload
     def state(
@@ -675,7 +800,6 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         required_locks: Optional[List[str]] = None,
-        publish_interval: float = 0.1,
     ) -> C: ...
 
     @overload
@@ -685,7 +809,6 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         required_locks: Optional[List[str]] = None,
-        publish_interval: float = 0.1,
     ) -> Callable[[C], C]: ...
 
     @dataclass_transform(field_specifiers=(model_field,))
@@ -696,7 +819,6 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         required_locks: Optional[List[str]] = None,
-        publish_interval: float = 0.1,
     ) -> Union[C, Callable[[C], C]]:
         """Declare a class as a state other apps can observe: ``@app.state``.
 
@@ -704,21 +826,34 @@ class App(Generic[Ctx]):
             cls: The class, when used bare as ``@app.state``.
             name: The interface the state is offered at. Defaults to the class name.
             required_locks: Locks an action must hold to change the state.
-            publish_interval: Seconds between published updates.
 
         Returns:
             The class, or, with options, a decorator returning it.
         """
 
         def declare(cls: C) -> C:
-            self.registry.state(
-                cls, name=name, required_locks=required_locks, publish_interval=publish_interval
-            )
-            return cls
+            return self.register_state(cls, name=name, required_locks=required_locks)
 
         if cls is not None:
             return declare(cls)
         return declare
+
+    @dataclass_transform(field_specifiers=(model_field,))
+    def register_state(
+        self,
+        cls: C,
+        /,
+        *,
+        name: Optional[str] = None,
+        required_locks: Optional[List[str]] = None,
+    ) -> C:
+        """Declare a class as a state, as a plain call: the twin of :meth:`state`.
+
+        Returns:
+            The class.
+        """
+        self.registry.state(cls, name=name, required_locks=required_locks)
+        return cls
 
     @overload
     def context(self, cls: C, /) -> C: ...
@@ -752,12 +887,22 @@ class App(Generic[Ctx]):
         """
 
         def declare(cls: C) -> C:
-            self.registry.context(cls, name=name, locks=locks)
-            return cls
+            return self.register_context(cls, name=name, locks=locks)
 
         if cls is not None:
             return declare(cls)
         return declare
+
+    def register_context(
+        self, cls: C, /, *, name: Optional[str] = None, locks: Optional[List[str]] = None
+    ) -> C:
+        """Declare a context class, as a plain call: the twin of :meth:`context`.
+
+        Returns:
+            The class.
+        """
+        self.registry.context(cls, name=name, locks=locks)
+        return cls
 
     @overload
     def model(
@@ -786,32 +931,63 @@ class App(Generic[Ctx]):
 
         Args:
             cls: The class, when used bare as ``@app.model``.
-            identifier: What it travels as. Defaults to the snake_case class name.
+            identifier: What it travels as, ``@package/key``. Defaults to
+                ``@<this app's identifier>/<snake_case class name>``.
             description: What it is, for the UI. Defaults to the class docstring.
 
         Returns:
             The class, or, with options, a decorator returning it.
+
+        Raises:
+            StructureDefinitionError: If the identifier is not ``@package/key``.
         """
 
         def declare(cls: C) -> C:
-            return cast(C, self.registry.model(cls, identifier=identifier, description=description))
+            return self.register_model(cls, identifier=identifier, description=description)
 
         if cls is not None:
             return declare(cls)
         return declare
 
+    @dataclass_transform(field_specifiers=(model_field,))
+    def register_model(
+        self,
+        cls: C,
+        /,
+        *,
+        identifier: Optional[str] = None,
+        description: Optional[str] = None,
+    ) -> C:
+        """Declare a model, as a plain call: the twin of :meth:`model`.
+
+        Returns:
+            The class, made a dataclass.
+
+        Raises:
+            StructureDefinitionError: If the identifier is not ``@package/key``.
+        """
+        return cast(
+            C,
+            self.registry.model(
+                cls,
+                identifier=identifier or model_identifier(self.identifier, cls),
+                description=description,
+            ),
+        )
+
     def _hook(
         self, kind: str, function: Optional[F], name: Optional[str]
     ) -> Union[F, Callable[[F], F]]:
-        register = getattr(self.registry, kind)
-
         def hook(function: F) -> F:
-            register(function, name=name)
-            return function
+            return self._register_hook(kind, function, name)
 
         if function is not None:
             return hook(function)
         return hook
+
+    def _register_hook(self, kind: str, function: F, name: Optional[str]) -> F:
+        getattr(self.registry, kind)(function, name=name)
+        return function
 
     @overload
     def startup(self, function: F, /) -> F: ...
@@ -835,6 +1011,14 @@ class App(Generic[Ctx]):
         """
         return self._hook("startup", function, name)
 
+    def register_startup(self, function: F, /, *, name: Optional[str] = None) -> F:
+        """Run a function when the app starts providing, as a plain call: the twin of :meth:`startup`.
+
+        Returns:
+            The function.
+        """
+        return self._register_hook("startup", function, name)
+
     @overload
     def shutdown(self, function: F, /) -> F: ...
 
@@ -855,6 +1039,14 @@ class App(Generic[Ctx]):
         """
         return self._hook("shutdown", function, name)
 
+    def register_shutdown(self, function: F, /, *, name: Optional[str] = None) -> F:
+        """Run a function when the app stops providing, as a plain call: the twin of :meth:`shutdown`.
+
+        Returns:
+            The function.
+        """
+        return self._register_hook("shutdown", function, name)
+
     @overload
     def background(self, function: F, /) -> F: ...
 
@@ -874,6 +1066,14 @@ class App(Generic[Ctx]):
             The function, or, with options, a decorator returning it.
         """
         return self._hook("background", function, name)
+
+    def register_background(self, function: F, /, *, name: Optional[str] = None) -> F:
+        """Run a function in the background while the app provides, as a plain call: the twin of :meth:`background`.
+
+        Returns:
+            The function.
+        """
+        return self._register_hook("background", function, name)
 
     def blok(
         self,
@@ -999,6 +1199,30 @@ class App(Generic[Ctx]):
         return self.registry.declare(
             app, auto_resolvable=auto_resolvable, min=min, max=max, version=version
         )
+
+    def register_protocol(
+        self,
+        cls: C,
+        /,
+        app: Optional[str] = None,
+        *,
+        auto_resolvable: bool = False,
+        min: Optional[int] = None,
+        max: Optional[int] = None,
+        version: Optional[str] = None,
+    ) -> C:
+        """Declare a protocol, as a plain call: the twin of :meth:`declare`.
+
+        Returns:
+            The class, unchanged.
+
+        Raises:
+            DefinitionError: If a demand names a class this app cannot make a
+                port of -- usually a structure of a service it does not declare.
+        """
+        return self.declare(
+            app, auto_resolvable=auto_resolvable, min=min, max=max, version=version
+        )(cls)
 
     def register_structure(
         self,
