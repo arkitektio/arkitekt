@@ -83,6 +83,22 @@ def _offline_fakts(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _offline_revocation(request, monkeypatch):
+    """Keep a logout from reaching a server: it would ask the session's server
+    where to revoke, and the sessions tests write name real deployments.
+
+    A test that serves its own revocation endpoint is marked ``revokes``.
+    """
+    if request.node.get_closest_marker("revokes") is not None:
+        return
+
+    async def nowhere(auth, server, allow_insecure_transport):  # noqa: ANN001, ANN202
+        return None
+
+    monkeypatch.setattr("arkitekt.runtime._arevoke_stored", nowhere)
+
+
+@pytest.fixture(autouse=True)
 def _assume_interactive(monkeypatch):
     """Make the CLI treat itself as interactive during tests.
 

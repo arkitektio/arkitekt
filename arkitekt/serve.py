@@ -38,6 +38,7 @@ def serve(
     reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
+    allow_insecure_transport: bool = False,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
     **fastapi_options: Any,  # noqa: ANN401
@@ -55,6 +56,7 @@ def serve(
     reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
+    allow_insecure_transport: bool = False,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
     **fastapi_options: Any,  # noqa: ANN401
@@ -73,6 +75,7 @@ def serve(
     reauth: bool = False,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
+    allow_insecure_transport: bool = False,
     device_id: Optional[str] = None,
     mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
     **fastapi_options: Any,  # noqa: ANN401
@@ -99,7 +102,11 @@ def serve(
         reauth: Log in again even when a session is cached, and cache the new
             one. Defaults to ``$ARKITEKT_REAUTH``.
         headless: Print the device-code prompt instead of opening a browser.
-        device_code_hook: Called with the device code instead of the default prompt.
+        device_code_hook: Called with the login to approve -- a
+            :class:`~arkitekt.DeviceCodeChallenge` carrying the code and the link --
+            instead of the terminal prompt.
+        allow_insecure_transport: Talk plain http to a server that is not on this
+            machine. Off, such a server is refused.
         device_id: This device's identity. Defaults to the machine's id.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
@@ -146,6 +153,7 @@ def serve(
             reauth=reauth,
             headless=headless,
             device_code_hook=device_code_hook,
+            allow_insecure_transport=allow_insecure_transport,
             device_id=device_id,
             mesh=mesh,
         ),

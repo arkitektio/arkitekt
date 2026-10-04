@@ -200,6 +200,7 @@ markers = [
     "cli: marks tests that require a running cli",
     "needs_docker: marks tests that require a running docker daemon",
     "integration: marks tests that run an app against a real deployment (needs docker and konstruktor)",
+    "revokes: marks tests that serve their own revocation endpoint, so a logout may reach it",
 ]
 
 

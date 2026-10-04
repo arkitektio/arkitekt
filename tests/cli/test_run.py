@@ -200,7 +200,7 @@ def test_a_run_with_a_token_says_it_logged_in(app_dir, monkeypatch):
 
 
 def test_a_run_says_when_its_agent_is_registered_lost_and_back(app_dir, monkeypatch):
-    from arkitekt_runtime.agents.connection import ConnectionState
+    from arkitekt_spec.declare.agents.connection import ConnectionState
 
     async def connection(run):
         await run.listener(ConnectionState.REGISTERED)

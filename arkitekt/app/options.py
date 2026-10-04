@@ -32,7 +32,14 @@ class ConnectionOptions(BaseModel):
     # Held as Any, like the hook above.
     connection_listener: Any | None = None
     """Told when the server acknowledges the run's agent and when the link to it
-    drops (``arkitekt_runtime.agents.connection``). Applied to the run's agent."""
+    drops (``arkitekt_spec.declare.agents.connection``). Applied to the run's agent."""
+    # Held as Any, like the hook above.
+    task_listener: Any | None = None
+    """Told what happens to each task the run's agent takes: assigned (with its
+    arguments), progress, yielded, done, failed, cancelled. Applied to the run's agent."""
+    allow_insecure_transport: bool = False
+    """Talk plain http to a server that is not on this machine. Off, such a
+    server is refused: its login would cross the network unencrypted."""
     device_id: str | None = None
     mesh: MeshOptions | MeshProxy | bool | None = None
     """How to reach mesh-only services (``True`` runs a node, ``False`` is off);

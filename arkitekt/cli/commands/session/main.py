@@ -15,7 +15,7 @@ from rich.markup import escape
 from arkitekt import runtime
 from arkitekt.app.fakts import resolve_url
 from arkitekt.app import App
-from arkitekt.app.sessions import Session, forget, read_session, session_path
+from arkitekt.app.sessions import Session, read_session, session_path
 from arkitekt.cli.commands.app.run.utils import explicit_options
 from arkitekt.cli.failures import report_failure
 from arkitekt.cli.options import (
@@ -107,17 +107,17 @@ def logout(
     target: TargetArgument = DEFAULT_TARGET,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
 ) -> None:
-    """Forget the saved session of this folder's app
+    """Revoke and forget the saved session of this folder's app
 
-    The next run logs in again. This forgets the session on this machine only:
-    nothing is revoked on the server, and an instance of the app that is still
-    running saves its session back.
+    The next run logs in again. The session is revoked on a server that offers
+    that, and forgotten on this machine either way. Stop an instance of the app
+    that is still running first: it saves its session back.
     """
     console = get_console(ctx)
     app = load_app_or_exit(ctx, target)
     server = resolve_url(explicit_options(ctx, ("url",)).get("url"))
 
-    if not forget(session_path(app.identifier, app.version, server)):
+    if not runtime.logout(app, url=server):
         notice(
             console,
             "Not logged in",
@@ -129,7 +129,7 @@ def logout(
         f"Logged out of {escape(server)}",
         f"{escape(app.identifier)} {escape(app.version)}",
     )
-    notice(console, "Not revoked on the server", "a running instance saves it back")
+    notice(console, "Stop running instances", "one still running saves its session back")
 
 
 def status(

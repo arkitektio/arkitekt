@@ -28,7 +28,14 @@ from mikro import Mikro, mikro_service  # noqa: E402
 from rekuest.arkitekt import rekuest_service  # noqa: E402
 from rekuest.client.client import Rekuest  # noqa: E402
 
-from arkitekt import App, connect  # noqa: E402
+from arkitekt import (  # noqa: E402
+    App,
+    ConnectionState,
+    TaskEvent,
+    TaskEventKind,
+    connect,
+    run_detached,
+)
 
 pytestmark = [pytest.mark.integration, pytest.mark.konstruktor]
 
@@ -90,6 +97,64 @@ def test_an_app_offers_an_action_and_is_called(hub: Hub) -> None:
             running.cancel()
 
     assert answer == "KONSTRUKTOR!"
+
+
+def test_a_detached_run_is_called_and_tells_its_host(hub: Hub) -> None:
+    """``run_detached``: the app beside a program of its own, called through the server.
+
+    The host is told where the connection stands and what the caller did, and
+    cancels the run from its own thread -- none of which a stand-in agent proves.
+    """
+    host = App("live.arkitekt.tests.detached", "0.1.0")
+
+    @host.action
+    def whisper(text: str = "hello") -> str:
+        """Whispers it back."""
+        return text.lower()
+
+    states: list[ConnectionState] = []
+    events: list[TaskEvent] = []
+
+    async def on_state(state: ConnectionState) -> None:
+        states.append(state)
+
+    async def on_task(event: TaskEvent) -> None:
+        events.append(event)
+
+    running = run_detached(
+        host,
+        url=hub.fakts_url,
+        redeem_token=hub.redeem_token("detached"),
+        connection_listener=on_state,
+        task_listener=on_task,
+    )
+    caller = App("live.arkitekt.tests.detached-caller", "0.1.0", services=[rekuest_service])
+    try:
+        with connect(
+            caller, url=hub.fakts_url, redeem_token=hub.redeem_token("detached-caller")
+        ) as rt:
+            rekuest = rt.require(Rekuest)
+
+            def call() -> str:
+                (offered,) = [i for i in rekuest.list_implementations() if i.interface == "whisper"]
+                return rekuest.call(offered, text="KONSTRUKTOR")
+
+            answer = eventually(
+                call,
+                timeout=REGISTRATION_TIMEOUT,
+                still_running=lambda: running.state is not ConnectionState.FAILED,
+            )
+    finally:
+        running.cancel()
+
+    assert answer == "konstruktor", running.error
+    assert running.state is ConnectionState.STOPPED and running.error is None
+    assert states[0] is ConnectionState.CONNECTING
+    assert ConnectionState.REGISTERED in states and states[-1] is ConnectionState.STOPPED
+    assigned = [e for e in events if e.kind is TaskEventKind.ASSIGNED]
+    assert assigned and assigned[-1].action == "whisper"
+    assert assigned[-1].arguments == {"text": "KONSTRUKTOR"}
+    assert events[-1].kind is TaskEventKind.DONE
 
 
 def test_a_script_run_with_nothing_but_its_environment_is_callable(hub: Hub) -> None:

@@ -14,13 +14,13 @@ from fakts.grants.remote.authorizers.device_code import (
 from fakts.grants.remote.authorizers.redeem import RedeemAuthorizer
 from fakts.grants.remote.authorizers.static import StaticAuthorizer
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
+from fakts.grants.remote.models import FaktsEndpoint
 from fakts.mesh import MeshOptions, MeshProxy
 from fakts.models import ActiveFakts, Manifest
 from fakts.protocols import FaktsCache
 
 from arkitekt.app.options import ConnectionOptions
 from arkitekt.app.sessions import session_path
-from arkitekt.app.terminal import logged_in, login_prompt
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 logger = logging.getLogger(__name__)
@@ -97,13 +97,22 @@ def build_device_code_fakts(
     using a device code. The user will be prompted to open a browser
     and approve the application once; the resulting session is cached.
     """
+    if device_code_hook is None:
+        # Ours, not fakts' boxed one: a run asks in the look of the rest of it.
+        # Imported here: the terminal is rich, which a host showing the login in
+        # its own interface never needs.
+        from arkitekt.app.terminal import logged_in, login_prompt
+
+        device_code_hook, granted_hook = login_prompt(opened_browser=not headless), logged_in
+    else:
+        # Whoever shows the login says how it went: nothing is printed for them.
+        granted_hook = _granted_quietly
     authorizer = DeviceCodeAuthorizer(
         manifest=manifest,
         open_browser=not headless,
         requested_client_kind=ClientKind.DEVELOPMENT,
-        # Ours, not fakts' boxed one: a run asks in the look of the rest of it.
-        device_code_hook=device_code_hook or login_prompt(opened_browser=not headless),
-        granted_hook=logged_in,
+        device_code_hook=device_code_hook,
+        granted_hook=granted_hook,
         allow_insecure_transport=allow_insecure_transport,
         # Only a node of our own needs a key to join with; a proxy is already on the mesh.
         request_auth_key=isinstance(mesh, MeshOptions) and mesh.requests_key(),
@@ -119,6 +128,10 @@ def build_device_code_fakts(
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
     )
+
+
+async def _granted_quietly(endpoint: FaktsEndpoint, token: str) -> None:
+    """The granted hook of a run whose host shows the login itself."""
 
 
 def build_redeem_fakts(
@@ -260,8 +273,12 @@ def reauth_from_env() -> bool:
 
 def resolve_url(url: Optional[str] = None) -> str:
     """The fakts server a run connects to: what is passed, then ``$FAKTS_URL``,
-    then the public deployment."""
-    return url or os.getenv("FAKTS_URL") or DEFAULT_ARKITEKT_URL
+    then the public deployment.
+
+    Surrounding whitespace and a trailing slash are dropped: a session is saved
+    per server by this string, and ``https://lab/`` is the server ``https://lab``.
+    """
+    return (url or os.getenv("FAKTS_URL") or DEFAULT_ARKITEKT_URL).strip().rstrip("/")
 
 
 def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
@@ -291,6 +308,7 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
             url=url,
             skip_cache=options.skip_cache,
             reauth=reauth,
+            allow_insecure_transport=options.allow_insecure_transport,
             mesh=mesh,
         )
     if redeem_token:
@@ -300,6 +318,7 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
             url=url,
             skip_cache=options.skip_cache,
             reauth=reauth,
+            allow_insecure_transport=options.allow_insecure_transport,
             mesh=mesh,
         )
     return build_device_code_fakts(
@@ -309,5 +328,6 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
         reauth=reauth,
         headless=options.headless,
         device_code_hook=options.device_code_hook,
+        allow_insecure_transport=options.allow_insecure_transport,
         mesh=mesh,
     )

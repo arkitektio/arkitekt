@@ -198,6 +198,7 @@ def write_session(
     refreshed_at: Optional[float] = None,
     deployment: str = "Lab",
     manifest_hash: str = "0" * 64,
+    revocation_endpoint: Optional[str] = None,
 ) -> str:
     """Save a session as a run would have, and return its path. Its tokens are
     recognisable, so a test can tell that none of them is ever shown."""
@@ -218,6 +219,7 @@ def write_session(
                 "auth": {
                     "client_id": "client",
                     "token_endpoint": f"{url}/o/token/",
+                    "revocation_endpoint": revocation_endpoint,
                     "refresh_token": "SECRET-REFRESH",
                     "access_token": "SECRET-ACCESS",
                     "chain_started_at": now if logged_in_at is None else logged_in_at,

@@ -2,6 +2,7 @@
 
 import asyncio
 
+from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.grants.remote.models import FaktsEndpoint
 
 from arkitekt.app.fakts import build_device_code_fakts
@@ -16,12 +17,21 @@ ENDPOINT = FaktsEndpoint(
 )
 
 
+def _challenge(endpoint: FaktsEndpoint, link: str) -> DeviceCodeChallenge:
+    return DeviceCodeChallenge(
+        endpoint=endpoint, user_code="ABCD-EFGH", verification_uri_complete=link, expires_in=300
+    )
+
+
+APPROVE = _challenge(ENDPOINT, "https://lab.example/f/device/?code=ABCD-EFGH")
+
+
 def _flat(output: str) -> str:
     return " ".join(output.split())
 
 
 def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(capsys) -> None:
-    asyncio.run(login_prompt(opened_browser=True)(ENDPOINT, "ABCD-EFGH"))  # pyright: ignore[reportArgumentType]
+    asyncio.run(login_prompt(opened_browser=True)(APPROVE))
 
     out = capsys.readouterr().out
     assert out.startswith("■ Log in to Lab")
@@ -32,7 +42,7 @@ def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(capsys) -
 
 
 def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys) -> None:
-    asyncio.run(login_prompt(opened_browser=False)(ENDPOINT, "ABCD-EFGH"))  # pyright: ignore[reportArgumentType]
+    asyncio.run(login_prompt(opened_browser=False)(APPROVE))
 
     assert "open this link to approve the app" in _flat(capsys.readouterr().out)
 
@@ -40,7 +50,7 @@ def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys) -> None:
 def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(capsys) -> None:
     bare = FaktsEndpoint(base_url="https://lab.example/f/", name="Lab")
 
-    asyncio.run(login_prompt()(bare, "ABCD-EFGH"))  # pyright: ignore[reportArgumentType]
+    asyncio.run(login_prompt()(_challenge(bare, bare.base_url)))
 
     out = capsys.readouterr().out
     assert "https://lab.example/f/" in out and "code ABCD-EFGH" in out
@@ -62,10 +72,12 @@ def test_a_device_code_login_asks_and_confirms_in_our_look() -> None:
     assert authorizer.device_code_hook.__module__ == "arkitekt.app.terminal"
     assert authorizer.granted_hook is logged_in
 
-    async def theirs(endpoint, code) -> None:  # noqa: ANN001
+    async def theirs(challenge: DeviceCodeChallenge) -> None:
         return None
 
     given = build_device_code_fakts(
         manifest, "https://lab.example", skip_cache=True, device_code_hook=theirs
     )
     assert given.grant.authorizer.device_code_hook is theirs  # pyright: ignore[reportAttributeAccessIssue]
+    # Whoever shows the login says how it went: nothing is printed for them.
+    assert given.grant.authorizer.granted_hook is not logged_in  # pyright: ignore[reportAttributeAccessIssue]

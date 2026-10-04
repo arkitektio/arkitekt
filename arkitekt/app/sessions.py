@@ -2,7 +2,8 @@
 
 A session is what a login leaves behind, one file per app, version and server
 (see :func:`session_path`). This module only reads and removes those files; a
-run writes them through fakts. It never returns a token.
+run writes them through fakts. Only :func:`read_credentials`
+returns a token, for a logout to revoke.
 """
 
 import os
@@ -12,6 +13,7 @@ from hashlib import sha256
 from typing import List, Optional
 
 from fakts.cache.file import CacheFile
+from fakts.models import AuthFakt
 from fakts.session import REFRESH_CHAIN_MAX_AGE, REFRESH_TOKEN_MAX_AGE
 from platformdirs import user_state_dir
 
@@ -110,6 +112,16 @@ def read_session(path: str) -> Optional[Session]:
     )
 
 
+def read_credentials(path: str) -> Optional[AuthFakt]:
+    """The credentials of the session at ``path``, for the one thing that needs
+    them without a run: revoking them on logout. ``None`` if there is no session."""
+    try:
+        with open(path, encoding="utf-8") as file:
+            return CacheFile.model_validate_json(file.read()).fakts.auth
+    except (OSError, ValueError):
+        return None
+
+
 def list_sessions() -> List[Session]:
     """Every session cached on this machine, by name."""
     try:
@@ -127,8 +139,9 @@ def list_sessions() -> List[Session]:
 def forget(path: str) -> bool:
     """Remove the session at ``path``. Returns whether there was one.
 
-    This forgets it on this machine only: nothing is revoked on the server, and
-    a process still running on the session writes it back when its token rotates.
+    This forgets it on this machine only (:func:`arkitekt.logout` also revokes it
+    on the server), and a process still running on the session writes it back
+    when its token rotates.
     """
     try:
         os.remove(path)
@@ -143,6 +156,7 @@ __all__ = [
     "cache_dir",
     "forget",
     "list_sessions",
+    "read_credentials",
     "read_session",
     "session_path",
 ]

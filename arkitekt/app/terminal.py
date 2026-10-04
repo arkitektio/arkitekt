@@ -11,7 +11,7 @@ from rich.console import Console
 from rich.markup import escape
 
 if TYPE_CHECKING:
-    from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
+    from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge, DeviceCodeHook
     from fakts.grants.remote.models import FaktsEndpoint
 
 #: The glyph leading each kind of status line, and what a terminal that cannot
@@ -69,16 +69,12 @@ def login_prompt(opened_browser: bool = True) -> "DeviceCodeHook":
         The hook.
     """
 
-    async def prompt(endpoint: "FaktsEndpoint", code: str) -> None:
+    async def prompt(challenge: "DeviceCodeChallenge") -> None:
         console = Console()
-        # `configure` is a template with a literal {code}: filled in, the link
-        # lands on the approval page with the code already entered.
-        link = (
-            endpoint.configure.replace("{code}", code) if endpoint.configure else endpoint.base_url
-        )
+        link, code = challenge.verification_uri_complete, challenge.user_code
         step(
             console,
-            f"Log in to {escape(endpoint.name)}",
+            f"Log in to {escape(challenge.endpoint.name)}",
             "opened in your browser" if opened_browser else "open this link to approve the app",
         )
         console.print(f"  [link={link}]{escape(link)}[/link]", highlight=False, soft_wrap=True)

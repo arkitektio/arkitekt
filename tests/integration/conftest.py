@@ -53,4 +53,4 @@ def hub(konstruktor_hub) -> "Hub":  # noqa: ANN001 -- konstruktor's factory fixt
     One redeem token serves one app, so there is one for every app the tests
     connect. Each test takes its own with ``hub.redeem_token(<a name>)``.
     """
-    return konstruktor_hub(services=["rekuest", "mikro"], redeem_tokens=5)
+    return konstruktor_hub(services=["rekuest", "mikro"], redeem_tokens=7)

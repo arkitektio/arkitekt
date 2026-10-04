@@ -39,6 +39,13 @@ from arkitekt_spec.actions import (
 )
 from arkitekt_spec.declare.actors.policy import CancelOnDisconnect, DisconnectPolicy, OnDisconnect
 from arkitekt_spec.declare.actors.types import Actifier
+from arkitekt_spec.declare.agents.connection import (
+    ConnectionListener,
+    ConnectionState,
+    TaskEvent,
+    TaskEventKind,
+    TaskListener,
+)
 from arkitekt_spec.declare.agents.errors import NoCallerError
 from arkitekt_spec.declare.annotations import Default, Description, Provides, Requires, Units
 from arkitekt_spec.declare.app import AppRegistry
@@ -68,11 +75,21 @@ from arkitekt_spec.declare.task import (
     retry,
 )
 from arkitekt_spec.declare.widgets import withEffect, withValidator
+from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.mesh import MeshOptions, MeshProxy
 
 from .app.app import App
 from .inspect import inspect
-from .runtime import Runtime, arun, connect, run
+from .runtime import (
+    DetachedRun,
+    Runtime,
+    arun,
+    connect,
+    has_stored_login,
+    logout,
+    run,
+    run_detached,
+)
 from .serve import serve
 from .shortcuts import Easy, aeasy, easy, interactive
 
@@ -84,6 +101,17 @@ __all__ = [
     "connect",
     "run",
     "serve",
+    # beside a program with a life of its own
+    "run_detached",
+    "DetachedRun",
+    "ConnectionState",
+    "ConnectionListener",
+    "TaskEvent",
+    "TaskEventKind",
+    "TaskListener",
+    "DeviceCodeChallenge",
+    "has_stored_login",
+    "logout",
     "Easy",
     "easy",
     "aeasy",

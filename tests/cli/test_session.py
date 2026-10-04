@@ -116,7 +116,7 @@ def test_logout_forgets_this_apps_session_only(app_dir):
     assert result.exit_code == 0, result.output
     assert "Logged out" in result.output
     # It does not claim more than it did.
-    assert "Not revoked on the server" in _flat(result.output)
+    assert "Stop running instances" in _flat(result.output)
     assert not os.path.exists(mine)
     assert os.path.exists(elsewhere) and os.path.exists(another)
 
