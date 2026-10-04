@@ -45,9 +45,7 @@ def no_plate() -> Plate:
 
 @app.action
 def load_plate(plate: Plate, barcode: str) -> str:
-    """Load Plate
-
-    Records a new plate on the deck. Any guard on the old plate now fails.
+    """Records a new plate on the deck. Any guard on the old plate now fails.
     """
     plate.barcode = barcode
     plate.dispensed_ul = {}
@@ -56,9 +54,7 @@ def load_plate(plate: Plate, barcode: str) -> str:
 
 @app.action
 def dispense(plate: Plate, well: str, volume_ul: float, *, task: Task) -> float:
-    """Dispense
-
-    Moves liquid into a well. Running it again puts twice the volume in the well.
+    """Moves liquid into a well. Running it again puts twice the volume in the well.
     """
     for step in range(10):
         task.progress((step + 1) * 10, f"Dispensing into {well}")
@@ -69,9 +65,7 @@ def dispense(plate: Plate, well: str, volume_ul: float, *, task: Task) -> float:
 
 @app.action(effects=Effects.NONE)
 def read_absorbance(well: str) -> float:
-    """Read Absorbance
-
-    Reads the plate reader. Moves nothing, so it overrides the app's default.
+    """Reads the plate reader. Moves nothing, so it overrides the app's default.
     """
     return 0.42
 

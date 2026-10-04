@@ -71,7 +71,7 @@ actions with `run(app)` needs the `rekuest` extra. `arkitekt` requires **Python 
 An `App` is a declaration: its identifier, its version, and the actions it offers. Any function
 decorated with `@app.action` becomes a callable building block on the platform. Its arguments and
 return value are inferred from the type hints, which also drive validation, documentation and the
-generated GUI. The first line of the docstring becomes the action's title, the rest its description.
+generated GUI. The function's name becomes the action's title (`greet` is "Greet"; pass `name=` for another), its docstring the description.
 
 ```python
 from typing import Annotated
@@ -86,10 +86,7 @@ def greet(
     name: Annotated[str, Description("Who to greet")] = "world",
     times: Annotated[int, Description("How often to say it")] = 1,
 ) -> str:
-    """Greet
-
-    Says hello.
-    """
+    """Says hello."""
     return " ".join([f"Hello {name}!"] * times)
 
 
@@ -101,6 +98,40 @@ Nothing connects when the `App` is declared. `run(app)` authenticates (opening y
 time), registers the actions and blocks until you stop it. The server is taken from `$FAKTS_URL`, or
 passed explicitly with `run(app, url="localhost")`; `headless=True` prints a device code instead of
 opening a browser.
+
+### State, not getters
+
+Do not offer actions that only read something back (`get_position`, `is_on`). Publish it as a state
+and keep it in sync; the UI shows it live and other apps watch it instead of asking:
+
+```python
+@app.state
+class Stage:
+    x_um: float = 0.0
+    y_um: float = 0.0
+
+
+@app.startup
+def connect_stage() -> Stage:
+    return Stage()
+
+
+@app.action
+def move_to(stage: Stage, x_um: float, y_um: float) -> None:
+    """Moves the stage; where it is now is the state."""
+    stage.x_um, stage.y_um = x_um, y_um
+```
+
+Assigning a field publishes it. An action returns what it made, never what the state already says.
+More in [docs/state.md](docs/state.md).
+
+### Beside a program of your own
+
+`run(app)` blocks, which suits a script. A program with its own window, server or threads calls
+`run_detached(app, ...)` instead: it returns at once with a run that reports where it stands
+(`running.state`, or a `connection_listener`) and is cancelled and started again from any thread.
+`device_code_hook` hands the login to your own interface and `task_listener` tells it what remote
+callers do. See [docs/embedding.md](docs/embedding.md).
 
 ### Using a service inside an action
 
@@ -277,6 +308,8 @@ uv run --script examples/hello.py
 
 - 📚 **Documentation:** [arkitekt.live](https://arkitekt.live)
 - 🧰 **CLI reference:** [docs/cli.md](docs/cli.md)
+- 🔌 **Embedding an app in a program you already have:** [docs/embedding.md](docs/embedding.md)
+- 📡 **State, not getters:** [docs/state.md](docs/state.md)
 - 📦 **PyPI:** [pypi.org/project/arkitekt](https://pypi.org/project/arkitekt/)
 - 🐙 **Source:** [github.com/jhnnsrs/arkitekt](https://github.com/jhnnsrs/arkitekt)
 

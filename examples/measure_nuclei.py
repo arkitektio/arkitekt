@@ -41,9 +41,7 @@ def measure_nuclei(
     *,
     task: Task,
 ) -> NucleiMeasurement:
-    """Measure Nuclei
-
-    Segments scikit-image's `human_mitosis` field by Otsu thresholding and
+    """Segments scikit-image's `human_mitosis` field by Otsu thresholding and
     reports what the connected components add up to.
     """
     image = data.human_mitosis()

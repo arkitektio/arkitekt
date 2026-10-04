@@ -50,9 +50,7 @@ def move_to(
     *,
     task: Task,
 ) -> float:
-    """Move To
-
-    Drives the stage there in 20 steps and returns the distance travelled.
+    """Drives the stage there in 20 steps and returns the distance travelled.
     """
     start = np.array([state.x_um, state.y_um, state.z_um])
     target = np.array([x_um, y_um, z_um])

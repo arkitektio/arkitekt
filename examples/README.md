@@ -1,6 +1,6 @@
 # Examples
 
-Eleven small, self-contained scripts. Each one declares its own dependencies in a
+Twelve small, self-contained scripts. Each one declares its own dependencies in a
 [PEP 723](https://peps.python.org/pep-0723/) header, so there is nothing to install:
 
 ```bash
@@ -23,6 +23,7 @@ services (`easy(...)` — it does its thing and exits). Most of these show one o
 | `in_memory_pipeline.py` | offer | `app.memory_structure(np.ndarray)`: arrays crossing actions on the agent | — |
 | `microscope_stage.py` | offer | `@app.state`, `@app.startup`, `@app.background` | — |
 | `typed_context.py` | offer | `App(app_context=Setup)` and `run(app, context=...)` | — |
+| `embedded_host.py` | offer | `run_detached` beside a program with its own loop: state kept in sync, the login and remote calls shown by the host | — |
 | `upload_cells3d.py` | call | uploading a z-stack with a pyramid | mikro |
 | `denoise_volume.py` | offer | spec ports (`Volume`), an injected `Mikro`, derivation edges | mikro |
 | `upload_nifti.py` | call | nibabel, and the `(i,j,k) -> (z,y,x)` reversal | mikro |

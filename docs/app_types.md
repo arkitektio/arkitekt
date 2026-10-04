@@ -37,7 +37,7 @@ Use this decision tree to help you choose:
 In this mode, your code runs directly in your local Python environment. You are responsible for starting and stopping the script.
 
 *   **Custom GUI Support:** If you are building a desktop application with PyQt, PySide, or integrating into tools like Napari, this is the way to go. You manage the window and the event loop, while Arkitekt runs in the background to handle communication.
-*   **Integration:** Perfect for adding Arkitekt connectivity to existing tools. You can start the Arkitekt client as a background thread.
+*   **Integration:** Perfect for adding Arkitekt connectivity to existing tools. `run_detached(app)` runs the app beside your program and hands you a run you can watch and cancel; see [Embedding an app](embedding.md).
 *   **Prototyping:** The fastest way to test an idea. No Dockerfile, no manifest, just `import arkitekt`.
 
 **Example Use Cases:**

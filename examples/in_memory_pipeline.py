@@ -37,9 +37,7 @@ DEMO_TIFF = Path.home() / ".arkitekt-examples" / "demo_cells.tif"
 
 @app.action
 def write_demo_tiff() -> str:
-    """Write Demo Tiff
-
-    Writes a small synthetic two-cell field to disk and returns its path, so the
+    """Writes a small synthetic two-cell field to disk and returns its path, so the
     other actions have something to read without a download.
     """
     DEMO_TIFF.parent.mkdir(parents=True, exist_ok=True)
@@ -54,9 +52,7 @@ def write_demo_tiff() -> str:
 
 @app.action
 def read_tiff(path: Annotated[str, Description("A TIFF on this machine")]) -> NDArray[Any]:
-    """Read Tiff
-
-    Reads a TIFF with tifffile. The array stays on this agent.
+    """Reads a TIFF with tifffile. The array stays on this agent.
     """
     return np.asarray(tifffile.imread(path))
 
@@ -66,9 +62,7 @@ def segment(
     image: NDArray[Any],
     sigma: Annotated[float, Description("Smoothing before thresholding")] = 2.0,
 ) -> NDArray[Any]:
-    """Segment
-
-    Otsu-thresholds a smoothed copy and labels the connected components.
+    """Otsu-thresholds a smoothed copy and labels the connected components.
     """
     smoothed = gaussian(image.astype(np.float32), sigma=sigma)
     return measure.label(smoothed > threshold_otsu(smoothed))
@@ -76,9 +70,7 @@ def segment(
 
 @app.action
 def count_objects(labels: NDArray[Any]) -> int:
-    """Count Objects
-
-    How many labels the mask carries, background excluded.
+    """How many labels the mask carries, background excluded.
     """
     return int(labels.max())
 

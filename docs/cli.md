@@ -264,7 +264,7 @@ arkitekt logout --url http://localhost:8000   # ... the one for that server
 | :--- | :--- |
 | `status` | Shows the app in this folder and its session: where, since when, and whether it is still usable. |
 | `login` | Logs the app in and saves the session. Takes `--url`, `--token`, `--redeem-token`, `--headless`, `--reauth`. |
-| `logout` | Forgets the saved session. Local only: nothing is revoked on the server, and an instance of the app that is still running saves its session back. |
+| `logout` | Revokes the saved session on a server that offers revocation, and forgets it on this machine. Stop an instance of the app that is still running first: it saves its session back. |
 
 Logged in as the wrong user? `arkitekt login --reauth`.
 

@@ -39,9 +39,7 @@ def detect_spikes(
     elektro: Elektro,
     task: Task,
 ) -> SingleChannelTrace:
-    """Detect Spikes
-
-    Finds threshold crossings and stores them as a trace of the same length.
+    """Finds threshold crossings and stores them as a trace of the same length.
     """
     source = trace.data
     values = np.asarray(source).squeeze()

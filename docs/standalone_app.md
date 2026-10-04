@@ -55,6 +55,12 @@ Both take the same keyword arguments:
 - `reauth` — log in again even when a session is cached, and cache the new one.
   Defaults to `$ARKITEKT_REAUTH`.
 - `force` — take over an existing agent connection of this app.
+- `allow_insecure_transport` — talk plain http to a server that is not on this
+  machine. Off, such a server is refused.
+
+A program with a life of its own (a GUI, a control program) does not call `run`,
+which blocks: it calls `run_detached(app, ...)` with the same arguments. See
+[Embedding an app](embedding.md).
 
 The identifier defaults to the calling file's name, so `easy()` with no
 arguments works for a quick script.

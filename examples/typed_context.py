@@ -42,9 +42,7 @@ app = App("typed-context", "0.1.0", app_context=Setup)
 
 @app.action
 def list_images(setup: Setup) -> list[str]:
-    """List Images
-
-    The TIFFs in this installation's image directory.
+    """The TIFFs in this installation's image directory.
     """
     return sorted(p.name for p in setup.image_dir.glob("*.tif"))
 
@@ -54,9 +52,7 @@ def physical_size(
     setup: Setup,
     name: Annotated[str, Description("A file name from `list_images`")],
 ) -> float:
-    """Physical Size
-
-    The width of an image in micrometers, using this installation's pixel size.
+    """The width of an image in micrometers, using this installation's pixel size.
     """
     array = np.asarray(tifffile.imread(setup.image_dir / name))
     return float(array.shape[-1] * setup.pixel_size_um)

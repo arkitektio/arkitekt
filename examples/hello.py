@@ -23,10 +23,8 @@ def greet(
     name: Annotated[str, Description("Who to greet")] = "world",
     times: Annotated[int, Description("How often to say it")] = 1,
 ) -> str:
-    """Greet
-
-    Says hello. The docstring's first line is the action's title, the rest its
-    description — this is the whole UI, generated from the signature.
+    """Says hello. The function's name is the action's title ("Greet"), the
+    docstring its description — this is the whole UI, generated from the signature.
     """
     return " ".join([f"Hello {name}!"] * times)
 

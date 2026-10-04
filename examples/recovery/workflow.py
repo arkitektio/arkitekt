@@ -89,9 +89,7 @@ def stain_and_measure(
     *,
     task: Task,
 ) -> float:
-    """Stain And Measure
-
-    Counts the cells in the well's image, doses dye in proportion, then reads the well.
+    """Counts the cells in the well's image, doses dye in proportion, then reads the well.
     """
     started = task.now()  # recorded: a resumed run sees the same start time
 

@@ -35,9 +35,7 @@ app = App("segmentation", "0.1.0", services=[mikro_service])
 
 @app.action(effects=Effects.NONE)
 def count_cells(image: Annotated[SingleChannelImage, Description("The image to count in")]) -> int:
-    """Count Cells
-
-    Reads the image and counts the objects in it. Changes nothing, so if its agent
+    """Reads the image and counts the objects in it. Changes nothing, so if its agent
     dies, it is simply run again (AT_LEAST_ONCE) unless the caller says otherwise.
     """
     pixels = np.asarray(image.data)
@@ -49,9 +47,7 @@ def segment(
     mikro: Mikro,
     image: Annotated[SingleChannelImage, Description("The image to segment")],
 ) -> LabelMask:
-    """Segment
-
-    Stores a new label dataset next to the image. No claim (UNKNOWN), and honestly
+    """Stores a new label dataset next to the image. No claim (UNKNOWN), and honestly
     so: a re-run stores a *second* dataset. By default a lost run fails; a caller
     who'd rather clean up a duplicate than lose the run asks for AT_LEAST_ONCE.
     """

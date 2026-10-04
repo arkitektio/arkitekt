@@ -41,10 +41,7 @@ def denoise(
     volume: Annotated[Volume, Description("The stack to smooth")],  # The input volume to denoise
     sigma: Annotated[float, Description("Gaussian width, in pixels")] = 1.5,
 ) -> Volume:
-    """Denoise Volume
-
-    Smooths a stack with a gaussian and stores the result on the same grid.
-    """
+    """Smooths a stack with a gaussian and stores the result on the same grid."""
     # `.data` fetches the array behind the lens as a lazy s3 backed xarray DataArray
     source = volume.data
     task.progress(20, f"Smoothing {source.shape}")
