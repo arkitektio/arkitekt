@@ -327,7 +327,7 @@ def test_the_blok_template_is_a_whole_project_around_a_blok_agent(tmp_path: Path
     assert "App('com.test.app', __version__, author='me', scopes=['read'], services=[mikro_service])" in source
     assert "@app.state" in source and 'app.blok(\n    "analysis",' in source
     output = " ".join(result.output.split())
-    assert "tests/test_app_hub.py tests it against a hub" in output
+    assert f"{HUB_TEST} tests it against a hub" in output
     assert "cd analyst && arkitekt run dev" in output
 
 
@@ -520,7 +520,7 @@ def test_what_semantic_release_tags_is_a_release_the_app_declares(tmp_path: Path
 # ---------------------------------------------------------------------------
 
 
-def _run_the_projects_tests(project: Path) -> subprocess.CompletedProcess:
+def _run_the_projects_tests(project: Path) -> subprocess.CompletedProcess[str]:
     """Run a created project's tests with this interpreter: its own environment is uv's to make."""
     env = {**os.environ, "PYTHONPATH": os.pathsep.join(p for p in sys.path if p)}
     env.pop("ARKITEKT_APP", None)
@@ -555,7 +555,7 @@ def test_a_project_comes_with_tests_that_pass_offline(tmp_path: Path, fake_uv, s
 # ---------------------------------------------------------------------------
 
 
-def _pytest_in(project: Path, *arguments: str, cwd: Path | None = None) -> subprocess.CompletedProcess:
+def _pytest_in(project: Path, *arguments: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
     """Run pytest on a created project the way `uv run pytest` does: as the script, not `python -m`.
 
     The difference is the one the conftest is there for: `python -m pytest` puts the
@@ -601,10 +601,15 @@ def test_a_project_has_one_test_file_with_no_server_and_one_against_a_hub(image_
     assert "2 deselected" in _pytest_in(image_project, "-q", "tests/test_app_hub.py").stdout
 
 
+# A created file is named the way the platform names it: `tests\test_app.py` on Windows.
+APP_TEST = str(Path("tests") / "test_app.py")
+HUB_TEST = str(Path("tests") / "test_app_hub.py")
+
+
 def test_create_says_how_to_run_each_of_them(tmp_path: Path, fake_uv):
     output = " ".join(create(tmp_path, "tested", *IDENTITY).output.split())
-    assert "tests/test_app.py tests it" in output and "uv run pytest`" in output
-    assert "tests/test_app_hub.py tests it against a hub" in output and "uv run pytest -m hub" in output
+    assert f"{APP_TEST} tests it" in output and "uv run pytest`" in output
+    assert f"{HUB_TEST} tests it against a hub" in output and "uv run pytest -m hub" in output
 
 
 @pytest.mark.parametrize("starter", ["simple", "filter"])

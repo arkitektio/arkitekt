@@ -277,14 +277,13 @@ def test_a_run_says_when_its_agent_is_registered_lost_and_back(app_dir, monkeypa
     result = _invoke(app_dir, "run", "prod")
 
     assert result.exit_code == 0, result.output
-    lines = [line.strip() for line in result.output.splitlines()]
-    registered = lines.index(
-        "◆ Registered  providing 3 actions: append_world, generate_n_string, print_string"
-    )
-    assert lines[registered + 1 : registered + 3] == [
-        "□ Connection lost, reconnecting",
-        "◆ Reconnected",
-    ]
+    # As one line: the first is 80 characters long, which a Windows console wraps.
+    output = " ".join(result.output.split())
+    assert (
+        "◆ Registered providing 3 actions: append_world, generate_n_string, print_string"
+        " □ Connection lost, reconnecting"
+        " ◆ Reconnected"
+    ) in output
 
 
 def _raising(error):

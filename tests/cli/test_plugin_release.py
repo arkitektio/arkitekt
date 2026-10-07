@@ -10,6 +10,7 @@ import hashlib
 import json
 import os
 import subprocess
+import sys
 import threading
 import tomllib
 from collections.abc import Iterator
@@ -162,7 +163,7 @@ class _Registry(BaseHTTPRequestHandler):
     manifests: dict[str, bytes] = {}
     seen_tokens: list[str] = []
 
-    def log_message(self, *arguments: object) -> None:
+    def log_message(self, *arguments: object) -> None:  # pyright: ignore[reportIncompatibleMethodOverride] -- silenced, whatever it is handed
         pass
 
     def _answer(self, status: int, body: bytes = b"", **headers: str) -> None:
@@ -401,6 +402,7 @@ def test_ci_gitlab_is_not_given_a_semantic_release_configuration():
         assert not (Path(directory) / "pyproject.toml").exists()
 
 
+@pytest.mark.skipif(sys.platform == "win32", reason="the action is a bash script, run on a Linux runner: Windows' `bash` is not one")
 def test_the_action_releases_the_commit_the_job_tagged():
     """A push to a branch is a channel build, unless the job says it cut the release itself."""
     import yaml

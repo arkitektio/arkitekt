@@ -19,6 +19,7 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
+    AsyncIterator,
     Dict,
     Generic,
     List,
@@ -539,7 +540,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
         agent, interface = self._local_call(action)
         return await acall_local(agent, interface, *args, **kwargs)
 
-    async def aiterate_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    async def aiterate_local(self, action: Any, *args: Any, **kwargs: Any) -> AsyncIterator[Any]:  # noqa: ANN401
         """Call one of the app's own actions in-process and yield each of its results.
 
         See :meth:`acall_local`.
@@ -550,7 +551,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
         async for result in aiterate_local(agent, interface, *args, **kwargs):
             yield result
 
-    async def aiterate_local_raw(self, action: Any, args: Dict[str, Any]) -> Any:  # noqa: ANN401
+    async def aiterate_local_raw(self, action: Any, args: Dict[str, Any]) -> AsyncIterator[Any]:  # noqa: ANN401
         """Call one of the app's own actions with arguments as they travel, and yield
         each result as it would travel back: what a server sends and receives.
 

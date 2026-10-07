@@ -317,17 +317,17 @@ class StatusDot(QtWidgets.QWidget):
     @property
     def pulsing(self) -> bool:
         """Whether the dot is breathing."""
-        return self._pulse.state() == QtCore.QAbstractAnimation.Running
+        return self._pulse.state() == QtCore.QAbstractAnimation.Running  # pyright: ignore[reportAttributeAccessIssue] -- the stubs scope the enum
 
     def _on_phase(self, value: Any) -> None:  # noqa: ANN401 -- a QVariant
         self._phase = float(value)
         self.update()
 
-    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802 -- Qt's name
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802 -- Qt's name  # pyright: ignore[reportIncompatibleMethodOverride] -- the stubs call it a0
         """Paint the dot, and around it the halo of a pulse."""
         painter = QtGui.QPainter(self)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        painter.setPen(QtCore.Qt.NoPen)
+        painter.setPen(QtCore.Qt.NoPen)  # pyright: ignore[reportAttributeAccessIssue] -- the stubs scope the enum
         centre = QtCore.QPointF(self.width() / 2, self.height() / 2)
         core = self.SIZE * 0.29
         if self.pulsing:
@@ -492,7 +492,7 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb = QtWidgets.QPushButton(MagicBar.CONNECT_LABEL)
         self.magicb.setObjectName("magicButton")
         self.magicb.setFixedHeight(self.HEIGHT)
-        self.magicb.setCursor(QtCore.Qt.PointingHandCursor)
+        self.magicb.setCursor(QtCore.Qt.PointingHandCursor)  # pyright: ignore[reportAttributeAccessIssue] -- the stubs scope the enum
         self.magicb.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
 
         self.configure_future = None
@@ -504,7 +504,7 @@ class MagicBar(QtWidgets.QWidget):
         self.gearb.setIcon(QtGui.QIcon(QtGui.QPixmap(get_image_path("gear.png", dark_mode=dark_mode))))
         self.gearb.setIconSize(QtCore.QSize(16, 16))
         self.gearb.setFixedSize(self.HEIGHT, self.HEIGHT)
-        self.gearb.setCursor(QtCore.Qt.PointingHandCursor)
+        self.gearb.setCursor(QtCore.Qt.PointingHandCursor)  # pyright: ignore[reportAttributeAccessIssue] -- the stubs scope the enum
         self.gearb.setToolTip("Settings and logs")
         self._on_error = on_error
 
@@ -632,8 +632,10 @@ class MagicBar(QtWidgets.QWidget):
         if self.magicb.property("quiet") != quiet:
             self.magicb.setProperty("quiet", quiet)
             # A property a selector reads only takes effect on a re-polish.
-            self.magicb.style().unpolish(self.magicb)
-            self.magicb.style().polish(self.magicb)
+            style = self.magicb.style()
+            if style is not None:
+                style.unpolish(self.magicb)
+                style.polish(self.magicb)
         self.dot.set_status(STATUS_COLORS[self.process_state.value], pulsing=pulsing)
         self.caption.setText(text)
         self.caption.setToolTip(text)

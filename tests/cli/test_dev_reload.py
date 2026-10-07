@@ -50,7 +50,7 @@ def project(tmp_path, monkeypatch):
     before = set(sys.modules)
     yield tmp_path
     for name in set(sys.modules) - before:
-        if getattr(sys.modules[name], "__file__", None) and str(tmp_path) in sys.modules[name].__file__:
+        if str(tmp_path) in (getattr(sys.modules[name], "__file__", None) or ""):
             del sys.modules[name]
 
 
@@ -120,8 +120,8 @@ def test_the_project_is_what_lives_in_the_folder_outside_an_environment(project)
     (project / "devmine.py").write_text("X = 1\n")
     sys.path.insert(0, str(project / ".venv" / "lib"))
     try:
-        import devmine  # noqa: F401
-        import devvendored  # noqa: F401
+        import devmine  # noqa: F401  # pyright: ignore[reportMissingImports] -- written above
+        import devvendored  # noqa: F401  # pyright: ignore[reportMissingImports] -- written above
 
         mine = project_modules(str(project))
     finally:
@@ -140,7 +140,7 @@ def test_deep_follows_packages_that_live_outside_the_project_and_any_environment
     sys.path.insert(0, str(elsewhere))
     baseline = frozenset(sys.modules)
     try:
-        import devlinked  # noqa: F401
+        import devlinked  # noqa: F401  # pyright: ignore[reportMissingImports] -- written above
 
         roots = development_roots(str(project), baseline)
         modules = development_modules(str(project), baseline)
@@ -155,11 +155,11 @@ def test_deep_follows_packages_that_live_outside_the_project_and_any_environment
 def test_what_was_loaded_before_the_app_is_never_reloaded(project):
     """The SDK the CLI runs on may live in the folder, or be a checkout: it is not the app's."""
     (project / "devsdk.py").write_text("X = 1\n")
-    import devsdk  # noqa: F401
+    import devsdk  # noqa: F401  # pyright: ignore[reportMissingImports] -- written above
 
     baseline = frozenset(sys.modules)
     (project / "devappmodule.py").write_text("X = 1\n")
-    import devappmodule  # noqa: F401
+    import devappmodule  # noqa: F401  # pyright: ignore[reportMissingImports] -- written above
 
     assert project_modules(str(project), baseline) == ["devappmodule"]
     # arkitekt itself is a checkout outside any environment here, and stays put.
@@ -408,7 +408,7 @@ def test_dev_force_mesh_reaches_the_runner_as_the_mesh_it_stands_for(app_dir, mo
     monkeypatch.setattr(dev_module, "run_dev", fake_run_dev)
     monkeypatch.delenv("ARKITEKT_MESH_PROXY", raising=False)
 
-    def run_dev(*flags: str) -> dict:
+    def run_dev(*flags: str) -> dict[str, object]:
         result = CliRunner().invoke(
             cli_app, ["--work-dir", str(app_dir), "run", "dev", "app.py", *flags]
         )

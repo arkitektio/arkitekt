@@ -246,6 +246,10 @@ if pytest is not None:
         (:func:`service_images`), on a port of its own, and removed afterwards.
         Tests that ask for it are skipped where no hub can be made.
         """
+        # Installed, or this fixture would not exist: said again for the type checker,
+        # which forgets it inside a function.
+        import pytest
+
         try:
             import konstruktor
             from konstruktor.pytest_plugin import docker_available
