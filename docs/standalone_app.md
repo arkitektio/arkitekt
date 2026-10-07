@@ -65,12 +65,16 @@ which blocks: it calls `run_detached(app, ...)` with the same arguments. See
 The identifier defaults to the calling file's name, so `easy()` with no
 arguments works for a quick script.
 
-## Limitations
+## From a script to a plugin
 
-Standalone apps are great for development but have some limitations:
+A standalone app and a [plugin app](plugin_app.md) declare the same `App`. What a
+script lacks is the project around it:
 
-- **No Building**: You cannot build a standalone app into a Docker container using the Arkitekt CLI.
-- **No Publishing**: You cannot publish a standalone app to the Arkitekt registry using the Arkitekt CLI.
-- **Manual Execution**: You need to run the script manually (e.g., `python my_app.py`).
+- **No image**: nothing says how to build it. `arkitekt plugin init` adds a
+  flavour (a Dockerfile) to the folder.
+- **No release**: nothing publishes it. `arkitekt plugin ci github` adds the
+  workflow that does, on every push.
+- **Started by hand**: you run the script (`python my_app.py`), or
+  `arkitekt run dev my_app` for reloading while you work on it.
 
-If you need to distribute your app or run it in a production environment, consider creating a [Plugin App](plugin_app.md).
+`arkitekt create` sets all of that up for a new app; see [Plugin App](plugin_app.md).

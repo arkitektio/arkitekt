@@ -24,7 +24,7 @@ from scipy.signal import find_peaks
 
 from arkitekt import App, Description, Task, run
 from elektro import Elektro, elektro_service
-from elektro.specs import SingleChannelTrace, carried_axes, ensure
+from elektro.specs import SingleChannelTrace, carried_axes
 
 app = App("detect-spikes", "0.1.0")
 app.service(elektro_service)
@@ -56,7 +56,7 @@ def detect_spikes(
         name=f"spikes (>{threshold} mV)",
         axes=carried_axes(trace, source.dims),
     )
-    return ensure(result.lens(), SingleChannelTrace)
+    return result.lens()
 
 
 if __name__ == "__main__":

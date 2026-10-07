@@ -286,6 +286,110 @@ class Profile(QtWidgets.QDialog):
         return self.settings.value("go_all_the_way_down", True, bool)
 
 
+class StatusDot(QtWidgets.QWidget):
+    """A small coloured dot that says where the run stands, and breathes while it is live."""
+
+    SIZE = 14
+
+    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
+        """A grey dot that stands still, until it is told a status."""
+        super().__init__(parent)
+        self.setFixedSize(self.SIZE, self.SIZE)
+        self._color = QtGui.QColor("#94a3b8")
+        self._phase = 0.0
+        self._pulse = QtCore.QVariantAnimation(self)
+        self._pulse.setStartValue(0.0)
+        self._pulse.setEndValue(1.0)
+        self._pulse.setDuration(1400)
+        self._pulse.setLoopCount(-1)
+        self._pulse.valueChanged.connect(self._on_phase)
+
+    def set_status(self, color: str, pulsing: bool = False) -> None:
+        """Show ``color``; a pulsing dot has a halo that grows and fades."""
+        self._color = QtGui.QColor(color)
+        if pulsing:
+            self._pulse.start()
+        else:
+            self._pulse.stop()
+            self._phase = 0.0
+        self.update()
+
+    @property
+    def pulsing(self) -> bool:
+        """Whether the dot is breathing."""
+        return self._pulse.state() == QtCore.QAbstractAnimation.Running
+
+    def _on_phase(self, value: Any) -> None:  # noqa: ANN401 -- a QVariant
+        self._phase = float(value)
+        self.update()
+
+    def paintEvent(self, event: QtGui.QPaintEvent) -> None:  # noqa: N802 -- Qt's name
+        """Paint the dot, and around it the halo of a pulse."""
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        painter.setPen(QtCore.Qt.NoPen)
+        centre = QtCore.QPointF(self.width() / 2, self.height() / 2)
+        core = self.SIZE * 0.29
+        if self.pulsing:
+            halo = QtGui.QColor(self._color)
+            halo.setAlphaF(0.45 * (1.0 - self._phase))
+            painter.setBrush(halo)
+            radius = core + (self.SIZE / 2 - core) * self._phase
+            painter.drawEllipse(centre, radius, radius)
+        painter.setBrush(self._color)
+        painter.drawEllipse(centre, core, core)
+        painter.end()
+
+
+#: The colour of the dot per step, and of the button that takes the next one.
+STATUS_COLORS = {
+    "unkonfigured": "#94a3b8",
+    "unlogged": "#f59e0b",
+    "unprovided": "#3b82f6",
+    "providing": "#22c55e",
+}
+ACCENT = "#6366f1"
+ACCENT_HOVER = "#7477f5"
+ACCENT_PRESSED = "#4f52d8"
+
+
+def bar_stylesheet(dark_mode: bool) -> str:
+    """The look of the bar: one filled button for the next step, quiet everything else."""
+    ink = "255, 255, 255" if dark_mode else "15, 23, 42"
+    return f"""
+    QPushButton#magicButton {{
+        background-color: {ACCENT};
+        color: white;
+        border: 1px solid {ACCENT};
+        border-radius: 6px;
+        padding: 0 14px;
+        font-weight: 600;
+    }}
+    QPushButton#magicButton:hover {{ background-color: {ACCENT_HOVER}; border-color: {ACCENT_HOVER}; }}
+    QPushButton#magicButton:pressed {{ background-color: {ACCENT_PRESSED}; border-color: {ACCENT_PRESSED}; }}
+    QPushButton#magicButton:disabled {{
+        background-color: rgba({ink}, 0.08);
+        border-color: rgba({ink}, 0.08);
+        color: rgba({ink}, 0.4);
+    }}
+    QPushButton#magicButton[quiet="true"] {{
+        background-color: transparent;
+        color: rgba({ink}, 0.85);
+        border: 1px solid rgba({ink}, 0.25);
+    }}
+    QPushButton#magicButton[quiet="true"]:hover {{ background-color: rgba({ink}, 0.08); }}
+    QPushButton#magicButton[quiet="true"]:pressed {{ background-color: rgba({ink}, 0.16); }}
+    QPushButton#gearButton {{
+        background-color: transparent;
+        border: 1px solid rgba({ink}, 0.25);
+        border-radius: 6px;
+    }}
+    QPushButton#gearButton:hover {{ background-color: rgba({ink}, 0.08); }}
+    QPushButton#gearButton:pressed {{ background-color: rgba({ink}, 0.16); }}
+    QLabel#magicCaption {{ color: rgba({ink}, 0.62); background: transparent; }}
+    """
+
+
 class AppState(str, Enum):
     """The state of the app."""
 
@@ -309,6 +413,7 @@ class MagicBar(QtWidgets.QWidget):
     profile dialog. To adjust some parameters of the app"""
 
     CONNECT_LABEL = "Connect"
+    HEIGHT = 32
 
     app_state_changed = QtCore.Signal()
     app_up = QtCore.Signal()
@@ -322,6 +427,7 @@ class MagicBar(QtWidgets.QWidget):
         runtime: Runtime[Any],
         dark_mode: bool = False,
         on_error: Optional[Callable[[Exception], None]] = None,
+        context: Optional[Any] = None,
     ) -> None:
         """Magic bar Widget
 
@@ -339,9 +445,14 @@ class MagicBar(QtWidgets.QWidget):
             Should we use the dark mode, by default False
         on_error : Optional[Callable[[Exception], None]], optional
             And additinal callback if an error is raised, by default None
+        context : Optional[Any], optional
+            The app context the run is provided with, for an app that declares
+            one (``QtApp(..., app_context=Window)``): an action annotated with
+            the class is handed it. Typically the window the bar sits in.
         """
         super().__init__()
         self.runtime = runtime
+        self.context = context
         self.app = runtime.app
 
         # assert isinstance(
@@ -379,29 +490,56 @@ class MagicBar(QtWidgets.QWidget):
         self.provide_task.returned.connect(self.set_unprovided)
 
         self.magicb = QtWidgets.QPushButton(MagicBar.CONNECT_LABEL)
-        self.magicb.setMinimumHeight(30)
-        self.magicb.setMaximumHeight(30)
+        self.magicb.setObjectName("magicButton")
+        self.magicb.setFixedHeight(self.HEIGHT)
+        self.magicb.setCursor(QtCore.Qt.PointingHandCursor)
+        self.magicb.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
 
         self.configure_future = None
         self.login_future = None
         self.provide_future = None
 
-        self.mylayout = QtWidgets.QHBoxLayout()
-        self.gearb_pix = QtGui.QPixmap(get_image_path("gear.png", dark_mode=dark_mode))
         self.gearb = QtWidgets.QPushButton()
-        self.gearb.setIcon(QtGui.QIcon(self.gearb_pix))
-        self.gearb.setMinimumWidth(30)
-        self.gearb.setMaximumWidth(30)
-        self.gearb.setMinimumHeight(30)
-        self.gearb.setMaximumHeight(30)
+        self.gearb.setObjectName("gearButton")
+        self.gearb.setIcon(QtGui.QIcon(QtGui.QPixmap(get_image_path("gear.png", dark_mode=dark_mode))))
+        self.gearb.setIconSize(QtCore.QSize(16, 16))
+        self.gearb.setFixedSize(self.HEIGHT, self.HEIGHT)
+        self.gearb.setCursor(QtCore.Qt.PointingHandCursor)
+        self.gearb.setToolTip("Settings and logs")
         self._on_error = on_error
 
         self.magicb.clicked.connect(self.magic_button_clicked)
         self.gearb.clicked.connect(self.gear_button_clicked)
 
-        self.mylayout.addWidget(self.magicb)
-        self.mylayout.addWidget(self.gearb)
+        # Under the buttons: where the run stands, in a dot and a few words.
+        self.dot = StatusDot()
+        self.caption = QtWidgets.QLabel()
+        self.caption.setObjectName("magicCaption")
+        # Never the reason a dock grows: a long server name is cut, not the dock widened.
+        self.caption.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
+        caption_font = self.caption.font()
+        caption_font.setPointSizeF(max(caption_font.pointSizeF() - 1.0, 7.0))
+        self.caption.setFont(caption_font)
+
+        buttons = QtWidgets.QHBoxLayout()
+        buttons.setContentsMargins(0, 0, 0, 0)
+        buttons.setSpacing(6)
+        buttons.addWidget(self.magicb)
+        buttons.addWidget(self.gearb)
+
+        status = QtWidgets.QHBoxLayout()
+        status.setContentsMargins(2, 0, 0, 0)
+        status.setSpacing(6)
+        status.addWidget(self.dot)
+        status.addWidget(self.caption, 1)
+
+        self.mylayout = QtWidgets.QVBoxLayout()
+        self.mylayout.setContentsMargins(0, 0, 0, 0)
+        self.mylayout.setSpacing(6)
+        self.mylayout.addLayout(buttons)
+        self.mylayout.addLayout(status)
         self.setLayout(self.mylayout)
+        self.setStyleSheet(bar_stylesheet(dark_mode))
 
         self.set_unkonfigured()
         self.on_profile_updated()
@@ -456,7 +594,7 @@ class MagicBar(QtWidgets.QWidget):
         self.show_error(ex)
 
     def on_configured(self) -> None:
-        self.magicb.setText("Login")
+        self.magicb.setText("Log in")
 
     def on_login(self) -> None:
         self.magicb.setText("Provide")
@@ -470,26 +608,44 @@ class MagicBar(QtWidgets.QWidget):
     def gear_button_clicked(self) -> None:
         self.profile.show()
 
-    def update_movie(self) -> None:
-        self.magicb.setIcon(QtGui.QIcon(self.magicb_movie.currentPixmap()))
+    def server_name(self) -> Optional[str]:
+        """The server this run is configured for, without its scheme; None before it has one."""
+        discovery = self._well_known()
+        url = discovery.url if discovery is not None else None
+        if not url:
+            return None
+        return str(url).split("://", 1)[-1].rstrip("/")
 
-    def set_button_movie(self, movie) -> None:
-        self.magicb_movie = QtGui.QMovie(
-            get_image_path(movie, dark_mode=self.dark_mode)
-        )
-        self.magicb_movie.frameChanged.connect(self.update_movie)
-        self.magicb_movie.setScaledSize(QtCore.QSize(30, 30))
-        self.magicb_movie.start()
+    def _present(self, label: str, caption: str, quiet: bool = False, pulsing: bool = False) -> None:
+        """Show a step: what the button does next, and where the run stands.
+
+        Args:
+            label: The button's text: the next step.
+            caption: The line under it. ``{server}`` is replaced by the server's name.
+            quiet: An outlined button, for a step that ends something rather than starts it.
+            pulsing: Whether the dot breathes: the run is live.
+        """
+        server = self.server_name()
+        text = caption.format(server=server) if server else caption.split(" on {server}")[0]
+        self.magicb.setText(label)
+        self.magicb.setDisabled(False)
+        if self.magicb.property("quiet") != quiet:
+            self.magicb.setProperty("quiet", quiet)
+            # A property a selector reads only takes effect on a re-polish.
+            self.magicb.style().unpolish(self.magicb)
+            self.magicb.style().polish(self.magicb)
+        self.dot.set_status(STATUS_COLORS[self.process_state.value], pulsing=pulsing)
+        self.caption.setText(text)
+        self.caption.setToolTip(text)
 
     def set_unkonfigured(self) -> None:
         self.state = AppState.DOWN
         self.process_state = ProcessState.UNKONFIGURED
         self.app_down.emit()
         self.app_state_changed.emit()
-        self.set_button_movie("pink pulse.gif")
         self.profile.unkonfigure_button.setDisabled(True)
-        self.magicb.setDisabled(False)
-        self.magicb.setText("Konfigure App")
+        self._present(MagicBar.CONNECT_LABEL, "Not connected")
+        self.magicb.setToolTip("Choose the server to connect to")
 
     def set_unlogined(self, _result: object = None) -> None:
         self.state = AppState.DOWN
@@ -497,10 +653,9 @@ class MagicBar(QtWidgets.QWidget):
         self.app_down.emit()
 
         self.app_state_changed.emit()
-        self.set_button_movie("orange pulse.gif")
         self.profile.unkonfigure_button.setDisabled(False)
-        self.magicb.setDisabled(False)
-        self.magicb.setText("Login")
+        self._present("Log in", "Not logged in on {server}")
+        self.magicb.setToolTip("Log in to the server")
 
     def set_unprovided(self, _result: object = None) -> None:
         self.state = AppState.UP
@@ -508,10 +663,9 @@ class MagicBar(QtWidgets.QWidget):
         self.app_up.emit()
 
         self.app_state_changed.emit()
-        self.set_button_movie("green pulse.gif")
         self.profile.unkonfigure_button.setDisabled(False)
-        self.magicb.setDisabled(False)
-        self.magicb.setText("Provide")
+        self._present("Provide", "Ready on {server}")
+        self.magicb.setToolTip("Offer this app's actions to the server")
 
     def set_providing(self) -> None:
         self.state = AppState.UP
@@ -519,10 +673,9 @@ class MagicBar(QtWidgets.QWidget):
         self.app_up.emit()
 
         self.app_state_changed.emit()
-        self.set_button_movie("red pulse.gif")
         self.profile.unkonfigure_button.setDisabled(False)
-        self.magicb.setDisabled(False)
-        self.magicb.setText("Cancel Provide..")
+        self._present("Stop providing", "Providing on {server}", quiet=True, pulsing=True)
+        self.magicb.setToolTip("Stop offering this app's actions")
 
     def get_endpoints(self) -> list[str]:
         settings = QtCore.QSettings("arkitekt", "magic_bar")
@@ -589,11 +742,10 @@ class MagicBar(QtWidgets.QWidget):
         ):
             if not self.login_future or self.login_future.done():
                 self.login_future = self.get_token_task.run()
-                self.magicb.setText("Cancel Login")
+                self.magicb.setText("Cancel login")
                 return
             if not self.login_future.done():
                 self.login_future.cancel()
-                self.magicb.setText("Login")
                 self.set_unlogined()
                 return
 
@@ -653,4 +805,4 @@ class MagicBar(QtWidgets.QWidget):
     async def _aprovide(self) -> Any:
         # Through the runtime: it owns the agent, binds it to this run and
         # applies the run's options (force) before providing.
-        return await self.runtime.arun()
+        return await self.runtime.arun(self.context)

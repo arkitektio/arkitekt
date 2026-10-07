@@ -24,7 +24,7 @@ from typing import Annotated
 import numpy as np
 import xarray as xr
 from mikro import Mikro, mikro_service
-from mikro.arkitekt.specs import LabelMask, SingleChannelImage, ensure
+from mikro.arkitekt.specs import LabelMask, SingleChannelImage
 from skimage.filters import threshold_otsu
 from skimage.measure import label
 
@@ -62,7 +62,7 @@ def segment(
         axes=image.carried_axes(labels.dims),
         derived_from=[image.derive_identity(value_relation="TRANSFORMED")],
     )
-    return ensure(result.lens(), LabelMask)
+    return result.lens()
 
 
 if __name__ == "__main__":

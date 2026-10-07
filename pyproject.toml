@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=3.4",
+    "arkitekt-spec>=3.5",
 ]
 
 [project.optional-dependencies]
@@ -33,8 +33,8 @@ dependencies = [
 rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
-    "rekuest>=8.0.1",
-    "arkitekt-runtime>=4.3",
+    "rekuest>=8.1",
+    "arkitekt-runtime>=4.4",
 ]
 alpaka = [
     "alpaka>=3.1.1",
@@ -43,7 +43,7 @@ kraph = [
     "kraph>=4.1.1",
 ]
 mikro = [
-    "mikro>=7",
+    "mikro>=7.1",
 ]
 # The kabinet client, for apps that manage deployments. The plugin commands do not
 # need it: they speak arkitekt-spec.
@@ -71,7 +71,7 @@ serve = [
 qt = [
     "qtpy>=2.4.3",
     # The Qt actifiers are the execution core's.
-    "arkitekt-runtime[qt]>=4.3",
+    "arkitekt-runtime[qt]>=4.4",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.
@@ -109,11 +109,14 @@ dev-dependencies = [
     "pytest-asyncio>=0.20.2,<0.21",
     "pytest-cov>=4.0.0,<5",
     "pytest-aiohttp>=1.0.4,<2",
-    "mikro>=7",
+    "mikro>=7.1",
     "python-semantic-release>=9.21.1",
+    # Builds the hub tests/integration runs against; 0.17 is where a hub is a dokker
+    # deployment a test can look into.
+    "konstruktor>=0.17",
     "qtpy>=2.4.3",
     "numpy>=2",
-    "rekuest>=8.0.1",
+    "rekuest>=8.1",
     "kabinet>=5.0.1",
     "alpaka>=3.1.1",
     "kraph>=4.1.1",
@@ -151,6 +154,8 @@ exclude = [
     "tests/typing",
     # Rendered by string replacement (__APP_ARGUMENTS__), not importable modules.
     "arkitekt/cli/templates",
+    # The first tests `create` writes into a project: they run there, not here.
+    "arkitekt/cli/starter_tests",
 ]
 executionEnvironments = [
     # The examples' own libraries (scipy, scikit-image, bioio, ...) are not

@@ -9,6 +9,7 @@ from arkitekt.cli.failures import report_failure
 from arkitekt.cli.options import (
     ContextFileOption,
     ContextOption,
+    ForceMeshOption,
     ForceOption,
     HeadlessOption,
     LogLevel,
@@ -19,9 +20,9 @@ from arkitekt.cli.options import (
     TokenOption,
     UrlOption,
 )
-from arkitekt.cli.running import arun_app
+from arkitekt.cli.running import arun_app, interruptible
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.ui import construct_app_banner
+from arkitekt.cli.ui import construct_app_banner, notice
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -40,6 +41,7 @@ def prod(
     log_level: LogLevelOption = LogLevel.ERROR,
     skip_cache: SkipCacheOption = False,
     reauth: ReauthOption = False,
+    force_mesh: ForceMeshOption = False,
     context: ContextOption = None,
     context_file: ContextFileOption = None,
 ) -> None:
@@ -60,10 +62,17 @@ def prod(
 
     console.print(construct_app_banner(app, resolve_url(options.get("url"))))
 
+    async def until_stopped() -> None:
+        try:
+            await arun_app(console, app, options, context=loaded)
+        except asyncio.CancelledError:
+            # Said before the teardown that follows, which may take a moment.
+            notice(console, "Stopping", "Ctrl+C again to force")
+            raise
+
     try:
-        asyncio.run(arun_app(console, app, options, context=loaded))
-    except KeyboardInterrupt:
-        pass
+        with interruptible(console):
+            asyncio.run(until_stopped())
     except Exception as e:
         # A failure the user can act on is one line; anything else is a crash.
         if report_failure(console, e):

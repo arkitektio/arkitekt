@@ -29,7 +29,7 @@ from scipy import ndimage
 
 from arkitekt import App, Description, Task, run
 from mikro import Mikro, mikro_service
-from mikro.arkitekt.specs import Volume, ensure
+from mikro.arkitekt.specs import Volume
 
 app = App("denoise-volume", "0.1.0", services=[mikro_service])
 
@@ -63,7 +63,7 @@ def denoise(
             volume.derive_identity(value_relation="TRANSFORMED")
         ],
     )
-    return ensure(result.lens(), Volume)
+    return result.lens()
 
 
 if __name__ == "__main__":

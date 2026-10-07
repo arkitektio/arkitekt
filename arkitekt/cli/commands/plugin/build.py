@@ -195,11 +195,10 @@ def inspect_all(build_id: str, url: str, target: str = DEFAULT_TARGET) -> Dict[s
                 "Running `arkitekt inspect all` inside the container failed."
             )
 
-        correct_part = result.split("--START_AGENT--")[1].split("--END_AGENT--")[0]
-        try:
-            return json.loads(correct_part)
-        except json.decoder.JSONDecodeError as e:
-            raise InspectionError(f"Could not decode inspection JSON. {result}") from e
+        runtime = machine_readable(result, "AGENT")
+        if runtime is None:
+            raise InspectionError(f"The container reported no inspection. {result}")
+        return runtime
 
     except subprocess.CalledProcessError as e:
         combined = e.stdout + e.stderr
@@ -209,6 +208,18 @@ def inspect_all(build_id: str, url: str, target: str = DEFAULT_TARGET) -> Dict[s
                 "Did you forget to install arkitekt?"
             )
         raise InspectionError(f"An error occurred: {combined}") from e
+
+
+def machine_readable(output: str, kind: str) -> Optional[Dict[str, Any]]:
+    """The ``--START_<KIND>--``/``--END_<KIND>--`` payload in a command's output, if any."""
+    _, start, rest = output.partition(f"--START_{kind}--")
+    payload, end, _ = rest.partition(f"--END_{kind}--")
+    if not start or not end:
+        return None
+    try:
+        return json.loads(payload)
+    except json.decoder.JSONDecodeError as e:
+        raise InspectionError(f"Could not decode the {kind} JSON. {output}") from e
 
 
 def inspect_build(build_id: str, url: str, target: str = DEFAULT_TARGET) -> "Inspection":

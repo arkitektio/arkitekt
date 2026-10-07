@@ -6,9 +6,12 @@ it drops and returns. The commands connect through here instead of handing the
 whole run to :func:`arkitekt.arun`, which says nothing.
 """
 
+import os
+import sys
+import threading
 import time
-from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator, Dict, Optional
+from contextlib import asynccontextmanager, contextmanager
+from typing import Any, AsyncIterator, Dict, Iterator, Optional
 
 from rich.console import Console
 from rich.markup import escape
@@ -17,7 +20,7 @@ from arkitekt import runtime
 from arkitekt.app import App
 from arkitekt.app.fakts import resolve_url
 from arkitekt.app.sessions import read_session, session_path
-from arkitekt.app.terminal import done, notice
+from arkitekt.app.terminal import done, fail, notice, step
 
 
 def ago(moment: float, now: Optional[float] = None) -> str:
@@ -53,11 +56,57 @@ class ConnectionReporter:
         else:
             self.registered_before = True
             offered = len(self.app.registry.get_implementations())
+            names = sorted(i.interface or "" for i in self.app.registry.get_implementations())
+            listed = ", ".join(names[:6]) + (f" and {len(names) - 6} more" if len(names) > 6 else "")
             done(
                 self.console,
                 "Registered",
-                f"providing {offered} action{'s' if offered != 1 else ''}",
+                f"providing {offered} action{'s' if offered != 1 else ''}"
+                + (f": {escape(listed)}" if names else ""),
             )
+
+
+class TaskReporter:
+    """Says when the app takes a task, and how it ended.
+
+    While developing, this is how one sees that a call arrived at all. A failing
+    action's traceback is the runtime's to log; this is the line that names it.
+    """
+
+    def __init__(self, console: Console) -> None:
+        self.console = console
+        self.started: Dict[str, float] = {}
+
+    async def __call__(self, event: Any) -> None:  # noqa: ANN401
+        # By value: the kinds are arkitekt-spec's agent module, which only a run needs.
+        kind = getattr(event.kind, "value", event.kind)
+        action = escape(event.action)
+        if kind == "assigned":
+            self.started[event.task_id] = time.monotonic()
+            arguments = " ".join(
+                f"{key}={_short(value)}" for key, value in (event.arguments or {}).items()
+            )
+            step(self.console, action, escape(arguments) or None)
+            return
+        if kind not in ("done", "failed", "cancelled"):
+            return
+        began = self.started.pop(event.task_id, None)
+        took = f"{_elapsed(time.monotonic() - began)}" if began is not None else None
+        if kind == "done":
+            done(self.console, action, took)
+        elif kind == "cancelled":
+            notice(self.console, f"{action} cancelled", took)
+        else:
+            fail(self.console, f"{action} failed", escape(event.error or ""))
+
+
+def _short(value: Any, limit: int = 40) -> str:  # noqa: ANN401
+    text = repr(value)
+    return text if len(text) <= limit else text[: limit - 1] + "…"
+
+
+def _elapsed(seconds: float) -> str:
+    return f"{seconds * 1000:.0f} ms" if seconds < 1 else f"{seconds:.1f} s"
 
 
 def report_session(
@@ -85,7 +134,11 @@ def report_session(
 
 @asynccontextmanager
 async def connected(
-    console: Console, app: App[Any], options: Dict[str, Any], provide: bool = False
+    console: Console,
+    app: App[Any],
+    options: Dict[str, Any],
+    provide: bool = False,
+    tasks: bool = False,
 ) -> AsyncIterator[Any]:
     """Connect ``app`` with the explicitly passed ``options``, and report on it.
 
@@ -95,6 +148,7 @@ async def connected(
         options: The connection flags the user passed (see ``runner_options``).
         provide: Whether the run provides the app's offerings; it then also
             reports on its agent's connection.
+        tasks: Whether a providing run also reports each task it takes.
     """
     url = resolve_url(options.get("url"))
     fresh = options.get("skip_cache") or options.get("reauth")
@@ -106,9 +160,38 @@ async def connected(
         if provide
         else {}
     )
+    if provide and tasks:
+        extra["task_listener"] = TaskReporter(console)
     # Through the module, so the connection stays replaceable (tests patch it).
     async with runtime.connect(app, **options, **extra) as rt:
         report_session(console, rt, before, options)
+        yield rt
+
+
+@asynccontextmanager
+async def connected_local(
+    console: Console,
+    app: App[Any],
+    options: Dict[str, Any],
+    offline: bool = True,
+    context: Any = None,  # noqa: ANN401
+) -> AsyncIterator[Any]:
+    """Start ``app`` for itself, to call its own actions in: nothing is registered.
+
+    Args:
+        console: Where to report.
+        app: The app to start.
+        options: The connection flags the user passed, for the services it uses.
+        offline: Reach no server; the app's services then point nowhere.
+        context: The app context, for an app that declares one.
+    """
+    url = resolve_url(options.get("url"))
+    fresh = options.get("skip_cache") or options.get("reauth")
+    before = None if fresh or offline else logged_in_at(app, url)
+    # Through the module, so the connection stays replaceable (tests patch it).
+    async with runtime.connect_local(app, offline=offline, context=context, **options) as rt:
+        if not offline:
+            report_session(console, rt, before, options)
         yield rt
 
 
@@ -117,10 +200,55 @@ async def arun_app(
     app: App[Any],
     options: Dict[str, Any],
     context: Any = None,  # noqa: ANN401
+    tasks: bool = False,
 ) -> None:
-    """Connect ``app`` and provide its offerings until stopped, reporting as it goes."""
-    async with connected(console, app, options, provide=True) as rt:
+    """Connect ``app`` and provide its offerings until stopped, reporting as it goes.
+
+    With ``tasks`` each task the app takes is reported too: what a developer
+    watching the terminal wants, and noise in the log of a deployed app.
+    """
+    async with connected(console, app, options, provide=True, tasks=tasks) as rt:
         await rt.arun(context=context)
 
 
-__all__ = ["ConnectionReporter", "ago", "arun_app", "connected", "logged_in_at", "report_session"]
+#: What the workers of an event loop's own thread pool are called: where a
+#: blocking action runs.
+_WORKER_PREFIX = "asyncio_"
+
+
+def _workers() -> set[threading.Thread]:
+    return {t for t in threading.enumerate() if t.name.startswith(_WORKER_PREFIX)}
+
+
+@contextmanager
+def interruptible(console: Console) -> Iterator[None]:
+    """A run that Ctrl+C ends: the first stops it, a second one does not wait.
+
+    The first Ctrl+C stops the app and is waited for. What can not be stopped is
+    a blocking action that never checks whether it was cancelled: its thread
+    outlives the app, and the interpreter waits for every such thread before it
+    exits. A second Ctrl+C then leaves without it.
+    """
+    before = _workers()
+    try:
+        yield
+    except KeyboardInterrupt:
+        if _workers() - before:
+            notice(console, "Stopped", "not waiting for a task that did not stop")
+            sys.stdout.flush()
+            sys.stderr.flush()
+            # The only way past the threads the interpreter would wait for.
+            os._exit(130)
+
+
+__all__ = [
+    "ConnectionReporter",
+    "TaskReporter",
+    "ago",
+    "arun_app",
+    "interruptible",
+    "connected",
+    "connected_local",
+    "logged_in_at",
+    "report_session",
+]

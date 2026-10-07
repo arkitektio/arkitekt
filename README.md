@@ -242,6 +242,7 @@ mesh-only services are then simply not reachable.
 ```bash
 ARKITEKT_MESH=0 python my_app.py                                 # never use the mesh
 ARKITEKT_MESH=1 python my_app.py                                 # use it, and report what is missing
+ARKITEKT_MESH=force python my_app.py                             # use nothing but the mesh
 ARKITEKT_MESH_PROXY=http://localhost:1055 python my_app.py       # go through a running `arkitekt mesh proxy`
 ```
 
@@ -271,17 +272,23 @@ once there is. Standing up an Arkitekt server is the job of
 | `run dev` · `run prod` | Run the app — with hot reloading while you develop, or as it runs in a container. |
 | `gen` | Generate typed clients. |
 | `inspect` | Show what the app would register, without connecting. |
-| `call` | Call an action on the server. |
+| `call local` · `call remote` | Call one of the app's actions right here, with no server; or an action on the server. |
+| `check` | Check that the app is one a run would accept, without running it. |
 | `login` · `logout` · `status` | Log the app in this folder in or out, and see whether it is. |
 | `plugin` | Containerize the app into flavours and publish it as a deployable plugin. |
 | `mesh` | Join this machine to the deployment's private WireGuard mesh. |
 | `self` | Manage your install — upgrade the SDK, print versions, dump diagnostics, list saved logins. |
 
 ```bash
-mkdir my-app && cd my-app
-arkitekt create          # scaffold an app
-arkitekt run dev       # run it with hot reloading
+arkitekt create my-app && cd my-app   # a project: app, tests, flavour, release workflow
+arkitekt run dev                      # run it; reloads on save, shows each task it takes
+arkitekt call local generate_random_image --online   # try one action: it stores an image
+uv run pytest                         # its tests, with no server
 ```
+
+A save that does not load is reported and the last working version keeps running.
+The tests call the app's actions for real, through their ports, without a
+deployment: see **[docs/testing.md](docs/testing.md)**.
 
 See the full reference in **[docs/cli.md](docs/cli.md)**, and
 [docs/app_types.md](docs/app_types.md) for choosing between a standalone and a plugin app.

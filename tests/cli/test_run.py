@@ -42,6 +42,17 @@ def test_prod_runs_the_targets_app_with_no_flags(app_dir, recorded_runs):
     assert options == {}
 
 
+def test_prod_force_mesh_hands_the_runner_a_forced_mesh(app_dir, recorded_runs, monkeypatch):
+    from fakts.mesh import MeshOptions
+
+    monkeypatch.delenv("ARKITEKT_MESH_PROXY", raising=False)
+    result = _invoke(app_dir, "run", "prod", "app:app", "--force-mesh")
+
+    assert result.exit_code == 0, result.output
+    ((_, options),) = recorded_runs
+    assert options == {"mesh": MeshOptions(force=True)}
+
+
 def test_prod_hands_only_the_explicit_flags_to_the_runner(app_dir, recorded_runs):
     result = _invoke(
         app_dir, "run", "prod", "app:app",
@@ -139,6 +150,60 @@ def test_a_crashing_run_is_reported(app_dir, monkeypatch):
     assert "App crashed while running" in result.output
 
 
+def test_a_run_stopped_with_ctrl_c_says_it_is_stopping(app_dir, monkeypatch):
+    import asyncio
+    import signal
+
+    async def interrupted(run):
+        signal.raise_signal(signal.SIGINT)
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], during=interrupted))
+
+    result = _invoke(app_dir, "run", "prod")
+
+    assert result.exit_code == 0
+    assert "Stopping" in result.output
+    assert "Ctrl+C again to force" in result.output
+
+
+def test_a_second_ctrl_c_does_not_wait_for_a_task_that_did_not_stop(monkeypatch):
+    """A blocking action outlives the app in its thread; the interpreter would wait for it."""
+    import io
+    import threading
+
+    from rich.console import Console
+
+    from arkitekt.cli import running
+
+    release = threading.Event()
+    left = []
+    monkeypatch.setattr(running.os, "_exit", left.append)
+    out = io.StringIO()
+
+    with running.interruptible(Console(file=out, width=200)):
+        threading.Thread(target=release.wait, name="asyncio_0", daemon=True).start()
+        raise KeyboardInterrupt
+
+    release.set()
+    assert left == [130]
+    assert "not waiting for a task that did not stop" in out.getvalue()
+
+
+def test_ctrl_c_on_a_run_with_nothing_left_behind_just_ends():
+    import io
+
+    from rich.console import Console
+
+    from arkitekt.cli import running
+
+    out = io.StringIO()
+    with running.interruptible(Console(file=out, width=200)):
+        raise KeyboardInterrupt
+
+    assert out.getvalue() == ""
+
+
 # --------------------------------------------------------------------------- #
 # What a run says after the banner: its session, its connection, its failures
 # --------------------------------------------------------------------------- #
@@ -213,7 +278,9 @@ def test_a_run_says_when_its_agent_is_registered_lost_and_back(app_dir, monkeypa
 
     assert result.exit_code == 0, result.output
     lines = [line.strip() for line in result.output.splitlines()]
-    registered = lines.index("◆ Registered  providing 3 actions")
+    registered = lines.index(
+        "◆ Registered  providing 3 actions: append_world, generate_n_string, print_string"
+    )
     assert lines[registered + 1 : registered + 3] == [
         "□ Connection lost, reconnecting",
         "◆ Reconnected",
@@ -308,7 +375,7 @@ def test_call_remote_connects_the_app_and_calls_through_its_rekuest(app_dir, mon
             return {"returned": kwargs["n"] + 1}
 
     class FakeRuntime:
-        def get(self, cls):
+        def require(self, cls):
             assert cls is Rekuest
             return FakeRekuest()
 
@@ -320,13 +387,14 @@ def test_call_remote_connects_the_app_and_calls_through_its_rekuest(app_dir, mon
     monkeypatch.setattr("arkitekt.runtime.connect", fake_connect)
 
     result = _invoke(
-        app_dir, "call", "remote", "app", "--hash", "abc", "-a", "n=41", "--url", "http://u"
+        app_dir, "call", "remote", "ab" * 32, "app", "-a", "n=41", "--url", "http://u"
     )
 
     assert result.exit_code == 0, result.output
-    assert seen["app"].identifier == "com.test.app"
+    # Whatever is called, the caller is the CLI's own app.
+    assert seen["app"].identifier == "arkitekt-cli"
     assert seen["options"] == {"url": "http://u"}
-    assert seen["hash"] == "abc"
+    assert seen["hash"] == "ab" * 32
     assert seen["call"] == ({"n": 41}, "the-action")
     assert '"returned": 42' in result.output
 
@@ -346,7 +414,7 @@ def test_call_remote_without_an_app_calls_as_the_cli_app_with_rekuest(
             return "ok"
 
     class FakeRuntime:
-        def get(self, cls):
+        def require(self, cls):
             return FakeRekuest()
 
     @asynccontextmanager
@@ -356,7 +424,7 @@ def test_call_remote_without_an_app_calls_as_the_cli_app_with_rekuest(
 
     monkeypatch.setattr("arkitekt.runtime.connect", fake_connect)
 
-    result = _invoke(app_dir, "call", "remote", "--hash", "abc")
+    result = _invoke(app_dir, "call", "remote", "ab" * 32)
 
     assert result.exit_code == 0, result.output
     assert seen["app"].identifier == "arkitekt-cli"
@@ -376,122 +444,151 @@ def test_the_cli_app_uses_rekuest_and_offers_nothing():
     assert runtime.connect(app).provider is None
 
 
-def test_call_remote_as_an_app_without_rekuest_says_how_to_fix_it(app_dir, monkeypatch):
+def test_call_remote_needs_an_action(app_dir):
+    result = _invoke(app_dir, "call", "remote")
+
+    assert result.exit_code != 0
+    assert "ACTION" in result.output.upper()
+
+
+def test_call_remote_finds_one_of_the_apps_actions_by_its_name(app_dir, monkeypatch):
+    """The name becomes the hash of the definition, which is what the server knows it by."""
+    pytest.importorskip("rekuest")
+    from arkitekt.cli.target import load_target
+    from arkitekt_spec import definition_hash
+
+    seen = {}
+
+    class FakeRekuest:
+        async def afind(self, hash):
+            seen["hash"] = hash
+            return "the-action"
+
+        async def acall_raw(self, kwargs, action):
+            return "ok"
+
     class FakeRuntime:
-        def get(self, cls):
-            return None
+        def require(self, cls):
+            return FakeRekuest()
 
     @asynccontextmanager
     async def fake_connect(app, **options):
+        seen["app"] = app
         yield FakeRuntime()
 
     monkeypatch.setattr("arkitekt.runtime.connect", fake_connect)
 
-    result = _invoke(app_dir, "call", "remote", "app", "--hash", "abc")
-
-    assert result.exit_code != 0
-    assert "arkitekt-cli" in result.output
-
-
-def test_call_remote_needs_a_hash(app_dir):
-    result = _invoke(app_dir, "call", "remote")
-
-    assert result.exit_code != 0
-    assert "--hash" in result.output
-
-
-# --------------------------------------------------------------------------- #
-# The app context: --context / --context-file
-# --------------------------------------------------------------------------- #
-
-CONTEXT_APP = """
-from pydantic import BaseModel
-
-from arkitekt import App
-
-
-class Config(BaseModel):
-    exposure: float = 0.1
-
-
-app = App("com.test.ctx", "0.0.1", app_context=Config)
-config = Config(exposure=0.5)
-
-
-def make() -> Config:
-    return Config(exposure=0.7)
-
-
-not_a_config = "nope"
-"""
-
-
-@pytest.fixture
-def ctx_dir(app_dir):
-    (app_dir / "ctx_app.py").write_text(CONTEXT_APP)
-    (app_dir / "config.yaml").write_text("exposure: 0.9\n")
-    (app_dir / "config.json").write_text('{"exposure": 1.1}')
-    return app_dir
-
-
-def test_prod_hands_the_named_context_to_the_runner(ctx_dir, recorded_runs):
-    result = _invoke(ctx_dir, "run", "prod", "ctx_app:app", "--context", "ctx_app:config")
+    result = _invoke(app_dir, "call", "remote", "append_world", "-a", "hello=hi")
 
     assert result.exit_code == 0, result.output
-    ((app, options),) = recorded_runs
-    assert app.identifier == "com.test.ctx"
-    assert options["context"].exposure == 0.5
+    # The app in the folder names the action; it is not who calls.
+    assert seen["app"].identifier == "arkitekt-cli"
+    app, _, _ = load_target("app", str(app_dir))
+    assert seen["hash"] == definition_hash(app.registry.implementations["append_world"].definition)
 
 
-def test_prod_calls_a_context_factory(ctx_dir, recorded_runs):
-    result = _invoke(ctx_dir, "run", "prod", "ctx_app:app", "--context", "ctx_app:make")
-
-    assert result.exit_code == 0, result.output
-    ((_, options),) = recorded_runs
-    assert options["context"].exposure == 0.7
+# ---------------------------------------------------------------------------
+# call local: the app's own action, in this process
+# ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("filename, exposure", [("config.yaml", 0.9), ("config.json", 1.1)])
-def test_prod_validates_a_context_file_with_the_declared_class(ctx_dir, recorded_runs, filename, exposure):
-    result = _invoke(ctx_dir, "run", "prod", "ctx_app:app", "--context-file", str(ctx_dir / filename))
+def test_call_local_runs_the_action_here_and_prints_its_result(app_dir):
+    result = _invoke(app_dir, "call", "local", "append_world", "-a", "hello=hi")
 
     assert result.exit_code == 0, result.output
-    ((_, options),) = recorded_runs
-    assert options["context"].exposure == exposure
+    assert "hi World" in result.output
 
 
-def test_prod_refuses_to_run_a_declaring_app_without_a_context(ctx_dir, recorded_runs):
-    result = _invoke(ctx_dir, "run", "prod", "ctx_app:app")
+def test_call_local_logs_in_to_nothing_for_an_app_without_services(app_dir, monkeypatch):
+    def never(manifest, options):
+        raise AssertionError("a local call of an app without services built a fakts")
+
+    monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
+
+    result = _invoke(app_dir, "call", "local", "append_world", "-a", "hello=hi", "--online")
+
+    assert result.exit_code == 0, result.output
+
+
+def test_call_local_refuses_a_connection_flag_without_online(app_dir):
+    result = _invoke(app_dir, "call", "local", "append_world", "-a", "hello=hi", "--reauth")
 
     assert result.exit_code != 0
-    assert "declares an app context (Config)" in result.output
-    assert "--context module:attr or --context-file" in result.output
-    assert recorded_runs == []
+    assert "--reauth" in result.output
+    assert "--online" in result.output
 
 
-def test_prod_refuses_a_context_of_the_wrong_class(ctx_dir, recorded_runs):
-    result = _invoke(ctx_dir, "run", "prod", "ctx_app:app", "--context", "ctx_app:not_a_config")
+def test_call_local_ignores_a_connection_the_environment_names(app_dir, monkeypatch):
+    """An exported FAKTS_URL is for the commands that connect."""
+    monkeypatch.setenv("FAKTS_URL", "http://somewhere.invalid")
 
-    assert result.exit_code != 0
-    assert "is a str" in result.output and "Config" in result.output
-    assert recorded_runs == []
+    result = _invoke(app_dir, "call", "local", "append_world", "-a", "hello=hi")
+
+    assert result.exit_code == 0, result.output
+    assert "hi World" in result.output
 
 
-def test_prod_refuses_both_context_flags(ctx_dir, recorded_runs):
+def test_call_local_prints_each_result_of_a_generator(app_dir):
     result = _invoke(
-        ctx_dir, "run", "prod", "ctx_app:app",
-        "--context", "ctx_app:config", "--context-file", str(ctx_dir / "config.yaml"),
+        app_dir, "call", "local", "generate_n_string", "-a", "n=2", "-a", "timeout=0"
     )
 
+    assert result.exit_code == 0, result.output
+    assert '"Hello 0"' in result.output
+    assert '"Hello 1"' in result.output
+
+
+def test_call_local_of_an_unknown_action_lists_the_apps_actions(app_dir):
+    result = _invoke(app_dir, "call", "local", "nope")
+
     assert result.exit_code != 0
-    assert "not both" in result.output
-    assert recorded_runs == []
+    assert "has no action 'nope'" in result.output
+    assert "append_world" in result.output
 
 
-def test_prod_refuses_a_context_for_an_app_declaring_none(app_dir, recorded_runs):
-    (app_dir / "cfg.py").write_text("config = object()\n")
-    result = _invoke(app_dir, "run", "prod", "--context", "cfg:config")
+@pytest.mark.parametrize(
+    ("args", "said"),
+    [
+        ([], "needs hello"),
+        (["-a", "hello=hi", "-a", "other=1"], "takes no argument other"),
+    ],
+)
+def test_call_local_says_what_the_action_takes(app_dir, args, said):
+    result = _invoke(app_dir, "call", "local", "append_world", *args)
 
     assert result.exit_code != 0
-    assert "declares no app context" in result.output
-    assert recorded_runs == []
+    assert said in result.output
+    assert "hello (STRING)" in result.output
+
+
+def test_call_local_of_a_raising_action_fails_in_one_line(tmp_path):
+    (tmp_path / "app.py").write_text(
+        "from arkitekt import App\n"
+        "app = App('boom', '0.1.0')\n"
+        "@app.action\n"
+        "def boom() -> str:\n"
+        "    'Boom'\n"
+        "    raise ValueError('nope')\n"
+    )
+
+    result = _invoke(tmp_path, "call", "local", "boom")
+
+    assert result.exit_code == 1
+    assert "boom failed" in result.output
+    assert "nope" in result.output
+
+
+def test_inspect_implementations_lists_what_to_call(app_dir):
+    result = _invoke(app_dir, "inspect", "implementations")
+
+    assert result.exit_code == 0, result.output
+    assert "append_world" in result.output
+    assert "hello: STRING" in result.output
+
+
+def test_call_remote_of_what_is_neither_a_name_nor_a_hash_lists_the_apps_actions(app_dir):
+    result = _invoke(app_dir, "call", "remote", "apend_world")
+
+    assert result.exit_code != 0
+    assert "neither an action" in result.output
+    assert "append_world" in result.output

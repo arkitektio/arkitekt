@@ -136,6 +136,19 @@ ReauthOption = Annotated[
     ),
 ]
 
+#: Reach every service over the mesh, and over nothing else.
+ForceMeshOption = Annotated[
+    bool,
+    typer.Option(
+        "--force-mesh",
+        help=(
+            "Reach every service over the deployment's mesh and nothing else: "
+            "addresses that are not on it are not tried. Same as ARKITEKT_MESH=force."
+        ),
+        rich_help_panel=SESSION_PANEL,
+    ),
+]
+
 #: The app context, as ``module:attr``: an instance of the class the App declared
 #: (``App(..., app_context=Config)``), or a zero-argument factory of one.
 ContextOption = Annotated[

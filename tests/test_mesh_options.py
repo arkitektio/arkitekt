@@ -40,6 +40,19 @@ def test_arkitekt_mesh_runs_a_node(monkeypatch: pytest.MonkeyPatch, value: str) 
     assert mesh_from_env() == MeshOptions()
 
 
+@pytest.mark.parametrize("value", ["force", "only", "FORCE"])
+def test_arkitekt_mesh_force_uses_nothing_but_the_mesh(
+    monkeypatch: pytest.MonkeyPatch, value: str
+) -> None:
+    monkeypatch.setenv("ARKITEKT_MESH", value)
+    assert mesh_from_env() == MeshOptions(force=True)
+    # A node that must be there asks for the key to join with.
+    assert MeshOptions(force=True, auto=True).requests_key()
+
+    monkeypatch.setenv("ARKITEKT_MESH_PROXY", PROXY)
+    assert mesh_from_env() == MeshProxy(url=PROXY, force=True)
+
+
 @pytest.mark.parametrize("value", ["0", "false", "off"])
 def test_arkitekt_mesh_off(monkeypatch: pytest.MonkeyPatch, value: str) -> None:
     monkeypatch.setenv("ARKITEKT_MESH", value)

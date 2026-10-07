@@ -5,6 +5,9 @@ from typing import Generator
 
 from arkitekt import App, run
 
+# The version of the app. A release is the commit tagged with it (v1.2.3).
+__version__ = __APP_VERSION__
+
 # The app is a declaration: who it is, and what it offers. `arkitekt run` finds it
 # in this module (as `app`) and runs it; so does `python app.py`, below.
 app = App(__APP_ARGUMENTS__)
@@ -14,7 +17,7 @@ app = App(__APP_ARGUMENTS__)
 def generate_n_string(n: int = 10, timeout: int = 2) -> Generator[str, None, None]:
     """Generate N Strings
 
-    This function generates {{n}} strings with a {{timeout}} ms timeout between each string
+    This function generates a number of strings, with a timeout between each string
 
 
     Parameters
@@ -22,7 +25,7 @@ def generate_n_string(n: int = 10, timeout: int = 2) -> Generator[str, None, Non
     n : int, optional
         The number of iterations, by default 10
     timeout : int, optional
-        The timeout, by default 2
+        The seconds to wait before each string, by default 2
 
     Returns
     -------
@@ -49,8 +52,8 @@ def append_world(hello: str) -> str:
     Returns
     -------
     str
-        {{hello}} World
-    """ """"""
+        The input string, with World appended
+    """
     return hello + " World"
 
 

@@ -95,3 +95,37 @@ def test_the_magic_bar_builds_on_an_unentered_runtime(qapp: Any) -> None:
     assert bar.runtime is runtime and runtime.fakts is None
     assert bar.configure_task is not None
     assert bar.provide_task is not None
+
+
+def test_the_magic_bar_provides_the_run_with_its_context(qapp: Any) -> None:
+    """An app that declares a context is provided with the one the bar was given."""
+    import asyncio
+
+    from arkitekt.qt.magic_bar import MagicBar
+
+    class Stage:
+        pass
+
+    app = build_qt_app("bar-context", app_context=Stage)
+    runtime = connect(app, provide=True, token="token", url="http://127.0.0.1:1", skip_cache=True)
+    stage = Stage()
+    bar = MagicBar(runtime, context=stage)
+    seen: list[Any] = []
+
+    async def arun(context: Any = None) -> None:
+        seen.append(context)
+
+    # A pydantic model: set past its validation, as only this test stands in for a run.
+    object.__setattr__(runtime, "arun", arun)
+    asyncio.run(bar._aprovide())
+
+    assert bar.context is stage
+    assert seen == [stage]
+
+
+def test_a_magic_bar_without_a_context_provides_none(qapp: Any) -> None:
+    from arkitekt.qt.magic_bar import MagicBar
+
+    runtime = connect(build_qt_app("bar-plain"), provide=True, token="token", url="http://127.0.0.1:1", skip_cache=True)
+
+    assert MagicBar(runtime).context is None

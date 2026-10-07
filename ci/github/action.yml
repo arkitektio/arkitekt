@@ -1,0 +1,63 @@
+name: Release an Arkitekt app
+description: >
+  Test, build and publish an Arkitekt app to an OCI repository. A commit tagged with the
+  app's version becomes that release; any other commit becomes the latest build of its
+  branch's channel.
+
+# Everything this does is `arkitekt plugin release`. The steps around it only give that
+# command what any CI has to: a logged-in docker, emulation for the other platforms, and
+# the name of the branch.
+
+inputs:
+  repository:
+    description: The OCI repository to publish to. Others import it to install the app.
+    default: ghcr.io/${{ github.repository }}
+  registry:
+    description: The registry to log in to.
+    default: ghcr.io
+  username:
+    description: The account to log in to the registry with.
+    default: ${{ github.actor }}
+  password:
+    description: "Its password or token. The workflow's own token needs the packages write permission."
+    default: ${{ github.token }}
+  target:
+    description: "The app to release, as module[:attr]."
+    default: app
+  arkitekt:
+    description: How to call the arkitekt CLI in this project.
+    default: uv run arkitekt
+  arguments:
+    description: Further arguments for `arkitekt plugin release`.
+    default: ""
+  release:
+    description: >
+      "true" when an earlier step of the job tagged this commit with the app's version
+      (semantic-release does): it is then published as that release, though the push
+      that started the job was one to a branch.
+    default: "false"
+
+runs:
+  using: composite
+  steps:
+    - uses: astral-sh/setup-uv@v6
+    - uses: docker/setup-qemu-action@v3
+    - uses: docker/login-action@v3
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
+    - shell: bash
+      env:
+        REPOSITORY: ${{ inputs.repository }}
+        ARKITEKT: ${{ inputs.arkitekt }}
+        TARGET: ${{ inputs.target }}
+        ARGUMENTS: ${{ inputs.arguments }}
+        RELEASE: ${{ inputs.release }}
+      run: |
+        # A repository path is lowercase; an owner's name need not be.
+        export ARKITEKT_REPOSITORY="${REPOSITORY,,}"
+        # A push to a branch is a build of that branch, also when its commit is tagged:
+        # the tag's own push is what releases it. Unless the job itself made the tag.
+        if [ "$GITHUB_REF_TYPE" = "branch" ] && [ "$RELEASE" != "true" ]; then export ARKITEKT_CHANNEL="$GITHUB_REF_NAME"; fi
+        $ARKITEKT plugin release "$TARGET" $ARGUMENTS

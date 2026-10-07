@@ -1,22 +1,21 @@
 from functools import partial
-from importlib import reload
+import sysconfig
 from types import ModuleType
 import asyncio
 from pathlib import Path
 
-from watchfiles import awatch, Change
+from watchfiles import awatch
 from rich.console import Console
 from watchfiles.filters import PythonFilter
 import os
 import sys
-import inspect
-from typing import Annotated, Any, Iterable, List, Optional, Set, Tuple
+from typing import Annotated, Any, Iterable, List, Optional, Set
 import typer
 from arkitekt.app.fakts import resolve_url
 from arkitekt.cli.context import load_context
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.failures import report_failure
-from arkitekt.cli.running import arun_app
+from arkitekt.cli.running import arun_app, interruptible
 from arkitekt.cli.ui import (
     construct_app_banner,
     construct_changes_group,
@@ -33,6 +32,7 @@ from arkitekt.cli.options import (
     UrlOption,
     TokenOption,
     RedeemTokenOption,
+    ForceMeshOption,
     ForceOption,
     HeadlessOption,
     LogLevelOption,
@@ -44,127 +44,187 @@ from arkitekt.cli.target import (
     Target,
     TargetArgument,
     TargetError,
+    describe_import_failure,
     import_target,
     parse_target,
     require_app,
 )
+from arkitekt.app.app import App
+from arkitekt.runtime import _provider_for
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 
 
-class EntrypointFilter(PythonFilter):
-    """Checks if the entrypoint is changed"""
+#: A directory that holds an environment, not the project: its code is not the user's.
+_ENVIRONMENT_DIRS = {".venv", "venv", "site-packages", "node_modules", "__pycache__"}
 
-    def __init__(self, entrypoint_real_path: str, *args, **kwargs) -> None:
-        """A filter that checks if the entrypoint is changed
-
-        Parameters
-        ----------
-        entrypoint_real_path : str
-            The entrypoint to check
-        """
-        super().__init__(*args, **kwargs)
-        self.entrypoint_real_path = os.path.normpath(entrypoint_real_path)
-
-    def __call__(self, change: Change, path: str) -> bool:
-        """Checks if any of the python filters are changed
-        _description_
-                Parameters
-                ----------
-                change : Change
-                    The change type
-                path : str
-                    The causing path
-
-                Returns
-                -------
-                bool
-                    Should we reload?
-        """
-        x = super().__call__(change, path)
-        if not x:
-            return False
-
-        return os.path.normpath(os.path.realpath(path)) == self.entrypoint_real_path
+#: How long the watcher waits for a save to settle before it reloads, and the
+#: longest it keeps collecting a burst of saves, in milliseconds. An editor writes
+#: a file in several steps and a formatter rewrites it after; shorter than this
+#: reloads in between.
+SETTLE_MS = 100
+BURST_MS = 1000
 
 
-class DeepFilter(PythonFilter):
-    """Checks if any of the python filters are changed"""
+class Candidate:
+    """An app that was loaded and checked, and is ready to run."""
 
-    def __call__(self, change: Change, path: str) -> bool:
-        """Checks if any of the python filters are changed
-
-        Parameters
-        ----------
-        change : Change
-            The change type
-        path : str
-            The causing path
-
-        Returns
-        -------
-        bool
-            Should we reload?
-        """
-        return super().__call__(change, path)
+    def __init__(self, module: ModuleType, app: App[Any], context: Any) -> None:  # noqa: ANN401
+        self.module = module
+        self.app = app
+        self.context = context
 
 
-def modules_to_reload(
-    changed: Iterable[str], entrypoint_module: str, deep: bool
-) -> List[str]:
-    """The modules to reload for a change, in the order to reload them.
+def _under(path: str, root: str) -> bool:
+    root = os.path.join(os.path.realpath(root), "")
+    return os.path.realpath(path).startswith(root)
 
-    The entrypoint always comes last, and always comes: it is what declares the
-    app, and only re-running it declares a new one from the changed code.
-    Reloading only its dependencies would hand back the old App, still holding
-    the functions registered from the old code. In deep mode the changed modules
-    come first, so the entrypoint sees them.
+
+def _is_environment(path: str) -> bool:
+    return bool(_ENVIRONMENT_DIRS & set(os.path.realpath(path).split(os.sep)))
+
+
+def _file_of(module: ModuleType) -> Optional[str]:
+    return getattr(module, "__file__", None)
+
+
+def project_modules(work_dir: str, baseline: Iterable[str] = ()) -> List[str]:
+    """The loaded modules that are the project's own code.
+
+    Under the work dir, outside any environment, and not loaded before the app
+    was (``baseline``): a work dir that also holds the SDK the CLI runs on, or
+    scripts the app never imports, has none of that reloaded.
     """
-    dependencies = sorted(set(changed) - {entrypoint_module}) if deep else []
-    return [*dependencies, entrypoint_module]
+    before = set(baseline)
+    found = []
+    for name, module in list(sys.modules.items()):
+        file = _file_of(module) if module is not None else None
+        if name in before or not file:
+            continue
+        if _under(file, work_dir) and not _is_environment(file):
+            found.append(name)
+    return found
 
 
-def reload_modules(modules: Iterable[str]) -> None:
-    """Reload ``modules`` in order."""
-    for module in modules:
-        reload(sys.modules[module])
+def development_modules(work_dir: str, baseline: Iterable[str] = ()) -> List[str]:
+    """The loaded modules of packages installed for development, which ``--deep`` follows.
 
-
-def check_deeps(changes: Set[Tuple[Change, str]]) -> Set[str]:
-    """Checks if any of the changes
-    are happening in a module that is installed
-    and returns the modules that should be reloaded
-
-
-
-    Parameters
-    ----------
-    changes : Set[ Tuple[Change, str] ]
-        The changes to check
-
-    Returns
-    -------
-    Set[str]
-        A set of modules that should be reloaded
+    A package installed the usual way is a copy in ``site-packages`` that nobody
+    edits. One installed editable (or linked in) is a checkout the user works on
+    beside the app: outside the project, outside any environment, and not the
+    standard library. Only what the app brought in counts (not in ``baseline``):
+    the SDK the CLI itself runs on is never reloaded under it.
     """
-    normalized = [os.path.normpath(file) for modified, file in changes]
-
-    reloadable_modules = set()
-
-    for key, v in sys.modules.items():
-        try:
-            filepath = inspect.getfile(v)
-        except OSError:
+    before = set(baseline)
+    standard = os.path.realpath(sysconfig.get_paths()["stdlib"])
+    found = []
+    for name, module in list(sys.modules.items()):
+        file = _file_of(module) if module is not None else None
+        if name in before or not file or not file.endswith(".py"):
             continue
-        except TypeError:
+        if _under(file, work_dir) or _is_environment(file) or _under(file, standard):
             continue
+        found.append(name)
+    return found
 
-        for i in normalized:
-            if filepath.startswith(i):
-                reloadable_modules.add(key)
 
-    return reloadable_modules
+def development_roots(work_dir: str, baseline: Iterable[str] = ()) -> List[str]:
+    """The directories (or single files) the development packages live in, to watch."""
+    roots: Set[str] = set()
+    for name in development_modules(work_dir, baseline):
+        if "." in name:
+            continue
+        real = os.path.realpath(sys.modules[name].__file__ or "")
+        roots.add(os.path.dirname(real) if os.path.basename(real) == "__init__.py" else real)
+    return sorted(roots)
+
+
+def files_of(modules: Iterable[str]) -> Set[str]:
+    """The source files of loaded ``modules``, as real paths."""
+    files = set()
+    for name in modules:
+        module = sys.modules.get(name)
+        file = _file_of(module) if module is not None else None
+        if file:
+            files.add(os.path.realpath(file))
+    return files
+
+
+def concerns(changes: Iterable[Any], files: Optional[Set[str]]) -> bool:
+    """Whether a burst of changes touches the app.
+
+    ``files`` is what the running app was loaded from; a change elsewhere in the
+    folder (another script, a test) is not its business. ``None`` means the app
+    did not load, so nothing says yet which files it is made of: any change may
+    be the fix.
+    """
+    if files is None:
+        return True
+    return any(os.path.realpath(path) in files for _, path in changes)
+
+
+def import_fresh(target: Target, stale: Iterable[str]) -> ModuleType:
+    """Import the target again from the files as they are now, or leave everything as it was.
+
+    The ``stale`` modules are taken out of ``sys.modules`` and the target is
+    imported, which runs each of them anew as the import reaches it: into new
+    module objects, so the code that is running keeps the ones it has. If the
+    import fails they are all put back, and nothing has changed.
+
+    Dropping every module the app loaded, not only the changed file, is what makes
+    a change in a helper reach the modules that imported it.
+
+    Raises:
+        Exception: Whatever importing the user's code raises.
+    """
+    names = {*stale, target.module}
+    saved = {name: sys.modules.pop(name) for name in names if name in sys.modules}
+    try:
+        return import_target(target)
+    except BaseException:
+        for name in names:
+            sys.modules.pop(name, None)
+        sys.modules.update(saved)
+        raise
+
+
+def load_candidate(
+    target: Target,
+    stale: Iterable[str],
+    context: Optional[str] = None,
+    context_file: Optional[Path] = None,
+    work_dir: str = ".",
+) -> Candidate:
+    """Load the app from the files as they are now and check that a run would take it.
+
+    Everything that can be wrong with the code is found here, before the app that
+    is running is touched: the import, the App in it, what it declares (as a run
+    validates it before connecting) and its app context. The App is looked up
+    anew every time: a reload re-declares it, and the old object still holds the
+    functions of the old code. So is a ``--context module:attr``, re-imported, and
+    a ``--context-file``, re-validated against the reloaded class.
+
+    Raises:
+        Exception: Whatever is wrong. ``sys.modules`` is then as it was.
+    """
+    stale = list(stale)
+    saved = {name: sys.modules[name] for name in {*stale, target.module} if name in sys.modules}
+    module = import_fresh(target, stale)
+    try:
+        app = require_app(module, target.attribute)
+        app.snapshot(provider=_provider_for(app, required=False))
+        return Candidate(module, app, load_context(app, context, context_file, work_dir))
+    except BaseException:
+        for name in {*stale, target.module}:
+            sys.modules.pop(name, None)
+        sys.modules.update(saved)
+        raise
+
+
+def report_broken(console: Console, error: BaseException, target: Target, work_dir: str) -> None:
+    """Say what is wrong with the code, where the user can fix it."""
+    console.print(escape(describe_import_failure(error, target.module, work_dir)), highlight=False)
 
 
 def callback(console: Console, future: asyncio.Task[None]):
@@ -188,53 +248,39 @@ def callback(console: Console, future: asyncio.Task[None]):
 
 def _start(
     console: Console,
-    module: ModuleType,
-    target: Target,
+    candidate: Candidate,
     options: dict[str, Any],
-    what: str,
-    *,
-    context: Optional[str] = None,
-    context_file: Optional[Path] = None,
-    work_dir: str = ".",
-) -> Optional[asyncio.Task[None]]:
-    """Find the module's (new) App and start running it, or report why it cannot run.
-
-    The App is looked up again on every start: a reload re-declares it, and the
-    old object still holds the functions of the old code. So is its app context:
-    a ``--context module:attr`` is re-imported and a ``--context-file`` re-validated
-    against the reloaded class.
-    """
-    try:
-        app = require_app(module, target.attribute)
-        console.print(construct_app_banner(app, resolve_url(options.get("url"))))
-        loaded = load_context(app, context, context_file, work_dir)
-        run = asyncio.create_task(arun_app(console, app, options, context=loaded))
-        run.add_done_callback(partial(callback, console))
-        return run
-    except Exception:
-        console.print_exception()
-        fail(console, f"Error starting {what} App")
-        return None
+) -> asyncio.Task[None]:
+    """Start running a loaded app, reporting on its connection and its tasks."""
+    console.print(construct_app_banner(candidate.app, resolve_url(options.get("url"))))
+    run = asyncio.create_task(
+        arun_app(console, candidate.app, options, context=candidate.context, tasks=True)
+    )
+    run.add_done_callback(partial(callback, console))
+    return run
 
 
 async def _stop(console: Console, run: Optional[asyncio.Task[None]]) -> None:
     if run is None or run.done():
         return
     run.cancel()
-    notice(console, "Cancelling latest version")
     try:
         await run
     except asyncio.CancelledError:
         pass
 
 
-def _intro(console: Console, target: Target, deep: bool) -> None:
+def _intro(console: Console, deep: bool) -> None:
     watching = (
-        "all your installed packages"
+        "the app, what it imports from this folder and from packages installed for development"
         if deep
-        else f"{escape(os.path.basename(target.file))} (--deep watches installed packages too)"
+        else "the app and what it imports from this folder (--deep: also from packages installed for development)"
     )
     notice(console, "Dev mode", f"reloads on change, watching {watching}")
+
+
+def _running(run: Optional[asyncio.Task[None]]) -> bool:
+    return run is not None and not run.done()
 
 
 async def run_dev(
@@ -248,75 +294,77 @@ async def run_dev(
 ):
     """Run the target's app, and run it again whenever its code changes.
 
+    A change is loaded and checked first, beside the app that is running. Only
+    code that a run would take replaces it: a save that does not import, or
+    declares something invalid, is reported and the last working version keeps
+    running until the next save.
+
     ``options`` are the connection flags for the runner: they go to every run,
     never onto the App. ``context``/``context_file`` are the app-context flags,
     resolved anew on every start.
     """
     options = options or {}
 
-    _intro(console, target, deep)
+    _intro(console, deep)
 
-    module: Optional[ModuleType]
+    # What was loaded before the app is the CLI and the SDK it runs on. Only what
+    # the app brings in after this is the app's to reload.
+    baseline = frozenset(sys.modules)
+
+    def loaded() -> List[str]:
+        mine = project_modules(work_dir, baseline)
+        return [*mine, *development_modules(work_dir, baseline)] if deep else mine
+
+    def tracked() -> Set[str]:
+        return files_of(loaded()) | {os.path.realpath(target.file)}
+
+    current_run: Optional[asyncio.Task[None]] = None
+    # The files the app that loaded last is made of; None while nothing loads.
+    files: Optional[Set[str]] = None
     try:
-        module = import_target(target)
-    except Exception:
-        console.print_exception()
-        fail(console, f"Error while importing your app, please fix {escape(target.file)} and save")
-        module = None
-
-    current_run = (
-        _start(
-            console,
-            module,
-            target,
-            options,
-            "initial",
-            context=context,
-            context_file=context_file,
-            work_dir=work_dir,
+        current_run = _start(
+            console, load_candidate(target, [], context, context_file, work_dir), options
         )
-        if module
-        else None
-    )
+        files = tracked()
+    except Exception as e:
+        report_broken(console, e, target, work_dir)
+        fail(console, "The app does not load", f"fix {escape(os.path.basename(target.file))} and save")
 
-    async for changes in awatch(
-        work_dir,
-        watch_filter=EntrypointFilter(target.file) if not deep else DeepFilter(),
-        debounce=2000,
-        step=500,
-    ):
-        changed: Set[str] = set()
-        if deep:
-            changed = check_deeps(changes)
-            if not changed:
+    # What --deep follows is read off what the app imported, so it is known once
+    # the app has loaded: a first import that failed leaves only the project.
+    roots = development_roots(work_dir, baseline) if deep else []
+
+    try:
+        async for changes in awatch(
+            work_dir, *roots, watch_filter=PythonFilter(), debounce=BURST_MS, step=SETTLE_MS
+        ):
+            if not concerns(changes, files):
+                continue
+            console.print(construct_changes_group(changes))
+            try:
+                with console.status("Loading the change..."):
+                    candidate = load_candidate(target, loaded(), context, context_file, work_dir)
+            except Exception as e:
+                report_broken(console, e, target, work_dir)
+                # The fix may be in a file the last working version never imported.
+                files = None
+                if _running(current_run):
+                    notice(console, "Not reloaded", "still running the last working version")
+                else:
+                    fail(console, "The app does not load", "fix it and save")
                 continue
 
-        console.print(construct_changes_group(changes))
-        await _stop(console, current_run)
-        current_run = None
-
-        try:
-            with console.status("Reloading module..."):
-                if module is None:
-                    module = import_target(target)
-                else:
-                    reload_modules(modules_to_reload(changed, target.module, deep))
-                    module = sys.modules[target.module]
-        except Exception:
-            console.print_exception()
-            fail(console, "Reload unsuccessful, please fix your app and save")
-            continue
-
-        current_run = _start(
-            console,
-            module,
-            target,
-            options,
-            "reloaded",
-            context=context,
-            context_file=context_file,
-            work_dir=work_dir,
-        )
+            await _stop(console, current_run)
+            current_run = _start(console, candidate, options)
+            files = tracked()
+    except asyncio.CancelledError:
+        # Stopped (Ctrl+C). The app is stopped here, while a second Ctrl+C is
+        # still asyncio's to take: leaving it to the closing loop makes the next
+        # one kill the teardown halfway.
+        if _running(current_run):
+            notice(console, "Stopping", "Ctrl+C again to force")
+            await _stop(console, current_run)
+        raise
 
 
 def dev(
@@ -330,11 +378,15 @@ def dev(
     log_level: LogLevelOption = LogLevel.ERROR,
     skip_cache: SkipCacheOption = False,
     reauth: ReauthOption = False,
+    force_mesh: ForceMeshOption = False,
     deep: Annotated[
         bool,
         typer.Option(
             "--deep",
-            help="Also watch your installed packages, and reload the ones that change",
+            help=(
+                "Also watch the packages installed for development (editable installs "
+                "and linked checkouts), and reload them with the app"
+            ),
         ),
     ] = False,
     context: ContextOption = None,
@@ -342,9 +394,11 @@ def dev(
 ) -> None:
     """Runs the app in dev mode (with hot reloading)
 
-    Running the app in dev mode will automatically reload the app when changes are detected.
-    This is useful for development and debugging. Each reload re-imports the target
-    module and runs the App it declares then.
+    A change to the app or to a module of this folder it imports reloads it: those
+    modules are imported anew and the App they declare then is run. Other files in
+    the folder are not its business. A change that does not
+    load is reported and the last working version keeps running. While it runs,
+    each task the app takes is shown with how it ended.
     """
 
     console = get_console(ctx)
@@ -355,7 +409,7 @@ def dev(
     except TargetError as e:
         cli_error(str(e))
 
-    try:
+    with interruptible(console):
         asyncio.run(
             run_dev(
                 console,
@@ -367,5 +421,3 @@ def dev(
                 context_file=context_file,
             )
         )
-    except KeyboardInterrupt:
-        pass

@@ -163,6 +163,7 @@ class RecordedRun:
         self.listener = listener
         self.fakts = fakts
         self.during = during
+        self.task_listener: Any = None
 
     async def arun(self, context: Any = None) -> None:  # noqa: ANN401
         """Record the run as the user asked for it; then do what the test wants of it."""
@@ -183,9 +184,15 @@ def recording_connect(runs: List[Any], fakts: Any = None, during: Any = None) ->
 
     @asynccontextmanager
     async def fake_connect(
-        app: Any, provide: bool = False, connection_listener: Any = None, **options: Any  # noqa: ANN401
+        app: Any,  # noqa: ANN401
+        provide: bool = False,
+        connection_listener: Any = None,  # noqa: ANN401
+        task_listener: Any = None,  # noqa: ANN401
+        **options: Any,  # noqa: ANN401
     ) -> AsyncIterator[RecordedRun]:
-        yield RecordedRun(app, options, runs, listener=connection_listener, fakts=fakts, during=during)
+        run = RecordedRun(app, options, runs, listener=connection_listener, fakts=fakts, during=during)
+        run.task_listener = task_listener
+        yield run
 
     return fake_connect
 

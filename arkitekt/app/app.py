@@ -26,6 +26,7 @@ concurrently: each run takes its own snapshot of the registry.
 
 import inspect
 import logging
+import os
 from pathlib import Path
 from typing import (
     Any,
@@ -75,6 +76,9 @@ from fakts.models import Manifest, PublicSource, Requirement
 from arkitekt.app.snapshot import RunSnapshot
 
 logger = logging.getLogger(__name__)
+
+#: The variable an image carries the version of its build in; see :class:`App`.
+VERSION_ENV = "ARKITEKT_APP_VERSION"
 
 P = ParamSpec("P")
 R = TypeVar("R")
@@ -129,7 +133,10 @@ class App(Generic[Ctx]):
     Args:
         identifier: The app's globally unique identifier. Defaults to the name of
             the file that constructs it.
-        version: The app's version.
+        version: The app's version. An image built from a branch carries the
+            version of that build in ``ARKITEKT_APP_VERSION``, which then wins:
+            the source of a branch still names the last release, and an image must
+            register as the build it is.
         description: What the app is, in a sentence. It goes into the manifest
             and, from there, onto the agent that provides the app -- shown
             beside its name, which is what tells two agents of the same app
@@ -211,7 +218,7 @@ class App(Generic[Ctx]):
         effects: Optional[Effects] = None,
     ) -> None:
         self.identifier: str = identifier or _caller_module_name()
-        self.version = version
+        self.version = os.environ.get(VERSION_ENV) or version
         self.description = description
         self.logo = logo
         self.scopes: List[str] = list(scopes) if scopes else ["openid"]
@@ -1233,6 +1240,7 @@ class App(Generic[Ctx]):
         shrink: Optional[Callable[..., Any]] = None,
         description: Optional[str] = None,
         default_widget: Optional[AssignWidgetInput] = None,
+        describe: Optional[Callable[[Any], Mapping[str, Any]]] = None,
     ) -> None:
         """Declare a type that travels by id, with your own way of fetching it back.
 
@@ -1265,6 +1273,10 @@ class App(Generic[Ctx]):
             shrink: Turns the object into its id. Defaults to reading ``.id``.
             description: What it is, for the UI.
             default_widget: The widget a user picks one with.
+            describe: Computes an object's descriptors, a flat ``{key: value}``.
+                A run tests them against a port's ``Requires`` when one comes in
+                and its ``Provides`` when one goes out, and fails the task on a
+                mismatch. A key it does not return is not tested.
 
         Raises:
             StructureDefinitionError: If the identifier is not ``@package/key``,
@@ -1277,6 +1289,7 @@ class App(Generic[Ctx]):
             ashrink=shrink or id_shrink,
             description=description,
             default_widget=default_widget,
+            describe=describe,
         )
 
     def memory_structure(

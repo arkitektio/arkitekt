@@ -1,0 +1,33 @@
+# Release an Arkitekt app from GitLab CI.
+#
+#   include:
+#     - remote: https://raw.githubusercontent.com/arkitektio/arkitekt/main/ci/gitlab/arkitekt.gitlab-ci.yml
+#
+# Everything this does is `arkitekt plugin release`. The job around it only gives that
+# command what any CI has to: a logged-in docker, emulation for the other platforms, and
+# the name of the branch. A commit tagged with the app's version becomes that release;
+# any other commit becomes the latest build of its branch's channel.
+
+arkitekt-release:
+  image: ghcr.io/astral-sh/uv:python3.12-bookworm
+  services:
+    - docker:dind
+  variables:
+    DOCKER_HOST: tcp://docker:2376
+    DOCKER_TLS_CERTDIR: /certs
+    DOCKER_TLS_VERIFY: "1"
+    DOCKER_CERT_PATH: /certs/client
+    ARKITEKT_REPOSITORY: $CI_REGISTRY_IMAGE
+    ARKITEKT_TARGET: app
+    ARKITEKT_CLI: uv run arkitekt
+  rules:
+    - if: $CI_COMMIT_TAG
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  before_script:
+    - curl -fsSL https://get.docker.com | sh
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u "$CI_REGISTRY_USER" --password-stdin "$CI_REGISTRY"
+    - docker run --privileged --rm tonistiigi/binfmt --install all
+  script:
+    # GitLab checks out a detached commit, so git cannot name the branch.
+    - if [ -z "$CI_COMMIT_TAG" ]; then export ARKITEKT_CHANNEL="$CI_COMMIT_BRANCH"; fi
+    - $ARKITEKT_CLI plugin release "$ARKITEKT_TARGET"

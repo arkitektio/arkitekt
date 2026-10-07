@@ -17,7 +17,7 @@ from typing import TYPE_CHECKING, Iterator
 import pytest
 
 if TYPE_CHECKING:
-    from konstruktor import Hub  # pyright: ignore[reportMissingImports] -- not in the lockfile
+    from konstruktor import Hub
 
 
 @pytest.fixture(autouse=True)
@@ -50,7 +50,14 @@ def _private_session_state(tmp_path_factory: pytest.TempPathFactory) -> Iterator
 def hub(konstruktor_hub) -> "Hub":  # noqa: ANN001 -- konstruktor's factory fixture
     """One deployment for the whole session: rekuest and mikro.
 
-    One redeem token serves one app, so there is one for every app the tests
-    connect. Each test takes its own with ``hub.redeem_token(<a name>)``.
+    Made from the images the two client packages say host them, which is all
+    either has to know about its server. One redeem token serves one app, so
+    there is one for every app the tests connect. Each test takes its own with
+    ``hub.redeem_token(<a name>)``.
     """
-    return konstruktor_hub(services=["rekuest", "mikro"], redeem_tokens=7)
+    from mikro import mikro_service
+    from rekuest.arkitekt import rekuest_service
+
+    return konstruktor_hub(
+        service_images=[rekuest_service.image, mikro_service.image], redeem_tokens=8
+    )

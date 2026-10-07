@@ -168,6 +168,8 @@ def app_dir(tmp_path):
             "--work-dir",
             str(tmp_path),
             "create",
+            "--template",
+            "bare",
             "--identifier",
             "com.test.app",
             "--version",

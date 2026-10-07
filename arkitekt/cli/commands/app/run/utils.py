@@ -2,6 +2,8 @@ from typing import Any, Dict, Iterable
 
 import typer
 
+from arkitekt.app.fakts import forced_mesh
+
 __all__ = [
     "CONNECTION_OPTIONS",
     "explicit_options",
@@ -47,5 +49,9 @@ def explicit_options(ctx: typer.Context, names: Iterable[str]) -> Dict[str, Any]
 
 def runner_options(ctx: typer.Context) -> Dict[str, Any]:
     """The keyword arguments a run command hands to :func:`arkitekt.arun`: the
-    explicitly passed connection flags."""
-    return explicit_options(ctx, CONNECTION_OPTIONS)
+    explicitly passed connection flags. ``--force-mesh`` goes as the ``mesh``
+    it stands for."""
+    options = explicit_options(ctx, CONNECTION_OPTIONS)
+    if explicit_options(ctx, ("force_mesh",)).get("force_mesh"):
+        options["mesh"] = forced_mesh()
+    return options

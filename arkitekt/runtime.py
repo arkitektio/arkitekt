@@ -25,6 +25,7 @@ from typing import (
     Mapping,
     Optional,
     Self,
+    Sequence,
     Type,
     TypeVar,
     Union,
@@ -43,7 +44,7 @@ from fakts.mesh import MeshOptions, MeshProxy
 from koil import unkoil
 from koil.bridge import unkoil_task
 from koil.composition import KoiledModel
-from pydantic import ConfigDict, Field, PrivateAttr
+from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from arkitekt.app.app import App, Ctx
 from arkitekt.app.fakts import build_fakts, resolve_url
@@ -61,6 +62,29 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+
+#: Where an offline run's services point: a host that can never resolve.
+OFFLINE_HOST = "offline.invalid"
+
+
+class LocalRun(BaseModel):
+    """What makes a run local: nothing is registered, and its own actions are called in-process.
+
+    Attributes:
+        clients: Clients to use in place of the ones the app's services build. A
+            service whose client class one of them is an instance of is not built.
+        offline: Reach no server at all. A service that is not replaced then
+            builds its real client against an address that does not exist: it is
+            there to be handed out, and fails when something calls through it.
+        context: The app context the run is started with.
+    """
+
+    clients: List[Any] = Field(default_factory=list)
+    offline: bool = True
+    context: Optional[Any] = None
+
+    model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
 
 class Runtime(KoiledModel, Generic[Ctx]):
@@ -106,6 +130,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     # which pydantic cannot validate against.
     agent: Optional[Any] = None
     provider: Optional[Any] = Field(default=None, exclude=True)
+    local: Optional[LocalRun] = Field(default=None, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
@@ -175,11 +200,73 @@ class Runtime(KoiledModel, Generic[Ctx]):
         naming a structure this app cannot resolve would otherwise fail
         mid-assignment, far from its cause.
         """
+        if self.local is not None:
+            # The same snapshot a providing run takes, provider included: the app
+            # is then whole (the structures its provider's package brings resolve)
+            # and, connected, it is the manifest the saved session was made for --
+            # a local call reuses the login of `run`, and does not replace it.
+            # Only the agent differs: it is built here, not by the provider.
+            device_id = (
+                None
+                if self.local.offline
+                else self.options.device_id or get_or_set_device_id()
+            )
+            return self.app.snapshot(
+                device_id=device_id, provider=_provider_for(self.app, required=False)
+            )
         device_id = self.options.device_id or get_or_set_device_id()
         return self.app.snapshot(device_id=device_id, provider=self.provider)
 
+    def _build_fakts(self, snapshot: RunSnapshot) -> Fakts:
+        """The run's fakts: the deployment's, or for an offline run one that reaches nothing.
+
+        Offline, every requirement resolves to an address that does not exist
+        (``<key>.offline.invalid``). The services that were not replaced then
+        build their real clients, so the app is whole and its structures bind;
+        a client only fails when something actually calls through it.
+        """
+        if self.local is not None and self._stays_offline(snapshot):
+            from fakts.testing import build_testing_fakts
+
+            return build_testing_fakts(
+                aliases={
+                    requirement.key: f"http://{requirement.key}.{OFFLINE_HOST}"
+                    for requirement in snapshot.manifest.requirements or []
+                }
+            )
+        # Through the module, so the fakts stays replaceable (tests patch it).
+        return build_fakts(snapshot.manifest, self.options)
+
+    def _stays_offline(self, snapshot: RunSnapshot) -> bool:
+        """Whether a local run reaches no server: asked to, or with nothing to reach.
+
+        What a local run connects for is the services the app itself uses. The
+        one its provider brings (rekuest's) serves an agent, and a local run's
+        agent talks to nobody: an app using no service logs in to nothing.
+        """
+        assert self.local is not None
+        if self.local.offline:
+            return True
+        own = self.app.registry.services
+        return not any(
+            service.needs_fakts and self._replacement_for(service) is None
+            for name, service in snapshot.services.items()
+            if name in own
+        )
+
+    def _replacement_for(self, service: "Service[Any]") -> Optional[Any]:
+        """The client a local run was handed in place of the one ``service`` builds."""
+        if self.local is None:
+            return None
+        return next((c for c in self.local.clients if isinstance(c, service.returns)), None)
+
     def _needs_fakts(self, snapshot: RunSnapshot) -> bool:
         """Whether anything this run builds resolves through fakts."""
+        if self.local is not None:
+            return any(
+                service.needs_fakts and self._replacement_for(service) is None
+                for service in snapshot.services.values()
+            )
         return any(service.needs_fakts for service in snapshot.services.values()) or (
             self.provider is not None and self.provider.needs_fakts
         )
@@ -198,7 +285,9 @@ class Runtime(KoiledModel, Generic[Ctx]):
         for name, builder in snapshot.services.items():
             # Each service takes only what its signature asks for; there is no
             # bag of parameters every builder has to know about.
-            client = await builder.build(fakts, snapshot.registry)
+            client = self._replacement_for(builder)
+            if client is None:
+                client = await builder.build(fakts, snapshot.registry)
             if client is not None:
                 clients[name] = client
 
@@ -215,10 +304,13 @@ class Runtime(KoiledModel, Generic[Ctx]):
         self, snapshot: RunSnapshot, fakts: Optional[Fakts]
     ) -> Optional[Any]:
         """Build the agent from this run's provider, after the clients, and make it this run's."""
-        provider = self.provider
-        if provider is None:
-            return None
-        agent = await provider.build(fakts, snapshot.registry, self.clients)
+        if self.local is not None:
+            agent = _local_agent(snapshot)
+        else:
+            provider = self.provider
+            if provider is None:
+                return None
+            agent = await provider.build(fakts, snapshot.registry, self.clients)
         # Bound before entered: the agent reads `bound_app` while registering.
         agent.bound_app = self
         agent.force = self.options.force
@@ -263,7 +355,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
             if self._needs_fakts(snapshot):
                 # Fakts first: a service is handed its resolved address, and
                 # resolving one needs a loaded configuration.
-                self.fakts = build_fakts(snapshot.manifest, self.options)
+                self.fakts = self._build_fakts(snapshot)
                 await self.fakts.__aenter__()
                 self._entered.append(self.fakts)
             self.clients = await self._build_clients(snapshot, self.fakts)
@@ -277,6 +369,11 @@ class Runtime(KoiledModel, Generic[Ctx]):
             if self.agent is not None and hasattr(self.agent, "__aenter__"):
                 await self.agent.__aenter__()
                 self._entered.append(self.agent)
+            if self.local is not None:
+                # A local run has nothing to wait for: it is started here, hooks
+                # and states included, and stopped (shutdown hooks) on leaving.
+                self._require_context(self.local.context)
+                await self._require_agent().aconnect(context=self.local.context)
         except BaseException as e:
             await self._exit_entered(type(e), e, e.__traceback__)
             raise
@@ -388,6 +485,161 @@ class Runtime(KoiledModel, Generic[Ctx]):
         self._require_context(context)
         self._require_agent()
         return unkoil_task(self._aprovide, context)
+
+    # ------------------------------------------------------------------ #
+    # Calling in-process                                                 #
+    # ------------------------------------------------------------------ #
+
+    def _local_call(self, action: Any) -> tuple[Any, str]:  # noqa: ANN401
+        """The agent of this local run and the interface ``action`` names on it."""
+        agent = self.agent
+        if self.local is None or agent is None:
+            raise LookupError(
+                "Only a local run calls its own actions in-process: "
+                "`connect_local(app)`, or `local_app(app)` in a test."
+            )
+        if isinstance(action, str):
+            return agent, action
+        interface = getattr(action, "interface", None)
+        if isinstance(interface, str):
+            return agent, interface
+        # The plain function, as a module that kept it from before decorating has it.
+        declared = agent.app_registry.declared_implementations
+        for name, implementation in declared.items():
+            if implementation.function is action:
+                return agent, name
+        raise KeyError(
+            f"{getattr(action, '__name__', action)!r} is not an action of this app. "
+            f"It has: {', '.join(sorted(declared)) or 'none'}."
+        )
+
+    async def acall_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        """Call one of the app's own actions in-process and return its result.
+
+        The call goes through the app's agent, as an assignment from a server
+        does: the arguments cross the action's ports, the action is handed the
+        run's clients, its task and its states, and the result crosses the ports
+        back. Only the server is missing.
+
+        Args:
+            action: The action: the decorated function, or its name.
+            *args: Its arguments, as Python values.
+            **kwargs: Ditto, by keyword.
+
+        Returns:
+            What the action returned; of a generator, what it yielded last.
+
+        Raises:
+            LookupError: If this is not a local run.
+            KeyError: If the app has no such action.
+            LocalCallError: If the action fails or raises.
+        """
+        from arkitekt_runtime.local import acall_local
+
+        agent, interface = self._local_call(action)
+        return await acall_local(agent, interface, *args, **kwargs)
+
+    async def aiterate_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        """Call one of the app's own actions in-process and yield each of its results.
+
+        See :meth:`acall_local`.
+        """
+        from arkitekt_runtime.local import aiterate_local
+
+        agent, interface = self._local_call(action)
+        async for result in aiterate_local(agent, interface, *args, **kwargs):
+            yield result
+
+    async def aiterate_local_raw(self, action: Any, args: Dict[str, Any]) -> Any:  # noqa: ANN401
+        """Call one of the app's own actions with arguments as they travel, and yield
+        each result as it would travel back: what a server sends and receives.
+
+        See :meth:`acall_local`; this is its wire-level form, for a caller that has
+        JSON rather than Python values (the command line).
+        """
+        from arkitekt_runtime.local import aiterate_local_raw
+
+        agent, interface = self._local_call(action)
+        async for returns in aiterate_local_raw(agent, interface, args):
+            yield returns
+
+    def call_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+        """Call one of the app's own actions in-process (see :meth:`acall_local`)."""
+        return unkoil(self.acall_local, action, *args, **kwargs)
+
+
+def _local_agent(snapshot: RunSnapshot) -> Any:  # noqa: ANN401
+    """The agent of a local run: the runtime's own, on a transport that goes nowhere."""
+    try:
+        from arkitekt_runtime.local import local_agent
+    except ImportError as e:
+        raise RuntimeNotInstalledError(
+            "Calling an app's actions in-process needs the runtime, which is not "
+            "installed: pip install 'arkitekt[rekuest]'."
+        ) from e
+    return local_agent(
+        snapshot.registry, name=f"{snapshot.manifest.identifier}:{snapshot.manifest.version}"
+    )
+
+
+def connect_local(
+    app: App[Ctx],
+    *,
+    clients: Sequence[Any] = (),
+    context: Optional[Ctx] = None,
+    offline: bool = True,
+    url: Optional[str] = None,
+    token: Optional[str] = None,
+    redeem_token: Optional[str] = None,
+    skip_cache: bool = False,
+    reauth: bool = False,
+    headless: bool = False,
+    device_code_hook: Optional[DeviceCodeHook] = None,
+    task_listener: Optional["TaskListener"] = None,
+    allow_insecure_transport: bool = False,
+    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+) -> Runtime[Ctx]:
+    """Make a runtime that runs ``app`` for itself: nothing is registered or served.
+
+    For trying an action and for tests::
+
+        with connect_local(app) as rt:
+            assert rt.call_local(add, 1, 2) == 3
+
+    Entering it starts the app as a run does (startup hooks, states, background
+    work); leaving it stops it. In between :meth:`Runtime.call_local` calls the
+    app's actions through its agent, with no server in between.
+
+    Args:
+        app: The app to run.
+        clients: Clients to use in place of the ones the app's services build,
+            matched by class: a ``Mikro`` in ``clients`` is what an action
+            taking ``mikro: Mikro`` is handed. It is entered and left with
+            the run, so it must not be entered already.
+        context: The app context, for an app that declares one.
+        offline: Reach no server. Off, the services that are not replaced are
+            built against the deployment, with a login as for :func:`connect`
+            (which the remaining arguments describe).
+
+    Returns:
+        The runtime, not yet entered.
+    """
+    return Runtime(
+        app=app,
+        options=ConnectionOptions(
+            url=url,
+            token=token,
+            redeem_token=redeem_token,
+            skip_cache=skip_cache,
+            reauth=reauth,
+            headless=headless,
+            device_code_hook=device_code_hook,
+            task_listener=task_listener,
+            allow_insecure_transport=allow_insecure_transport,
+            mesh=mesh,
+        ),
+        local=LocalRun(clients=list(clients), offline=offline, context=context),
+    )
 
 
 #: What ``run()`` says when an app offers something and no runtime is installed.
@@ -1206,7 +1458,9 @@ __all__ = [
     "Runtime",
     "alogin",
     "arun",
+    "LocalRun",
     "connect",
+    "connect_local",
     "has_stored_login",
     "logout",
     "run",

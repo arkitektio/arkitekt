@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 import datetime
-from typing import List, Optional
+from typing import List, Optional, Sequence
 
 
 from string import Formatter
@@ -90,6 +90,7 @@ class Flavour(BaseModel):
         platform: str = "",
         output: str = "",
         builder: Optional[str] = None,
+        extra: Sequence[str] = (),
     ) -> List[str]:
         """Generates the build command for this flavour.
 
@@ -99,6 +100,8 @@ class Flavour(BaseModel):
 
         The builder is passed in, not stored: which builder can do a
         multi-platform build is a property of the machine, not of the flavour.
+        ``extra`` are further ``docker buildx build`` flags of one run (a build
+        argument, say); like the builder, a customised command gets none of them.
         """
 
         dockerfile = os.path.join(relative_dir, self.dockerfile)
@@ -111,8 +114,9 @@ class Flavour(BaseModel):
         # would reach docker as "" and be read as the build context.
         rendered = [v for v in rendered if v != ""]
 
-        if builder and rendered[:3] == ["docker", "buildx", "build"]:
-            rendered = rendered[:3] + ["--builder", builder] + rendered[3:]
+        if rendered[:3] == ["docker", "buildx", "build"]:
+            chosen = ["--builder", builder] if builder else []
+            rendered = rendered[:3] + chosen + list(extra) + rendered[3:]
 
         return rendered
 

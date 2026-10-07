@@ -4,6 +4,9 @@ from typing import List
 
 from arkitekt import App, run
 
+# The version of the app. A release is the commit tagged with it (v1.2.3).
+__version__ = __APP_VERSION__
+
 # The app is a declaration: who it is, and what it offers. `arkitekt run` finds it
 # in this module (as `app`) and runs it; so does `python app.py`, below.
 app = App(__APP_ARGUMENTS__)
@@ -13,7 +16,7 @@ app = App(__APP_ARGUMENTS__)
 def moving_average(values: List[float], window: int = 3) -> List[float]:
     """Moving Average
 
-    Smooths {{values}} with a moving average over {{window}} samples
+    Smooths a signal with a moving average over a window of samples
 
     Parameters
     ----------
@@ -40,7 +43,7 @@ def moving_average(values: List[float], window: int = 3) -> List[float]:
 def threshold(values: List[float], cutoff: float = 0.5) -> List[float]:
     """Threshold
 
-    Sets every value of {{values}} below {{cutoff}} to zero
+    Sets every value of a signal below the cutoff to zero
 
     Parameters
     ----------

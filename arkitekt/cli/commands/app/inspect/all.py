@@ -1,7 +1,7 @@
 from typing import Annotated
 import typer
 
-from arkitekt.app.spec import app_inspection
+from arkitekt.app.spec import app_inspection, app_manifest
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE, run_snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.utils import emit_machine_readable
@@ -44,6 +44,12 @@ def all(
 
     if machine_readable:
         emit_machine_readable("AGENT", agent)
+        # Who the image says it is. `plugin release` holds this against the release
+        # it is about to describe: the version a container registers under is the
+        # one it carries, whatever the tag on it claims.
+        emit_machine_readable(
+            "MANIFEST", app_manifest(app, entrypoint=target).model_dump(mode="json")
+        )
 
     else:
         if pretty:

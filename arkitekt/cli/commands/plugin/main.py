@@ -7,6 +7,8 @@ from .init import init
 from .build import build
 from .validate import validate
 from .publish import publish
+from .release import release
+from .ci import ci
 from .stage import stage
 from .flavour import flavour
 from .selector import selector
@@ -48,5 +50,7 @@ plugin.command("build")(build)
 plugin.command("validate")(validate)
 plugin.command("publish")(publish)
 plugin.command("stage")(stage)
+plugin.command("release")(release)
+plugin.add_typer(ci, name="ci")
 plugin.add_typer(flavour, name="flavour")
 plugin.add_typer(selector, name="selector")

@@ -67,9 +67,9 @@ In this mode, your app is a structured project that gets built into a Docker con
 
 | Feature | Standalone App | Plugin App |
 | :--- | :--- | :--- |
-| **Setup** | Minimal (import library) | Structured (Manifest + Docker) |
+| **Setup** | Minimal (import library) | A project (`arkitekt create`): app file, tests, flavour, release workflow |
 | **UI/GUI** | **Full Custom Control** (PyQt, etc.) | **Integrated Bloks** (Rendered by Arkitekt) |
 | **Execution** | Manual (`python script.py`) | Managed (`arkitekt run dev/prod`) |
 | **Environment** | Local Python Env | Docker Container (Reproducible) |
-| **Distribution** | Share script | Docker Registry |
+| **Distribution** | Share script | An OCI repository a deployment imports |
 | **Traceability** | Limited | **Full Provenance** |

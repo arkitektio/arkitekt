@@ -23,10 +23,12 @@ pytest.importorskip("konstruktor", reason="builds the deployment these tests run
 pytest.importorskip("rekuest")
 pytest.importorskip("mikro")
 
-from konstruktor import Hub  # noqa: E402  # pyright: ignore[reportMissingImports]
+from konstruktor import Hub  # noqa: E402
 from mikro import Mikro, mikro_service  # noqa: E402
 from rekuest.arkitekt import rekuest_service  # noqa: E402
 from rekuest.client.client import Rekuest  # noqa: E402
+
+from arkitekt.runtime import connect_local  # noqa: E402
 
 from arkitekt import (  # noqa: E402
     App,
@@ -72,6 +74,23 @@ def test_an_app_logs_in_and_calls_a_service(hub: Hub) -> None:
 
     assert folder.id
     assert folder.name == "from the integration suite"
+
+
+def test_a_local_run_calls_its_action_with_the_hubs_service(hub: Hub) -> None:
+    """What ``hub_call`` of ``arkitekt.testing`` is: the app started for itself, its
+    services the deployment's. The action is handed a client that reached mikro
+    through a real login, and nothing is registered."""
+    app = App("live.arkitekt.tests.librarian", "0.1.0", services=[mikro_service])
+
+    @app.action
+    def make_folder(name: str, mikro: Mikro) -> str:
+        """Make a folder, and say what it is called"""
+        return mikro.create_folder(name=name).name
+
+    with connect_local(
+        app, offline=False, url=hub.fakts_url, redeem_token=hub.redeem_token("librarian")
+    ) as rt:
+        assert rt.call_local("make_folder", name="from a local run") == "from a local run"
 
 
 def test_an_app_offers_an_action_and_is_called(hub: Hub) -> None:

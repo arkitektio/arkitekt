@@ -19,6 +19,7 @@ the App object this returns.
 import importlib
 import os
 import sys
+import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
@@ -322,6 +323,58 @@ def import_target_or_exit(ctx: typer.Context, target: str) -> tuple[ModuleType, 
                     "`arkitekt create` scaffolds an app."
                 )
             cli_error(f"Importing '{parsed.module}' failed: {e}")
+        except Exception as e:
+            # Whatever else the user's module raises while it loads (a syntax
+            # error, a declaration the SDK refuses) is theirs to fix: say where.
+            cli_error(describe_import_failure(e, parsed.module, get_work_dir(ctx)))
+
+
+def _project_frame(error: BaseException, work_dir: str) -> Optional[traceback.FrameSummary]:
+    """The deepest frame of ``error`` that is the user's own code, if any is.
+
+    The user's code is what lives under the work dir and outside an environment
+    in it: an error raised deep inside a library is reported where their module
+    called into it, which is the line they can change.
+    """
+    root = os.path.realpath(work_dir) + os.sep
+    found = None
+    for frame in traceback.extract_tb(error.__traceback__):
+        path = os.path.realpath(frame.filename)
+        inside = path.startswith(root)
+        parts = path[len(root):].split(os.sep) if inside else []
+        if inside and not ({".venv", "venv", "site-packages"} & set(parts)):
+            found = frame
+    return found
+
+
+def describe_import_failure(error: BaseException, module: str, work_dir: str) -> str:
+    """Why importing the user's module failed, as a few lines they can act on.
+
+    Where in their code, the line itself, and the error -- without the frames of
+    the import machinery and the libraries between, which a traceback buries it under.
+
+    Args:
+        error: What the import raised.
+        module: The module that was being imported.
+        work_dir: The directory the user's code lives in.
+    """
+    lines = [f"Importing '{module}' failed."]
+    if isinstance(error, SyntaxError) and error.filename:
+        where = os.path.relpath(error.filename, work_dir)
+        lines.append(f"  {where}:{error.lineno}")
+        if error.text:
+            lines.append(f"    {error.text.strip()}")
+        lines.append(f"  {type(error).__name__}: {error.msg}")
+        return "\n".join(lines)
+    frame = _project_frame(error, work_dir)
+    if frame is not None:
+        where = os.path.relpath(frame.filename, work_dir)
+        inside = "" if frame.name == "<module>" else f", in {frame.name}"
+        lines.append(f"  {where}:{frame.lineno}{inside}")
+        if frame.line:
+            lines.append(f"    {frame.line.strip()}")
+    lines.append(f"  {type(error).__name__}: {error}")
+    return "\n".join(lines)
 
 
 def load_app_or_exit(ctx: typer.Context, target: str) -> App[Any]:

@@ -47,7 +47,7 @@ documentation. Those links live as constants in
 
 | Command | What it does | Hosted docs |
 | :--- | :--- | :--- |
-| `create` · `run` · `gen` · `inspect` · `call` | Build and run apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli> |
+| `create` · `run` · `call` · `check` · `inspect` · `gen` | Build, run, try and check apps from your Python code (client SDK). | <https://arkitekt.live/docs/cli> |
 | `login` · `logout` · `status` | The saved session of the app in this folder. | <https://arkitekt.live/docs/cli/session> |
 | `plugin` | Containerize an app into flavours and publish it. | <https://arkitekt.live/docs/cli/plugin> |
 | `mesh` | Join this machine to the deployment's WireGuard mesh. | <https://arkitekt.live/docs/cli/mesh> |
@@ -77,39 +77,80 @@ below operates on the app in the current working directory (see `--work-dir`).
 
 ### `create` — Scaffold a new app
 
-Creates a new Arkitekt app in the working directory: an entrypoint file
-(default `app.py`) seeded from a template. The app declares itself in that
-file -- there is no manifest to keep in step with it.
+Creates a new Arkitekt app. By default that is a new folder holding everything
+the app needs to be developed and released:
+
+- a [uv](https://docs.astral.sh/uv/) project with `arkitekt` installed,
+- an entrypoint file (default `app.py`) seeded from a starter. The app declares
+  itself in that file -- there is no manifest to keep in step with it. A project
+  starts with an app that makes a random image and blurs one,
+- two test files (`tests/`, see [Testing an app](testing.md)): `test_app.py`
+  with no server, and `test_app_hub.py` against a hub (`uv run pytest -m hub`),
+  and `pytest` as a dev dependency,
+- a flavour (`.arkitekt/flavours/vanilla`), so it can be built into an image,
+- a GitHub workflow that has semantic-release raise the version from the commits
+  and runs `arkitekt plugin release`, on every push.
+
+That is the `project` template. `--template blok` is the same project around a
+**blok agent**: an app that analyses images stored in mikro (statistics, a
+threshold, a count of objects), keeps what it finds in a state, and declares a
+blok, a panel the user interface draws from that state, with buttons that call
+its actions (see [Bloks](bloks.md)). `--template qt` makes a project for a desktop
+app instead: an `app.py` with a window of its own (a `QtApp` with the window as its
+app context, a `MagicBar` to connect it, one action beside the window and one
+that asks for the window by its class and runs in the Qt loop), its tests, and
+`arkitekt[...,qt]` installed. It has no flavour and no workflow, as a desktop app
+is not released as an image, and it installs no Qt binding: add the one you want
+(`uv add pyqt6`, or `pyside6`), then start it with `uv run python app.py`.
+`--template bare` writes only the app file, into the working directory. A template is a set of defaults: each part has its own
+option, so any mix is possible.
 
 ```bash
-# Interactive — prompts for identifier, author and entrypoint
+# A new project in ./my-app — prompts for identifier, author and entrypoint
+arkitekt create my-app
+
+# Asks for the name first
 arkitekt create
 
-# Non-interactive — accept all defaults
-arkitekt create --yes --package-manager pip
+# An agent with a panel of its own
+arkitekt create my-analyst --template blok
 
-# Fully specified
-arkitekt create myapp \
+# A desktop app with a window (Qt)
+arkitekt create my-viewer --template qt
+
+# Only an app file, here
+arkitekt create --template bare
+
+# A project in this folder, released from GitLab instead
+arkitekt create . --ci gitlab
+
+# A project without a workflow, on pip
+arkitekt create my-app --ci none --package-manager pip
+
+# Fully specified, no questions
+arkitekt create my-app \
   --identifier com.example.myapp \
   --version 0.1.0 \
   --author "Jane Doe" \
   --entrypoint app \
-  --scopes read --scopes write \
-  --package-manager uv
+  --scopes read --scopes write
 ```
 
 Key options:
 
 | Option | Description |
 | :--- | :--- |
-| `PATH` | Optional sub-directory to create the app in. Defaults to `.`. |
+| `PATH` | The folder to create the app in; `.` is the working directory. The `project` template asks for it, the `bare` one defaults to `.`. |
+| `--template`, `-t` | `project` (default: new folder, uv, flavour, GitHub workflow), `blok` (the same, around a blok agent), `qt` (new folder, uv, a Qt desktop app, no flavour or workflow) or `bare` (the app file only). |
+| `--starter` | The code the app file starts with: `image` (random image and blur, stored in mikro), `simple` or `filter` (no service). `blok` is an image-analysis agent with a state and a blok; `qt` is a window with a `MagicBar`. Default: the template's (`project`: `image`; `blok`: `blok`; `qt`: `qt`; `bare`: `simple`). |
+| `--package-manager`, `-pm` | `pip` or `uv`. Default: the template's (`project`: uv; `bare`: uv if installed, else pip). |
+| `--flavour` / `--no-flavour` | Write a flavour. Default: the template's. |
+| `--ci` | `github`, `gitlab` or `none`: release the app from that forge on every push. Needs uv and a flavour. Default: the template's. |
 | `--identifier`, `-i` | Unique app identifier in [reverse domain notation](https://en.wikipedia.org/wiki/Reverse_domain_name_notation) (e.g. `com.example.myapp`). |
 | `--version`, `-v` | App version. Must follow [semver](https://semver.org/). Defaults to `0.0.1`. |
 | `--author` | Shown to users of your app. Defaults to the current OS user. |
 | `--entrypoint`, `-e` | Name of the Python entrypoint file (without `.py`). Defaults to `app`. |
-| `--template`, `-t` | Starting template: `simple` or `filter`. |
 | `--scopes`, `-s` | One or more requested scopes (`read`, `write`). Repeatable. |
-| `--package-manager`, `-pm` | `pip` or `uv`. Defaults to `uv` if it is installed, otherwise `pip`. |
 | `--with-extra` | Extras to install with `arkitekt` when using `uv`. Defaults to `all`. |
 | `--yes`, `-y` | Accept all defaults without prompting. |
 | `--overwrite-app`, `-oa` | Overwrite an existing entrypoint file. |
@@ -131,12 +172,12 @@ arkitekt run dev
 arkitekt run prod
 
 # Connect to a specific instance, unattended
-arkitekt run dev --url http://localhost:8000 --headless
+arkitekt run dev --url http://localhost:7080 --headless
 ```
 
 | Sub-command | Description |
 | :--- | :--- |
-| `dev` | Runs the app with auto-reload on code changes. Best for iterating. |
+| `dev` | Runs the app, reloads it when its code changes, and shows each task it takes. Best for iterating. |
 | `prod` | Runs the app without reloading, as it would run inside a container. |
 
 Both run the App the entrypoint declares (`app = App(...)`); an entrypoint
@@ -151,17 +192,48 @@ grouped in `--help` the same way, and only what you pass is overridden:
 | Login | `--headless` | Print the login link instead of opening a browser. |
 | Session | `--reauth` | Log in again and replace the saved session (wrong user or organization). |
 | Session | `--skip-cache` | Ignore the saved session and save none: log in, for this run only. |
+| Session | `--force-mesh` | Reach every service over the deployment's mesh and nothing else; addresses that are not on it are not tried. Same as `ARKITEKT_MESH=force`. |
 | Agent | `--force`, `-f` | Take over when another instance of this app is already connected. |
 | | `--log-level`, `-l` | The log level (e.g. `INFO`, `DEBUG`). |
 
-`run dev` additionally accepts `--deep` to also watch your installed packages.
+`run dev` reloads when the app changes, or a module of this folder that it
+imports: those modules are imported anew, so a change in a helper reaches the
+app that uses it. Other files in the folder (another script, a test) restart
+nothing. `--deep` also follows what the app imports from packages installed for
+development (editable installs and linked checkouts).
+
+A change is loaded and checked before it replaces the app that is running. A save
+that does not import, or declares something a run would refuse, is reported in a
+few lines and changes nothing:
+
+```text
+Importing 'app' failed.
+  app.py:14
+    def add(a, b: int = 2) -> int:
+  DefinitionError: Could not find type hint for a in add. ...
+□ Not reloaded  still running the last working version
+```
+
+The new code is imported while the old app is still connected. A module that
+claims something exclusive when it is imported (opens a device, binds a port)
+therefore meets its own earlier self: do that in a `@app.startup` hook, which
+runs after the old app has stopped.
+
+While it runs, `dev` shows each task the app takes and how it ended:
+
+```text
+■ add  a=1 b=2
+◆ add  12 ms
+■ boom
+✕ boom failed  nope
+```
 
 After the banner a run says how it got its session and what happens to its
 connection, one line each:
 
 ```text
 ◆ Session reused  logged in 3 days ago · `arkitekt logout` ends it
-◆ Registered  providing 3 actions
+◆ Registered  providing 3 actions: append_world, generate_n_string, print_string
 □ Connection lost, reconnecting
 ◆ Reconnected
 ```
@@ -207,7 +279,10 @@ Inspects parts of your app. These commands are also used by the Arkitekt server
 to introspect your app when it runs in production.
 
 ```bash
-# Scan for module-level (leaking) variables that are unsafe on reload
+# List the actions the app offers: name, arguments, results, hash
+arkitekt inspect implementations
+
+# Scan for module-level (leaking) variables
 arkitekt inspect variables
 
 # Emit the app's requirements as JSON
@@ -219,9 +294,9 @@ arkitekt inspect all --pretty
 
 | Sub-command | Description |
 | :--- | :--- |
-| `variables` | Scans the entrypoint for dangerous global variables that can leak across reloads. |
+| `variables` | Scans the entrypoint for module-level variables: state every task of the app shares. |
 | `requirements` | Prints the service requirements of the app as JSON. |
-| `implementations` | Prints the registered implementations of the app. |
+| `implementations` | Lists the actions the app offers: the name `call` takes, arguments, results and hash. `--json` prints them in full. |
 | `services` | Lists the service SDKs the app selected, their requirements and codegen assets. `--schema <name>` dumps a service's raw GraphQL SDL. |
 | `lifecycle` | Lists the agent's startup, shutdown and background hooks. |
 | `all` | Prints the complete agent manifest (implementations, states, locks, requirements, bloks), validated the way the server would validate it. |
@@ -231,21 +306,55 @@ The JSON-emitting commands accept `--pretty`/`-p` for indented output and
 
 📖 <https://arkitekt.live/docs/cli/inspect>
 
-### `call` — Call an action on the server
+### `call` — Call an action
 
-Calls an action available on the connected server and prints what it returns.
-The action is named by its hash; without an app argument the call is made as the
-`arkitekt-cli` app.
+`call local` calls one of the app's own actions right here, and prints what it
+returns. The app is started as a run starts it and the call goes through the
+action's ports, but nothing is registered and no server assigns anything: it is
+the quick way to try an action while writing it.
 
 ```bash
-arkitekt call remote --hash <hash> -a n=41 -a name=bob
+arkitekt call local add -a a=1 -a b=2
+arkitekt call local segment -a image=12 --online   # the app's services, for real
 ```
 
-It takes the same Server, Login and Session options as `run`.
+No server is reached: a service the app uses is there to be handed out, and a
+call through it fails. `--online` connects the app's services to a deployment
+with its saved session, and is what the connection flags (`--url`, `--reauth`,
+...) belong to. A generator prints each
+result. An unknown action, or a missing or unknown argument, says what the app
+has and what the action takes.
+
+`call remote` calls an action on the connected server, wherever it runs. One of
+this app's actions is named; any other is given by its hash:
+
+```bash
+arkitekt call remote add -a a=1
+arkitekt call remote <hash> -a n=41 -a name=bob
+```
+
+The server assigns the call to whichever agent provides the action, which for one
+of your own is this app only while it runs (`arkitekt run dev`). The call is
+always made as the `arkitekt-cli` app, which logs in once per server; the app in
+the folder is only read to turn an action's name into its hash. Both sub-commands read `-a key=value` as JSON when it parses and as a
+string otherwise, and take the Server, Login and Session options of `run`.
 
 📖 <https://arkitekt.live/docs/cli/call>
 
----
+### `check` — Check the app without running it
+
+```bash
+arkitekt check
+```
+
+Imports the app and validates what it declares the way a run does before it
+connects: every action's arguments and results, every structure and the service
+that resolves it. Nothing is connected or logged in to. It prints one line for a
+valid app (`◆ my-app 0.1.0 is valid  3 actions · uses mikro`) and exits with 1,
+saying where the problem is, otherwise -- so it also serves in CI.
+
+Every command reports an app that does not import the same way: where in your
+code, the line, and the error, rather than a traceback.
 
 ### `login` · `logout` · `status` — The app's saved session
 
@@ -257,7 +366,7 @@ the first time; these commands do it, undo it and show it without running the ap
 arkitekt status            # the app, and whether it is logged in
 arkitekt login             # log in now; --reauth replaces a saved session
 arkitekt logout            # forget the saved session; the next run logs in again
-arkitekt logout --url http://localhost:8000   # ... the one for that server
+arkitekt logout --url http://localhost:7080   # ... the one for that server
 ```
 
 | Command | Description |
@@ -452,12 +561,13 @@ arkitekt create myapp --identifier com.example.myapp --package-manager uv
 cd myapp
 
 # 2. Iterate locally
-arkitekt run dev
+arkitekt run dev                      # reloads on save, shows each task
+arkitekt call local append_world -a hello=Hi
+arkitekt check
+uv run pytest
 
-# 3. Prepare for distribution
-arkitekt plugin init --flavour vanilla --devcontainer
-arkitekt plugin build
-arkitekt plugin publish
+# 3. Release: push, and the workflow `create` wrote tests, builds and publishes it
+git push
 ```
 
 Stand up a server to run those apps against with
@@ -466,6 +576,6 @@ a machine to the deployment's mesh:
 
 ```bash
 konstruktor hub create
-arkitekt mesh join --url http://localhost:8000
+arkitekt mesh join --url http://localhost:7080
 ```
 

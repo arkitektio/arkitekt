@@ -200,6 +200,7 @@ def build_token_fakts(
 
 _MESH_ON = ("1", "true", "yes", "on", "native")
 _MESH_OFF = ("0", "false", "no", "off")
+_MESH_FORCE = ("force", "only")
 _MESH_AUTO = ("", "auto")
 
 
@@ -210,17 +211,21 @@ def mesh_from_env() -> MeshOptions | MeshProxy | None:
     ``ARKITEKT_MESH``: unset or ``auto`` uses the mesh when it is available
     (the bindings are installed and the server granted a key) and stays quiet
     when not; ``1`` (or ``native``) runs a node and reports what is missing;
-    ``0`` turns it off. A proxy wins when both are set: it is the more
-    specific instruction.
+    ``0`` turns it off; ``force`` uses the mesh and nothing else (aliases
+    that are not on it are not tried). A proxy wins when both are set: it is
+    the more specific instruction -- but ``ARKITEKT_MESH=force`` still makes
+    it the only way taken.
 
     Raises:
         ValueError: ``ARKITEKT_MESH`` is set to something unrecognised -- a
             typo there would otherwise silently pick a mode.
     """
+    value = os.getenv("ARKITEKT_MESH", "").strip().lower()
     proxy = os.getenv("ARKITEKT_MESH_PROXY")
     if proxy:
-        return MeshProxy(url=proxy)
-    value = os.getenv("ARKITEKT_MESH", "").strip().lower()
+        return MeshProxy(url=proxy, force=value in _MESH_FORCE)
+    if value in _MESH_FORCE:
+        return MeshOptions(force=True)
     if value in _MESH_AUTO:
         return MeshOptions(auto=True)
     if value in _MESH_ON:
@@ -229,9 +234,17 @@ def mesh_from_env() -> MeshOptions | MeshProxy | None:
         return None
     raise ValueError(
         f"ARKITEKT_MESH={value!r} is not understood: use auto (the default), 1/native "
-        f"to always run a mesh node, 0 to turn it off, or set ARKITEKT_MESH_PROXY=<url> "
+        f"to always run a mesh node, force to use nothing but the mesh, 0 to turn it "
+        f"off, or set ARKITEKT_MESH_PROXY=<url> "
         f"to use a running proxy."
     )
+
+
+def forced_mesh() -> MeshOptions | MeshProxy:
+    """The mesh as the only way to the services (``--force-mesh``): through
+    the proxy the environment names, if it names one, or a node of our own."""
+    proxy = os.getenv("ARKITEKT_MESH_PROXY")
+    return MeshProxy(url=proxy, force=True) if proxy else MeshOptions(force=True)
 
 
 def resolve_mesh(mesh: MeshOptions | MeshProxy | bool | None) -> MeshOptions | MeshProxy | None:

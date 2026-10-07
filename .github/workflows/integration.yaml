@@ -5,11 +5,11 @@ name: Integration
 # The deployment is built by konstruktor (https://github.com/arkitektio/konstruktor) --
 # a self-contained hub, services and a coordination server of their own, that nobody has
 # to accept -- through the pytest fixture its Python package ships. Nothing in this
-# repository knows what a deployment consists of.
+# repository knows what a deployment consists of. konstruktor comes with the dev
+# dependencies, so the same tests also run wherever `uv run pytest` does and Docker is.
 #
-# Separate from CI on purpose: it pulls every service image and needs Docker, so it runs
-# on Linux only, and the unit suite stays fast and stays green when an upstream image
-# is not.
+# Kept as a job of its own for what the test matrix does not say: the result on arm64,
+# and against the builds named in KONSTRUKTOR_IMAGES.
 on:
   push:
     branches: [main, next]
@@ -26,11 +26,6 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     env:
-      # What to install konstruktor from. Until its wheels are on PyPI this is its
-      # repository, built from source -- which is what the Rust toolchain below is for.
-      # Once they are, set the repository variable KONSTRUKTOR to a requirement such as
-      # `konstruktor>=0.12`; no edit here.
-      KONSTRUKTOR: ${{ vars.KONSTRUKTOR || 'konstruktor @ git+https://github.com/arkitektio/konstruktor@main' }}
       # Which builds of the services to run against, when it should not be `latest`:
       # `rekuest=jhnnsrs/rekuest:1.2.3,mikro=jhnnsrs/mikro:6.1.0`. konstruktor reads it;
       # left empty, a hub runs what a new hub always runs.
@@ -47,15 +42,8 @@ jobs:
       - name: Install the project
         run: uv sync --all-extras --dev
 
-      - name: Install Rust (to build konstruktor from source)
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: Install konstruktor
-        run: uv pip install "$KONSTRUKTOR"
-
       - name: Run the integration tests
-        # --no-sync: konstruktor is not in the lockfile, and a sync would remove it.
-        run: uv run --no-sync pytest -m integration -rs
+        run: uv run pytest -m integration -rs
 
       - name: Containers at failure
         if: failure()
