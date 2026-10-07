@@ -39,7 +39,9 @@ from arkitekt import (  # noqa: E402
     run_detached,
 )
 
-pytestmark = [pytest.mark.integration, pytest.mark.konstruktor]
+# needs_docker: the runners without a Linux Docker deselect by it. A Windows runner has
+# a Docker, but one that cannot run these images, so konstruktor's own skip does not hold.
+pytestmark = [pytest.mark.integration, pytest.mark.konstruktor, pytest.mark.needs_docker]
 
 EXAMPLES = Path(__file__).parent.parent.parent / "examples"
 
