@@ -122,7 +122,7 @@ def test_inspect_all(app_dir):
 
     agent = _between(result.stdout, "--START_AGENT--", "--END_AGENT--")
     assert isinstance(agent, dict)
-    for key in ("states", "implementations", "locks", "requirements", "bloks"):
+    for key in ("states", "implementations", "locks", "requirements", "bloks", "assets"):
         assert key in agent
     assert len(agent["implementations"]) >= 3
     for name in _SIMPLE_FUNCS:

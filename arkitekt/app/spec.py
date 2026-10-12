@@ -95,6 +95,7 @@ def app_declaration(
         states=list(agent.states or ()),
         locks=list(agent.locks or ()),
         bloks=list(agent.bloks or ()),
+        assets=run.registry.get_inspected_assets(),
     )
 
 

@@ -24,6 +24,7 @@ inspecting and building an app, and ``connect(app)`` to services, need neither.
 
 from arkitekt_spec.actions import (
     AgentDependencyInput,
+    AssetKind,
     ComponentNodeInput,
     ComponentPropInput,
     DescriptorOperator,
@@ -123,6 +124,7 @@ __all__ = [
     "MeshProxy",
     # what goes inside a declaration
     "AppRegistry",
+    "AssetKind",
     "Service",
     "Provider",
     "WrappedFunction",

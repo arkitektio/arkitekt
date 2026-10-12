@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=3.5",
+    "arkitekt-spec>=3.6",
 ]
 
 [project.optional-dependencies]
@@ -33,8 +33,8 @@ dependencies = [
 rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
-    "rekuest>=8.1",
-    "arkitekt-runtime>=4.4",
+    "rekuest>=8.2",
+    "arkitekt-runtime>=4.5",
 ]
 alpaka = [
     "alpaka>=3.1.1",
@@ -71,7 +71,7 @@ serve = [
 qt = [
     "qtpy>=2.4.3",
     # The Qt actifiers are the execution core's.
-    "arkitekt-runtime[qt]>=4.4",
+    "arkitekt-runtime[qt]>=4.5",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.
@@ -116,7 +116,7 @@ dev-dependencies = [
     "konstruktor>=0.17",
     "qtpy>=2.4.3",
     "numpy>=2",
-    "rekuest>=8.1",
+    "rekuest>=8.2",
     "kabinet>=5.0.1",
     "alpaka>=3.1.1",
     "kraph>=4.1.1",

@@ -50,6 +50,7 @@ from typing import (
 
 from arkitekt_spec.actions import (
     AgentDependencyInput,
+    AssetKind,
     AssignWidgetInput,
     ComponentNodeInput,
     EffectInput,
@@ -112,19 +113,27 @@ def _requirements_of(registry: AppRegistry) -> List[Requirement]:
     )
 
 
-def _caller_module_name(depth: int = 2) -> str:
-    """Name the module some caller up the stack is defined in.
+def _caller_file(depth: int = 2) -> Path:
+    """The file some caller up the stack is defined in.
 
     Args:
         depth: How many frames up the caller is; 2 is the caller of the function
             that calls this one.
 
     Returns:
-        That module's file name without ``.py``, used as a default identifier.
+        That frame's file name. Not a file on disk for code typed into a
+        console (``<stdin>``).
     """
-    frame = inspect.stack()[depth]
     # Path, not "/": on Windows a frame's filename uses backslashes.
-    return Path(frame.filename).stem
+    return Path(inspect.stack()[depth].filename)
+
+
+def _app_root(constructed_in: Path) -> Path:
+    """The directory of an app constructed in the file ``constructed_in``.
+
+    Code typed into a console has no file: its directory is then the working one.
+    """
+    return constructed_in.resolve().parent if constructed_in.is_file() else Path.cwd()
 
 
 class App(Generic[Ctx]):
@@ -150,6 +159,8 @@ class App(Generic[Ctx]):
         providers: The provider that serves what the app offers. Without one,
             ``run(app)`` serves it through rekuest's.
         registry: The registry to declare into. A fresh one by default.
+        root: The app's directory, which the paths of its assets are relative to.
+            Defaults to the directory of the file that constructs the app.
         app_context: The class of the app context: what a run hands the agent
             (``run(app, context=Config(...))``) and what a hook or action
             annotated with it receives. An app declaring one is ``App[Config]``
@@ -179,6 +190,7 @@ class App(Generic[Ctx]):
         services: Sequence["Service[Any]"] = (),
         providers: Sequence["Provider[Any]"] = (),
         registry: Optional[AppRegistry] = None,
+        root: Optional[Union[str, Path]] = None,
         app_context: None = None,
         effects: Optional[Effects] = None,
     ) -> None: ...
@@ -197,6 +209,7 @@ class App(Generic[Ctx]):
         services: Sequence["Service[Any]"] = (),
         providers: Sequence["Provider[Any]"] = (),
         registry: Optional[AppRegistry] = None,
+        root: Optional[Union[str, Path]] = None,
         app_context: type[Ctx],
         effects: Optional[Effects] = None,
     ) -> None: ...
@@ -214,10 +227,12 @@ class App(Generic[Ctx]):
         services: Sequence["Service[Any]"] = (),
         providers: Sequence["Provider[Any]"] = (),
         registry: Optional[AppRegistry] = None,
+        root: Optional[Union[str, Path]] = None,
         app_context: Optional[type[Ctx]] = None,
         effects: Optional[Effects] = None,
     ) -> None:
-        self.identifier: str = identifier or _caller_module_name()
+        constructed_in = _caller_file()
+        self.identifier: str = identifier or constructed_in.stem
         self.version = os.environ.get(VERSION_ENV) or version
         self.description = description
         self.logo = logo
@@ -225,6 +240,10 @@ class App(Generic[Ctx]):
         self.author = author
         self.public_sources: List[PublicSource] = list(public_sources or [])
         self.registry: AppRegistry = registry if registry is not None else AppRegistry()
+        if root is not None:
+            self.registry.root = Path(root).resolve()
+        elif self.registry.root is None:
+            self.registry.root = _app_root(constructed_in)
         if app_context is not None:
             self.registry.app_context(app_context)
         if effects is not None:
@@ -1093,6 +1112,10 @@ class App(Generic[Ctx]):
         ] = None,
         catalog: Optional[str] = None,
         local_state: Optional[Dict[str, Any]] = None,
+        context: str = "html",
+        default: bool = False,
+        for_model: Optional[str] = None,
+        for_node: Optional[str] = None,
     ) -> None:
         r"""Declare a blok, a UI component tree: ``app.blok("monitor", "<Card/>")``.
 
@@ -1112,10 +1135,21 @@ class App(Generic[Ctx]):
                 ``{"form": {"iterations": 15}}``: roots the tree binds controls
                 to (``bind="form.iterations"``) and reads back in a call
                 (``@self.run(iterations=form.iterations)``).
+            context: The renderer for the blok's root: ``"html"`` for a panel,
+                or ``"scene"`` for a full 3D view, whose root is a ``<Scene>``.
+            default: Whether this is the app's default blok for its context:
+                the panel, or the 3D view, a client shows for the app. Declaring
+                another default for the same context replaces it.
+            for_model: The model (``"sha256:..."``) this blok decorates: a
+                viewer showing that model, in any app's scene, offers this blok
+                where ``for_node`` is clicked. Html bloks only.
+            for_node: The node of ``for_model`` to attach to; the model's root
+                when left out.
 
         Raises:
             ValueError: If ``name`` is empty, a declared catalog rejects the tree,
-                or a ``local_state`` key is reserved or names a dependency.
+                a ``local_state`` key is reserved or names a dependency, or the
+                blok's context and target do not fit together.
         """
         self.registry.register_blok(
             name,
@@ -1125,7 +1159,41 @@ class App(Generic[Ctx]):
             dependencies=dependencies,
             catalog=catalog,
             local_state=local_state,
+            context=context,
+            default=default,
+            for_model=for_model,
+            for_node=for_node,
         )
+
+    def register_asset(
+        self, name: str, path: Union[str, Path], kind: Optional[AssetKind] = None
+    ) -> None:
+        """Register a file the app brings with it, under the name its bloks call it by.
+
+        A blok names it as ``@self.assets.<name>``: the model of a scene blok, an
+        image in a panel::
+
+            app.register_asset("scope", "models/scope.glb")
+            app.register_asset("logo", "art/logo.png")
+
+            app.blok("view", bsx('<Scene><Model src="@self.assets.scope" /></Scene>'), context="scene")
+            app.blok("panel", bsx('<img src="@self.assets.logo" />'))
+
+        When the app runs, a file the server does not hold yet is uploaded. The
+        server checks it against its hash and the rules of its kind; one it
+        refuses is logged and the app runs on.
+
+        Args:
+            name: What bloks call the asset. An identifier, unique within the app.
+            path: The file, relative to the app's directory: where the file that
+                constructs the app is, unless the app was given a ``root``. A
+                path that leaves that directory is refused, so that an asset is
+                always part of what the app is packaged from.
+            kind: What the file is. Told from the extension when left out
+                (``.glb`` is a 3D model; ``.png``, ``.jpg``, ``.jpeg`` and
+                ``.webp`` are images).
+        """
+        self.registry.register_asset(name, path, kind)
 
     def ui_catalog(
         self,
