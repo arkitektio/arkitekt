@@ -37,3 +37,18 @@ def test_a_file_outside_the_app_is_not_its_asset(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="inside the app's directory"):
         app.register_asset("scope", "../elsewhere.glb")
+
+
+def test_an_app_names_a_file_it_does_not_ship_by_its_source_and_hash(tmp_path: Path) -> None:
+    app = App("asset-app", "0.1.0", root=tmp_path)
+    ref = "sha256:" + "9f" * 32
+
+    app.register_asset("robot", source="https://vendor.example/ur5.glb", ref=ref)
+    app.blok("view", bsx('<Scene><Model src="@self.assets.robot" /></Scene>'), context="scene")
+
+    assets = app.registry.to_implement_agent_input(name="asset-app").assets
+    assert assets is not None
+    (declared,) = assets
+    assert declared.model_dump(exclude_unset=True) == {"name": "robot", "kind": "MODEL_3D", "ref": ref, "source": "https://vendor.example/ur5.glb"}
+    with pytest.raises(ValueError, match="give exactly one"):
+        app.register_asset("other")

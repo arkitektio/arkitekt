@@ -1166,9 +1166,15 @@ class App(Generic[Ctx]):
         )
 
     def register_asset(
-        self, name: str, path: Union[str, Path], kind: Optional[AssetKind] = None
+        self,
+        name: str,
+        path: Optional[Union[str, Path]] = None,
+        kind: Optional[AssetKind] = None,
+        *,
+        source: Optional[str] = None,
+        ref: Optional[str] = None,
     ) -> None:
-        """Register a file the app brings with it, under the name its bloks call it by.
+        """Register a file the app uses, under the name its bloks call it by.
 
         A blok names it as ``@self.assets.<name>``: the model of a scene blok, an
         image in a panel::
@@ -1183,6 +1189,19 @@ class App(Generic[Ctx]):
         server checks it against its hash and the rules of its kind; one it
         refuses is logged and the app runs on.
 
+        A file too large to ship with the app is named by where it is published
+        and the hash of its bytes instead::
+
+            app.register_asset(
+                "robot",
+                source="https://vendor.example/ur5.glb",
+                ref="sha256:9f2c…",
+            )
+
+        The app never fetches or uploads that one. Where it is shown, an admin of
+        the organization is offered to add it: their client fetches it from the
+        source, and the server holds it to the same hash and rules.
+
         Args:
             name: What bloks call the asset. An identifier, unique within the app.
             path: The file, relative to the app's directory: where the file that
@@ -1192,8 +1211,12 @@ class App(Generic[Ctx]):
             kind: What the file is. Told from the extension when left out
                 (``.glb`` is a 3D model; ``.png``, ``.jpg``, ``.jpeg`` and
                 ``.webp`` are images).
+            source: The https URL the file is fetched from, given instead of
+                ``path``.
+            ref: The hash of the file at ``source``: ``"sha256:"`` and the hex
+                SHA-256 of its exact bytes. Required with ``source``.
         """
-        self.registry.register_asset(name, path, kind)
+        self.registry.register_asset(name, path, kind, source=source, ref=ref)
 
     def ui_catalog(
         self,
