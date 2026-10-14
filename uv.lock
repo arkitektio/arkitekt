@@ -345,8 +345,8 @@ requires-dist = [
     { name = "kraph", marker = "extra == 'kraph'", specifier = ">=4.1.1" },
     { name = "lovekit", marker = "extra == 'all'", specifier = ">=3.1.1" },
     { name = "lovekit", marker = "extra == 'lovekit'", specifier = ">=3.1.1" },
-    { name = "mikro", marker = "extra == 'all'", specifier = ">=7.1" },
-    { name = "mikro", marker = "extra == 'mikro'", specifier = ">=7.1" },
+    { name = "mikro", marker = "extra == 'all'", specifier = ">=8.0" },
+    { name = "mikro", marker = "extra == 'mikro'", specifier = ">=8.0" },
     { name = "platformdirs", specifier = ">=4.5.0" },
     { name = "py-machineid", specifier = ">=0.8.1" },
     { name = "pyyaml", specifier = ">=6.0.2" },
@@ -375,7 +375,7 @@ dev = [
     { name = "konstruktor", specifier = ">=0.17" },
     { name = "kraph", specifier = ">=4.1.1" },
     { name = "lovekit", specifier = ">=3.1.1" },
-    { name = "mikro", specifier = ">=7.1" },
+    { name = "mikro", specifier = ">=8.0" },
     { name = "numpy", specifier = ">=2" },
     { name = "pytest", specifier = ">=8.3.0,<9" },
     { name = "pytest-aiohttp", specifier = ">=1.0.4,<2" },
@@ -1425,7 +1425,7 @@ wheels = [
 
 [[package]]
 name = "mikro"
-version = "7.1.0"
+version = "8.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "arkitekt-spec" },
@@ -1440,9 +1440,9 @@ dependencies = [
     { name = "xarray" },
     { name = "zarr" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/0a/8f/428f1eec5cd80766e0024c8f382843dc86bb366cba23087aae31e408e4b4/mikro-7.1.0.tar.gz", hash = "sha256:e0468444164d457c0f27074cde15cd59b698ac6419639c069681afc9c48eef83", size = 366932, upload-time = "2026-10-07T14:26:58.161Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/be/c4/31bf2015235c10f90241ff21e4d5eb309cdf2bcc1c6cc925d019a0d98bda/mikro-8.0.0.tar.gz", hash = "sha256:f9b164ffeebfd8e2e5cd6626156268eba04f3b08e5fea7f8d168f50a142bc6a0", size = 431573, upload-time = "2026-10-13T14:59:06.418Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/97/a5/005fa743664c8afa25b9528334bfe55591d177b17e86b176cf8c58e80065/mikro-7.1.0-py3-none-any.whl", hash = "sha256:49587b604aad9e7e388b5530761f1efd35a013ce0daa903bebe7dfb404991a14", size = 384300, upload-time = "2026-10-07T14:26:56.763Z" },
+    { url = "https://files.pythonhosted.org/packages/a9/ed/65ad31feb5cefc486b24e1e94fee0b6c7cadbb718f1ed1ae897a0509da27/mikro-8.0.0-py3-none-any.whl", hash = "sha256:fb5d51ef86fcec4cfd76168def209331f6f760b741775b105acec5c90e9dccde", size = 449464, upload-time = "2026-10-13T14:59:04.926Z" },
 ]
 
 [[package]]

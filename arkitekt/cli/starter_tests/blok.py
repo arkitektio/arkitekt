@@ -102,9 +102,9 @@ def test_a_test_image_has_the_size_asked_for_and_is_the_same_for_a_seed():
 
 @dataclass
 class StoredImage:
-    """What an action needs of an image, without a service to store one in."""
+    """What an action needs of an image's lens, without a service to store one in."""
 
-    name: str
+    label: str
     data: xr.DataArray
 
 

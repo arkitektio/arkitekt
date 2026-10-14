@@ -7,7 +7,8 @@ import xarray as xr
 
 from arkitekt import App, run
 from mikro import Mikro, mikro_service
-from mikro.api.schema import ArrayDataset
+from mikro.api.schema import IdentityTransformInput, LensDerivedFromInput
+from mikro.arkitekt.specs import Image
 
 # The version of the app. A release is the commit tagged with it (v1.2.3).
 __version__ = __APP_VERSION__
@@ -39,14 +40,18 @@ def blur_pixels(pixels: np.ndarray, radius: int = 2) -> np.ndarray:
     return windows.mean(axis=(-2, -1))
 
 
-# The actions are what others call. An image travels between them by id: an action
-# is handed the dataset, and the `mikro` client it asks for, and returns a new one.
+# The actions are what others call. An image travels between them as a lens: a
+# selection over a stored array, the whole of it or a crop, handed over by id. `Image`
+# is a lens of two space axes, so an input typed on it is offered only images, and a
+# result typed on it is checked to be one. An action is handed the lens, and the
+# `mikro` client it asks for, and stores what it makes as a new array whose whole lens
+# it returns.
 
 
 @app.action
 def generate_random_image(
     mikro: Mikro, width: int = 256, height: int = 256, name: str = "Random image"
-) -> ArrayDataset:
+) -> Image:
     """Generate Random Image
 
     Makes an image of random pixels
@@ -62,36 +67,44 @@ def generate_random_image(
 
     Returns
     -------
-    ArrayDataset
+    Image
         The random image
     """
     pixels = xr.DataArray(random_pixels(width, height), dims=("y", "x"))
-    return mikro.create_array_dataset(data=pixels, scales=[], name=name, axes=["y", "x"])
+    stored = mikro.create_array_dataset(data=pixels, scales=[], name=name, axes=["y", "x"])
+    return stored.lens()
 
 
 @app.action
-def blur_image(image: ArrayDataset, mikro: Mikro, radius: int = 2) -> ArrayDataset:
+def blur_image(image: Image, mikro: Mikro, radius: int = 2) -> Image:
     """Blur Image
 
     Blurs an image over the pixels around each one
 
     Parameters
     ----------
-    image : ArrayDataset
-        The image to blur, of two dimensions
+    image : Image
+        The image to blur: a lens of two dimensions, the whole image or a crop of it
     radius : int, optional
         How many pixels around each one are averaged, by default 2
 
     Returns
     -------
-    ArrayDataset
+    Image
         The blurred image, as large as the input
     """
     pixels = image.data.squeeze().compute().values
     if pixels.ndim != 2:
         raise ValueError(f"Only an image of two dimensions can be blurred, and this one has {pixels.ndim}")
-    blurred = xr.DataArray(blur_pixels(pixels, radius), dims=("y", "x"))
-    return mikro.create_array_dataset(data=blurred, scales=[], name=f"Blurred {image.name}", axes=["y", "x"])
+    blurred = mikro.create_array_dataset(
+        data=xr.DataArray(blur_pixels(pixels, radius), dims=("y", "x")),
+        scales=[],
+        name=f"Blurred {image.label}",
+        axes=["y", "x"],
+        # Computed from the lens, pixel for pixel: it is placed wherever the lens is.
+        derived_from=[LensDerivedFromInput(lens=image.id, transform=IdentityTransformInput())],
+    )
+    return blurred.lens()
 
 
 if __name__ == "__main__":

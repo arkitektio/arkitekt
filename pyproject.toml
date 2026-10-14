@@ -43,7 +43,7 @@ kraph = [
     "kraph>=4.1.1",
 ]
 mikro = [
-    "mikro>=7.1",
+    "mikro>=8.0",
 ]
 # The kabinet client, for apps that manage deployments. The plugin commands do not
 # need it: they speak arkitekt-spec.
@@ -109,7 +109,7 @@ dev-dependencies = [
     "pytest-asyncio>=0.20.2,<0.21",
     "pytest-cov>=4.0.0,<5",
     "pytest-aiohttp>=1.0.4,<2",
-    "mikro>=7.1",
+    "mikro>=8.0",
     "python-semantic-release>=9.21.1",
     # Builds the hub tests/integration runs against; 0.17 is where a hub is a dokker
     # deployment a test can look into.

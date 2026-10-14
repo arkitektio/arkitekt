@@ -8,7 +8,8 @@ import xarray as xr
 
 from arkitekt import App, Task, bsx, run
 from mikro import Mikro, mikro_service
-from mikro.api.schema import ArrayDataset
+from mikro.api.schema import IdentityTransformInput, LensDerivedFromInput, ValueRelation
+from mikro.arkitekt.specs import Image, LabelMask
 
 # The version of the app. A release is the commit tagged with it (v1.2.3).
 __version__ = __APP_VERSION__
@@ -104,8 +105,8 @@ def blobs_on_noise(width: int, height: int, objects: int, seed: Optional[int] = 
     return image
 
 
-def pixels_of(image: ArrayDataset) -> np.ndarray:
-    """The pixels of a stored image, which has to be of two dimensions."""
+def pixels_of(image: Image) -> np.ndarray:
+    """The pixels a lens selects, which have to be of two dimensions."""
     pixels = image.data.squeeze().compute().values
     if pixels.ndim != 2:
         raise ValueError(f"Only an image of two dimensions can be analysed, and this one has {pixels.ndim}")
@@ -153,6 +154,11 @@ def step(state: Analysis, task: Task, progress: int, status: str) -> None:
 # ---------------------------------------------------------------------------
 # The actions: what others call, the panel's buttons among them. Each takes the
 # state by its class and writes what it does; assigning a field publishes it.
+#
+# An image travels between them as a lens: a selection over a stored array, the
+# whole of it or a crop. `Image` is a lens of two space axes, so an input typed on
+# it is offered only images; `LabelMask` is a lens whose values are object ids.
+# What an action makes is stored as a new array, and its whole lens is returned.
 # ---------------------------------------------------------------------------
 
 
@@ -163,7 +169,7 @@ def generate_test_image(
     task: Task,
     objects: int = 12,
     size: int = 256,
-) -> ArrayDataset:
+) -> Image:
     """Generate Test Image
 
     Makes an image of bright blobs on a noisy background, to have something to analyse
@@ -177,7 +183,7 @@ def generate_test_image(
 
     Returns
     -------
-    ArrayDataset
+    Image
         The test image
     """
     state.busy = True
@@ -185,23 +191,23 @@ def generate_test_image(
         step(state, task, 20, "Drawing blobs")
         pixels = xr.DataArray(blobs_on_noise(size, size, objects), dims=("y", "x"))
         step(state, task, 70, "Storing the image")
-        image = mikro.create_array_dataset(data=pixels, scales=[], name=f"Test image of {objects} blobs", axes=["y", "x"])
+        stored = mikro.create_array_dataset(data=pixels, scales=[], name=f"Test image of {objects} blobs", axes=["y", "x"])
         step(state, task, 100, "Idle")
-        return image
+        return stored.lens()
     finally:
         state.busy = False
 
 
 @app.action
-def analyse_image(image: ArrayDataset, state: Analysis, task: Task, bins: int = 12) -> int:
+def analyse_image(image: Image, state: Analysis, task: Task, bins: int = 12) -> int:
     """Analyse Image
 
     Measures the intensities of an image and counts the objects in it
 
     Parameters
     ----------
-    image : ArrayDataset
-        The image to analyse, of two dimensions
+    image : Image
+        The image to analyse: a lens of two dimensions, the whole image or a crop of it
     bins : int, optional
         How many bins the histogram has, by default 12
 
@@ -214,7 +220,7 @@ def analyse_image(image: ArrayDataset, state: Analysis, task: Task, bins: int = 
     try:
         step(state, task, 10, "Loading the image")
         pixels = pixels_of(image)
-        state.image_name = image.name
+        state.image_name = image.label
 
         step(state, task, 35, "Measuring intensities")
         statistics = intensity_statistics(pixels)
@@ -231,7 +237,7 @@ def analyse_image(image: ArrayDataset, state: Analysis, task: Task, bins: int = 
         state.objects = count_objects(pixels, threshold)
 
         state.analysed += 1
-        state.history = [f"{image.name}: {state.objects} objects", *state.history][:HISTORY_LENGTH]
+        state.history = [f"{image.label}: {state.objects} objects", *state.history][:HISTORY_LENGTH]
         step(state, task, 100, "Idle")
         return state.objects
     finally:
@@ -240,23 +246,23 @@ def analyse_image(image: ArrayDataset, state: Analysis, task: Task, bins: int = 
 
 @app.action
 def segment_image(
-    image: ArrayDataset,
+    image: Image,
     mikro: Mikro,
     state: Analysis,
     task: Task,
-) -> ArrayDataset:
+) -> LabelMask:
     """Segment Image
 
     Stores a labelled image: every object of the image, numbered
 
     Parameters
     ----------
-    image : ArrayDataset
-        The image to segment, of two dimensions
+    image : Image
+        The image to segment: a lens of two dimensions, the whole image or a crop of it
 
     Returns
     -------
-    ArrayDataset
+    LabelMask
         The objects of the image: 0 is background, each object has a number of its own
     """
     state.busy = True
@@ -270,11 +276,20 @@ def segment_image(
         stored = mikro.create_array_dataset(
             data=xr.DataArray(labels.astype("uint16"), dims=("y", "x")),
             scales=[],
-            name=f"Objects of {image.name}",
+            name=f"Objects of {image.label}",
             axes=["y", "x"],
+            # Pixel for pixel the lens it was computed from, its values turned into
+            # labels: what makes it a label mask, drawn as one in a scene.
+            derived_from=[
+                LensDerivedFromInput(
+                    lens=image.id,
+                    transform=IdentityTransformInput(),
+                    value_relation=ValueRelation.CATEGORIZED,
+                )
+            ],
         )
         step(state, task, 100, "Idle")
-        return stored
+        return stored.lens()
     finally:
         state.busy = False
 

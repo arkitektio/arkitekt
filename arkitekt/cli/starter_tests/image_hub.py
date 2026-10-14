@@ -19,8 +19,8 @@ pytestmark = pytest.mark.hub
 def test_a_random_image_is_stored(teststack: TestStack[None]):
     image = teststack.call("generate_random_image", width=16, height=8, name="noise")
 
-    stored = teststack.runtime.require(Mikro).get_array_dataset(image.id)
-    assert stored.name == "noise"
+    stored = teststack.runtime.require(Mikro).get_lens(image.id)
+    assert stored.label == "noise"
     assert stored.data.squeeze().shape == (8, 16)
 
 
@@ -29,6 +29,6 @@ def test_a_blurred_image_is_as_large_and_smoother(teststack: TestStack[None]):
 
     blurred = teststack.call("blur_image", image=image, radius=2)
 
-    assert blurred.name == "Blurred Random image"
+    assert blurred.label == "Blurred Random image"
     assert blurred.data.squeeze().shape == (16, 16)
     assert float(blurred.data.var()) < float(image.data.var())

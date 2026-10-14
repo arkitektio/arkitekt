@@ -9,12 +9,13 @@ hooks, bloks). Running it is someone else's job: :func:`arkitekt.run` provides i
 ```python
 from arkitekt import App, run
 from mikro import Mikro, mikro_service
+from mikro.arkitekt.specs import Image, LabelMask
 
 app = App("my-app", version="0.1.0")
 app.service(mikro_service)
 
 @app.action
-def segment(image: ArrayDataset, mikro: Mikro) -> ArrayDataset: ...
+def segment(image: Image, mikro: Mikro) -> LabelMask: ...
 
 if __name__ == "__main__":
     run(app)
