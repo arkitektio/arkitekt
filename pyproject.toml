@@ -23,7 +23,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=3.7",
+    "arkitekt-spec>=3.9",
 ]
 
 [project.optional-dependencies]
@@ -64,7 +64,7 @@ unlok = [
 ]
 # Serving an app over FastAPI (arkitekt.serve): server mode, without rekuest.
 serve = [
-    "arkitekt-fastapi>=2.0.2",
+    "arkitekt-fastapi>=2.1",
 ]
 # Qt integration (arkitekt.qt / the MagicBar). qtpy still needs an actual
 # binding (PyQt5/6 or PySide2/6) supplied by the application.

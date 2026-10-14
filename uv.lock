@@ -326,11 +326,11 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.9" },
     { name = "alpaka", marker = "extra == 'all'", specifier = ">=3.1.1" },
     { name = "alpaka", marker = "extra == 'alpaka'", specifier = ">=3.1.1" },
-    { name = "arkitekt-fastapi", marker = "extra == 'serve'", specifier = ">=2.0.2" },
+    { name = "arkitekt-fastapi", marker = "extra == 'serve'", specifier = ">=2.1" },
     { name = "arkitekt-runtime", marker = "extra == 'all'", specifier = ">=4.5" },
     { name = "arkitekt-runtime", marker = "extra == 'rekuest'", specifier = ">=4.5" },
     { name = "arkitekt-runtime", extras = ["qt"], marker = "extra == 'qt'", specifier = ">=4.5" },
-    { name = "arkitekt-spec", specifier = ">=3.7" },
+    { name = "arkitekt-spec", specifier = ">=3.9" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=5" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=5" },
@@ -391,7 +391,7 @@ qt-binding = [{ name = "pyqt5", specifier = ">=5.15" }]
 
 [[package]]
 name = "arkitekt-fastapi"
-version = "2.0.2"
+version = "2.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiosqlite" },
@@ -403,9 +403,9 @@ dependencies = [
     { name = "koil" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/46/ae/c977429c5446515a62f96468965faf45600af70a513c51a73db182229a7c/arkitekt_fastapi-2.0.2.tar.gz", hash = "sha256:77794f7a60d75709440c238bd9daaeb1cabd1d614ddddf52fe99871000d2521f", size = 43501, upload-time = "2026-10-04T19:06:47.386Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c2/6d/4fabd0b0fad4ce0aaac4a8bdb8ee1c0187db4ea933fe6ce8e055b8961a81/arkitekt_fastapi-2.1.0.tar.gz", hash = "sha256:a3a6f4f0b761c1549623b7fb9fd5fe252b23dd7556c14468cb61285dc3e9c5c4", size = 45577, upload-time = "2026-10-14T07:04:58.369Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/ee/36294256dccbf56bb0df73755835b91c645953a4009fa67651f1b00d3caa/arkitekt_fastapi-2.0.2-py3-none-any.whl", hash = "sha256:d825734bde9dd44e0bb6c3782fd4435e767edae69fc2450d6caa90d2c748cf6a", size = 56105, upload-time = "2026-10-04T19:06:46.516Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/0c/2e1ed48b70f4c00853008ab2a47225dfe738c3bc79506f8982e43953327e/arkitekt_fastapi-2.1.0-py3-none-any.whl", hash = "sha256:e1a3e06d5f45b1cd172dd9cc3038e9697e9de20165531835ac65b8fec83d2e44", size = 58701, upload-time = "2026-10-14T07:04:57.219Z" },
 ]
 
 [[package]]
@@ -446,7 +446,7 @@ qt = [
 
 [[package]]
 name = "arkitekt-spec"
-version = "3.7.0"
+version = "3.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docstring-parser" },
@@ -455,9 +455,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1a/ae/0d3152aa74910c40d4d1f4c8cf9ad9532da80ea5c9fcecc06bcfd190460a/arkitekt_spec-3.7.0.tar.gz", hash = "sha256:687cb1d3331cc984ef29490a092dd803195bdff27f68452cedad552b730da2f1", size = 192045, upload-time = "2026-10-13T08:07:31.769Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b4/14/c5e7468a4c7de96f984e168015cacec6f60ed3140463f9e10b8f14f048b8/arkitekt_spec-3.9.0.tar.gz", hash = "sha256:f22611dffbb267b905bc0565de659b53958d67441a910f928d5b66dce1dd8e45", size = 194499, upload-time = "2026-10-13T14:47:37.018Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cc/39/868859089fb568756579dbd2f467fbc09e96b97fc2d3eebabebea049d7db/arkitekt_spec-3.7.0-py3-none-any.whl", hash = "sha256:dfbefa4a75adebd2c546f25cdb74d948895d08f6ab031c66d7ffc79158a75c6f", size = 230296, upload-time = "2026-10-13T08:07:30.36Z" },
+    { url = "https://files.pythonhosted.org/packages/bb/05/4841bbef9d58bf5e1aaa697abd213ef74ede7a3429f67d191d59005ba476/arkitekt_spec-3.9.0-py3-none-any.whl", hash = "sha256:376dd505ef1daea12d79f788440efec5488fc68924aed569fab8be3e713f305e", size = 233007, upload-time = "2026-10-13T14:47:35.524Z" },
 ]
 
 [[package]]

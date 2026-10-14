@@ -75,6 +75,26 @@ def test_a_served_app_with_services_builds_their_clients(tmp_path) -> None:  # n
         assert runtime.agent.bound_app is runtime
 
 
+def test_a_served_app_hosts_the_assets_it_registered(tmp_path) -> None:  # noqa: ANN001
+    """Nothing uploads a served app's assets: it serves them, from the app's directory."""
+    image = b"\x89PNG\r\n\x1a\n" + b"pixels"
+    (tmp_path / "logo.png").write_bytes(image)
+    app = App("served-assets", root=tmp_path)
+    app.register_asset("logo", "logo.png")
+
+    fastapi_app = fastapi.FastAPI()
+    serve(app, fastapi_app, db_file=str(tmp_path / "assets.db"))
+
+    with TestClient(fastapi_app) as client:
+        listed = client.get("/schemas/assets").json()
+        served = client.get("/assets/logo")
+
+    assert [asset["name"] for asset in listed["assets"]] == ["logo"]
+    assert served.content == image
+    assert served.headers["content-type"] == "image/png"
+    assert served.headers["etag"] == f'"{listed["assets"][0]["ref"]}"'
+
+
 @pytest.mark.asyncio
 async def test_a_served_action_runs_inside_raths_task_scope(tmp_path) -> None:  # noqa: ANN001
     """What the clients an action is handed read to attribute their requests."""

@@ -115,7 +115,9 @@ def serve(
             mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
         **fastapi_options: Passed on to
             :func:`arkitekt_fastapi.configure_fastapi` (``db_file``,
-            ``expand_user_from_request``, the route paths, ...).
+            ``expand_user_from_request``, the route paths, ...). The files the app
+            registered with ``register_asset`` are served at ``/assets/<name>``
+            (``add_assets``, ``assets_path``).
 
     Returns:
         The runtime, not yet entered: the lifespan enters it. It is what the
