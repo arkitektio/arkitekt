@@ -146,6 +146,9 @@ def needs_extra(extra: str, asked_for: List[str]) -> bool:
 
 DEFAULT_BRANCH = "main"
 
+#: The example module `uv init` writes into a new app.
+UV_EXAMPLE_MODULES = ("main.py", "hello.py")
+
 
 def start_on_default_branch(work_dir: str) -> None:
     """Put a repository that has no commit yet on `main`.
@@ -610,8 +613,12 @@ def create_command(
         pyproject = os.path.join(work_dir, "pyproject.toml")
         if not os.path.exists(pyproject):
             had_repository = os.path.exists(os.path.join(work_dir, ".git"))
+            had_files = set(os.listdir(work_dir))
+            # An app, not a package: the image installs the dependencies and copies the
+            # project in, and the app is a module of it. A packaged project (uv 0.12
+            # makes one by default) has a src/ and a build backend the image never uses.
             subprocess.run(
-                ["uv", "init", "--name", identifier, "--no-workspace"],
+                ["uv", "init", "--app", "--no-package", "--name", identifier, "--no-workspace"],
                 check=True,
                 cwd=work_dir,
             )
@@ -624,9 +631,12 @@ def create_command(
             extras_string = ",".join(with_extra)
             package_spec = f"arkitekt[{extras_string}]" if with_extra else "arkitekt"
             subprocess.run(["uv", "add", package_spec], check=True, cwd=work_dir)
-            hello_py = os.path.join(work_dir, "hello.py")
-            if os.path.exists(hello_py) and entrypoint != "hello":
-                os.remove(hello_py)
+            # The example module uv writes (main.py, hello.py before uv 0.5): the
+            # entrypoint takes its place, unless it is the entrypoint.
+            for example in UV_EXAMPLE_MODULES:
+                example_file = os.path.join(work_dir, example)
+                if example not in had_files and example != f"{entrypoint}.py" and os.path.exists(example_file):
+                    os.remove(example_file)
         else:
             console.print(
                 "pyproject.toml already exists. Skipping uv init.", style="yellow"

@@ -25,13 +25,21 @@ def create(tmp_path: Path, *arguments: str, input: str | None = None):
 
 @pytest.fixture
 def fake_uv(monkeypatch):
-    """Stand in for uv: a project appears without a network or a resolver."""
+    """Stand in for uv: a project appears without a network or a resolver.
+
+    Like uv 0.12's `uv init --app --no-package`, it writes an example `main.py`. The
+    commands it was given are kept in the fixture's value.
+    """
     real_run = subprocess.run
+    commands: list[list[str]] = []
 
     def run(command, *args, **kwargs):
         if list(command[:2]) == ["uv", "init"]:
+            commands.append(list(command))
             Path(kwargs["cwd"], "pyproject.toml").write_text('[project]\nname = "x"\n')
             Path(kwargs["cwd"], ".python-version").write_text("3.12\n")
+            if not Path(kwargs["cwd"], "main.py").exists():
+                Path(kwargs["cwd"], "main.py").write_text('def main():\n    print("Hello from x!")\n')
             return subprocess.CompletedProcess(command, 0)
         if list(command[:2]) == ["uv", "add"]:
             Path(kwargs["cwd"], "uv.lock").write_text("")
@@ -40,6 +48,7 @@ def fake_uv(monkeypatch):
 
     monkeypatch.setattr("shutil.which", lambda name: f"/usr/bin/{name}")
     monkeypatch.setattr("subprocess.run", run)
+    return commands
 
 
 def test_the_default_is_a_project_in_a_new_folder(tmp_path: Path, fake_uv):
@@ -53,6 +62,8 @@ def test_the_default_is_a_project_in_a_new_folder(tmp_path: Path, fake_uv):
     # A flavour that installs from the project's lockfile...
     dockerfile = (project / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile").read_text()
     assert "uv sync --frozen" in dockerfile
+    # ...from a build context that leaves the host's environment out.
+    assert ".venv/" in (project / ".dockerignore").read_text().splitlines()
     assert "FROM python:3.12-slim" in dockerfile
     assert "ARG ARKITEKT_APP_VERSION" in dockerfile
 
@@ -213,6 +224,58 @@ def test_a_project_without_a_name_cannot_be_assumed(tmp_path: Path, fake_uv):
     assert list(tmp_path.iterdir()) == []
 
 
+def test_the_project_is_an_app_not_a_package(tmp_path: Path, fake_uv):
+    """uv 0.12 makes a package by default: a src/ and a build backend the image never uses."""
+    result = create(tmp_path, "my-app", *IDENTITY)
+    assert result.exit_code == 0, result.output
+
+    [init] = fake_uv
+    assert "--app" in init and "--no-package" in init
+
+
+def test_the_example_module_uv_writes_makes_way_for_the_app(tmp_path: Path, fake_uv):
+    result = create(tmp_path, "my-app", *IDENTITY)
+    assert result.exit_code == 0, result.output
+
+    assert not (tmp_path / "my-app" / "main.py").exists()
+
+
+def test_a_main_py_that_was_there_before_is_left_alone(tmp_path: Path, fake_uv):
+    (tmp_path / "main.py").write_text("print('mine')\n")
+
+    result = create(tmp_path, ".", "--yes")
+    assert result.exit_code == 0, result.output
+
+    assert (tmp_path / "main.py").read_text() == "print('mine')\n"
+
+
+def test_an_app_in_main_py_keeps_the_name(tmp_path: Path, fake_uv):
+    result = create(tmp_path, "my-app", "--identifier", "com.test.app", "--author", "me", "--entrypoint", "main")
+    assert result.exit_code == 0, result.output
+
+    assert "App(" in (tmp_path / "my-app" / "main.py").read_text()
+
+
+def test_a_dockerignore_that_is_there_is_left_alone(tmp_path: Path, fake_uv):
+    (tmp_path / ".dockerignore").write_text("data/\n")
+
+    result = create(tmp_path, ".", "--yes")
+    assert result.exit_code == 0, result.output
+
+    assert (tmp_path / ".dockerignore").read_text() == "data/\n"
+
+
+def test_the_image_installs_a_packaged_project_too():
+    """A project brought along may be a package: its code has to be in the image first."""
+    from arkitekt.cli.utils import build_relative_dir
+
+    dockerfile = Path(build_relative_dir("dockerfiles", "uv.dockerfile")).read_text()
+    dependencies = dockerfile.index("uv sync --frozen --no-dev --no-install-project")
+    copy = dockerfile.index("COPY . /app")
+    project = dockerfile.index("RUN uv sync --frozen --no-dev\n")
+    assert dependencies < copy < project
+
+
 def test_a_project_can_be_created_in_this_folder(tmp_path: Path, fake_uv):
     result = create(tmp_path, ".", "--yes")
     assert result.exit_code == 0, result.output
@@ -303,6 +366,10 @@ def test_a_real_project_is_one_its_own_workflow_can_release(tmp_path: Path, monk
     workflow = yaml.safe_load((project / ".github" / "workflows" / "release.yaml").read_text())
     assert branch == "main"
     assert workflow[True]["push"]["branches"] == ["main"]
+    # An app, not a package, and nothing of uv's example beside it.
+    assert "build-system" not in tomllib.loads((project / "pyproject.toml").read_text())
+    assert not (project / "src").exists()
+    assert not (project / "main.py").exists()
 
 
 # ---------------------------------------------------------------------------

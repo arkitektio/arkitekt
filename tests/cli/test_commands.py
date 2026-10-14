@@ -32,7 +32,7 @@ def test_init_uv():
             assert result.exit_code == 0
 
             assert mock_run.call_count == 2
-            mock_run.assert_any_call(["uv", "init", "--name", "com.test.app", "--no-workspace"], check=True, cwd=os.getcwd())
+            mock_run.assert_any_call(["uv", "init", "--app", "--no-package", "--name", "com.test.app", "--no-workspace"], check=True, cwd=os.getcwd())
             mock_run.assert_any_call(["uv", "add", "arkitekt[all]"], check=True, cwd=os.getcwd())
 
             assert os.path.exists("app.py")
@@ -81,7 +81,7 @@ def test_init_default_uv():
 
             assert result.exit_code == 0
             assert mock_run.call_count == 2
-            mock_run.assert_any_call(["uv", "init", "--name", "com.test.app", "--no-workspace"], check=True, cwd=os.getcwd())
+            mock_run.assert_any_call(["uv", "init", "--app", "--no-package", "--name", "com.test.app", "--no-workspace"], check=True, cwd=os.getcwd())
 
 
 def test_init_default_pip():

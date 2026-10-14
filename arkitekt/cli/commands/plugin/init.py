@@ -70,6 +70,34 @@ def _detect_template(work_dir: str) -> str:
     return "vanilla"
 
 
+#: What a flavour's image never copies in. Docker reads only the build context's own
+#: ``.dockerignore``, so it sits beside pyproject.toml, not in ``.arkitekt/``.
+BUILD_CONTEXT_IGNORE = """# The image builds its own environment, at /opt/venv.
+.venv/
+.git/
+**/__pycache__/
+.pytest_cache/
+.ruff_cache/
+# Arkitekt's credentials and caches.
+.arkitekt/*.json
+.arkitekt/cache/
+.arkitekt/servers/
+"""
+
+
+def write_build_context_ignore(work_dir: str) -> bool:
+    """Write the project's ``.dockerignore`` when it has none; say whether it was written.
+
+    Without it ``COPY . /app`` copies the host's ``.venv`` and ``.git`` into the image.
+    """
+    path = os.path.join(work_dir, ".dockerignore")
+    if os.path.exists(path):
+        return False
+    with open(path, "w") as f:
+        f.write(BUILD_CONTEXT_IGNORE)
+    return True
+
+
 def write_flavour(
     work_dir: str,
     flavour: str = "vanilla",
@@ -100,6 +128,7 @@ def write_flavour(
     from arkitekt.cli.commands.plugin.types import DEFAULT_PLATFORMS, Flavour
 
     arkitekt_folder = create_arkitekt_folder(base_dir=work_dir)
+    write_build_context_ignore(work_dir)
 
     flavour_folder = os.path.join(arkitekt_folder, "flavours", flavour)
     if os.path.exists(flavour_folder) and not overwrite:
