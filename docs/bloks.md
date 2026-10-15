@@ -132,6 +132,35 @@ picture every time, and Orkestrator keeps the one it drew. `foreach`, `if` and
 `Fragment` take the context they are placed in, so they work inside an `<SVG>` and a
 `<Scene>` as they do in a panel.
 
+### Logos from SVG files
+
+`from_svg` turns an `.svg` file into the BSX of a logo, so a designer's file needs no
+hand translation:
+
+```python
+from pathlib import Path
+from arkitekt import bsx, from_svg
+
+app.blok("crop_logo", from_svg(Path("crop.svg")), context="logo", default=True)
+app.blok("crop_action_logo", from_svg(Path("crop.svg"), context="action_logo"), context="action_logo")
+
+# An inline action logo: logo= reads a string as a blok's name, so parse the source first.
+@app.action(logo=bsx(from_svg(Path("crop-icon.svg"), context="action_logo")))
+def crop(...): ...
+```
+
+It takes the file's text (`str`/`bytes`) or a path (`Path`); a `str` is never read as a
+path. It flattens `style=""`, `<style>` rules with `tag`, `.class` and `#id` selectors,
+`<use>`/`<symbol>` and gradient `href` chains, puts every referenced gradient and clip
+path into one `<Defs>`, and moves paint set on the root `<svg>` onto a `<G>` around the
+drawing. `currentColor` paints `ink`. For an action logo every colour goes to the nearest
+token (greys to `ink`/`muted`/`surface` by lightness, colours to
+`brand-strong`/`brand`/`brand-soft`), and `palette={"#0f172a": "ink", ...}` picks the token
+for a colour yourself, in either context. Masks, filters, patterns, images, markers,
+scripts and event handlers have no component; they are dropped with an
+`SvgConversionWarning`, or refused with `strict=True`. A drawing with too much path data
+fits with `precision=2`, which rounds the numbers of `d`, `points` and transforms.
+
 ## What a blok may be made of
 
 The components, their props, and the operations a blok may call (`@utils...`) are
