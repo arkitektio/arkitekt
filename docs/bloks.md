@@ -153,7 +153,7 @@ It takes the file's text (`str`/`bytes`) or a path (`Path`); a `str` is never re
 path. It flattens `style=""`, `<style>` rules with `tag`, `.class` and `#id` selectors,
 `<use>`/`<symbol>` and gradient `href` chains, puts every referenced gradient and clip
 path into one `<Defs>`, and moves paint set on the root `<svg>` onto a `<G>` around the
-drawing. `currentColor` paints `ink`. For an action logo every colour goes to the nearest
+drawing. `currentColor` paints the `color` set around it, or `ink` when none is. For an action logo every colour goes to the nearest
 token (greys to `ink`/`muted`/`surface` by lightness, colours to
 `brand-strong`/`brand`/`brand-soft`), and `palette={"#0f172a": "ink", ...}` picks the token
 for a colour yourself, in either context. Masks, filters, patterns, images, markers,
