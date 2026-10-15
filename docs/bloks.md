@@ -20,6 +20,10 @@ app.blok(
 
 `arkitekt create my-analyst --template blok` writes a whole app around one.
 
+A blok written as BSX is checked here, as its tree, and sent as the BSX itself: a third of
+the bytes of its tree, which the server parses into the same tree. A blok given as a tree
+(`bsx(...)`) is sent as one.
+
 ## Contexts
 
 A blok's `context` says what draws its root:
