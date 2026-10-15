@@ -25,6 +25,7 @@ inspecting and building an app, and ``connect(app)`` to services, need neither.
 from arkitekt_spec.actions import (
     AgentDependencyInput,
     AssetKind,
+    ComponentContext,
     ComponentNodeInput,
     ComponentPropInput,
     DescriptorOperator,
@@ -184,6 +185,7 @@ __all__ = [
     "bsx",
     "to_bsx",
     "from_svg",
+    "ComponentContext",
     "SvgConversionError",
     "SvgConversionWarning",
     "parse_util_call",
