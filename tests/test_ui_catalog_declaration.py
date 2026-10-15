@@ -64,14 +64,21 @@ def test_blok_passes_its_local_state_through() -> None:
     assert app.registry.get_declared_bloks()["form"].demo_state == {"form": {"iterations": 15}}
 
 
-SVG = ComponentSpec(name="SVG", accepts_children=True, children_context="LOGO", not_downstream_of=("SVG",))
-PATH = ComponentSpec(name="Path", context="LOGO", downstream_of=("SVG",), props=(PropSpec(key="d", kind="STRING", required=True),))
+SVG = ComponentSpec(name="SVG", accepts_children=True, children_context="LOGO", not_downstream_of=("SVG", "ActionLogo"))
+ACTION_LOGO = ComponentSpec(name="ActionLogo", accepts_children=True, children_context="LOGO", not_downstream_of=("SVG", "ActionLogo"))
+PATH = ComponentSpec(
+    name="Path",
+    context="LOGO",
+    downstream_of=("SVG", "ActionLogo"),
+    props=(PropSpec(key="d", kind="STRING", required=True), PropSpec(key="fill", kind="STRING", required=False)),
+)
 
 
-def test_an_action_and_a_workflow_are_drawn_by_the_logo_they_name() -> None:
+def test_an_action_and_a_workflow_are_drawn_by_the_action_logo_they_name() -> None:
     app = App("demo")
-    app.ui_catalog("drawing", components=[SVG, PATH])
-    app.blok("crop", '<SVG><Path d="M0 0" /></SVG>', catalog="drawing", context="logo", default=True)
+    app.ui_catalog("drawing", components=[SVG, ACTION_LOGO, PATH])
+    app.blok("app", '<SVG><Path d="M0 0" fill="#fbbf24" /></SVG>', catalog="drawing", context="logo", default=True)
+    app.blok("crop", '<ActionLogo><Path d="M0 0" fill="brand" /></ActionLogo>', catalog="drawing", context="action_logo")
 
     @app.action(logo="crop")
     def crop(amount: float) -> float:
@@ -96,5 +103,12 @@ def test_an_action_naming_a_logo_the_app_does_not_declare_is_refused() -> None:
         """Crop."""
         return amount
 
-    with pytest.raises(ValueError, match="'nowhere', which is not a logo blok this app declares"):
+    with pytest.raises(ValueError, match="'nowhere', which is not an action logo blok this app declares"):
         app.registry.to_implement_agent_input()
+
+
+def test_an_action_logo_paints_with_the_palette() -> None:
+    app = App("demo")
+    app.ui_catalog("drawing", components=[SVG, ACTION_LOGO, PATH])
+    with pytest.raises(ValueError, match="not '#fbbf24' in 'fill'"):
+        app.blok("loud", '<ActionLogo><Path d="M0 0" fill="#fbbf24" /></ActionLogo>', catalog="drawing", context="action_logo")

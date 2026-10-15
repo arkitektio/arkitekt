@@ -33,6 +33,7 @@ A blok's `context` says what draws its root:
 | `"html"` (the default) | anything | A panel. |
 | `"scene"` | one `<Scene>` | A 3D view, of models the app brings. |
 | `"logo"` | one `<SVG>` | The app's logo, drawn with SVG shapes. |
+| `"action_logo"` | one `<ActionLogo>` | An action's logo: SVG shapes in the viewer's palette, drawn against the action's task. |
 
 An app has at most one default blok per context (`default=True`): its panel, its scene
 and its logo, which a client shows for the app without being told which.
@@ -63,19 +64,65 @@ component), `G`, and `Defs`, `LinearGradient`, `RadialGradient`, `Stop` and `Cli
 which shapes reference as `url(#id)` by their `id`. They only go inside an `<SVG>`;
 any html blok may draw one too.
 
-An action can be drawn by a logo too: name a logo blok the app declares, or give it a
-drawing of its own, which is declared as the logo blok `<action>.logo`. An action without
-one is drawn by the app's default logo.
+### Action logos
+
+An action is drawn by an action logo: a blok with `context="action_logo"`, named by
+`@app.action(logo=...)`, or a drawing of the action's own, which is declared as the action
+logo `<action>.logo`. An action without one is drawn by the app's default logo.
 
 ```python
-@app.action(logo="logo")
+app.blok(
+    "crop_action_logo",
+    """
+    <ActionLogo viewBox="0 0 24 24">
+        <Rect x="6" y="6" width="12" height="12" fill="none"
+              stroke="brand-strong" strokeDasharray="2 1" animate="march" />
+        <Path d="M6 2v16h16" fill="none" stroke="ink" strokeWidth="2" />
+        <Circle cx="12" cy="12" r="2.5" fill="brand"
+                animate="'pulse' if @task.running else None" />
+    </ActionLogo>
+    """,
+    context="action_logo",
+)
+
+@app.action(logo="crop_action_logo")
 def crop_to_annotation(...): ...
 
-@app.action(logo=bsx('<SVG viewBox="0 0 24 24"><Path d="M4 4h16v16H4Z" fill="#fbbf24" /></SVG>'))
+@app.action(logo=bsx('<ActionLogo viewBox="0 0 24 24"><Rect width="24" height="24" rx="6" fill="brand-soft" /></ActionLogo>'))
 def measure(...): ...
 ```
 
-A logo is an icon. It has at most 200 components, nests at most 12 deep, holds at most
+The shapes are the same as under an `<SVG>`, but they paint with the **palette** only:
+
+| Token | Drawn as |
+|---|---|
+| `ink` | the text colour |
+| `muted` | the muted text colour |
+| `brand` | the viewer's brand hue |
+| `brand-strong` | the brand, with more contrast |
+| `brand-soft` | the brand, faint |
+| `surface` | the card behind the logo |
+| `none` | nothing |
+
+`fill`, `stroke` and a gradient `Stop`'s `stopColor` take a token or a `url(#id)`;
+`app.blok(...)` and the server refuse anything else, and Orkestrator would draw it in `ink`.
+The palette is the viewer's: it follows their brand, a scene's tint and dark mode, so the
+actions of every app look like one set. An app's `<SVG>` logo may use the tokens too,
+beside any colour.
+
+An action logo reads one thing, `@task`: the task the viewer last ran of the action, the
+record a bound call holds (`status`, `running`, `done`, `failed`, `progress`, `message`,
+`error`, `result`, `returns`). It is null until they run it, and the logo is drawn without
+one. It reads no state and calls no action; `app.blok(...)` refuses one that names a
+dependency. To draw a running task in a preview, give it as `local_state={"task": {...}}`.
+
+Any shape may `animate`: `spin`, `pulse`, `float`, `draw` (traces its stroke), `march`
+(moves a dashed stroke; it loops smoothly when the dash pattern repeats within 24 units)
+or `blink`, with `animateDelay` in seconds to stagger shapes. A shape is still until its
+logo is hovered, and plays while the logo's task runs; an expression such as
+`"'pulse' if @task.running else None"` picks what plays when.
+
+A logo, and an action logo, is an icon. It has at most 200 components, nests at most 12 deep, holds at most
 16 KB of path data (`d` and `points`), and a `foreach` in it draws at most 64 items of its
 demo state; `app.blok(...)` refuses a bigger one, and so does the server.
 

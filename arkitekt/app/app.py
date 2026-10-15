@@ -502,10 +502,10 @@ class App(Generic[Ctx]):
             effects: What running it again would do to the world. Informational:
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
-            logo: The logo that draws the action: the name of a logo blok this app
-                declares (``app.blok(..., context="logo")``), or a tree of its own
-                (``bsx("<SVG>...</SVG>")``). Without one, a client shows the app's
-                default logo.
+            logo: The logo that draws the action: the name of an action logo blok
+                this app declares (``app.blok(..., context="action_logo")``), or a
+                tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
+                one, a client shows the app's default logo.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -720,10 +720,10 @@ class App(Generic[Ctx]):
             effects: What running it again would do to the world. Informational:
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
-            logo: The logo that draws the action: the name of a logo blok this app
-                declares (``app.blok(..., context="logo")``), or a tree of its own
-                (``bsx("<SVG>...</SVG>")``). Without one, a client shows the app's
-                default logo.
+            logo: The logo that draws the action: the name of an action logo blok
+                this app declares (``app.blok(..., context="action_logo")``), or a
+                tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
+                one, a client shows the app's default logo.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
