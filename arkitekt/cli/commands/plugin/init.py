@@ -78,10 +78,11 @@ BUILD_CONTEXT_IGNORE = """# The image builds its own environment, at /opt/venv.
 **/__pycache__/
 .pytest_cache/
 .ruff_cache/
-# Arkitekt's credentials and caches.
+# Arkitekt's credentials, caches and the agent's journal.
 .arkitekt/*.json
 .arkitekt/cache/
 .arkitekt/servers/
+.arkitekt/rekuest_journal.db*
 """
 
 

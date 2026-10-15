@@ -40,20 +40,40 @@ def create_arkitekt_folder(with_cache: bool = False, base_dir: Optional[str] = N
     if with_cache:
         ensure_private_dir(os.path.join(folder, "cache"))
 
-    gitignore = os.path.join(folder, ".gitignore")
-    dockerignore = os.path.join(folder, ".dockerignore")
-    if not os.path.exists(gitignore):
-        with open(gitignore, "w") as f:
-            f.write(
-                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/\nservers/"
-            )
-    if not os.path.exists(dockerignore):
-        with open(dockerignore, "w") as f:
-            f.write(
-                "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/\nservers/"
-            )
+    ensure_ignored(os.path.join(folder, ".gitignore"))
+    ensure_ignored(os.path.join(folder, ".dockerignore"))
 
     return os.path.abspath(folder)
+
+
+#: What the ``.arkitekt/`` folder hides: credentials, caches and the rekuest agent's
+#: journal of unacknowledged frames (SQLite, with its ``-wal`` and ``-shm`` beside it).
+ARKITEKT_FOLDER_IGNORED = [
+    "*.json",
+    "*.temp",
+    "cache/",
+    "servers/",
+    "rekuest_journal.db*",
+]
+
+
+def ensure_ignored(path: str) -> None:
+    """Write the ignore file at ``path``, or add the patterns an older one lacks."""
+    if not os.path.exists(path):
+        with open(path, "w") as f:
+            f.write("# Hiding Arkitekt credentials, caches and journals\n")
+            f.write("\n".join(ARKITEKT_FOLDER_IGNORED) + "\n")
+        return
+
+    with open(path) as f:
+        content = f.read()
+    present = {line.strip() for line in content.splitlines()}
+    missing = [pattern for pattern in ARKITEKT_FOLDER_IGNORED if pattern not in present]
+    if missing:
+        with open(path, "a") as f:
+            if content and not content.endswith("\n"):
+                f.write("\n")
+            f.write("\n".join(missing) + "\n")
 
 
 from typing import Any
