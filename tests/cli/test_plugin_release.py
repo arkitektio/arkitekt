@@ -99,6 +99,30 @@ def test_uncommitted_changes_are_refused(checkout: Path, capsys):
     assert resolve("1.4.0", str(checkout), allow_dirty=True).channel == "main"
 
 
+def test_the_ignore_files_arkitekt_tops_up_do_not_make_the_tree_dirty(checkout: Path, capsys):
+    """An app whose .arkitekt ignore files predate a pattern still releases once arkitekt adds it."""
+    from arkitekt.utils import create_arkitekt_folder
+
+    folder = checkout / ".arkitekt"
+    folder.mkdir()
+    for name in (".gitignore", ".dockerignore"):
+        (folder / name).write_text("*.json\ncache/")
+    git(checkout, "add", "-f", ".arkitekt/.gitignore", ".arkitekt/.dockerignore")
+    git(checkout, "commit", "-q", "-m", "an older arkitekt's ignore files")
+
+    create_arkitekt_folder(base_dir=str(checkout))
+
+    assert git(checkout, "status", "--porcelain", "--untracked-files=no")
+    assert resolve("1.4.0", str(checkout)).channel == "main"
+    # Anything else still counts, wherever in the repository it is.
+    (checkout / "sub").mkdir()
+    (checkout / "sub" / "module.py").write_text("y = 1\n")
+    git(checkout, "add", "sub/module.py")
+    with pytest.raises(typer.Exit):
+        resolve("1.4.0", str(checkout / "sub"))
+    assert "uncommitted" in capsys.readouterr().err
+
+
 def test_the_source_never_carries_the_remotes_credentials(checkout: Path):
     git(checkout, "remote", "add", "origin", "https://bot:secret@example.com/org/app.git")
     assert resolve("1.4.0", str(checkout)).source == "https://example.com/org/app.git"

@@ -87,6 +87,13 @@ def _source(work_dir: str) -> Optional[str]:
     return url
 
 
+#: What the clean-tree check looks at: the whole repository, but for the ignore files
+#: arkitekt keeps itself. Any command tops an older one up with patterns it lacks
+#: (`arkitekt.utils.ensure_ignored`) -- in CI, this one -- and that changes nothing a
+#: release is built from.
+_TRACKED_SOURCE = (":/", ":(exclude).arkitekt/.gitignore", ":(exclude).arkitekt/.dockerignore")
+
+
 def resolve(
     declared_version: str, work_dir: str, channel: Optional[str] = None, allow_dirty: bool = False
 ) -> Resolved:
@@ -109,7 +116,7 @@ def resolve(
             "A release is made from a git commit, and this folder is not in a git "
             "repository (or has no commit yet)."
         )
-    if not allow_dirty and _git(work_dir, "status", "--porcelain", "--untracked-files=no"):
+    if not allow_dirty and _git(work_dir, "status", "--porcelain", "--untracked-files=no", "--", *_TRACKED_SOURCE):
         cli_error(
             "The work tree has uncommitted changes, so the commit a release names would not "
             "be what was built. Commit them, or pass --allow-dirty."
