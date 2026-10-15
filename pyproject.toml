@@ -33,7 +33,7 @@ dependencies = [
 rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
-    "rekuest>=8.3",
+    "rekuest>=8.5",
     "arkitekt-runtime>=4.5",
 ]
 alpaka = [
@@ -116,7 +116,7 @@ dev-dependencies = [
     "konstruktor>=0.17",
     "qtpy>=2.4.3",
     "numpy>=2",
-    "rekuest>=8.3",
+    "rekuest>=8.5",
     "kabinet>=5.0.1",
     "alpaka>=3.1.1",
     "kraph>=4.1.1",
