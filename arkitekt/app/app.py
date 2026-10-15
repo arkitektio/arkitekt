@@ -1137,10 +1137,12 @@ class App(Generic[Ctx]):
                 to (``bind="form.iterations"``) and reads back in a call
                 (``@self.run(iterations=form.iterations)``).
             context: The renderer for the blok's root: ``"html"`` for a panel,
-                or ``"scene"`` for a full 3D view, whose root is a ``<Scene>``.
+                ``"scene"`` for a full 3D view, whose root is a ``<Scene>``, or
+                ``"logo"`` for the app's logo, whose root is an ``<SVG>``. A logo
+                is drawn against ``demo_state`` only, never the live state.
             default: Whether this is the app's default blok for its context:
-                the panel, or the 3D view, a client shows for the app. Declaring
-                another default for the same context replaces it.
+                the panel, the 3D view or the logo a client shows for the app.
+                Declaring another default for the same context replaces it.
             for_model: The model (``"sha256:..."``) this blok decorates: a
                 viewer showing that model, in any app's scene, offers this blok
                 where ``for_node`` is clicked. Html bloks only.

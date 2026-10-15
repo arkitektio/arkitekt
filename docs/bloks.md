@@ -20,6 +20,51 @@ app.blok(
 
 `arkitekt create my-analyst --template blok` writes a whole app around one.
 
+## Contexts
+
+A blok's `context` says what draws its root:
+
+| `context` | Root | What it is |
+|---|---|---|
+| `"html"` (the default) | anything | A panel. |
+| `"scene"` | one `<Scene>` | A 3D view, of models the app brings. |
+| `"logo"` | one `<SVG>` | The app's logo, drawn with SVG shapes. |
+
+An app has at most one default blok per context (`default=True`): its panel, its scene
+and its logo, which a client shows for the app without being told which.
+
+```python
+app.blok(
+    "logo",
+    bsx("""
+        <SVG viewBox="0 0 24 24">
+            <Defs>
+                <LinearGradient id="sky" x2="1">
+                    <Stop offset="0" stopColor="#0af" />
+                    <Stop offset="1" stopColor="#a0f" />
+                </LinearGradient>
+            </Defs>
+            <Circle cx="12" cy="12" r="11" fill="url(#sky)" />
+            <Path d="M6 16 L12 6 L18 16 Z" fill="none" stroke="white" strokeWidth="1.5" />
+        </SVG>
+    """),
+    context="logo",
+    default=True,
+)
+```
+
+The shapes are the SVG elements, capitalised, with camelCase props: `Path`, `Circle`,
+`Ellipse`, `Rect`, `Line`, `Polyline`, `Polygon`, `SvgText` (`Text` is the typography
+component), `G`, and `Defs`, `LinearGradient`, `RadialGradient`, `Stop` and `ClipPath`,
+which shapes reference as `url(#id)` by their `id`. They only go inside an `<SVG>`;
+any html blok may draw one too.
+
+A logo may bind state like any blok, but a client draws it against its `demo_state`
+only, never the agent's live state, and runs none of its actions: it is the same
+picture every time, and Orkestrator keeps the one it drew. `foreach`, `if` and
+`Fragment` take the context they are placed in, so they work inside an `<SVG>` and a
+`<Scene>` as they do in a panel.
+
 ## What a blok may be made of
 
 The components, their props, and the operations a blok may call (`@utils...`) are

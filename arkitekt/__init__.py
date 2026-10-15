@@ -54,7 +54,7 @@ from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
 from arkitekt_spec.declare.blok.registry import demo_state_for
 from arkitekt_spec.declare.blok.unparse import to_bsx
-from arkitekt_spec.declare.blok.validate import check_scene_root, local_roots_of, validate_blok
+from arkitekt_spec.declare.blok.validate import check_context_root, local_roots_of, validate_blok
 from arkitekt_spec.declare.catalogs import (
     CatalogView,
     ComponentSpec,
@@ -171,7 +171,7 @@ __all__ = [
     "ComponentNodeInput",
     "ComponentPropInput",
     "validate_blok",
-    "check_scene_root",
+    "check_context_root",
     "local_roots_of",
     "demo_state_for",
     "standard_view",
