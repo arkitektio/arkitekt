@@ -78,8 +78,7 @@ app.blok(
         <Rect x="6" y="6" width="12" height="12" fill="none"
               stroke="brand-strong" strokeDasharray="2 1" animate="march" />
         <Path d="M6 2v16h16" fill="none" stroke="ink" strokeWidth="2" />
-        <Circle cx="12" cy="12" r="2.5" fill="brand"
-                animate="'pulse' if @task.running else None" />
+        <Circle cx="12" cy="12" r="2.5" fill="brand" animate="pulse" />
     </ActionLogo>
     """,
     context="action_logo",
@@ -119,8 +118,9 @@ dependency. To draw a running task in a preview, give it as `local_state={"task"
 Any shape may `animate`: `spin`, `pulse`, `float`, `draw` (traces its stroke), `march`
 (moves a dashed stroke; it loops smoothly when the dash pattern repeats within 24 units)
 or `blink`, with `animateDelay` in seconds to stagger shapes. A shape is still until its
-logo is hovered, and plays while the logo's task runs; an expression such as
-`"'pulse' if @task.running else None"` picks what plays when.
+logo is hovered, and plays while the logo's task runs. To draw the task itself, wrap a shape
+in `<if when="@task.running">`, or bind a prop to the record, such as
+`<SvgText text="@task.message" />`.
 
 A logo, and an action logo, is an icon. It has at most 200 components, nests at most 12 deep, holds at most
 16 KB of path data (`d` and `points`), and a `foreach` in it draws at most 64 items of its
