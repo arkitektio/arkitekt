@@ -437,6 +437,7 @@ class App(Generic[Ctx]):
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
+        logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def action(
@@ -464,6 +465,7 @@ class App(Generic[Ctx]):
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
+        logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
@@ -500,6 +502,10 @@ class App(Generic[Ctx]):
             effects: What running it again would do to the world. Informational:
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
+            logo: The logo that draws the action: the name of a logo blok this app
+                declares (``app.blok(..., context="logo")``), or a tree of its own
+                (``bsx("<SVG>...</SVG>")``). Without one, a client shows the app's
+                default logo.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -534,6 +540,7 @@ class App(Generic[Ctx]):
                 version=version,
                 catalogs=catalogs,
                 effects=effects,
+                logo=logo,
             )
 
         if function is not None:
@@ -565,6 +572,7 @@ class App(Generic[Ctx]):
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
+        logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as an action, as a plain call: ``app.register_action(function, name=...)``.
 
@@ -605,6 +613,7 @@ class App(Generic[Ctx]):
                 version=version,
                 catalogs=catalogs,
                 effects=effects,
+                logo=logo,
             ),
         )
         return decorate(function)
@@ -637,6 +646,7 @@ class App(Generic[Ctx]):
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
+        logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def workflow(
@@ -664,6 +674,7 @@ class App(Generic[Ctx]):
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
+        logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a workflow: an action that may call other actions. ``@app.workflow``.
 
@@ -709,6 +720,10 @@ class App(Generic[Ctx]):
             effects: What running it again would do to the world. Informational:
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
+            logo: The logo that draws the action: the name of a logo blok this app
+                declares (``app.blok(..., context="logo")``), or a tree of its own
+                (``bsx("<SVG>...</SVG>")``). Without one, a client shows the app's
+                default logo.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -743,6 +758,7 @@ class App(Generic[Ctx]):
                 version=version,
                 catalogs=catalogs,
                 effects=effects,
+                logo=logo,
             )
 
         if function is not None:
@@ -774,6 +790,7 @@ class App(Generic[Ctx]):
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
+        logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as a workflow, as a plain call: ``app.register_workflow(function, name=...)``.
 
@@ -814,6 +831,7 @@ class App(Generic[Ctx]):
                 version=version,
                 catalogs=catalogs,
                 effects=effects,
+                logo=logo,
                 execution=Execution.WORKFLOW,
             ),
         )

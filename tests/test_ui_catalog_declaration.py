@@ -62,3 +62,39 @@ def test_blok_passes_its_local_state_through() -> None:
 
     assert app.registry.registered_bloks["form"].local_state == {"form": {"iterations": 15}}
     assert app.registry.get_declared_bloks()["form"].demo_state == {"form": {"iterations": 15}}
+
+
+SVG = ComponentSpec(name="SVG", accepts_children=True, children_context="LOGO", not_downstream_of=("SVG",))
+PATH = ComponentSpec(name="Path", context="LOGO", downstream_of=("SVG",), props=(PropSpec(key="d", kind="STRING", required=True),))
+
+
+def test_an_action_and_a_workflow_are_drawn_by_the_logo_they_name() -> None:
+    app = App("demo")
+    app.ui_catalog("drawing", components=[SVG, PATH])
+    app.blok("crop", '<SVG><Path d="M0 0" /></SVG>', catalog="drawing", context="logo", default=True)
+
+    @app.action(logo="crop")
+    def crop(amount: float) -> float:
+        """Crop."""
+        return amount
+
+    @app.workflow(logo="crop")
+    def crops(amount: float) -> float:
+        """Crop twice."""
+        return amount
+
+    agent = app.registry.to_implement_agent_input()
+
+    assert {i.interface: i.logo for i in agent.implementations or ()} == {"crop": "crop", "crops": "crop"}
+
+
+def test_an_action_naming_a_logo_the_app_does_not_declare_is_refused() -> None:
+    app = App("demo")
+
+    @app.action(logo="nowhere")
+    def crop(amount: float) -> float:
+        """Crop."""
+        return amount
+
+    with pytest.raises(ValueError, match="'nowhere', which is not a logo blok this app declares"):
+        app.registry.to_implement_agent_input()

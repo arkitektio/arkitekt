@@ -59,6 +59,22 @@ component), `G`, and `Defs`, `LinearGradient`, `RadialGradient`, `Stop` and `Cli
 which shapes reference as `url(#id)` by their `id`. They only go inside an `<SVG>`;
 any html blok may draw one too.
 
+An action can be drawn by a logo too: name a logo blok the app declares, or give it a
+drawing of its own, which is declared as the logo blok `<action>.logo`. An action without
+one is drawn by the app's default logo.
+
+```python
+@app.action(logo="logo")
+def crop_to_annotation(...): ...
+
+@app.action(logo=bsx('<SVG viewBox="0 0 24 24"><Path d="M4 4h16v16H4Z" fill="#fbbf24" /></SVG>'))
+def measure(...): ...
+```
+
+A logo is an icon. It has at most 200 components, nests at most 12 deep, holds at most
+16 KB of path data (`d` and `points`), and a `foreach` in it draws at most 64 items of its
+demo state; `app.blok(...)` refuses a bigger one, and so does the server.
+
 A logo may bind state like any blok, but a client draws it against its `demo_state`
 only, never the agent's live state, and runs none of its actions: it is the same
 picture every time, and Orkestrator keeps the one it drew. `foreach`, `if` and
