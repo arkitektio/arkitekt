@@ -68,10 +68,10 @@ def eventually(attempt: Callable[[], Any], *, timeout: float, still_running: Cal
 
 
 def test_an_app_logs_in_and_calls_a_service(hub: Hub) -> None:
-    """The whole way in: discovery, a redeemed token, and mikro taking that token."""
+    """The whole way in: discovery, a mandate key logging in, and mikro taking its token."""
     app = App("live.arkitekt.tests.archivist", "0.1.0", services=[mikro_service])
 
-    with connect(app, url=hub.fakts_url, redeem_token=hub.redeem_token("archivist")) as rt:
+    with connect(app, url=hub.fakts_url, mandate_key=hub.mandate_key("archivist")) as rt:
         folder = rt.require(Mikro).create_folder(name="from the integration suite")
 
     assert folder.id
@@ -90,7 +90,7 @@ def test_a_local_run_calls_its_action_with_the_hubs_service(hub: Hub) -> None:
         return mikro.create_folder(name=name).name
 
     with connect_local(
-        app, offline=False, url=hub.fakts_url, redeem_token=hub.redeem_token("librarian")
+        app, offline=False, url=hub.fakts_url, mandate_key=hub.mandate_key("librarian")
     ) as rt:
         assert rt.call_local("make_folder", name="from a local run") == "from a local run"
 
@@ -105,7 +105,7 @@ def test_an_app_offers_an_action_and_is_called(hub: Hub) -> None:
         return text.upper() + "!"
 
     with connect(
-        app, provide=True, url=hub.fakts_url, redeem_token=hub.redeem_token("shouter")
+        app, provide=True, url=hub.fakts_url, mandate_key=hub.mandate_key("shouter")
     ) as rt:
         running = rt.run_detached()
         try:
@@ -145,14 +145,14 @@ def test_a_detached_run_is_called_and_tells_its_host(hub: Hub) -> None:
     running = run_detached(
         host,
         url=hub.fakts_url,
-        redeem_token=hub.redeem_token("detached"),
+        mandate_key=hub.mandate_key("detached"),
         connection_listener=on_state,
         task_listener=on_task,
     )
     caller = App("live.arkitekt.tests.detached-caller", "0.1.0", services=[rekuest_service])
     try:
         with connect(
-            caller, url=hub.fakts_url, redeem_token=hub.redeem_token("detached-caller")
+            caller, url=hub.fakts_url, mandate_key=hub.mandate_key("detached-caller")
         ) as rt:
             rekuest = rt.require(Rekuest)
 
@@ -181,7 +181,7 @@ def test_a_detached_run_is_called_and_tells_its_host(hub: Hub) -> None:
 def test_a_script_run_with_nothing_but_its_environment_is_callable(hub: Hub) -> None:
     """``examples/hello.py``, started the way its docstring says, and called by another app.
 
-    The script is given a server and a redeem token in its environment and
+    The script is given a server and a mandate key in its environment and
     nothing else -- no browser, no prompt -- which is how an app runs in a
     container. A second app then finds the action it offers and calls it.
     """
@@ -195,7 +195,7 @@ def test_a_script_run_with_nothing_but_its_environment_is_callable(hub: Hub) -> 
     caller = App("live.arkitekt.tests.caller", "0.1.0", services=[rekuest_service])
 
     try:
-        with connect(caller, url=hub.fakts_url, redeem_token=hub.redeem_token("caller")) as rt:
+        with connect(caller, url=hub.fakts_url, mandate_key=hub.mandate_key("caller")) as rt:
             rekuest = rt.require(Rekuest)
 
             def greet() -> str:

@@ -52,7 +52,7 @@ lean install? The CLI and packaging tooling are always included — pick only th
 | `kraph` | knowledge graphs and measurements |
 | `fluss` | workflows, and the engine that runs them |
 | `kabinet` | managing deployments of apps |
-| `unlok` | users, clients, hubs and redeem tokens (lok) |
+| `unlok` | users, clients, hubs and mandates (lok) |
 | `alpaka` | LLMs and chat |
 | `lovekit` | WebRTC streams and rooms |
 | `serve` | serving an app from a FastAPI application (arkitekt-fastapi) |

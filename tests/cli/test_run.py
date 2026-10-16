@@ -53,6 +53,14 @@ def test_prod_force_mesh_hands_the_runner_a_forced_mesh(app_dir, recorded_runs, 
     assert options == {"mesh": MeshOptions(force=True)}
 
 
+def test_prod_hands_the_supervisor_and_device_id_to_the_runner(app_dir, recorded_runs):
+    result = _invoke(app_dir, "run", "prod", "app:app", "--supervisor", "plugin_engine", "--device-id", "host:1")
+
+    assert result.exit_code == 0, result.output
+    ((_, options),) = recorded_runs
+    assert options == {"supervisor": "plugin_engine", "device_id": "host:1"}
+
+
 def test_prod_hands_only_the_explicit_flags_to_the_runner(app_dir, recorded_runs):
     result = _invoke(
         app_dir, "run", "prod", "app:app",

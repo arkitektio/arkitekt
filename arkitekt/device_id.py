@@ -12,6 +12,7 @@ import uuid
 from machineid import id
 from platformdirs import user_config_dir
 
+from arkitekt.app.sources import DISCOVER, Source, resolve
 from arkitekt.constants import APP_AUTHOR, APP_NAME
 
 logger = logging.getLogger(__name__)
@@ -23,10 +24,21 @@ def get_or_set_device_id() -> str | None:
     Returns:
         The id, or ``None`` if none of the three sources worked.
     """
-    device_id = os.getenv("ARKITEKT_DEVICE_ID")
-    if device_id:
-        return device_id
+    return os.getenv("ARKITEKT_DEVICE_ID") or machine_device_id()
 
+
+def resolve_device_id(device_id: str | Source | None = DISCOVER) -> str | None:
+    """The device id a run states: as given (``None`` is none), or from its source
+    (``"discover"``: ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's)."""
+    return resolve(device_id, flag="device-id", env="ARKITEKT_DEVICE_ID", default=machine_device_id, parse=str) or None
+
+
+def machine_device_id() -> str | None:
+    """The machine's own id, else one made up once and kept in the user's config directory.
+
+    Returns:
+        The id, or ``None`` if neither worked.
+    """
     try:
         return id()
     except Exception as e:  # noqa: BLE001, any failure means "no machine id here"

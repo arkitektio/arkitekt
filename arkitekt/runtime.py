@@ -48,11 +48,13 @@ from koil.composition import KoiledModel
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from arkitekt.app.app import App, Ctx
-from arkitekt.app.fakts import build_fakts, resolve_url
+from arkitekt.app.fakts import build_fakts, resolve_insecure_transport, resolve_url
+from arkitekt.app.sources import resolve
 from arkitekt.app.options import ConnectionOptions
+from arkitekt.app.sources import DISCOVER, Source
 from arkitekt.app.sessions import forget, read_credentials, read_session, session_path
 from arkitekt.app.snapshot import RunSnapshot
-from arkitekt.device_id import get_or_set_device_id
+from arkitekt.device_id import resolve_device_id
 
 if TYPE_CHECKING:
     from arkitekt_spec.declare.agents.connection import ConnectionListener, TaskListener
@@ -210,12 +212,12 @@ class Runtime(KoiledModel, Generic[Ctx]):
             device_id = (
                 None
                 if self.local.offline
-                else self.options.device_id or get_or_set_device_id()
+                else resolve_device_id(self.options.device_id)
             )
             return self.app.snapshot(
                 device_id=device_id, provider=_provider_for(self.app, required=False)
             )
-        device_id = self.options.device_id or get_or_set_device_id()
+        device_id = resolve_device_id(self.options.device_id)
         return self.app.snapshot(device_id=device_id, provider=self.provider)
 
     def _build_fakts(self, snapshot: RunSnapshot) -> Fakts:
@@ -315,6 +317,14 @@ class Runtime(KoiledModel, Generic[Ctx]):
         # Bound before entered: the agent reads `bound_app` while registering.
         agent.bound_app = self
         agent.force = self.options.force
+        # Whoever started this process (e.g. the plugin engine) names itself here; the
+        # agent states it on every Register, as a hint pickers narrow on.
+        supervisor = resolve(self.options.supervisor, flag="supervisor", env=SUPERVISOR_ENV, default=lambda: None, parse=str)
+        if supervisor:
+            try:
+                agent.supervisor = supervisor
+            except (AttributeError, ValueError):
+                logger.debug("%r takes no supervisor", type(agent).__name__)
         # Only when given: an agent that takes no listener is left as it was built.
         for name in ("connection_listener", "task_listener"):
             listener = getattr(self.options, name)
@@ -589,16 +599,16 @@ def connect_local(
     clients: Sequence[Any] = (),
     context: Optional[Ctx] = None,
     offline: bool = True,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Runtime[Ctx]:
     """Make a runtime that runs ``app`` for itself: nothing is registered or served.
 
@@ -630,7 +640,7 @@ def connect_local(
         options=ConnectionOptions(
             url=url,
             token=token,
-            redeem_token=redeem_token,
+            mandate_key=mandate_key,
             skip_cache=skip_cache,
             reauth=reauth,
             headless=headless,
@@ -678,23 +688,31 @@ def _provider_for(app: App[Any], *, required: bool = True) -> Optional[Provider[
     return rekuest_provider
 
 
+SUPERVISOR_ENV = "ARKITEKT_SUPERVISOR"
+"""Set by the app that started this process to control its lifecycle (e.g. ``plugin_engine``).
+
+The run's agent sends it with every ``Register``: it becomes the ``@rekuest/supervisor``
+descriptor of the agent, which that supervisor's actions narrow their pickers on."""
+
+
 def connect(
     app: App[Ctx],
     *,
     provide: bool = False,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Runtime[Ctx]:
     """Make a runtime for ``app`` that connects when entered.
 
@@ -713,16 +731,20 @@ def connect(
         app: The app to run.
         provide: Whether the runtime builds an agent to provide the app's
             offerings with. Off for a script that only calls the API.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
-            Defaults to ``$FAKTS_TOKEN``.
-        redeem_token: A token to provision a new app with. Defaults to
-            ``$FAKTS_REDEEM_TOKEN``.
+            Defaults to ``"discover"``: ``--token``, then ``$FAKTS_TOKEN``;
+            ``None`` uses none.
+        mandate_key: A mandate key to log the app in with. Defaults to
+            ``"discover"``: ``--mandate-key``, then ``$FAKTS_MANDATE_KEY``;
+            ``None`` uses none.
         skip_cache: Neither read nor write the fakts cache: log in, and keep the
             session in memory only.
         reauth: Log in again even when a session is cached, and cache the new
-            one. Defaults to ``$ARKITEKT_REAUTH``.
+            one. Defaults to ``"discover"``: ``--reauth``, then
+            ``$ARKITEKT_REAUTH``, else off.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the login to approve -- a
             :class:`~arkitekt.DeviceCodeChallenge` carrying the code and the link --
@@ -735,13 +757,22 @@ def connect(
             :class:`~arkitekt.TaskEvent` when it is assigned (with its arguments),
             reports progress, yields, and ends done, failed or cancelled.
         allow_insecure_transport: Talk plain http to a server that is not on this
-            machine. Off, such a server is refused.
-        device_id: This device's identity. Defaults to the machine's id.
+            machine. Off, such a server is refused. Defaults to ``"discover"``:
+            ``--allow-insecure-transport``, then ``$FAKTS_ALLOW_INSECURE_TRANSPORT``,
+            else off.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
+        supervisor: The app that controls this process's lifecycle (e.g.
+            ``plugin_engine``), stated by its agent on every Register. Defaults to
+            ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
+            ``None`` states none.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
-            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
-            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
+            ``None`` too. Defaults to ``"discover"``: ``--mesh``, then
+            ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, else the mesh when it is
+            available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Returns:
         The runtime, not yet entered.
@@ -751,7 +782,7 @@ def connect(
         options=ConnectionOptions(
             url=url,
             token=token,
-            redeem_token=redeem_token,
+            mandate_key=mandate_key,
             skip_cache=skip_cache,
             reauth=reauth,
             headless=headless,
@@ -761,6 +792,7 @@ def connect(
             task_listener=task_listener,
             allow_insecure_transport=allow_insecure_transport,
             device_id=device_id,
+            supervisor=supervisor,
             mesh=mesh,
         ),
         provider=_provider_for(app) if provide else None,
@@ -772,38 +804,40 @@ def run(
     app: App[None],
     *,
     context: None = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> None: ...
 @overload
 def run(
     app: App[Ctx],
     *,
     context: Ctx,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> None: ...
 
 
@@ -811,19 +845,20 @@ def run(
     app: App[Any],
     *,
     context: Any | None = None,  # noqa: ANN401
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> None:
     """Connect ``app`` and provide its offerings until stopped: the rekuest runtime.
 
@@ -839,16 +874,20 @@ def run(
         context: The app context: an instance of the class the app declared
             (``App(..., app_context=Config)``), handed to the hooks and actions
             that ask for it. Required then; nothing for an app declaring none.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
-            Defaults to ``$FAKTS_TOKEN``.
-        redeem_token: A token to provision a new app with. Defaults to
-            ``$FAKTS_REDEEM_TOKEN``.
+            Defaults to ``"discover"``: ``--token``, then ``$FAKTS_TOKEN``;
+            ``None`` uses none.
+        mandate_key: A mandate key to log the app in with. Defaults to
+            ``"discover"``: ``--mandate-key``, then ``$FAKTS_MANDATE_KEY``;
+            ``None`` uses none.
         skip_cache: Neither read nor write the fakts cache: log in, and keep the
             session in memory only.
         reauth: Log in again even when a session is cached, and cache the new
-            one. Defaults to ``$ARKITEKT_REAUTH``.
+            one. Defaults to ``"discover"``: ``--reauth``, then
+            ``$ARKITEKT_REAUTH``, else off.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the login to approve -- a
             :class:`~arkitekt.DeviceCodeChallenge` carrying the code and the link --
@@ -861,13 +900,22 @@ def run(
             :class:`~arkitekt.TaskEvent` when it is assigned (with its arguments),
             reports progress, yields, and ends done, failed or cancelled.
         allow_insecure_transport: Talk plain http to a server that is not on this
-            machine. Off, such a server is refused.
-        device_id: This device's identity. Defaults to the machine's id.
+            machine. Off, such a server is refused. Defaults to ``"discover"``:
+            ``--allow-insecure-transport``, then ``$FAKTS_ALLOW_INSECURE_TRANSPORT``,
+            else off.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
+        supervisor: The app that controls this process's lifecycle (e.g.
+            ``plugin_engine``), stated by its agent on every Register. Defaults to
+            ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
+            ``None`` states none.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
-            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
-            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
+            ``None`` too. Defaults to ``"discover"``: ``--mesh``, then
+            ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, else the mesh when it is
+            available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Raises:
         AppContextError: If ``context`` is not what the app declared. Raised
@@ -880,7 +928,7 @@ def run(
         provide=True,
         url=url,
         token=token,
-        redeem_token=redeem_token,
+        mandate_key=mandate_key,
         skip_cache=skip_cache,
         reauth=reauth,
         headless=headless,
@@ -890,6 +938,7 @@ def run(
         task_listener=task_listener,
         allow_insecure_transport=allow_insecure_transport,
         device_id=device_id,
+        supervisor=supervisor,
         mesh=mesh,
     )
     # Entered synchronously, around the unkoil rather than inside it: koil
@@ -903,38 +952,40 @@ async def arun(
     app: App[None],
     *,
     context: None = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> None: ...
 @overload
 async def arun(
     app: App[Ctx],
     *,
     context: Ctx,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> None: ...
 
 
@@ -942,35 +993,40 @@ async def arun(
     app: App[Any],
     *,
     context: Any | None = None,  # noqa: ANN401
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> None:
     """Connect ``app`` and provide its actions until stopped, asynchronously.
 
     Args:
         app: The app to provide.
         context: The app context, as for :func:`run`.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
-            Defaults to ``$FAKTS_TOKEN``.
-        redeem_token: A token to provision a new app with. Defaults to
-            ``$FAKTS_REDEEM_TOKEN``.
+            Defaults to ``"discover"``: ``--token``, then ``$FAKTS_TOKEN``;
+            ``None`` uses none.
+        mandate_key: A mandate key to log the app in with. Defaults to
+            ``"discover"``: ``--mandate-key``, then ``$FAKTS_MANDATE_KEY``;
+            ``None`` uses none.
         skip_cache: Neither read nor write the fakts cache: log in, and keep the
             session in memory only.
         reauth: Log in again even when a session is cached, and cache the new
-            one. Defaults to ``$ARKITEKT_REAUTH``.
+            one. Defaults to ``"discover"``: ``--reauth``, then
+            ``$ARKITEKT_REAUTH``, else off.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the login to approve -- a
             :class:`~arkitekt.DeviceCodeChallenge` carrying the code and the link --
@@ -983,13 +1039,22 @@ async def arun(
             :class:`~arkitekt.TaskEvent` when it is assigned (with its arguments),
             reports progress, yields, and ends done, failed or cancelled.
         allow_insecure_transport: Talk plain http to a server that is not on this
-            machine. Off, such a server is refused.
-        device_id: This device's identity. Defaults to the machine's id.
+            machine. Off, such a server is refused. Defaults to ``"discover"``:
+            ``--allow-insecure-transport``, then ``$FAKTS_ALLOW_INSECURE_TRANSPORT``,
+            else off.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
+        supervisor: The app that controls this process's lifecycle (e.g.
+            ``plugin_engine``), stated by its agent on every Register. Defaults to
+            ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
+            ``None`` states none.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
-            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
-            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
+            ``None`` too. Defaults to ``"discover"``: ``--mesh``, then
+            ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, else the mesh when it is
+            available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Raises:
         AppContextError: If ``context`` is not what the app declared. Raised
@@ -1002,7 +1067,7 @@ async def arun(
         provide=True,
         url=url,
         token=token,
-        redeem_token=redeem_token,
+        mandate_key=mandate_key,
         skip_cache=skip_cache,
         reauth=reauth,
         headless=headless,
@@ -1012,13 +1077,14 @@ async def arun(
         task_listener=task_listener,
         allow_insecure_transport=allow_insecure_transport,
         device_id=device_id,
+        supervisor=supervisor,
         mesh=mesh,
     )
     async with runtime:
         await runtime.arun(context=context)
 
 
-def run_manifest(app: App[Any], device_id: Optional[str] = None) -> "Manifest":
+def run_manifest(app: App[Any], device_id: str | Source | None = DISCOVER) -> "Manifest":
     """The manifest a run of ``app`` sends: what the server is asked to approve.
 
     A session is saved for exactly this manifest: an app declared differently
@@ -1027,7 +1093,9 @@ def run_manifest(app: App[Any], device_id: Optional[str] = None) -> "Manifest":
 
     Args:
         app: The app.
-        device_id: This device's identity. Defaults to the machine's id.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
 
     Returns:
         The manifest.
@@ -1038,15 +1106,15 @@ def run_manifest(app: App[Any], device_id: Optional[str] = None) -> "Manifest":
 async def alogin(
     app: App[Any],
     *,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
 ) -> "ActiveFakts":
     """Log ``app`` in and cache the session, without connecting anything else.
 
@@ -1057,23 +1125,31 @@ async def alogin(
 
     Args:
         app: The app to log in.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
-            Defaults to ``$FAKTS_TOKEN``.
-        redeem_token: A token to provision a new app with. Defaults to
-            ``$FAKTS_REDEEM_TOKEN``.
+            Defaults to ``"discover"``: ``--token``, then ``$FAKTS_TOKEN``;
+            ``None`` uses none.
+        mandate_key: A mandate key to log the app in with. Defaults to
+            ``"discover"``: ``--mandate-key``, then ``$FAKTS_MANDATE_KEY``;
+            ``None`` uses none.
         skip_cache: Neither read nor write the fakts cache.
         reauth: Log in again even when a session is cached, and cache the new
-            one. Defaults to ``$ARKITEKT_REAUTH``.
+            one. Defaults to ``"discover"``: ``--reauth``, then
+            ``$ARKITEKT_REAUTH``, else off.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the login to approve -- a
             :class:`~arkitekt.DeviceCodeChallenge` carrying the code and the link --
             instead of the terminal prompt. With ``headless`` nothing is printed
             or opened: showing the login is the hook's.
         allow_insecure_transport: Talk plain http to a server that is not on this
-            machine. Off, such a server is refused.
-        device_id: This device's identity. Defaults to the machine's id.
+            machine. Off, such a server is refused. Defaults to ``"discover"``:
+            ``--allow-insecure-transport``, then ``$FAKTS_ALLOW_INSECURE_TRANSPORT``,
+            else off.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
 
     Returns:
         The session the app is logged in with.
@@ -1081,7 +1157,7 @@ async def alogin(
     options = ConnectionOptions(
         url=url,
         token=token,
-        redeem_token=redeem_token,
+        mandate_key=mandate_key,
         skip_cache=skip_cache,
         reauth=reauth,
         headless=headless,
@@ -1247,38 +1323,40 @@ def run_detached(
     app: App[None],
     *,
     context: None = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> DetachedRun[None]: ...
 @overload
 def run_detached(
     app: App[Ctx],
     *,
     context: Ctx,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> DetachedRun[Ctx]: ...
 
 
@@ -1286,19 +1364,20 @@ def run_detached(
     app: App[Any],
     *,
     context: Any | None = None,  # noqa: ANN401
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
     connection_listener: Optional["ConnectionListener"] = None,
     task_listener: Optional["TaskListener"] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> DetachedRun[Any]:
     """Run ``app`` beside a program that has a life of its own. Returns at once.
 
@@ -1349,7 +1428,7 @@ def run_detached(
         ConnectionOptions(
             url=url,
             token=token,
-            redeem_token=redeem_token,
+            mandate_key=mandate_key,
             skip_cache=skip_cache,
             reauth=reauth,
             headless=headless,
@@ -1359,6 +1438,7 @@ def run_detached(
             task_listener=task_listener,
             allow_insecure_transport=allow_insecure_transport,
             device_id=device_id,
+            supervisor=supervisor,
             mesh=mesh,
         ),
     )
@@ -1367,7 +1447,7 @@ def run_detached(
 
 
 def has_stored_login(
-    app: App[Any], *, url: Optional[str] = None, device_id: Optional[str] = None
+    app: App[Any], *, url: str | Source = DISCOVER, device_id: str | Source | None = DISCOVER
 ) -> bool:
     """Whether a run of ``app`` would find a login on this machine and need no approval.
 
@@ -1377,9 +1457,12 @@ def has_stored_login(
 
     Args:
         app: The app.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
-        device_id: This device's identity. Defaults to the machine's id.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
     """
     session = read_session(session_path(app.identifier, app.version, resolve_url(url)))
     if session is None:
@@ -1409,7 +1492,7 @@ async def _arevoke_stored(auth: "AuthFakt", server: str, allow_insecure_transpor
 
 
 def logout(
-    app: App[Any], *, url: Optional[str] = None, allow_insecure_transport: bool = False
+    app: App[Any], *, url: str | Source = DISCOVER, allow_insecure_transport: bool | Source = DISCOVER
 ) -> bool:
     """Revoke ``app``'s login on its server and forget it on this machine.
 
@@ -1421,8 +1504,9 @@ def logout(
 
     Args:
         app: The app.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
         allow_insecure_transport: Revoke over plain http at a server that is not
             on this machine.
 
@@ -1438,7 +1522,7 @@ def logout(
 
         def revoke() -> None:
             try:
-                asyncio.run(_arevoke_stored(auth, server, allow_insecure_transport))
+                asyncio.run(_arevoke_stored(auth, server, resolve_insecure_transport(allow_insecure_transport)))
             except Exception as e:  # noqa: BLE001 -- a logout must still forget the session
                 failure.append(e)
 

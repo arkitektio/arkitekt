@@ -51,13 +51,13 @@ def hub(konstruktor_hub) -> "Hub":  # noqa: ANN001 -- konstruktor's factory fixt
     """One deployment for the whole session: rekuest and mikro.
 
     Made from the images the two client packages say host them, which is all
-    either has to know about its server. One redeem token serves one app, so
+    either has to know about its server. One mandate key serves one app, so
     there is one for every app the tests connect. Each test takes its own with
-    ``hub.redeem_token(<a name>)``.
+    ``hub.mandate_key(<a name>)``.
     """
     from mikro import mikro_service
     from rekuest.arkitekt import rekuest_service
 
     return konstruktor_hub(
-        service_images=[rekuest_service.image, mikro_service.image], redeem_tokens=8
+        service_images=[rekuest_service.image, mikro_service.image], mandate_keys=8
     )

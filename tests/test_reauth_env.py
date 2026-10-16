@@ -39,7 +39,7 @@ class MemoryCache:
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
-    for name in ("ARKITEKT_REAUTH", "FAKTS_TOKEN", "FAKTS_REDEEM_TOKEN", "FAKTS_URL"):
+    for name in ("ARKITEKT_REAUTH", "FAKTS_TOKEN", "FAKTS_MANDATE_KEY", "FAKTS_URL"):
         monkeypatch.delenv(name, raising=False)
     path = tmp_path / "cache" / "session.json"
     monkeypatch.setattr(app_fakts, "_cache_path", lambda manifest, url: str(path))
@@ -78,7 +78,7 @@ def test_skip_cache_keeps_the_session_in_memory() -> None:
     [
         ConnectionOptions(url=URL, reauth=True),
         ConnectionOptions(url=URL, reauth=True, token="client:refresh"),
-        ConnectionOptions(url=URL, reauth=True, redeem_token="redeem-me"),
+        ConnectionOptions(url=URL, reauth=True, mandate_key="key-me"),
     ],
 )
 def test_reauth_still_caches_to_the_file(options: ConnectionOptions) -> None:

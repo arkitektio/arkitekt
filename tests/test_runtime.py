@@ -283,3 +283,29 @@ async def test_a_run_hands_its_connection_listener_to_its_agent() -> None:
     # None given: the agent is left as its provider built it.
     async with connect(picture_app(), provide=True) as rt:
         assert not hasattr(rt.agent, "connection_listener")
+
+
+@pytest.mark.asyncio
+async def test_the_supervisor_that_started_the_process_reaches_its_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+    """``$ARKITEKT_SUPERVISOR`` (set by e.g. the plugin engine) is what the agent states on Register."""
+    monkeypatch.setattr("sys.argv", ["app.py"])
+    monkeypatch.setenv("ARKITEKT_SUPERVISOR", "plugin_engine")
+    async with connect(picture_app(), provide=True) as rt:
+        assert rt.agent is not None
+        assert rt.agent.supervisor == "plugin_engine"
+
+    # Passed, it wins; None is none, whatever the environment says.
+    async with connect(picture_app(), provide=True, supervisor="local_launcher") as rt:
+        assert rt.agent.supervisor == "local_launcher"
+    async with connect(picture_app(), provide=True, supervisor=None) as rt:
+        assert not hasattr(rt.agent, "supervisor")
+
+    # Unset: the agent is left as its provider built it.
+    monkeypatch.delenv("ARKITEKT_SUPERVISOR")
+    async with connect(picture_app(), provide=True) as rt:
+        assert not hasattr(rt.agent, "supervisor")
+
+    # On the command line.
+    monkeypatch.setattr("sys.argv", ["app.py", "--supervisor", "from-arg"])
+    async with connect(picture_app(), provide=True) as rt:
+        assert rt.agent.supervisor == "from-arg"

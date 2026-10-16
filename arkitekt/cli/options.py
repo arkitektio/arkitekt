@@ -58,21 +58,21 @@ TokenOption = Annotated[
             "A previously issued credential, as 'client_id:refresh_token'. "
             "Both halves are required: the token endpoint authenticates the "
             "client before it validates the refresh token. To provision a new "
-            "app instead, use --redeem-token."
+            "app instead, use --mandate-key."
         ),
         envvar="FAKTS_TOKEN",
         rich_help_panel=LOGIN_PANEL,
     ),
 ]
 
-#: A redeem token used to authenticate. Callers default this to ``None``.
-RedeemTokenOption = Annotated[
+#: A mandate key used to authenticate. Callers default this to ``None``.
+MandateKeyOption = Annotated[
     Optional[str],
     typer.Option(
-        "--redeem-token",
+        "--mandate-key",
         "-r",
-        help="A redeem token: provisions this app and logs it in without a browser",
-        envvar="FAKTS_REDEEM_TOKEN",
+        help="A mandate key: logs this app in without a browser, as whoever issued it",
+        envvar="FAKTS_MANDATE_KEY",
         rich_help_panel=LOGIN_PANEL,
     ),
 ]
@@ -132,6 +132,31 @@ ReauthOption = Annotated[
             "organization. `arkitekt logout` forgets it instead."
         ),
         envvar="ARKITEKT_REAUTH",
+        rich_help_panel=SESSION_PANEL,
+    ),
+]
+
+#: The app that controls this process's lifecycle. Callers default this to ``None``
+#: (not passed: the runner looks at ``$ARKITEKT_SUPERVISOR``).
+SupervisorOption = Annotated[
+    Optional[str],
+    typer.Option(
+        "--supervisor",
+        help=(
+            "The app that controls this process's lifecycle (e.g. plugin_engine), "
+            "stated by the agent on registration. Default: $ARKITEKT_SUPERVISOR."
+        ),
+        rich_help_panel=AGENT_PANEL,
+    ),
+]
+
+#: This device's identity. Callers default this to ``None`` (not passed: the runner
+#: looks at ``$ARKITEKT_DEVICE_ID``, then the machine's id).
+DeviceIdOption = Annotated[
+    Optional[str],
+    typer.Option(
+        "--device-id",
+        help="This device's identity. Default: $ARKITEKT_DEVICE_ID, then the machine's id.",
         rich_help_panel=SESSION_PANEL,
     ),
 ]

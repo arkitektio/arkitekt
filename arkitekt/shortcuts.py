@@ -40,6 +40,7 @@ from fakts.mesh import MeshOptions, MeshProxy
 from koil import Koil
 
 from arkitekt.app.app import App, _app_root, _caller_file
+from arkitekt.app.sources import DISCOVER, Source
 from arkitekt.runtime import Runtime, connect
 
 R = TypeVar("R")
@@ -181,16 +182,17 @@ def _build(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> "Easy[Any]":
     # Three frames up: the caller of easy()/aeasy()/interactive(), not this module.
     constructed_in = _caller_file(3)
@@ -206,13 +208,14 @@ def _build(
     connection: Dict[str, Any] = dict(
         url=url,
         token=token,
-        redeem_token=redeem_token,
+        mandate_key=mandate_key,
         skip_cache=skip_cache,
         reauth=reauth,
         headless=headless,
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        supervisor=supervisor,
         mesh=mesh,
     )
     return Easy(app, services, connection)
@@ -227,16 +230,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[None]: ...
 
 
@@ -250,16 +254,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[T1]: ...
 
 
@@ -273,16 +278,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2]]: ...
 
 
@@ -296,16 +302,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3]]: ...
 
 
@@ -319,16 +326,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4]]: ...
 
 
@@ -342,16 +350,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4, T5]]: ...
 
 
@@ -365,16 +374,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6]]: ...
 
 
@@ -388,16 +398,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6, T7]]: ...
 
 
@@ -411,16 +422,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6, T7, T8]]: ...
 
 
@@ -432,16 +444,17 @@ def easy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> "Easy[Any]":
     """Declare an app using these clients' services; enter it for the clients.
 
@@ -454,23 +467,32 @@ def easy(
         logo: A public http url of the app's logo.
         scopes: The scopes the app requests. Defaults to ``["openid"]``.
         author: Who wrote the app.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
-        redeem_token: A token to provision a new app with.
+        mandate_key: A mandate key to log the app in with.
         skip_cache: Neither read nor write the fakts cache: log in, and keep the
             session in memory only.
         reauth: Log in again even when a session is cached, and cache the new
-            one. Defaults to ``$ARKITEKT_REAUTH``.
+            one. Defaults to ``"discover"``: ``--reauth``, then
+            ``$ARKITEKT_REAUTH``, else off.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
-        device_id: The machine's identity. Defaults to one stored for this machine.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
+        supervisor: The app that controls this process's lifecycle (e.g.
+            ``plugin_engine``), stated by its agent on every Register. Defaults to
+            ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
+            ``None`` states none.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
-            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
-            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
+            ``None`` too. Defaults to ``"discover"``: ``--mesh``, then
+            ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, else the mesh when it is
+            available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Returns:
         An :class:`Easy`: enter it for the clients -- ``None`` for no classes,
@@ -488,13 +510,14 @@ def easy(
         author=author,
         url=url,
         token=token,
-        redeem_token=redeem_token,
+        mandate_key=mandate_key,
         skip_cache=skip_cache,
         reauth=reauth,
         headless=headless,
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        supervisor=supervisor,
         mesh=mesh,
     )
 
@@ -508,16 +531,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[None]: ...
 
 
@@ -531,16 +555,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[T1]: ...
 
 
@@ -554,16 +579,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2]]: ...
 
 
@@ -577,16 +603,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3]]: ...
 
 
@@ -600,16 +627,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4]]: ...
 
 
@@ -623,16 +651,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4, T5]]: ...
 
 
@@ -646,16 +675,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6]]: ...
 
 
@@ -669,16 +699,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6, T7]]: ...
 
 
@@ -692,16 +723,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Easy[tuple[T1, T2, T3, T4, T5, T6, T7, T8]]: ...
 
 
@@ -713,16 +745,17 @@ def aeasy(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> "Easy[Any]":
     """Declare an app using these clients' services; enter it for the clients.
 
@@ -735,23 +768,32 @@ def aeasy(
         logo: A public http url of the app's logo.
         scopes: The scopes the app requests. Defaults to ``["openid"]``.
         author: Who wrote the app.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
-        redeem_token: A token to provision a new app with.
+        mandate_key: A mandate key to log the app in with.
         skip_cache: Neither read nor write the fakts cache: log in, and keep the
             session in memory only.
         reauth: Log in again even when a session is cached, and cache the new
-            one. Defaults to ``$ARKITEKT_REAUTH``.
+            one. Defaults to ``"discover"``: ``--reauth``, then
+            ``$ARKITEKT_REAUTH``, else off.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
-        device_id: The machine's identity. Defaults to one stored for this machine.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
+        supervisor: The app that controls this process's lifecycle (e.g.
+            ``plugin_engine``), stated by its agent on every Register. Defaults to
+            ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
+            ``None`` states none.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
-            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
-            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
+            ``None`` too. Defaults to ``"discover"``: ``--mesh``, then
+            ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, else the mesh when it is
+            available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Returns:
         An :class:`Easy`: enter it for the clients -- ``None`` for no classes,
@@ -769,13 +811,14 @@ def aeasy(
         author=author,
         url=url,
         token=token,
-        redeem_token=redeem_token,
+        mandate_key=mandate_key,
         skip_cache=skip_cache,
         reauth=reauth,
         headless=headless,
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        supervisor=supervisor,
         mesh=mesh,
     )
 
@@ -815,16 +858,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> None: ...
 
 
@@ -838,16 +882,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> T1: ...
 
 
@@ -861,16 +906,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> tuple[T1, T2]: ...
 
 
@@ -884,16 +930,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> tuple[T1, T2, T3]: ...
 
 
@@ -907,16 +954,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> tuple[T1, T2, T3, T4]: ...
 
 
@@ -930,16 +978,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> tuple[T1, T2, T3, T4, T5]: ...
 
 
@@ -953,16 +1002,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> tuple[T1, T2, T3, T4, T5, T6]: ...
 
 
@@ -976,16 +1026,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> tuple[T1, T2, T3, T4, T5, T6, T7]: ...
 
 
@@ -999,16 +1050,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> tuple[T1, T2, T3, T4, T5, T6, T7, T8]: ...
 
 
@@ -1020,16 +1072,17 @@ def interactive(
     logo: Optional[str] = None,
     scopes: Optional[List[str]] = None,
     author: Optional[str] = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
     force: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Any:  # noqa: ANN401 -- typed by the overloads
     """Connect and stay connected; return the clients. For notebooks.
 
@@ -1044,23 +1097,32 @@ def interactive(
         logo: A public http url of the app's logo.
         scopes: The scopes the app requests. Defaults to ``["openid"]``.
         author: Who wrote the app.
-        url: The fakts server. Defaults to ``$FAKTS_URL``, then the public
-            deployment.
+        url: The fakts server, or where to find it (a source, see
+            :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
+            ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
-        redeem_token: A token to provision a new app with.
+        mandate_key: A mandate key to log the app in with.
         skip_cache: Neither read nor write the fakts cache: log in, and keep the
             session in memory only.
         reauth: Log in again even when a session is cached, and cache the new
-            one. Defaults to ``$ARKITEKT_REAUTH``.
+            one. Defaults to ``"discover"``: ``--reauth``, then
+            ``$ARKITEKT_REAUTH``, else off.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the device code instead of the default prompt.
         force: Take over an existing agent connection of this app.
-        device_id: The machine's identity. Defaults to one stored for this machine.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
+        supervisor: The app that controls this process's lifecycle (e.g.
+            ``plugin_engine``), stated by its agent on every Register. Defaults to
+            ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
+            ``None`` states none.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
-            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
-            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
+            ``None`` too. Defaults to ``"discover"``: ``--mesh``, then
+            ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, else the mesh when it is
+            available (see :func:`arkitekt.app.fakts.mesh_from_env`).
 
     Returns:
         ``None`` for no classes, the client for one, a tuple for several.
@@ -1077,13 +1139,14 @@ def interactive(
         author=author,
         url=url,
         token=token,
-        redeem_token=redeem_token,
+        mandate_key=mandate_key,
         skip_cache=skip_cache,
         reauth=reauth,
         headless=headless,
         device_code_hook=device_code_hook,
         force=force,
         device_id=device_id,
+        supervisor=supervisor,
         mesh=mesh,
     )
     # One connection per app: calling this again for the same identifier (a

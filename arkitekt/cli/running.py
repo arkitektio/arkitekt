@@ -128,7 +128,7 @@ def report_session(
             "Session reused",
             f"logged in {ago(started)} · `arkitekt logout` ends it",
         )
-    elif options.get("token") or options.get("redeem_token"):
+    elif options.get("token") or options.get("mandate_key"):
         done(console, f"Logged in to {escape(loaded.self.deployment_name)}", "with a token")
 
 

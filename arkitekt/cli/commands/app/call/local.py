@@ -20,7 +20,7 @@ from arkitekt.cli.options import (
     LogLevel,
     LogLevelOption,
     ReauthOption,
-    RedeemTokenOption,
+    MandateKeyOption,
     SkipCacheOption,
     TokenOption,
     UrlOption,
@@ -33,7 +33,7 @@ from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 #: The connection flags a local call takes: all of a run's but ``--force``, which
 #: is about a registration, and a local call registers nothing.
-LOCAL_OPTIONS = ("url", "token", "redeem_token", "headless", "skip_cache", "reauth")
+LOCAL_OPTIONS = ("url", "token", "mandate_key", "headless", "skip_cache", "reauth")
 
 
 class UnknownActionError(LookupError):
@@ -133,7 +133,7 @@ def local(
     ] = False,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
     token: TokenOption = None,
-    redeem_token: RedeemTokenOption = None,
+    mandate_key: MandateKeyOption = None,
     headless: HeadlessOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
     skip_cache: SkipCacheOption = False,

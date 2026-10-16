@@ -17,11 +17,13 @@ __all__ = [
 CONNECTION_OPTIONS = (
     "url",
     "token",
-    "redeem_token",
+    "mandate_key",
     "force",
     "headless",
     "skip_cache",
     "reauth",
+    "device_id",
+    "supervisor",
 )
 
 

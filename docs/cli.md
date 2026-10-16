@@ -188,12 +188,14 @@ grouped in `--help` the same way, and only what you pass is overridden:
 | :--- | :--- | :--- |
 | Server | `--url`, `-u` | The Arkitekt server to connect to (`$FAKTS_URL`). |
 | Login | `--token`, `-t` | A previously issued credential, `client_id:refresh_token`: no browser login. |
-| Login | `--redeem-token`, `-r` | A redeem token: provisions the app and logs it in without a browser. |
+| Login | `--mandate-key`, `-r` | A mandate key: logs the app in without a browser, as whoever issued it. |
 | Login | `--headless` | Print the login link instead of opening a browser. |
 | Session | `--reauth` | Log in again and replace the saved session (wrong user or organization). |
 | Session | `--skip-cache` | Ignore the saved session and save none: log in, for this run only. |
 | Session | `--force-mesh` | Reach every service over the deployment's mesh and nothing else; addresses that are not on it are not tried. Same as `ARKITEKT_MESH=force`. |
+| Session | `--device-id` | This device's identity (default: `$ARKITEKT_DEVICE_ID`, then the machine's id). |
 | Agent | `--force`, `-f` | Take over when another instance of this app is already connected. |
+| Agent | `--supervisor` | The app that controls this process's lifecycle, stated on registration (default: `$ARKITEKT_SUPERVISOR`). |
 | | `--log-level`, `-l` | The log level (e.g. `INFO`, `DEBUG`). |
 
 `run dev` reloads when the app changes, or a module of this folder that it
@@ -372,7 +374,7 @@ arkitekt logout --url http://localhost:7080   # ... the one for that server
 | Command | Description |
 | :--- | :--- |
 | `status` | Shows the app in this folder and its session: where, since when, and whether it is still usable. |
-| `login` | Logs the app in and saves the session. Takes `--url`, `--token`, `--redeem-token`, `--headless`, `--reauth`. |
+| `login` | Logs the app in and saves the session. Takes `--url`, `--token`, `--mandate-key`, `--headless`, `--reauth`. |
 | `logout` | Revokes the saved session on a server that offers revocation, and forgets it on this machine. Stop an instance of the app that is still running first: it saves its session back. |
 
 Logged in as the wrong user? `arkitekt login --reauth`.

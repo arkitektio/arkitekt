@@ -91,6 +91,7 @@ from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.mesh import MeshOptions, MeshProxy
 
 from .app.app import App
+from .app.sources import DISCOVER, Source
 from .inspect import inspect
 from .runtime import (
     DetachedRun,
@@ -108,6 +109,8 @@ from .shortcuts import Easy, aeasy, easy, interactive
 __all__ = [
     # the app and its runs
     "App",
+    "Source",
+    "DISCOVER",
     "Runtime",
     "arun",
     "connect",

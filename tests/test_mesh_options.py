@@ -30,7 +30,7 @@ def asks_for_mesh_key(fakts: Fakts) -> bool:
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("ARKITEKT_MESH", "ARKITEKT_MESH_PROXY", "FAKTS_TOKEN", "FAKTS_REDEEM_TOKEN"):
+    for name in ("ARKITEKT_MESH", "ARKITEKT_MESH_PROXY", "FAKTS_TOKEN", "FAKTS_MANDATE_KEY"):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -100,9 +100,9 @@ def test_the_device_code_run_asks_for_a_key_only_for_its_own_node(
     "options",
     [
         ConnectionOptions(url=URL, skip_cache=True, token="client:refresh"),
-        ConnectionOptions(url=URL, skip_cache=True, redeem_token="redeem-me"),
+        ConnectionOptions(url=URL, skip_cache=True, mandate_key="key-me"),
     ],
-    ids=["token", "redeem"],
+    ids=["token", "mandate-key"],
 )
 def test_every_grant_carries_the_mesh(
     monkeypatch: pytest.MonkeyPatch, options: ConnectionOptions

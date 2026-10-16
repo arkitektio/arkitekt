@@ -135,8 +135,8 @@ by rekuest, so its hub runs rekuest too.
 | `teststack` | A `TestStack[Ctx]` for one test: `hub`, `app`, `runtime`, and `call(action, *args, **kwargs)`. |
 | `hub_call` | `hub_call(action, *args, **kwargs)`: an action called in-process, its services real. |
 | `hub_runtime` | The started app, logged in to the hub, for one test: `require(Client)` is the service's client. |
-| `arkitekt_hub` | The hub, for the session: `fakts_url`, `redeem_token(name)`, `logs()`. |
-| `arkitekt_hub_apps` | How many apps can log in to it (8): one redeem token serves one app. |
+| `arkitekt_hub` | The hub, for the session: `fakts_url`, `mandate_key(name)`, `logs()`. |
+| `arkitekt_hub_apps` | How many apps can log in to it (8): one mandate key serves one app. |
 
 ### Where it runs
 
@@ -204,7 +204,7 @@ with testing_hub(service_images=service_images(app)) as hub:
     hub.up()
     hub.wait_ready()
     with connect_local(app, offline=False, url=hub.fakts_url,
-                       redeem_token=hub.redeem_token("my-app")) as rt:
+                       mandate_key=hub.mandate_key("my-app")) as rt:
         rt.call_local("make_folder", name="results")
     hub.logs("mikro")   # the service's side of it, while the hub is there
 ```
@@ -232,7 +232,7 @@ containers (`hub.ps()`) or a command inside one (`hub.exec(...)`).
   in a local run: nothing is registered, so no server assigns the call. Run the
   apps for real against the hub instead, each with a token of its own:
   `connect(other, provide=True, url=arkitekt_hub.fakts_url,
-  redeem_token=arkitekt_hub.redeem_token("other"))`.
+  mandate_key=arkitekt_hub.mandate_key("other"))`.
 - Nothing is registered, so what the server does with the app's declaration is
   not exercised. `arkitekt check` validates the declaration the way a run does
   before it connects.

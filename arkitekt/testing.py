@@ -115,7 +115,7 @@ class TestStack(Generic[Ctx]):
     # Not a test class, whatever its name says to pytest.
     __test__ = False
 
-    #: The hub, for the session: ``fakts_url``, ``redeem_token(name)``, ``logs()``.
+    #: The hub, for the session: ``fakts_url``, ``mandate_key(name)``, ``logs()``.
     hub: "Hub"
     #: The app under test.
     app: App[Ctx]
@@ -225,10 +225,10 @@ if pytest is not None:
 
     @pytest.fixture(scope="session")
     def arkitekt_hub_apps() -> int:
-        """How many apps log in to the hub: one redeem token serves one app.
+        """How many apps log in to the hub: one mandate key serves one app.
 
         Eight by default: the app under test, and room for the others a test
-        connects beside it (``arkitekt_hub.redeem_token("other")``).
+        connects beside it (``arkitekt_hub.mandate_key("other")``).
         """
         return 8
 
@@ -261,7 +261,7 @@ if pytest is not None:
             pytest.skip("A hub runs in Docker, which is not running here.")
 
         hub = request.getfixturevalue("konstruktor_hub")(
-            service_images=service_images(arkitekt_app), redeem_tokens=arkitekt_hub_apps
+            service_images=service_images(arkitekt_app), mandate_keys=arkitekt_hub_apps
         )
         with pytest.MonkeyPatch.context() as patch:
             # A hub has a new address on every run: its logins are this session's alone.
@@ -289,7 +289,7 @@ if pytest is not None:
             context=arkitekt_context,
             offline=False,
             url=arkitekt_hub.fakts_url,
-            redeem_token=arkitekt_hub.redeem_token(arkitekt_app.identifier),
+            mandate_key=arkitekt_hub.mandate_key(arkitekt_app.identifier),
             headless=True,
         ) as runtime:
             yield runtime

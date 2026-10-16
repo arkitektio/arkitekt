@@ -23,7 +23,7 @@ from arkitekt.cli.options import (
     LogLevel,
     LogLevelOption,
     ReauthOption,
-    RedeemTokenOption,
+    MandateKeyOption,
     TokenOption,
     UrlOption,
 )
@@ -35,7 +35,7 @@ from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 #: The connection flags a login takes: how to reach the server and as whom.
-LOGIN_OPTIONS = ("url", "token", "redeem_token", "headless")
+LOGIN_OPTIONS = ("url", "token", "mandate_key", "headless")
 
 
 def _usable_session(console: Console, app: App[Any], server: str) -> Optional[Session]:
@@ -62,7 +62,7 @@ def login(
     target: TargetArgument = DEFAULT_TARGET,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
     token: TokenOption = None,
-    redeem_token: RedeemTokenOption = None,
+    mandate_key: MandateKeyOption = None,
     headless: HeadlessOption = False,
     reauth: ReauthOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
@@ -97,7 +97,7 @@ def login(
             raise typer.Exit(code=1) from None
         raise
 
-    if options.get("token") or options.get("redeem_token"):
+    if options.get("token") or options.get("mandate_key"):
         # An interactive login has said so itself, when it was approved.
         done(console, f"Logged in to {escape(loaded.self.deployment_name)}", "with a token")
 

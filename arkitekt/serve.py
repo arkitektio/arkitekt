@@ -19,6 +19,7 @@ from fakts.mesh import MeshOptions, MeshProxy
 
 from arkitekt.app.app import App, Ctx
 from arkitekt.app.options import ConnectionOptions
+from arkitekt.app.sources import DISCOVER, Source
 from arkitekt.runtime import Runtime
 
 if TYPE_CHECKING:
@@ -31,16 +32,17 @@ def serve(
     fastapi_app: "FastAPI",
     *,
     context: None = None,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[None]: ...
 @overload
@@ -49,16 +51,17 @@ def serve(
     fastapi_app: "FastAPI",
     *,
     context: Ctx,
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[Ctx]: ...
 
@@ -68,16 +71,17 @@ def serve(
     fastapi_app: "FastAPI",
     *,
     context: Any | None = None,  # noqa: ANN401
-    url: Optional[str] = None,
-    token: Optional[str] = None,
-    redeem_token: Optional[str] = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
     skip_cache: bool = False,
-    reauth: bool = False,
+    reauth: bool | Source = DISCOVER,
     headless: bool = False,
     device_code_hook: Optional[DeviceCodeHook] = None,
-    allow_insecure_transport: bool = False,
-    device_id: Optional[str] = None,
-    mesh: Optional[Union[MeshOptions, MeshProxy, bool]] = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[Any]:
     """Provide ``app``'s offerings over ``fastapi_app`` for as long as it runs.
@@ -94,25 +98,37 @@ def serve(
         context: The app context: an instance of the class the app declared
             (``App(..., app_context=Config)``); required then, nothing otherwise.
         url: The fakts server, when the app has requirements. Defaults to
-            ``$FAKTS_URL``, then the public deployment.
+            ``"discover"``: ``--url``, ``$FAKTS_URL``, then the public deployment.
         token: A previously issued credential, ``client_id:refresh_token``.
-        redeem_token: A token to provision a new app with.
+            Defaults to ``"discover"``: ``--token``, then ``$FAKTS_TOKEN``.
+        mandate_key: A mandate key to log the app in with. Defaults to
+            ``"discover"``: ``--mandate-key``, then ``$FAKTS_MANDATE_KEY``.
         skip_cache: Neither read nor write the fakts cache: log in, and keep the
             session in memory only.
         reauth: Log in again even when a session is cached, and cache the new
-            one. Defaults to ``$ARKITEKT_REAUTH``.
+            one. Defaults to ``"discover"``: ``--reauth``, then
+            ``$ARKITEKT_REAUTH``, else off.
         headless: Print the device-code prompt instead of opening a browser.
         device_code_hook: Called with the login to approve -- a
             :class:`~arkitekt.DeviceCodeChallenge` carrying the code and the link --
             instead of the terminal prompt.
         allow_insecure_transport: Talk plain http to a server that is not on this
-            machine. Off, such a server is refused.
-        device_id: This device's identity. Defaults to the machine's id.
+            machine. Off, such a server is refused. Defaults to ``"discover"``:
+            ``--allow-insecure-transport``, then ``$FAKTS_ALLOW_INSECURE_TRANSPORT``,
+            else off.
+        device_id: This device's identity. Defaults to ``"discover"``:
+            ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's id;
+            ``None`` states none.
+        supervisor: The app that controls this process's lifecycle (e.g.
+            ``plugin_engine``), stated by its agent on every Register. Defaults to
+            ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
+            ``None`` states none.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
-            Defaults to ``$ARKITEKT_MESH_PROXY``, then ``$ARKITEKT_MESH``; unset, the
-            mesh is used when it is available (see :func:`arkitekt.app.fakts.mesh_from_env`).
+            ``None`` too. Defaults to ``"discover"``: ``--mesh``, then
+            ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, else the mesh when it is
+            available (see :func:`arkitekt.app.fakts.mesh_from_env`).
         **fastapi_options: Passed on to
             :func:`arkitekt_fastapi.configure_fastapi` (``db_file``,
             ``expand_user_from_request``, the route paths, ...). The files the app
@@ -150,13 +166,14 @@ def serve(
         options=ConnectionOptions(
             url=url,
             token=token,
-            redeem_token=redeem_token,
+            mandate_key=mandate_key,
             skip_cache=skip_cache,
             reauth=reauth,
             headless=headless,
             device_code_hook=device_code_hook,
             allow_insecure_transport=allow_insecure_transport,
             device_id=device_id,
+            supervisor=supervisor,
             mesh=mesh,
         ),
         provider=fastapi_agent,
