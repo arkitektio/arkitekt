@@ -67,6 +67,7 @@ from arkitekt_spec.declare.catalogs import (
 from arkitekt_spec.declare.coercible_types import ToOptimisticProtocol
 from arkitekt_spec.declare.errors import (
     AgentLost,
+    DeniedError,
     NonDeterministicWorkflow,
     NotAWorkflowError,
     StateChanged,
@@ -78,6 +79,8 @@ from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
 from arkitekt_spec.declare.task import (
     AssignmentHook,
+    AssignPrompt,
+    Decision,
     HookInput,
     HookKind,
     LogLevel,
@@ -146,6 +149,8 @@ __all__ = [
     "Task",
     "LogLevel",
     "AssignmentHook",
+    "AssignPrompt",
+    "Decision",
     "HookInput",
     "HookKind",
     "CallTarget",
@@ -153,6 +158,7 @@ __all__ = [
     "NoCallerError",
     # what a workflow uses when a step is lost or the world moved
     "AgentLost",
+    "DeniedError",
     "NonDeterministicWorkflow",
     "NotAWorkflowError",
     "StateChanged",

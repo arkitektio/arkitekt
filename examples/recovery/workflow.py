@@ -24,7 +24,8 @@ Finished work is never redone, whatever its effects.
 
 The workflow decides with the context only it has. ``task.retry(...)`` retries on its
 own only a step that never started; ``if_started=True`` is you saying a repeat is fine.
-``task.hold(...)`` parks the workflow for a person, with what is known in front of them.
+``task.hold(...)`` parks the workflow for a person, with what is known in front of them,
+and returns their decision: approved, or denied (with what they said).
 
 **Guards: the world may change while the workflow is down.** ``with
 task.guard(handler.plate, "barcode"):`` records the revision of the robot's plate
@@ -116,12 +117,14 @@ def stain_and_measure(
                     handler.dispense(well, volume_ul=volume)
                 else:
                     # Started, irreversible, fate unknown. A person checks the well,
-                    # then resumes (the dispense counts as done) or abandons.
-                    task.hold(
+                    # then approves (the dispense counts as done) or denies (abandon).
+                    decision = task.hold(
                         f"Dispense of {volume} µl into {well} was lost: "
-                        "check the well, then resume or abandon.",
+                        "check the well, then approve to go on or deny to abandon.",
                         lost=lost,  # its effects and last progress, in front of the person
                     )
+                    if not decision.approved:
+                        raise RuntimeError(f"Abandoned at {well}: {decision.answer or 'denied'}")
             absorbance = task.retry(handler.read_absorbance, well, attempts=3, if_started=True)
     except StateChanged as changed:
         # The plate was swapped while this workflow was down: whatever comes next
