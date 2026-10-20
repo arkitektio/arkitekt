@@ -1219,6 +1219,10 @@ class DetachedRun(Generic[Ctx]):
                 is installed.
         """
         with self._guard:
+            ended = self._state in (ConnectionState.FAILED, ConnectionState.STOPPED)
+            if ended and self._thread is not None and self._thread is not threading.current_thread():
+                # It says it ended a moment before its thread is through tearing down.
+                self._thread.join(timeout=5)
             if self._thread is not None and self._thread.is_alive():
                 raise RuntimeError(
                     f"This run of {self.app.identifier!r} is still going "
