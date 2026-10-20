@@ -296,6 +296,7 @@ async def test_the_supervisor_that_started_the_process_reaches_its_agent(monkeyp
 
     # Passed, it wins; None is none, whatever the environment says.
     async with connect(picture_app(), provide=True, supervisor="local_launcher") as rt:
+        assert rt.agent is not None
         assert rt.agent.supervisor == "local_launcher"
     async with connect(picture_app(), provide=True, supervisor=None) as rt:
         assert not hasattr(rt.agent, "supervisor")
@@ -308,4 +309,5 @@ async def test_the_supervisor_that_started_the_process_reaches_its_agent(monkeyp
     # On the command line.
     monkeypatch.setattr("sys.argv", ["app.py", "--supervisor", "from-arg"])
     async with connect(picture_app(), provide=True) as rt:
+        assert rt.agent is not None
         assert rt.agent.supervisor == "from-arg"

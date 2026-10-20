@@ -12,6 +12,8 @@ dependencies = [
     "rath>=4",
     "click>=8.2.0",
     "typer>=0.15.0",
+    # TypeIs (3.13 in typing): the option sources narrow what they resolve.
+    "typing-extensions>=4.10",
     "semver>=3.0.4",
     "watchfiles>=1.0.5",
     "turms>=2.1.0",
@@ -34,7 +36,7 @@ rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
     "rekuest>=8.6",
-    "arkitekt-runtime>=4.7.1",
+    "arkitekt-runtime>=4.7.2",
 ]
 alpaka = [
     "alpaka>=3.1.1",
@@ -71,7 +73,7 @@ serve = [
 qt = [
     "qtpy>=2.4.3",
     # The Qt actifiers are the execution core's.
-    "arkitekt-runtime[qt]>=4.7.1",
+    "arkitekt-runtime[qt]>=4.7.2",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.

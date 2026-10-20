@@ -21,6 +21,8 @@ import sys
 from collections.abc import Callable, Sequence
 from typing import Literal, TypeVar, get_args
 
+from typing_extensions import TypeIs
+
 Source = Literal[
     "discover",
     "arg",
@@ -44,7 +46,7 @@ _TRUE = ("", "1", "true", "yes", "on")
 _FALSE = ("0", "false", "no", "off")
 
 
-def is_source(value: object) -> bool:
+def is_source(value: object) -> TypeIs[Source]:
     """Whether ``value`` names where to look rather than being the value."""
     return isinstance(value, str) and value in SOURCES
 
@@ -109,8 +111,8 @@ def resolve(
         The value, or None when ``value`` is None or no source in the cascade has one.
     """
     if not is_source(value):
-        return value  # type: ignore[return-value]  # a value, or None: none
-    for source in cascade(value):  # type: ignore[arg-type]
+        return value  # a value, or None: none
+    for source in cascade(value):
         if source == "arg":
             text = from_argv(flag, argv, boolean=boolean)
             if text is not None:

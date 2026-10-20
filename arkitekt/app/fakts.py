@@ -273,8 +273,8 @@ def resolve_mesh(mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER
             return MeshOptions()
         if mesh is False or mesh is None:
             return None
-        return mesh  # type: ignore[return-value]
-    for source in cascade(mesh):  # type: ignore[arg-type]
+        return mesh
+    for source in cascade(mesh):
         if source == "arg":
             text = from_argv("mesh")
             if text is not None:

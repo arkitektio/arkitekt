@@ -1472,6 +1472,9 @@ def has_stored_login(
 
 async def _arevoke_stored(auth: "AuthFakt", server: str, allow_insecure_transport: bool) -> None:
     """Revoke a stored session at its server, where the server says how."""
+    refresh_token = auth.refresh_token
+    if not refresh_token:
+        return  # nothing the server could revoke
     ssl_context = SSLContextModel().ssl_context
     endpoint = auth.revocation_endpoint
     if not endpoint:
@@ -1485,7 +1488,7 @@ async def _arevoke_stored(auth: "AuthFakt", server: str, allow_insecure_transpor
     await oauth2.arevoke(
         endpoint,
         client_id=auth.client_id,
-        refresh_token=auth.refresh_token,
+        refresh_token=refresh_token,
         ssl_context=ssl_context,
         allow_insecure_transport=allow_insecure_transport,
     )
