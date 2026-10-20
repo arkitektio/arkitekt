@@ -7,7 +7,7 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "fakts>=6.0",
+    "fakts[crypto]>=6.0",
     "koil>=3.3.6",
     "rath>=4",
     "click>=8.2.0",
