@@ -7,7 +7,7 @@ from string import Formatter
 import os
 import shlex
 
-from arkitekt_spec import AppManifest, Inspection, Selector
+from arkitekt_spec import AppManifest, Capability, Inspection, Selector
 
 ALLOWED_BUILDER_KEYS = [
     "tag",
@@ -51,6 +51,10 @@ LEGACY_BUILD_COMMANDS = (
 class Flavour(BaseModel):
     """ Flavour is a pydantic model that represents a flavour of an app image"""
     selectors: List[Selector]
+    #: What the flavour must be granted where it runs: the container engine's socket, a
+    #: device, a folder of the host. Copied into the build, the deployments file and the
+    #: release, where an installer asks for them.
+    capabilities: List[Capability] = Field(default_factory=list)
     description: str = Field(default="")
     dockerfile: str = Field(default="Dockerfile")
     platforms: List[str] = Field(default_factory=lambda: list(DEFAULT_PLATFORMS))
@@ -137,6 +141,7 @@ class Build(BaseModel):
     inspection: Optional[Inspection] = None
     description: str = Field(default="")
     selectors: List[Selector] = Field(default_factory=list)
+    capabilities: List[Capability] = Field(default_factory=list)
     flavour: str = Field(default="vanilla")
     #: The platforms this build compiled. Only the host one was loaded locally;
     #: publish pushes the whole list as a manifest list. Empty in a builds.yaml

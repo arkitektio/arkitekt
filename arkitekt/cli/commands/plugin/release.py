@@ -417,6 +417,7 @@ def release(
                 image=image,
                 platforms=platforms,
                 selectors=flavour.selectors,
+                capabilities=flavour.capabilities,
                 inspection=inspection,
                 built_at=datetime.datetime.now(datetime.timezone.utc),
             )

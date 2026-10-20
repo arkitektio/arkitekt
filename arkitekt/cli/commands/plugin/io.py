@@ -123,6 +123,7 @@ def generate_build(
         manifest=manifest,
         flavour=flavour_name,
         selectors=flavour.selectors,
+        capabilities=flavour.capabilities,
         build_id=build_id,
         build_run=build_run,
         description=flavour.description,
@@ -181,6 +182,7 @@ def generate_deployment(
         manifest=build.manifest,
         flavourName=build.flavour,
         selectors=build.selectors,
+        capabilities=build.capabilities,
         inspection=build.inspection,
         image=DockerImage(imageString=image, buildAt=datetime.datetime.now()),
     )
