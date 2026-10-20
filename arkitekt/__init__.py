@@ -71,6 +71,7 @@ from arkitekt_spec.declare.errors import (
     NonDeterministicWorkflow,
     NotAWorkflowError,
     StateChanged,
+    StatePreconditionFailed,
 )
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
@@ -85,6 +86,7 @@ from arkitekt_spec.declare.task import (
     HookKind,
     LogLevel,
     StateRef,
+    StateRequirement,
     Task,
     aretry,
     retry,
@@ -163,6 +165,9 @@ __all__ = [
     "NotAWorkflowError",
     "StateChanged",
     "StateRef",
+    # what a call says the agent's state must hold
+    "StateRequirement",
+    "StatePreconditionFailed",
     "aretry",
     "retry",
     # what @app.action takes
