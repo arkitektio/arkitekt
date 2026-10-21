@@ -436,6 +436,7 @@ class App(Generic[Ctx]):
         policy: DisconnectPolicy = KEEP,
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
+        protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
@@ -464,6 +465,7 @@ class App(Generic[Ctx]):
         policy: DisconnectPolicy = KEEP,
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
+        protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
@@ -499,6 +501,8 @@ class App(Generic[Ctx]):
                 disconnects.
             version: Version of the definition.
             catalogs: Catalogs the action is listed in.
+            protocols: Where the action means to hook in (``on_scene_annotation``):
+                hints a caller filters on to find it, never a contract.
             effects: What running it again would do to the world. Informational:
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
@@ -539,6 +543,7 @@ class App(Generic[Ctx]):
                 policy=policy,
                 version=version,
                 catalogs=catalogs,
+                protocols=protocols,
                 effects=effects,
                 logo=logo,
             )
@@ -571,6 +576,7 @@ class App(Generic[Ctx]):
         policy: DisconnectPolicy = KEEP,
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
+        protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> WrappedFunction[P, R]:
@@ -612,6 +618,7 @@ class App(Generic[Ctx]):
                 policy=policy,
                 version=version,
                 catalogs=catalogs,
+                protocols=protocols,
                 effects=effects,
                 logo=logo,
             ),
@@ -645,6 +652,7 @@ class App(Generic[Ctx]):
         policy: DisconnectPolicy = KEEP,
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
+        protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
@@ -673,6 +681,7 @@ class App(Generic[Ctx]):
         policy: DisconnectPolicy = KEEP,
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
+        protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
@@ -717,6 +726,8 @@ class App(Generic[Ctx]):
                 disconnects.
             version: Version of the definition.
             catalogs: Catalogs the action is listed in.
+            protocols: Where the action means to hook in (``on_scene_annotation``):
+                hints a caller filters on to find it, never a contract.
             effects: What running it again would do to the world. Informational:
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
@@ -757,6 +768,7 @@ class App(Generic[Ctx]):
                 policy=policy,
                 version=version,
                 catalogs=catalogs,
+                protocols=protocols,
                 effects=effects,
                 logo=logo,
             )
@@ -789,6 +801,7 @@ class App(Generic[Ctx]):
         policy: DisconnectPolicy = KEEP,
         version: Optional[str] = None,
         catalogs: Optional[List[str]] = None,
+        protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
     ) -> WrappedFunction[P, R]:
@@ -830,6 +843,7 @@ class App(Generic[Ctx]):
                 policy=policy,
                 version=version,
                 catalogs=catalogs,
+                protocols=protocols,
                 effects=effects,
                 logo=logo,
                 execution=Execution.WORKFLOW,
