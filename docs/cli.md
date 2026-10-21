@@ -437,7 +437,7 @@ arkitekt plugin publish
 | :--- | :--- |
 | `--flavour`, `-f` | The flavour to build. By default **all** flavours are built. |
 | `--tag`, `-t` | Tag the resulting image with a specific tag. |
-| `--no-inspect`, `-n` | Skip inspection of the app during the build. |
+| `--no-inspect`, `-n` | Only build: do not run the image. Nothing then says which app it holds, so the build is not recorded for `stage` or `publish`. |
 | `--url`, `-u` | The `fakts` server to use during inspection. |
 | `--platform`, `-p` | Build these platforms instead of the flavour's (repeatable). |
 

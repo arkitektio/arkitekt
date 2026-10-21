@@ -6,10 +6,13 @@ from git, and everything is published to one OCI repository.
 
 The order is what makes a release trustworthy:
 
-1. the repository's own tests run, before anything is built;
-2. every flavour is built once, for all of its platforms, and pushed;
-3. the pushed image is run, by digest, and says what it declares and who it is;
-4. the release descriptor (:mod:`arkitekt_spec.release`) is pushed last.
+1. every flavour is built for this machine and run, and says which app and version it
+   holds -- the source on this machine is never imported, so a flavour is the app its
+   image is, and releasing needs docker rather than the app's dependencies;
+2. the repository's own tests run, before anything is pushed;
+3. every flavour is built for all of its platforms (from the cache of step 1) and pushed;
+4. the pushed image is run, by digest, and says what it declares and who it is;
+5. the release descriptor (:mod:`arkitekt_spec.release`) is pushed last.
 
 So the image a release names is the image that was inspected, and a release exists
 only once every step before its descriptor went through.
@@ -19,6 +22,7 @@ import datetime
 import os
 import shlex
 import subprocess
+import uuid
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any, Optional
 
@@ -28,14 +32,16 @@ from arkitekt_spec.release import channel_tag, channel_version, image_tag, relea
 
 from arkitekt.app.app import VERSION_ENV
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument
 from arkitekt.cli.ui import done, escape, notice, step
 from arkitekt.cli.vars import get_console, get_work_dir
 
 from .build import (
     INSPECTION_TIMEOUT_SECONDS,
     InspectionError,
+    build_host_image,
     flavour_relative_dir,
+    inspect_all,
     inspect_docker_container,
     machine_readable,
 )
@@ -94,6 +100,25 @@ def _source(work_dir: str) -> Optional[str]:
 _TRACKED_SOURCE = (":/", ":(exclude).arkitekt/.gitignore", ":(exclude).arkitekt/.dockerignore")
 
 
+def check_checkout(work_dir: str, allow_dirty: bool = False) -> str:
+    """The commit this checkout is, refusing one a release could not name.
+
+    Asks nothing of the app, so a release runs it before building anything.
+    """
+    revision = _git(work_dir, "rev-parse", "HEAD")
+    if revision is None:
+        cli_error(
+            "A release is made from a git commit, and this folder is not in a git "
+            "repository (or has no commit yet)."
+        )
+    if not allow_dirty and _git(work_dir, "status", "--porcelain", "--untracked-files=no", "--", *_TRACKED_SOURCE):
+        cli_error(
+            "The work tree has uncommitted changes, so the commit a release names would not "
+            "be what was built. Commit them, or pass --allow-dirty."
+        )
+    return revision
+
+
 def resolve(
     declared_version: str, work_dir: str, channel: Optional[str] = None, allow_dirty: bool = False
 ) -> Resolved:
@@ -110,17 +135,7 @@ def resolve(
             detached commit passes the branch name here.
         allow_dirty: Release even though the work tree has uncommitted changes.
     """
-    revision = _git(work_dir, "rev-parse", "HEAD")
-    if revision is None:
-        cli_error(
-            "A release is made from a git commit, and this folder is not in a git "
-            "repository (or has no commit yet)."
-        )
-    if not allow_dirty and _git(work_dir, "status", "--porcelain", "--untracked-files=no", "--", *_TRACKED_SOURCE):
-        cli_error(
-            "The work tree has uncommitted changes, so the commit a release names would not "
-            "be what was built. Commit them, or pass --allow-dirty."
-        )
+    revision = check_checkout(work_dir, allow_dirty)
     source = _source(work_dir)
 
     if channel is None:
@@ -151,6 +166,47 @@ def default_test_command(work_dir: str) -> Optional[list[str]]:
     if os.path.exists(os.path.join(work_dir, "uv.lock")):
         return ["uv", "run", "pytest"]
     return ["python", "-m", "pytest"]
+
+
+def identify(
+    flavours: dict[str, "Flavour"],
+    platforms: dict[str, list[str]],
+    work_dir: str,
+    target: str,
+    console: Any,
+) -> AppManifest:
+    """Which app, at which version, the flavours hold: as their images say, not the source.
+
+    Each flavour is built for this machine and run once. That build is what the
+    push reuses, so it costs a build of the host platform, not a second one of
+    everything. Every flavour has to be the same app: one release names one.
+    """
+    reported: dict[str, AppManifest] = {}
+    for name, flavour in flavours.items():
+        step(console, f"Identifying flavour [bold]{escape(name)}[/bold]", "building it for this machine")
+        probe = f"arkitekt-identify-{uuid.uuid4()}"
+        build_host_image(probe, name, flavour, work_dir, platforms[name], console=console)
+        try:
+            _, manifest = inspect_all(probe, "", target)
+        except InspectionError as error:
+            cli_error(str(error))
+        finally:
+            subprocess.run(["docker", "rmi", "-f", probe], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        reported[name] = AppManifest.model_validate(manifest)
+
+    (first, declared), *others = reported.items()
+    for name, manifest in others:
+        if manifest != declared:
+            differs = sorted(
+                field
+                for field in AppManifest.model_fields
+                if getattr(manifest, field) != getattr(declared, field)
+            )
+            cli_error(
+                f"Flavours {first} and {name} hold different apps (they differ in "
+                f"{', '.join(differs)}). A release is one app in every flavour."
+            )
+    return declared
 
 
 def push_flavour(
@@ -243,12 +299,10 @@ def check_identity(
     so a descriptor that names another version describes an image nobody can run.
     """
     if reported is None:
-        if resolved.channel is None:
-            return  # An older arkitekt: it carries the source's version, which is the release's.
+        # Nothing else says which app it is: the source on this machine is not asked.
         cli_error(
-            f"The image of flavour {name} does not say which version it is, and a build of "
-            f"the '{resolved.channel}' channel has to carry {resolved.version}. Its arkitekt "
-            "predates channel builds: update the arkitekt the image installs."
+            f"The image of flavour {name} does not say which app it is. Its arkitekt "
+            "predates that: the image has to install arkitekt 6.2.0 or newer."
         )
     if reported.identifier != manifest.identifier:
         cli_error(
@@ -323,7 +377,7 @@ def release(
     afterwards. Any other commit becomes the latest build of its branch's channel.
     """
     from .buildx import host_platform
-    from .io import app_to_manifest, get_flavours
+    from .io import get_flavours
 
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)
@@ -335,11 +389,18 @@ def release(
     except ValueError as error:
         cli_error(str(error))
 
-    app = load_app_or_exit(ctx, target)
-    declared = app_to_manifest(app, target)
     flavours = get_flavours(base_dir=work_dir)
     if not flavours:
         cli_error("There is no flavour to release. Run `arkitekt plugin init` first.")
+    # What git alone can refuse, it refuses before anything is built.
+    check_checkout(work_dir, allow_dirty)
+
+    host = host_platform()
+    platforms = {
+        name: [host] if flavour.is_customized() else list(platform or flavour.platforms)
+        for name, flavour in flavours.items()
+    }
+    declared = identify(flavours, platforms, work_dir, target, console)
 
     try:
         resolved = resolve(declared.version, work_dir, channel=channel, allow_dirty=allow_dirty)
@@ -377,14 +438,12 @@ def release(
             if subprocess.run(tests, cwd=work_dir).returncode != 0:
                 cli_error("The tests failed, so nothing was built or published.")
 
-    host = host_platform()
     released: list[ReleaseFlavour] = []
     for name, flavour in flavours.items():
-        platforms = [host] if flavour.is_customized() else list(platform or flavour.platforms)
         reference = f"{registry.name}:{tags[name]}"
 
-        step(console, f"Building flavour [bold]{escape(name)}[/bold]", escape(", ".join(platforms)))
-        push_flavour(name, flavour, reference, resolved, work_dir, platforms, console)
+        step(console, f"Building flavour [bold]{escape(name)}[/bold]", escape(", ".join(platforms[name])))
+        push_flavour(name, flavour, reference, resolved, work_dir, platforms[name], console)
 
         try:
             pushed = registry.manifest_digest(tags[name])
@@ -399,7 +458,7 @@ def release(
         check_identity(name, reported, manifest, resolved)
 
         if inspect_all_platforms:
-            for other in platforms:
+            for other in platforms[name]:
                 if other == host:
                     continue
                 step(console, f"Inspecting flavour [bold]{escape(name)}[/bold]", escape(other))
@@ -415,7 +474,7 @@ def release(
                 name=name,
                 description=flavour.description or None,
                 image=image,
-                platforms=platforms,
+                platforms=platforms[name],
                 selectors=flavour.selectors,
                 capabilities=flavour.capabilities,
                 inspection=inspection,

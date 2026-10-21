@@ -2,8 +2,7 @@ import datetime
 import uuid
 from arkitekt.utils import create_arkitekt_folder
 import os
-from typing import Any, Optional, List, Dict
-from arkitekt.app.app import App
+from typing import Optional, List, Dict
 
 from .types import (
     DEFAULT_BUILD_COMMAND,
@@ -12,7 +11,6 @@ from .types import (
     BuildsConfigFile,
     Flavour,
 )
-from arkitekt.app.spec import app_manifest
 from arkitekt_spec import (
     AppImage,
     AppManifest,
@@ -94,15 +92,6 @@ def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = Non
         for build in config.builds
         if build.build_run == selected_run
     }
-
-
-def app_to_manifest(app: App[Any], target: str) -> AppManifest:
-    """What a build says it packages: the App's identity, and the target that finds it.
-
-    The target is recorded so the image is run (and inspected) on the same app
-    it was built for, not on whatever the default target happens to find.
-    """
-    return app_manifest(app, entrypoint=target)
 
 
 def generate_build(

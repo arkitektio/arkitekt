@@ -1,8 +1,10 @@
-"""The plugin commands read the app's identity off the App, and keep its target.
+"""The plugin commands take the app's identity from its image, and keep its target.
 
-A build records the App's identifier/version/author/scopes/logo plus the target
-that finds it, so the image is inspected and staged on that same app. Nothing
-here needs docker: the subprocess boundary is mocked.
+A build records the identifier/version/author/scopes/logo the built image reports
+(what ``app_manifest`` makes of its App, inside the container) plus the target that
+finds it, so the image is inspected and staged on that same app. The app is never
+imported on the building machine. Nothing here needs docker: the subprocess
+boundary is mocked.
 """
 
 import json
@@ -11,16 +13,17 @@ from unittest.mock import patch
 from typer.testing import CliRunner
 
 from arkitekt import App
+from arkitekt.app.spec import app_manifest
 from arkitekt.cli.commands.plugin.build import inspect_all
-from arkitekt.cli.commands.plugin.io import app_to_manifest
-from arkitekt_spec import UNKNOWN_AUTHOR
+from arkitekt.cli.commands.plugin.io import get_builds
+from arkitekt_spec import UNKNOWN_AUTHOR, AppManifest, Inspection
 from arkitekt.cli.commands.plugin.types import Build
 from arkitekt.cli.main import cli_app
 from arkitekt.cli.target import infer_package_manager
 
 
-def test_a_build_records_the_apps_identity_and_target():
-    manifest = app_to_manifest(
+def test_an_image_reports_the_apps_identity_and_target():
+    manifest = app_manifest(
         App(
             "com.x",
             "1.2.3",
@@ -29,7 +32,7 @@ def test_a_build_records_the_apps_identity_and_target():
             logo="http://l",
             description="What it is",
         ),
-        "main:api",
+        entrypoint="main:api",
     )
 
     assert (manifest.identifier, manifest.version, manifest.author) == ("com.x", "1.2.3", "me")
@@ -40,14 +43,14 @@ def test_a_build_records_the_apps_identity_and_target():
 
 
 def test_an_app_without_an_author_is_recorded_as_unknown():
-    assert app_to_manifest(App("com.x"), "app").author == UNKNOWN_AUTHOR
+    assert app_manifest(App("com.x"), entrypoint="app").author == UNKNOWN_AUTHOR
 
 
 def test_a_staged_build_runs_the_recorded_target():
     build = Build(
         build_run="run",
         build_id="image",
-        manifest=app_to_manifest(App("com.x"), "main:api"),
+        manifest=app_manifest(App("com.x"), entrypoint="main:api"),
     )
 
     assert build.build_arkitekt_command("http://fakts") == [
@@ -59,7 +62,12 @@ class _OkProc:
     returncode = 0
 
     def communicate(self, timeout=None):
-        return (b"--START_AGENT--" + json.dumps({"implementations": []}).encode() + b"--END_AGENT--", b"")
+        return (
+            b"--START_AGENT--" + json.dumps({"implementations": []}).encode() + b"--END_AGENT--"
+            b"--START_MANIFEST--" + json.dumps({"identifier": "com.x", "version": "1"}).encode()
+            + b"--END_MANIFEST--",
+            b"",
+        )
 
 
 def test_the_image_is_inspected_on_the_built_target():
@@ -68,6 +76,44 @@ def test_the_image_is_inspected_on_the_built_target():
 
     command = popen.call_args[0][0]
     assert "arkitekt inspect all main:api -mr" in command
+    assert "--rm" in command  # the inspection's container is not left behind
+
+
+def _flavour_without_an_app(tmp_path):
+    """A flavour, and no app module at all: the image is the only place the app is."""
+    result = CliRunner().invoke(cli_app, [
+        "--work-dir", str(tmp_path), "plugin", "init", "--no-multi-arch", "--arkitekt-version", "0.0.1",
+    ], input="n\n")
+    assert result.exit_code == 0, result.output
+
+
+def test_a_build_records_who_the_image_says_it_is_without_importing_the_app(tmp_path):
+    _flavour_without_an_app(tmp_path)
+    reported = AppManifest(identifier="from.the.image", version="9.9.9", entrypoint="main:api")
+
+    with patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"), patch(
+        "arkitekt.cli.commands.plugin.build.inspect_build", return_value=(Inspection(), reported)
+    ) as inspected:
+        result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "main:api"])
+
+    assert result.exit_code == 0, result.output
+    assert inspected.call_args.args[2] == "main:api"
+    (build,) = get_builds(base_dir=str(tmp_path)).values()
+    assert build.manifest == reported
+
+
+def test_a_build_that_is_not_inspected_is_not_recorded(tmp_path):
+    _flavour_without_an_app(tmp_path)
+
+    with patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"), patch(
+        "arkitekt.cli.commands.plugin.build.inspect_build"
+    ) as inspected:
+        result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "--no-inspect"])
+
+    assert result.exit_code == 0, result.output
+    assert "Not recorded" in result.output
+    inspected.assert_not_called()
+    assert not (tmp_path / ".arkitekt" / "builds.yaml").exists()
 
 
 def test_the_package_manager_is_inferred_from_the_lockfile(tmp_path):

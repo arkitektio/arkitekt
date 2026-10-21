@@ -19,6 +19,8 @@ deployment bookkeeping all run for real. ``docker push`` is stubbed in publish s
 tests need no registry/credentials.
 """
 
+import os
+import re
 import subprocess
 from unittest.mock import patch
 
@@ -41,6 +43,8 @@ _FAKE_RUNTIME = {
     "states": [],
     "requirements": [],
 }
+# Who that container says it is: what `_scaffold` declares.
+_FAKE_MANIFEST = {"identifier": "com.test.app", "version": "0.0.1", "entrypoint": "app"}
 
 
 # ---------------------------------------------------------------------------
@@ -100,7 +104,7 @@ def _patched_inspect_all():
     """
     return patch(
         "arkitekt.cli.commands.plugin.build.inspect_all",
-        return_value=_FAKE_RUNTIME,
+        return_value=(_FAKE_RUNTIME, _FAKE_MANIFEST),
     )
 
 
@@ -130,26 +134,27 @@ def _patched_push():
 # ---------------------------------------------------------------------------
 
 def test_kabinet_build_no_inspect():
-    """`kabinet build --no-inspect` runs a real docker build and records it."""
+    """`kabinet build --no-inspect` runs a real docker build, and records nothing.
+
+    Without running the image nothing says which app it holds, and the source on
+    this machine is not asked instead.
+    """
     runner = CliRunner()
-    with isolated_filesystem():
+    with isolated_filesystem() as directory:
         _scaffold(runner)
+        result = runner.invoke(cli_app, ["plugin", "build", "--no-inspect"])
+        image = re.search(r"image ([0-9a-f-]{36})", result.output)
         try:
-            result = runner.invoke(cli_app, ["plugin", "build", "--no-inspect"])
             if result.exit_code != 0:
                 print(result.output)
                 print(result.exception)
             assert result.exit_code == 0
-
-            builds = get_builds()
-            assert len(builds) == 1
-            (build_id, build), = builds.items()
-            assert build.flavour == "vanilla"
-            assert build.build_id == build_id
-            assert build_id  # non-empty tag
-            assert build.inspection is None  # inspection was skipped
+            assert image is not None
+            assert subprocess.run(["docker", "image", "inspect", image.group(1)], capture_output=True).returncode == 0
+            assert not os.path.exists(os.path.join(directory, ".arkitekt", "builds.yaml"))
         finally:
-            _cleanup_images()
+            if image is not None:
+                subprocess.run(["docker", "rmi", "-f", image.group(1)], capture_output=True)
 
 
 def test_kabinet_build_with_inspect():

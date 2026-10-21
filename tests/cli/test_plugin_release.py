@@ -21,10 +21,11 @@ from unittest.mock import patch
 import pytest
 import typer
 from arkitekt_spec import AppManifest, Inspection, ReleaseDescriptor, ReleaseFlavour
+from rich.console import Console
 from typer.testing import CliRunner
 
 from arkitekt.cli.commands.plugin.registry import Repository
-from arkitekt.cli.commands.plugin.release import Resolved, check_identity, resolve
+from arkitekt.cli.commands.plugin.release import Resolved, check_identity, identify, resolve
 from arkitekt.cli.main import cli_app
 
 from .isolation import isolated_filesystem
@@ -145,14 +146,12 @@ def test_an_image_that_is_the_release_passes():
     check_identity("vanilla", MANIFEST, MANIFEST, RELEASE)
 
 
-def test_an_older_image_is_taken_at_the_sources_word_for_a_release():
-    check_identity("vanilla", None, MANIFEST, RELEASE)
-
-
-def test_a_channel_build_has_to_say_which_version_it_is(capsys):
-    with pytest.raises(typer.Exit):
-        check_identity("vanilla", None, MANIFEST, CHANNEL)
-    assert "predates channel builds" in capsys.readouterr().err
+def test_an_image_that_does_not_say_which_app_it_is_is_refused(capsys):
+    """Neither for a release nor a channel: the source is not asked in its place."""
+    for resolved in (RELEASE, CHANNEL):
+        with pytest.raises(typer.Exit):
+            check_identity("vanilla", None, MANIFEST, resolved)
+        assert "6.2.0 or newer" in capsys.readouterr().err
 
 
 def test_a_channel_image_still_carrying_the_sources_version_is_refused(capsys):
@@ -166,6 +165,55 @@ def test_an_image_of_another_app_is_refused(capsys):
     with pytest.raises(typer.Exit):
         check_identity("vanilla", other, MANIFEST, RELEASE)
     assert "'other'" in capsys.readouterr().err
+
+
+# -- which app the flavours hold ---------------------------------------------------
+
+RELEASE_MODULE = "arkitekt.cli.commands.plugin.release"
+
+
+def identified(reports: dict[str, dict[str, str]]) -> AppManifest:
+    """``identify`` over flavours whose images report ``reports``; docker mocked out."""
+    probes: list[str] = []
+
+    def build(probe: str, name: str, *args: object, **kwargs: object) -> None:
+        probes.append(name)
+
+    def inspect(probe: str, url: str, target: str):
+        assert target == "main:api"
+        return {}, reports[probes[-1]]
+
+    with patch(f"{RELEASE_MODULE}.build_host_image", side_effect=build), patch(
+        f"{RELEASE_MODULE}.inspect_all", side_effect=inspect
+    ), patch(f"{RELEASE_MODULE}.subprocess.run") as run:
+        try:
+            return identify(
+                {name: None for name in reports},  # pyright: ignore[reportArgumentType] -- only passed through
+                {name: ["linux/amd64"] for name in reports},
+                ".",
+                "main:api",
+                Console(quiet=True),
+            )
+        finally:
+            # Every probe image is removed again, also when the flavours disagree.
+            removed = [call.args[0] for call in run.call_args_list if call.args[0][:2] == ["docker", "rmi"]]
+            assert len(removed) == len(probes)
+
+
+def test_the_release_is_the_app_its_images_say_they_are():
+    image = {"identifier": "app", "version": "1.4.0", "entrypoint": "main:api"}
+    assert identified({"vanilla": image, "gpu": image}) == AppManifest.model_validate(image)
+
+
+def test_flavours_holding_different_apps_are_refused(capsys):
+    with pytest.raises(typer.Exit):
+        identified({
+            "vanilla": {"identifier": "app", "version": "1.4.0"},
+            "gpu": {"identifier": "app", "version": "1.5.0"},
+        })
+    err = capsys.readouterr().err
+    assert "vanilla and gpu" in err
+    assert "version" in err
 
 
 def test_the_build_version_wins_over_the_declared_one(monkeypatch):
@@ -306,8 +354,15 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
         assert "@sha256:" in image and image.startswith(docker_registry)
         return Inspection(), reported[-1]
 
+    def identity(image: str, url: str, target: str):
+        assert image.startswith("arkitekt-identify-")
+        # Built without the channel's version: it says what the source declares.
+        return {}, {"identifier": "com.test.app", "version": "0.0.1", "entrypoint": target}
+
     def release(*extra: str):
-        with patch("arkitekt.cli.commands.plugin.release.inspect_image", side_effect=canned):
+        with patch("arkitekt.cli.commands.plugin.release.inspect_image", side_effect=canned), patch(
+            "arkitekt.cli.commands.plugin.release.inspect_all", side_effect=identity
+        ):
             return runner.invoke(
                 cli_app, ["plugin", "release", "-r", docker_registry, "--no-test", *extra]
             )

@@ -58,6 +58,10 @@ arkitekt plugin build        # build each flavour into an image, and inspect it
 arkitekt plugin validate     # check the flavours' Dockerfiles
 ```
 
+Everything a build records, the app's identity included, is read from the built
+image: the app is never imported on the machine that builds it. So building needs
+docker, not the app's dependencies, and a flavour is whatever app its image holds.
+
 A flavour is one way of building the app: `vanilla` for a plain image, others for
 a GPU or another base. `arkitekt plugin flavour add` adds one and
 `arkitekt plugin selector add` says where it may be placed
@@ -71,9 +75,11 @@ Releasing is what the workflow does, on every push:
 arkitekt plugin release --repository ghcr.io/<org>/<app>
 ```
 
-It runs the project's tests, builds every flavour for its platforms, runs the
-built image to read back what it declares, and pushes the images and a release
-descriptor to the OCI repository. Nothing is published if any step fails.
+It builds every flavour for this machine and runs it to learn which app and
+version it holds (every flavour has to hold the same one), runs the project's
+tests, builds every flavour for its platforms, runs the pushed image to read back
+what it declares, and pushes the images and a release descriptor to the OCI
+repository. Nothing is published if any step fails.
 
 - A commit tagged `v<version>`, where `<version>` is the one the App declares, is
   a **release**: immutable, published as that version.

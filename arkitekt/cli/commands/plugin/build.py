@@ -1,11 +1,11 @@
 import sys
 from typing import Annotated
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument
 from arkitekt.cli.vars import get_console, get_work_dir
 import os
 import shlex
-from arkitekt.cli.ui import done, escape, step
+from arkitekt.cli.ui import done, escape, notice, step
 import subprocess
 import uuid
 
@@ -15,7 +15,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 if TYPE_CHECKING:
-    from arkitekt_spec import Inspection
+    from arkitekt_spec import AppManifest, Inspection
 
     from .types import Flavour
 
@@ -69,29 +69,13 @@ def build_flavour(
                 f"builds for this machine only — but its platforms say {', '.join(wanted)}. "
                 "Drop build_command from its config.yaml to build them all.[/yellow]"
             )
-        _run_build(flavour.generate_build_command(build_id, relative_dir), work_dir, "build")
+        build_host_image(build_id, flavour_name, flavour, work_dir, wanted, console=console)
         return build_id
+
+    build_host_image(build_id, flavour_name, flavour, work_dir, wanted, console=console)
 
     host = host_platform()
     builder = ensure_builder(wanted, console=console)
-
-    if host not in wanted:
-        # Nothing would be left in the local image store, and every step after
-        # this one (inspection, --tag, stage) reads it.
-        cli_error(
-            f"Flavour {flavour_name} builds {', '.join(wanted)}, none of which is this "
-            f"machine's platform ({host}), so nothing can be loaded, inspected or staged "
-            "locally. Add it to `platforms:` in the flavour's config.yaml."
-        )
-
-    _run_build(
-        flavour.generate_build_command(
-            build_id, relative_dir, platform=host, output="--load", builder=builder
-        ),
-        work_dir,
-        f"build for {host}",
-    )
-
     foreign = [p for p in wanted if p != host]
     if foreign:
         if console:
@@ -111,6 +95,49 @@ def build_flavour(
         )
 
     return build_id
+
+
+def build_host_image(
+    build_id: str,
+    flavour_name: str,
+    flavour: "Flavour",
+    work_dir: str,
+    platforms: list[str],
+    console: Any = None,
+) -> None:
+    """Build this machine's image of a flavour into the local image store, as ``build_id``.
+
+    That image is the one that can be run here, so it is the one that says what
+    the app is. It is built with the builder the whole platform list needs, so a
+    later build of all of them (``publish``, ``release``) reuses its layers.
+    """
+    from .buildx import ensure_builder, host_platform
+
+    relative_dir = flavour_relative_dir(flavour_name)
+
+    if flavour.is_customized():
+        _run_build(flavour.generate_build_command(build_id, relative_dir), work_dir, "build")
+        return
+
+    host = host_platform()
+    builder = ensure_builder(platforms, console=console)
+
+    if host not in platforms:
+        # Nothing would be left in the local image store, and every step after
+        # this one (inspection, --tag, stage) reads it.
+        cli_error(
+            f"Flavour {flavour_name} builds {', '.join(platforms)}, none of which is this "
+            f"machine's platform ({host}), so nothing can be loaded, inspected or staged "
+            "locally. Add it to `platforms:` in the flavour's config.yaml."
+        )
+
+    _run_build(
+        flavour.generate_build_command(
+            build_id, relative_dir, platform=host, output="--load", builder=builder
+        ),
+        work_dir,
+        f"build for {host}",
+    )
 
 
 def _run_build(command: list[str], work_dir: str, what: str) -> None:
@@ -148,8 +175,14 @@ def inspect_docker_container(build_id: str) -> tuple[int, int]:
         raise InspectionError(f"An error occurred: {e.stdout}{e.stderr}") from e
 
 
-def inspect_all(build_id: str, url: str, target: str = DEFAULT_TARGET) -> Dict[str, Any]:
+def inspect_all(
+    build_id: str, url: str, target: str = DEFAULT_TARGET
+) -> tuple[Dict[str, Any], Dict[str, Any]]:
     """Run ``arkitekt inspect all`` on ``target`` inside the built image.
+
+    Returns what the image declares (its ``AGENT``) and who it says it is (its
+    ``MANIFEST``). Both come from the image, not from the source on this machine:
+    the image is what runs, and a flavour may well hold another app than the host has.
 
     The target is passed explicitly: the image has to be inspected on the app it
     was built for, which need not be the default ``app``.
@@ -159,7 +192,7 @@ def inspect_all(build_id: str, url: str, target: str = DEFAULT_TARGET) -> Dict[s
         # keeps the read from cleanly ending on container exit.
         process = subprocess.Popen(
             " ".join([
-                "docker", "run", "--network", "host",
+                "docker", "run", "--rm", "--network", "host",
                 build_id, "arkitekt", "inspect", "all", shlex.quote(target), "-mr",
             ]),
             shell=True,
@@ -198,7 +231,13 @@ def inspect_all(build_id: str, url: str, target: str = DEFAULT_TARGET) -> Dict[s
         runtime = machine_readable(result, "AGENT")
         if runtime is None:
             raise InspectionError(f"The container reported no inspection. {result}")
-        return runtime
+        manifest = machine_readable(result, "MANIFEST")
+        if manifest is None:
+            raise InspectionError(
+                "The container did not say which app it is (no MANIFEST in its inspection). "
+                "Its arkitekt predates that: the image has to install arkitekt 6.2.0 or newer."
+            )
+        return runtime, manifest
 
     except subprocess.CalledProcessError as e:
         combined = e.stdout + e.stderr
@@ -222,13 +261,19 @@ def machine_readable(output: str, kind: str) -> Optional[Dict[str, Any]]:
         raise InspectionError(f"Could not decode the {kind} JSON. {output}") from e
 
 
-def inspect_build(build_id: str, url: str, target: str = DEFAULT_TARGET) -> "Inspection":
-    from arkitekt_spec import Inspection
+def inspect_build(
+    build_id: str, url: str, target: str = DEFAULT_TARGET
+) -> tuple["Inspection", "AppManifest"]:
+    """What a built image declares, and who it says it is."""
+    from arkitekt_spec import AppManifest, Inspection
 
     size, size_root_fs = inspect_docker_container(build_id)
-    runtime = inspect_all(build_id, url, target)
+    runtime, manifest = inspect_all(build_id, url, target)
     print("Runtime inspection result:", runtime)
-    return Inspection.model_validate({**runtime, "size": size})
+    return (
+        Inspection.model_validate({**runtime, "size": size}),
+        AppManifest.model_validate(manifest),
+    )
 
 
 def build(
@@ -244,7 +289,12 @@ def build(
     ] = None,
     no_inspect: Annotated[
         bool,
-        typer.Option("--no-inspect", "-n", help="Skip inspection of the app."),
+        typer.Option(
+            "--no-inspect",
+            "-n",
+            help="Only build: do not run the image. Without its inspection nothing says "
+            "which app it holds, so the build is not recorded for stage or publish.",
+        ),
     ] = False,
     tag: Annotated[
         Optional[str],
@@ -271,21 +321,21 @@ def build(
 ) -> None:
     """Builds the arkitekt app to Docker.
 
-    The app's identity (identifier, version, author, scopes, logo) is read off the
-    App the target declares and recorded with each build.
+    Everything recorded about a build is read from the built image: what it
+    declares, and the app's identity (identifier, version, author, scopes, logo).
+    The app is never imported on this machine, so building needs docker, not the
+    app's dependencies.
     """
-    from .io import app_to_manifest, generate_build, get_flavours
+    from .io import generate_build, get_flavours
 
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)
-    app = load_app_or_exit(ctx, target)
-    manifest = app_to_manifest(app, target)
 
     flavours = get_flavours(base_dir=work_dir, select=flavour)
 
     step(
         console,
-        f"Building containers for [bold]{escape(manifest.identifier)}[/bold]",
+        f"Building containers for [bold]{escape(target)}[/bold]",
         "flavours: " + escape(", ".join(flavours.keys())),
     )
 
@@ -309,9 +359,19 @@ def build(
                 )
             subprocess.run(["docker", "tag", build_tag, tag], check=True)
 
-        inspection = None
-        if not no_inspect:
-            inspection = inspect_build(build_tag, url, target)
+        if no_inspect:
+            done(console, f"Built flavour [bold]{escape(key)}[/bold]", f"image {build_tag}")
+            notice(
+                console,
+                "Not recorded",
+                "built with --no-inspect, so nothing says which app the image holds",
+            )
+            continue
+
+        try:
+            inspection, manifest = inspect_build(build_tag, url, target)
+        except InspectionError as error:
+            cli_error(str(error))
 
         generate_build(
             build_run,
@@ -324,4 +384,8 @@ def build(
             platforms=platforms,
         )
 
-        done(console, f"Built flavour [bold]{escape(key)}[/bold]", f"build {build_run}")
+        done(
+            console,
+            f"Built flavour [bold]{escape(key)}[/bold]",
+            f"{escape(manifest.identifier)} {escape(manifest.version)} · build {build_run}",
+        )
