@@ -112,3 +112,23 @@ def test_an_action_logo_paints_with_the_palette() -> None:
     app.ui_catalog("drawing", components=[SVG, ACTION_LOGO, PATH])
     with pytest.raises(ValueError, match="not '#fbbf24' in 'fill'"):
         app.blok("loud", '<ActionLogo><Path d="M0 0" fill="#fbbf24" /></ActionLogo>', catalog="drawing", context="action_logo")
+
+
+def test_blok_passes_its_args_through() -> None:
+    """A blok opened for an item: its args are ports, and ``@args`` is seeded null."""
+
+    class Image:
+        def __init__(self, id: str) -> None:
+            self.id = id
+
+    app = App("demo")
+
+    @app.registry.structure_registry.structure("@t/image")
+    async def expand_image(id: str) -> Image:
+        return Image(id)
+
+    app.blok("inspector", '<Text text="@args.image" />', args={"image": Image})
+
+    declared = app.registry.registered_bloks["inspector"]
+    assert [port.identifier for port in declared.args] == ["@t/image"]
+    assert declared.local_state == {"args": {"image": None}}

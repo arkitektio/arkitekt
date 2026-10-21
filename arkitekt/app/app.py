@@ -1135,6 +1135,7 @@ class App(Generic[Ctx]):
         default: bool = False,
         for_model: Optional[str] = None,
         for_node: Optional[str] = None,
+        args: Optional[Mapping[str, Any]] = None,
     ) -> None:
         r"""Declare a blok, a UI component tree: ``app.blok("monitor", "<Card/>")``.
 
@@ -1166,11 +1167,18 @@ class App(Generic[Ctx]):
                 where ``for_node`` is clicked. Html bloks only.
             for_node: The node of ``for_model`` to attach to; the model's root
                 when left out.
+            args: The items the blok is opened for, typed like an action's
+                arguments (``{"dataset": ArrayDataset}``; ``Optional`` for one it
+                can do without, ``Annotated[..., Requires(...)]`` to narrow it).
+                A client offers the blok on any item they accept ("Open in…"),
+                and the tree reads the item at ``@args.dataset``, null until the
+                blok is opened for one. Html bloks only.
 
         Raises:
             ValueError: If ``name`` is empty, a declared catalog rejects the tree,
-                a ``local_state`` key is reserved or names a dependency, or the
-                blok's context and target do not fit together.
+                a ``local_state`` key is reserved or names a dependency, the
+                blok's context and target do not fit together, or the tree reads
+                an arg the blok does not declare.
         """
         self.registry.register_blok(
             name,
@@ -1184,6 +1192,7 @@ class App(Generic[Ctx]):
             default=default,
             for_model=for_model,
             for_node=for_node,
+            args=args,
         )
 
     def register_asset(
