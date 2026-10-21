@@ -23,6 +23,8 @@ inspecting and building an app, and ``connect(app)`` to services, need neither.
 """
 
 from arkitekt_spec.actions import (
+    ActionDemandInput,
+    ActionDependencyInput,
     AgentDependencyInput,
     AssetKind,
     ComponentContext,
@@ -35,6 +37,9 @@ from arkitekt_spec.actions import (
     OptimisticInput,
     PortGroupInput,
     PortKind,
+    PortMatchInput,
+    StateDemandInput,
+    StateDependencyInput,
     TestTargetInput,
     TrackInput,
     UtilCallInput,
@@ -56,7 +61,14 @@ from arkitekt_spec.declare.blok.from_svg import SvgConversionError, SvgConversio
 from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
 from arkitekt_spec.declare.blok.registry import demo_state_for
 from arkitekt_spec.declare.blok.unparse import to_bsx
-from arkitekt_spec.declare.blok.validate import check_context_root, local_roots_of, validate_blok
+from arkitekt_spec.declare.blok.validate import (
+    RESERVED_ROOTS,
+    check_context_root,
+    check_logo_complexity,
+    check_logo_palette,
+    local_roots_of,
+    validate_blok,
+)
 from arkitekt_spec.declare.catalogs import (
     CatalogView,
     ComponentSpec,
@@ -184,10 +196,18 @@ __all__ = [
     "PortKind",
     # bloks and UI catalogs
     "AgentDependencyInput",
+    "ActionDependencyInput",
+    "StateDependencyInput",
+    "ActionDemandInput",
+    "StateDemandInput",
+    "PortMatchInput",
     "ComponentNodeInput",
     "ComponentPropInput",
     "validate_blok",
     "check_context_root",
+    "check_logo_complexity",
+    "check_logo_palette",
+    "RESERVED_ROOTS",
     "local_roots_of",
     "demo_state_for",
     "standard_view",
