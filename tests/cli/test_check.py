@@ -102,3 +102,29 @@ def test_check_refuses_an_app_a_run_would_refuse(tmp_path):
 
     assert result.exit_code == 1
     assert "Thing" in result.output
+
+
+def test_check_lists_what_a_blok_uses_that_its_catalog_does_not_know(tmp_path):
+    """A catalog finding does not block a run, so check says it and still passes."""
+    (tmp_path / "app.py").write_text(
+        VALID + "\napp.blok('panel', '<Card><Slidr /><Button lable=\"Go\" /></Card>')\n"
+    )
+
+    result = _invoke(tmp_path, "check")
+
+    assert result.exit_code == 0, result.output
+    said = " ".join(result.output.split())  # the console wraps long lines
+    assert "'Slidr' is not registered" in said
+    assert "has no props ['lable']" in said
+    assert "2 warnings" in said
+
+
+def test_check_refuses_a_strict_blok_its_catalog_does_not_know(tmp_path):
+    (tmp_path / "app.py").write_text(
+        VALID + "\napp.blok('panel', '<Card><Slidr /></Card>', mode='strict')\n"
+    )
+
+    result = _invoke(tmp_path, "check")
+
+    assert result.exit_code == 1
+    assert "'Slidr' is not registered" in " ".join(result.output.split())

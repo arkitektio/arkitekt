@@ -68,13 +68,17 @@ from arkitekt_spec.declare.blok.validate import (
     check_logo_palette,
     local_roots_of,
     validate_blok,
+    validate_bsx,
 )
 from arkitekt_spec.declare.catalogs import (
+    BlokCheckMode,
+    Catalog,
     CatalogView,
     ComponentSpec,
     Diagnostic,
     OperationSpec,
     standard_view,
+    ui_catalog_view,
 )
 from arkitekt_spec.declare.coercible_types import ToOptimisticProtocol
 from arkitekt_spec.declare.errors import (
@@ -204,6 +208,7 @@ __all__ = [
     "ComponentNodeInput",
     "ComponentPropInput",
     "validate_blok",
+    "validate_bsx",
     "check_context_root",
     "check_logo_complexity",
     "check_logo_palette",
@@ -211,7 +216,10 @@ __all__ = [
     "local_roots_of",
     "demo_state_for",
     "standard_view",
+    "ui_catalog_view",
     "Diagnostic",
+    "BlokCheckMode",
+    "Catalog",
     "CatalogView",
     "ComponentSpec",
     "OperationSpec",

@@ -34,7 +34,7 @@ def test_a_blok_is_validated_against_the_declared_catalog() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
     with pytest.raises(ValueError, match="is not registered in catalog"):
-        app.blok("bad", "<Box><Slidr /></Box>", catalog="electron")
+        app.blok("bad", "<Box><Slidr /></Box>", catalog="electron", mode="strict")
 
 
 def test_declaring_a_catalog_offers_nothing() -> None:

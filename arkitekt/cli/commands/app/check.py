@@ -1,11 +1,13 @@
 """Checking an app: everything a run would refuse, found without running it."""
 
+import warnings
 from typing import Any, List
 
 import typer
+from arkitekt_spec.declare.catalogs import CatalogWarning
 from rich.markup import escape
 
-from arkitekt.app.terminal import done
+from arkitekt.app.terminal import done, notice
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.vars import get_console
@@ -34,12 +36,24 @@ def check(ctx: typer.Context, target: TargetArgument = DEFAULT_TARGET) -> None:
     connects: every action's arguments and results, every structure and the
     service that resolves it. Nothing is connected or logged in to. Exits with 1
     and says where the problem is otherwise, so it also serves in CI.
+
+    What does not block a run is listed as a warning: a blok using a component or
+    prop its catalog does not know (unless it was declared ``mode="strict"``), or
+    an operation no catalog provides.
     """
     console = get_console(ctx)
-    app = load_app_or_exit(ctx, target)
-    snapshot = run_snapshot_or_exit(app)
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always", CatalogWarning)
+        app = load_app_or_exit(ctx, target)
+        snapshot = run_snapshot_or_exit(app)
+    findings = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
+    for warning in findings:
+        notice(console, escape(str(warning.message)))
+    summary = summarize(snapshot.registry)
+    if findings:
+        summary += f" · {_counted(len(findings), 'warning')}"
     done(
         console,
         f"{escape(app.identifier)} {escape(app.version)} is valid",
-        summarize(snapshot.registry),
+        summary,
     )

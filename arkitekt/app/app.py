@@ -65,7 +65,7 @@ from arkitekt_spec.actions import (
 from arkitekt_spec.declare.actors.policy import KEEP, DisconnectPolicy
 from arkitekt_spec.declare.actors.types import Actifier
 from arkitekt_spec.declare.app import AppRegistry
-from arkitekt_spec.declare.catalogs import ComponentSpec, OperationSpec
+from arkitekt_spec.declare.catalogs import BlokCheckMode, ComponentSpec, OperationSpec
 from arkitekt_spec.declare.coercible_types import OptimisticCoercible
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
@@ -1150,6 +1150,7 @@ class App(Generic[Ctx]):
         for_model: Optional[str] = None,
         for_node: Optional[str] = None,
         args: Optional[Mapping[str, Any]] = None,
+        mode: BlokCheckMode = "warning",
     ) -> None:
         r"""Declare a blok, a UI component tree: ``app.blok("monitor", "<Card/>")``.
 
@@ -1162,9 +1163,10 @@ class App(Generic[Ctx]):
                 protocol classes this app :meth:`declare`\ d, by the key the
                 tree uses (``{"camera": CameraProtocol}``). This app's own are
                 inferred.
-            catalog: The UI catalog the blok renders against. When this app has
-                declared it with :meth:`ui_catalog`, the tree's components, props
-                and util operations are checked against it now.
+            catalog: The UI catalog the blok renders against: the standard one
+                when left out, or one this app declared with :meth:`ui_catalog`.
+                The tree's components, props and util operations are checked
+                against it now.
             local_state: The blok's own UI state and its initial values, e.g.
                 ``{"form": {"iterations": 15}}``: roots the tree binds controls
                 to (``bind="form.iterations"``) and reads back in a call
@@ -1187,9 +1189,11 @@ class App(Generic[Ctx]):
                 A client offers the blok on any item they accept ("Open in…"),
                 and the tree reads the item at ``@args.dataset``, null until the
                 blok is opened for one. Html bloks only.
+            mode: How the catalog holds the tree: ``"warning"`` (the default)
+                warns about an unknown component or prop, ``"strict"`` refuses it.
 
         Raises:
-            ValueError: If ``name`` is empty, a declared catalog rejects the tree,
+            ValueError: If ``name`` is empty, the catalog rejects the tree in strict mode,
                 a ``local_state`` key is reserved or names a dependency, the
                 blok's context and target do not fit together, or the tree reads
                 an arg the blok does not declare.
@@ -1207,6 +1211,7 @@ class App(Generic[Ctx]):
             for_model=for_model,
             for_node=for_node,
             args=args,
+            mode=mode,
         )
 
     def register_asset(
