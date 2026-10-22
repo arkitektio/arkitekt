@@ -884,7 +884,8 @@ class App(Generic[Ctx]):
         Args:
             cls: The class, when used bare as ``@app.state``.
             name: The interface the state is offered at. Defaults to the class name.
-            required_locks: Locks an action must hold to change the state.
+            required_locks: Locks every action taking the state holds (inferred), so
+                no two actions command it at once. Not a write guard.
 
         Returns:
             The class, or, with options, a decorator returning it.
