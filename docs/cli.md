@@ -262,16 +262,22 @@ fails at the prompt. `run dev` resolves it again on every reload.
 
 ### `gen` — Code generation
 
-Generates fully typed Python code for your GraphQL API documents using
-[turms](https://github.com/jhnnsrs/turms). Requires `turms` to be installed.
+Code for your GraphQL documents is generated with
+[turms](https://github.com/jhnnsrs/turms), which arkitekt neither installs nor
+runs. `gen init` writes the GraphQL config for the services your app declares:
 
 ```bash
-arkitekt gen compile   # generate code once
-arkitekt gen watch     # regenerate whenever documents change
+arkitekt gen init        # schemas/<service>.graphql, graphql/<service>/, graphql.config.yaml
+uvx --with rekuest turms gen     # generate code once
+uvx --with rekuest turms watch   # regenerate whenever documents change
 ```
 
-`gen compile` accepts `--config` to point at a specific GraphQL config file
-(defaults to the `graphql.config.yaml` in the app directory).
+turms imports each service's client while it generates, so the service packages
+go next to it with `--with`; `gen init` prints the command for your services.
+
+Only services that ship a schema and a turms project get a project. Pass
+`--service` to pick some, `--api` to change the output directory (default `api`),
+and `--force` to replace a project the config already has; others are kept.
 
 📖 <https://arkitekt.live/docs/cli/gen>
 

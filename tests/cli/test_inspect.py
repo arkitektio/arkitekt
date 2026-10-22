@@ -213,6 +213,63 @@ def test_inspect_services_unknown_schema(app_dir):
     assert "Unknown service" in result.stdout + result.stderr
 
 
+# ---------------------------------------------------------------------------
+# gen init
+# ---------------------------------------------------------------------------
+
+
+def test_gen_init_writes_a_project_for_each_service(app_dir):
+    """`gen init` points rekuest's turms project at the app's own files."""
+    import yaml
+
+    result = _run_cli(app_dir, "gen", "init")
+    assert result.returncode == 0, result.stderr
+    assert "uvx --with rekuest turms gen" in " ".join(result.stdout.split())
+
+    projects = yaml.safe_load((app_dir / "graphql.config.yaml").read_text())["projects"]
+    project = projects["rekuest"]
+    assert project["schema"] == "schemas/rekuest.graphql"
+    assert project["documents"] == "graphql/rekuest/**/*.graphql"
+    turms = project["extensions"]["turms"]
+    assert turms["out_dir"] == "api"
+    assert turms["generated_name"] == "rekuest.py"
+    assert not turms["dump_configuration"] and not turms["dump_schema"]
+    assert "documents" not in turms
+    # the sibling project it names lives in rekuest's repo, not in this config
+    assert all(e["from_project"] is None for e in turms["external_modules"])
+    assert "type" in (app_dir / "schemas" / "rekuest.graphql").read_text()
+    assert (app_dir / "graphql" / "rekuest").is_dir()
+
+
+def test_gen_init_keeps_existing_projects(app_dir):
+    import yaml
+
+    (app_dir / "graphql.config.yaml").write_text(
+        yaml.safe_dump({"projects": {"rekuest": {"schema": "mine"}, "other": {"schema": "x"}}})
+    )
+    result = _run_cli(app_dir, "gen", "init")
+    assert result.returncode != 0  # nothing new to write
+    assert "--force" in " ".join(result.stdout.split())
+
+    result = _run_cli(app_dir, "gen", "init", "--force")
+    assert result.returncode == 0, result.stderr
+    projects = yaml.safe_load((app_dir / "graphql.config.yaml").read_text())["projects"]
+    assert projects["other"] == {"schema": "x"}
+    assert projects["rekuest"]["schema"] == "schemas/rekuest.graphql"
+
+
+def test_gen_init_unknown_service(app_dir):
+    result = _run_cli(app_dir, "gen", "init", "--service", "nope")
+    assert result.returncode != 0
+    assert "declares no service nope" in " ".join((result.stdout + result.stderr).split())
+
+
+def test_gen_points_at_turms():
+    result = CliRunner().invoke(cli_app, ["gen"])
+    assert result.exit_code == 0, result.output
+    assert "turms gen" in result.output
+
+
 def test_inspect_lifecycle(app_dir):
     """`inspect lifecycle -mr` emits the three hook sections."""
     result = _run_cli(app_dir, "inspect", "lifecycle", "-mr")

@@ -1,26 +1,27 @@
-
 import typer
 
-from .watch import watch
-from .compile import compile
+from arkitekt.cli.vars import get_console
+
+from .init import GEN_HINT, init
 
 
-gen = typer.Typer(no_args_is_help=True)
+gen = typer.Typer(invoke_without_command=True)
 
 
 @gen.callback()
 def gen_callback(ctx: typer.Context) -> None:
-    """Codegeneration tools for Arkitekt Apps (requires turms)
+    """Code generation for Arkitekt Apps, with turms
 
-    Code generation for API's is done with the help of GraphQL Code Generation
-    that is powered by [link=https://github.com/jhnnsrs/turms]turms[/link]. Simply
-    design your API in the documents folder and run `arkitekt gen compile` to
-    create fully typed code for your API. You can also run `arkitekt gen watch`
-    to automatically generate code when your documents change. This is useful
-    for development.
+    Code generation for API's is done with
+    [link=https://github.com/jhnnsrs/turms]turms[/link], which arkitekt does not
+    install or run. `arkitekt gen init` writes a GraphQL config for the services
+    your app uses; write your operations, then run
+    `uvx --with <service packages> turms gen` (or `turms watch`) in the app
+    directory. turms imports each service's client while it generates.
 
     """
+    if ctx.invoked_subcommand is None:
+        get_console(ctx).print(GEN_HINT)
 
 
-gen.command("watch")(watch)
-gen.command("compile")(compile)
+gen.command("init")(init)
