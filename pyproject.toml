@@ -7,7 +7,7 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "fakts[crypto]>=6.0",
+    "fakts[crypto]>=6.1",
     "koil>=3.3.6",
     "rath>=4",
     "click>=8.2.0",
@@ -24,7 +24,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=3.18",
+    "arkitekt-spec>=3.19.1",
 ]
 
 [project.optional-dependencies]
@@ -81,7 +81,7 @@ tqdm = [
 ]
 # Reach services over the hub's private mesh (a native mesh node, via fakts).
 mesh = [
-    "fakts[mesh]>=6.0",
+    "fakts[mesh]>=6.1",
 ]
 all = [
     # Self-referential extras keep `all` complete without duplicating (and drifting)
