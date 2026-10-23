@@ -26,6 +26,7 @@ from arkitekt_spec.actions import (
     ActionDemandInput,
     ActionDependencyInput,
     AgentDependencyInput,
+    ArgPortInput,
     AssetKind,
     ComponentContext,
     ComponentNodeInput,
@@ -63,6 +64,7 @@ from arkitekt_spec.declare.blok.registry import demo_state_for
 from arkitekt_spec.declare.blok.unparse import to_bsx
 from arkitekt_spec.declare.blok.validate import (
     RESERVED_ROOTS,
+    check_args_reads,
     check_context_root,
     check_logo_complexity,
     check_logo_palette,
@@ -71,6 +73,7 @@ from arkitekt_spec.declare.blok.validate import (
     validate_bsx,
 )
 from arkitekt_spec.declare.catalogs import (
+    BLOK_ARGS_ROOT,
     BlokCheckMode,
     Catalog,
     CatalogView,
@@ -104,6 +107,7 @@ from arkitekt_spec.declare.task import (
     StateRef,
     StateRequirement,
     Task,
+    TaskBlok,
     aretry,
     retry,
 )
@@ -169,6 +173,7 @@ __all__ = [
     "AssignmentHook",
     "AssignPrompt",
     "Decision",
+    "TaskBlok",
     "HookInput",
     "HookKind",
     "CallTarget",
@@ -205,6 +210,7 @@ __all__ = [
     "ActionDemandInput",
     "StateDemandInput",
     "PortMatchInput",
+    "ArgPortInput",
     "ComponentNodeInput",
     "ComponentPropInput",
     "validate_blok",
@@ -212,7 +218,9 @@ __all__ = [
     "check_context_root",
     "check_logo_complexity",
     "check_logo_palette",
+    "check_args_reads",
     "RESERVED_ROOTS",
+    "BLOK_ARGS_ROOT",
     "local_roots_of",
     "demo_state_for",
     "standard_view",
