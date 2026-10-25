@@ -59,6 +59,7 @@ from arkitekt_spec.declare.agents.errors import NoCallerError
 from arkitekt_spec.declare.annotations import Default, Description, Provides, Requires, Units
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.blok.from_svg import SvgConversionError, SvgConversionWarning, from_svg
+from arkitekt_spec.declare.blok.action import ActionBlok
 from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
 from arkitekt_spec.declare.blok.registry import demo_state_for
 from arkitekt_spec.declare.blok.unparse import to_bsx
@@ -232,6 +233,7 @@ __all__ = [
     "ComponentSpec",
     "OperationSpec",
     "model_field",
+    "ActionBlok",
     "bsx",
     "to_bsx",
     "from_svg",

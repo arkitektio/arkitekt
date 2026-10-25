@@ -65,6 +65,7 @@ from arkitekt_spec.actions import (
 from arkitekt_spec.declare.actors.policy import KEEP, DisconnectPolicy
 from arkitekt_spec.declare.actors.types import Actifier
 from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.blok.action import ActionBlok
 from arkitekt_spec.declare.catalogs import BlokCheckMode, ComponentSpec, OperationSpec
 from arkitekt_spec.declare.coercible_types import OptimisticCoercible
 from arkitekt_spec.declare.provider import Provider
@@ -439,6 +440,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
+        bloks: Optional[List[ActionBlok]] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def action(
@@ -468,6 +470,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
+        bloks: Optional[List[ActionBlok]] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
@@ -510,6 +513,13 @@ class App(Generic[Ctx]):
                 this app declares (``app.blok(..., context="action_logo")``), or a
                 tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
                 one, a client shows the app's default logo.
+            bloks: The action's own bloks, one per context: how a client shows a run
+                of it. ``ActionBlok(bsx("<Overlay>...</Overlay>"), context="overlay")``
+                is drawn into the space that hosts the run, its ``<At dependency="robot">``
+                anchored at the agent the run got for that parameter; ``context="html"``
+                is a task panel. They name devices only by the function's dependency
+                parameters, read the run under ``@task``, are checked now, and are not
+                part of the action's hash.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -546,6 +556,7 @@ class App(Generic[Ctx]):
                 protocols=protocols,
                 effects=effects,
                 logo=logo,
+                bloks=bloks,
             )
 
         if function is not None:
@@ -579,6 +590,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
+        bloks: Optional[List[ActionBlok]] = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as an action, as a plain call: ``app.register_action(function, name=...)``.
 
@@ -621,6 +633,8 @@ class App(Generic[Ctx]):
                 protocols=protocols,
                 effects=effects,
                 logo=logo,
+                # Only when given, so an arkitekt-spec without action bloks still registers the rest.
+                **({"bloks": bloks} if bloks else {}),
             ),
         )
         return decorate(function)
@@ -655,6 +669,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
+        bloks: Optional[List[ActionBlok]] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def workflow(
@@ -684,6 +699,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
+        bloks: Optional[List[ActionBlok]] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a workflow: an action that may call other actions. ``@app.workflow``.
 
@@ -735,6 +751,13 @@ class App(Generic[Ctx]):
                 this app declares (``app.blok(..., context="action_logo")``), or a
                 tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
                 one, a client shows the app's default logo.
+            bloks: The action's own bloks, one per context: how a client shows a run
+                of it. ``ActionBlok(bsx("<Overlay>...</Overlay>"), context="overlay")``
+                is drawn into the space that hosts the run, its ``<At dependency="robot">``
+                anchored at the agent the run got for that parameter; ``context="html"``
+                is a task panel. They name devices only by the function's dependency
+                parameters, read the run under ``@task``, are checked now, and are not
+                part of the action's hash.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -771,6 +794,7 @@ class App(Generic[Ctx]):
                 protocols=protocols,
                 effects=effects,
                 logo=logo,
+                bloks=bloks,
             )
 
         if function is not None:
@@ -804,6 +828,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
+        bloks: Optional[List[ActionBlok]] = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as a workflow, as a plain call: ``app.register_workflow(function, name=...)``.
 
@@ -847,6 +872,8 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 execution=Execution.WORKFLOW,
+                # Only when given, so an arkitekt-spec without action bloks still registers the rest.
+                **({"bloks": bloks} if bloks else {}),
             ),
         )
         return decorate(function)
