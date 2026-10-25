@@ -1206,6 +1206,8 @@ class App(Generic[Ctx]):
                 an arg the blok does not declare, or ``persist`` names a key that
                 is not a local.
         """
+        # Passed only when given: an arkitekt-spec older than `persist` still takes every other blok.
+        kept: Dict[str, Union[Mapping[str, Optional[str]], Sequence[str]]] = {} if persist is None else {"persist": persist}
         self.registry.register_blok(
             name,
             component,
@@ -1219,8 +1221,8 @@ class App(Generic[Ctx]):
             for_model=for_model,
             for_node=for_node,
             args=args,
-            persist=persist,
             mode=mode,
+            **kept,
         )
 
     def register_asset(
