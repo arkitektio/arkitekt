@@ -1151,6 +1151,7 @@ class App(Generic[Ctx]):
         for_model: Optional[str] = None,
         for_node: Optional[str] = None,
         args: Optional[Mapping[str, Any]] = None,
+        persist: Optional[Union[Mapping[str, Optional[str]], Sequence[str]]] = None,
         mode: BlokCheckMode = "warning",
     ) -> None:
         r"""Declare a blok, a UI component tree: ``app.blok("monitor", "<Card/>")``.
@@ -1190,14 +1191,20 @@ class App(Generic[Ctx]):
                 A client offers the blok on any item they accept ("Open in…"),
                 and the tree reads the item at ``@args.dataset``, null until the
                 blok is opened for one. Html bloks only.
+            persist: The locals a renderer may keep between openings, on the
+                device that set them and never on a server: ``["pose"]``, or
+                ``{"pose": "Where the gizmo left it"}`` with a description. Each
+                is a ``local_state`` (or ``demo_state``) key whose value there is
+                the default, e.g. a pose set once with a gizmo.
             mode: How the catalog holds the tree: ``"warning"`` (the default)
                 warns about an unknown component or prop, ``"strict"`` refuses it.
 
         Raises:
             ValueError: If ``name`` is empty, the catalog rejects the tree in strict mode,
                 a ``local_state`` key is reserved or names a dependency, the
-                blok's context and target do not fit together, or the tree reads
-                an arg the blok does not declare.
+                blok's context and target do not fit together, the tree reads
+                an arg the blok does not declare, or ``persist`` names a key that
+                is not a local.
         """
         self.registry.register_blok(
             name,
@@ -1212,6 +1219,7 @@ class App(Generic[Ctx]):
             for_model=for_model,
             for_node=for_node,
             args=args,
+            persist=persist,
             mode=mode,
         )
 

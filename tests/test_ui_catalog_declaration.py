@@ -64,6 +64,19 @@ def test_blok_passes_its_local_state_through() -> None:
     assert app.registry.get_declared_bloks()["form"].demo_state == {"form": {"iterations": 15}}
 
 
+def test_blok_passes_its_persisted_locals_through() -> None:
+    app = App("demo")
+    app.blok(
+        "posed",
+        '<Slider bind="pose.x" />',
+        local_state={"pose": {"x": 0}},
+        persist={"pose": "Where the gizmo left it"},
+    )
+
+    (local,) = app.registry.get_declared_bloks()["posed"].persist
+    assert (local.key, local.description) == ("pose", "Where the gizmo left it")
+
+
 SVG = ComponentSpec(name="SVG", accepts_children=True, children_context="LOGO", not_downstream_of=("SVG", "ActionLogo"))
 ACTION_LOGO = ComponentSpec(name="ActionLogo", accepts_children=True, children_context="LOGO", not_downstream_of=("SVG", "ActionLogo"))
 PATH = ComponentSpec(
