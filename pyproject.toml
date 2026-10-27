@@ -24,7 +24,7 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=3.19.1",
+    "arkitekt-spec>=4.0",
 ]
 
 [project.optional-dependencies]
@@ -34,22 +34,22 @@ dependencies = [
 rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
-    "rekuest>=8.6",
-    "arkitekt-runtime>=5.2",
+    "rekuest>=11.0.1",
+    "arkitekt-runtime>=6.0",
 ]
 alpaka = [
-    "alpaka>=3.1.1",
+    "alpaka>=3.4",
 ]
 kraph = [
     "kraph>=4.1.1",
 ]
 mikro = [
-    "mikro>=8.0",
+    "mikro>=12.0.1",
 ]
 # The kabinet client, for apps that manage deployments. The plugin commands do not
 # need it: they speak arkitekt-spec.
 kabinet = [
-    "kabinet>=5.0.1",
+    "kabinet>=6.0",
 ]
 elektro = [
     "elektro>=5",
@@ -65,14 +65,14 @@ unlok = [
 ]
 # Serving an app over FastAPI (arkitekt.serve): server mode, without rekuest.
 serve = [
-    "arkitekt-fastapi>=2.1",
+    "arkitekt-fastapi>=3.0",
 ]
 # Qt integration (arkitekt.qt / the MagicBar). qtpy still needs an actual
 # binding (PyQt5/6 or PySide2/6) supplied by the application.
 qt = [
     "qtpy>=2.4.3",
     # The Qt actifiers are the execution core's.
-    "arkitekt-runtime[qt]>=5.2",
+    "arkitekt-runtime[qt]>=6.0",
 ]
 # `arkitekt.tqdm`: a tqdm that reports its progress to the task it is handed.
 # The module shipped for a long time without this, so importing it raised.
@@ -111,16 +111,16 @@ dev-dependencies = [
     "pytest-asyncio>=1.2",
     "pytest-cov>=6",
     "pytest-aiohttp>=1.0.4,<2",
-    "mikro>=8.0",
+    "mikro>=12.0.1",
     "python-semantic-release>=9.21.1",
     # Builds the hub tests/integration runs against; 0.17 is where a hub is a dokker
     # deployment a test can look into.
-    "konstruktor>=0.23",
+    "konstruktor>=0.34.1",
     "qtpy>=2.4.3",
     "numpy>=2",
-    "rekuest>=8.6",
-    "kabinet>=5.0.1",
-    "alpaka>=3.1.1",
+    "rekuest>=11.0.1",
+    "kabinet>=6.0",
+    "alpaka>=3.4",
     "kraph>=4.1.1",
     "fluss>=4.3.2",
     "lovekit>=3.1.1",
