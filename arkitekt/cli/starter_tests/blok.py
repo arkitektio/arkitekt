@@ -134,7 +134,7 @@ def test_analysing_an_image_writes_what_it_found_to_the_state():
     assert state.image_name == "squares"
     assert (state.minimum, state.maximum) == (0.0, 1.0)
     assert len(state.histogram) == 4 and max(state.histogram) == 100
-    assert state.history == ["squares: 4 objects"] and state.analysed == 1
+    assert state.history == ["#1 squares: 4 objects"] and state.analysed == 1
     # It ends where it started: not busy, and says so.
     assert (state.busy, state.status, state.progress) == (False, "Idle", 100)
     # The caller heard of every step, in order.
@@ -149,6 +149,7 @@ def test_the_history_keeps_only_the_last_runs():
         analyse_image(four_squares(), state, SilentTask())
 
     assert len(state.history) == HISTORY_LENGTH
+    assert len(set(state.history)) == HISTORY_LENGTH  # the panel keys its list by the entry
     assert state.analysed == HISTORY_LENGTH + 2
 
 
@@ -185,10 +186,18 @@ def test_the_panel_is_declared_and_everything_it_names_exists():
     # an action it names that the app does not have fails here.
     panel = app.registry.get_declared_bloks()["analysis"]
 
-    assert panel.demo_state["form"] == {"objects": 12}
-    assert set(panel.demo_state["self"]["Analysis"]) >= {"status", "progress", "objects", "histogram", "history"}
-    # One record for each call a button keeps at hand.
-    assert {"generated", "analysed", "segmented"} <= set(panel.demo_state)
+    assert [(local.key, local.default) for local in panel.locals] == [("objects", 12)]
+    # Its one dependency is the agent itself, demanding what the panel reads and calls.
+    (agent,) = panel.dependencies
+    assert {state.key for state in agent.state_dependencies or ()} == {"Analysis"}
+    assert {action.key for action in agent.action_dependencies or ()} == {
+        "generate_test_image",
+        "analyse_image",
+        "segment_image",
+        "clear_history",
+    }
+    # A preview has a placeholder for every field of the state it reads.
+    assert set(panel.demo.deps["self"]["Analysis"]) >= {"status", "progress", "objects", "histogram", "history"}
 
 
 def test_the_app_offers_its_actions():

@@ -42,6 +42,7 @@ from typing import (
     ParamSpec,
     Self,
     Sequence,
+    Tuple,
     TypeVar,
     Union,
     cast,
@@ -50,9 +51,9 @@ from typing import (
 )
 
 from arkitekt_spec.actions import (
-    AgentDependencyInput,
     AssetKind,
     AssignWidgetInput,
+    BlokDemoInput,
     ComponentNodeInput,
     EffectInput,
     Effects,
@@ -65,15 +66,17 @@ from arkitekt_spec.actions import (
 from arkitekt_spec.declare.actors.policy import KEEP, DisconnectPolicy
 from arkitekt_spec.declare.actors.types import Actifier
 from arkitekt_spec.declare.app import AppRegistry
-from arkitekt_spec.declare.blok.action import ActionBlok
+from arkitekt_spec.declare.blok.action import ActionBloks
+from arkitekt_spec.declare.blok.declarations import Local, Query, Subscription
 from arkitekt_spec.declare.catalogs import BlokCheckMode, ComponentSpec, OperationSpec
 from arkitekt_spec.declare.coercible_types import OptimisticCoercible
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
-from arkitekt_spec.declare.structures.convert import model_identifier
+from arkitekt_spec.declare.structures.convert import AppNamespace, source_root
 from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.structures.utils import id_shrink
+from arkitekt_spec.scalars import JSONSerializable
 from fakts.models import Manifest, PublicSource, Requirement
 
 from arkitekt.app.snapshot import RunSnapshot
@@ -115,19 +118,29 @@ def _requirements_of(registry: AppRegistry) -> List[Requirement]:
     )
 
 
-def _caller_file(depth: int = 2) -> Path:
-    """The file some caller up the stack is defined in.
+def _caller(depth: int = 2) -> Tuple[Path, Optional[str]]:
+    """The file and module some caller up the stack is defined in.
 
     Args:
         depth: How many frames up the caller is; 2 is the caller of the function
             that calls this one.
 
     Returns:
-        That frame's file name. Not a file on disk for code typed into a
-        console (``<stdin>``).
+        That frame's file name -- not a file on disk for code typed into a
+        console (``<stdin>``) -- and its module's ``__name__`` (``__main__`` for a
+        script that is run).
     """
+    frame = inspect.stack()[depth].frame
+    name = frame.f_globals.get("__name__")
     # Path, not "/": on Windows a frame's filename uses backslashes.
-    return Path(inspect.stack()[depth].filename)
+    return Path(frame.f_code.co_filename), name if isinstance(name, str) else None
+
+
+def _app_namespace(identifier: str, caller: Tuple[Path, Optional[str]]) -> AppNamespace:
+    """The namespace of an app named ``identifier`` constructed by ``caller`` (from
+    :func:`_caller`): what counts as the app's own source."""
+    constructed_in, module = caller
+    return AppNamespace(identifier=identifier, root=source_root(constructed_in), module=module)
 
 
 def _app_root(constructed_in: Path) -> Path:
@@ -143,7 +156,14 @@ class App(Generic[Ctx]):
 
     Args:
         identifier: The app's globally unique identifier. Defaults to the name of
-            the file that constructs it.
+            the file that constructs it. It also namespaces the identifiers derived
+            for the enums, memory structures and models the app defines itself
+            (``@<identifier>/...``), so they are the same however the app is
+            launched. A class is the app's own when its module is ``__main__``, the
+            module constructing the app, or a file under that module's top-level
+            package (or script directory) outside ``site-packages``; any other
+            class -- a library's -- keeps the identifier of its module
+            (``@numpy/ndarray``), the same in every app.
         version: The app's version. An image built from a branch carries the
             version of that build in ``ARKITEKT_APP_VERSION``, which then wins:
             the source of a branch still names the last release, and an image must
@@ -233,7 +253,8 @@ class App(Generic[Ctx]):
         app_context: Optional[type[Ctx]] = None,
         effects: Optional[Effects] = None,
     ) -> None:
-        constructed_in = _caller_file()
+        caller = _caller()
+        constructed_in = caller[0]
         self.identifier: str = identifier or constructed_in.stem
         self.version = os.environ.get(VERSION_ENV) or version
         self.description = description
@@ -242,6 +263,13 @@ class App(Generic[Ctx]):
         self.author = author
         self.public_sources: List[PublicSource] = list(public_sources or [])
         self.registry: AppRegistry = registry if registry is not None else AppRegistry()
+        # What a derived identifier (an enum's, a memory structure's, a model's) is
+        # namespaced by: the app for a class it defines itself, never the module
+        # that class happens to be in -- `__main__` when the app's file is run, its
+        # name when it is imported. Library classes keep their module's.
+        # A wrapper constructing the app for its caller (QtApp, easy()) sets it again
+        # from that caller.
+        self.registry.structure_registry.namespace = _app_namespace(self.identifier, caller)
         if root is not None:
             self.registry.root = Path(root).resolve()
         elif self.registry.root is None:
@@ -440,7 +468,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[List[ActionBlok]] = None,
+        bloks: Optional[ActionBloks] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def action(
@@ -470,7 +498,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[List[ActionBlok]] = None,
+        bloks: Optional[ActionBloks] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
@@ -510,14 +538,15 @@ class App(Generic[Ctx]):
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
             logo: The logo that draws the action: the name of an action logo blok
-                this app declares (``app.blok(..., context="action_logo")``), or a
+                this app declares (``app.blok(name, "<ActionLogo>...</ActionLogo>")``), or a
                 tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
                 one, a client shows the app's default logo.
-            bloks: The action's own bloks, one per context: how a client shows a run
-                of it. ``ActionBlok(bsx("<Overlay>...</Overlay>"), context="overlay")``
-                is drawn into the space that hosts the run, its ``<At dependency="robot">``
-                anchored at the agent the run got for that parameter; ``context="html"``
-                is a task panel. They name devices only by the function's dependency
+            bloks: The action's own bloks, one per context, which each one's root
+                names: an ``"<Overlay>...</Overlay>"`` is drawn into the space that hosts
+                the run, its ``<Anchor dep="robot">`` anchored at the agent the run got
+                for that parameter; an ``"<Html>...</Html>"`` is a task panel. A bare
+                tree, or an ``ActionBlok`` for locals and the like; one needs no list.
+                They name devices only by the function's dependency
                 parameters, read the run under ``@task``, are checked now, and are not
                 part of the action's hash.
 
@@ -590,7 +619,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[List[ActionBlok]] = None,
+        bloks: Optional[ActionBloks] = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as an action, as a plain call: ``app.register_action(function, name=...)``.
 
@@ -669,7 +698,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[List[ActionBlok]] = None,
+        bloks: Optional[ActionBloks] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def workflow(
@@ -699,7 +728,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[List[ActionBlok]] = None,
+        bloks: Optional[ActionBloks] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a workflow: an action that may call other actions. ``@app.workflow``.
 
@@ -748,14 +777,15 @@ class App(Generic[Ctx]):
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
             logo: The logo that draws the action: the name of an action logo blok
-                this app declares (``app.blok(..., context="action_logo")``), or a
+                this app declares (``app.blok(name, "<ActionLogo>...</ActionLogo>")``), or a
                 tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
                 one, a client shows the app's default logo.
-            bloks: The action's own bloks, one per context: how a client shows a run
-                of it. ``ActionBlok(bsx("<Overlay>...</Overlay>"), context="overlay")``
-                is drawn into the space that hosts the run, its ``<At dependency="robot">``
-                anchored at the agent the run got for that parameter; ``context="html"``
-                is a task panel. They name devices only by the function's dependency
+            bloks: The action's own bloks, one per context, which each one's root
+                names: an ``"<Overlay>...</Overlay>"`` is drawn into the space that hosts
+                the run, its ``<Anchor dep="robot">`` anchored at the agent the run got
+                for that parameter; an ``"<Html>...</Html>"`` is a task panel. A bare
+                tree, or an ``ActionBlok`` for locals and the like; one needs no list.
+                They name devices only by the function's dependency
                 parameters, read the run under ``@task``, are checked now, and are not
                 part of the action's hash.
 
@@ -828,7 +858,7 @@ class App(Generic[Ctx]):
         protocols: Optional[List[str]] = None,
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[List[ActionBlok]] = None,
+        bloks: Optional[ActionBloks] = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as a workflow, as a plain call: ``app.register_workflow(function, name=...)``.
 
@@ -1057,7 +1087,7 @@ class App(Generic[Ctx]):
             C,
             self.registry.model(
                 cls,
-                identifier=identifier or model_identifier(self.identifier, cls),
+                identifier=identifier,
                 description=description,
             ),
         )
@@ -1167,89 +1197,88 @@ class App(Generic[Ctx]):
         name: str,
         component: Union[str, ComponentNodeInput],
         description: Optional[str] = None,
-        demo_state: Optional[Dict[str, Any]] = None,
-        dependencies: Optional[
-            Union[Mapping[str, type], Sequence[AgentDependencyInput]]
-        ] = None,
-        catalog: Optional[str] = None,
-        local_state: Optional[Dict[str, Any]] = None,
-        context: str = "html",
+        *,
+        locals: Optional[Mapping[str, Union[Local[object], JSONSerializable]]] = None,
+        demo: Optional[Union[BlokDemoInput, Mapping[str, JSONSerializable]]] = None,
+        queries: Optional[Mapping[str, Query]] = None,
+        subscriptions: Optional[Mapping[str, Subscription]] = None,
+        catalogs: Optional[Sequence[str]] = None,
+        module: Optional[str] = None,
         default: bool = False,
         for_model: Optional[str] = None,
         for_node: Optional[str] = None,
-        args: Optional[Mapping[str, Any]] = None,
-        persist: Optional[Union[Mapping[str, Optional[str]], Sequence[str]]] = None,
+        args: Optional[Mapping[str, object]] = None,
         mode: BlokCheckMode = "warning",
     ) -> None:
-        r"""Declare a blok, a UI component tree: ``app.blok("monitor", "<Card/>")``.
+        r"""Declare a blok of this app's agent (blok language v2): ``app.blok("monitor", "<Html><Card/></Html>")``.
+
+        The tree reads the agent as ``self``: ``self.<state>.<field>``,
+        ``self.tasks.<action>``, ``self.assets.<name>``, and calls it as
+        ``self.<action>(name: value) into <record>``. What it reads of ``self``
+        becomes its one dependency when the agent is built. It is checked now,
+        by the spec's validator, against the language and its catalog: an error
+        raises, a warning is a :class:`~arkitekt_spec.declare.catalogs.CatalogWarning`.
 
         Args:
             name: The blok's name.
-            component: The component tree, as BSX or already parsed.
+            component: The component tree, as v2 BSX or already parsed. Its root
+                names the context: ``<Html>`` for a panel, ``<Scene>`` for a full 3D
+                view, ``<AgentLogo>`` for the app's logo or ``<ActionLogo>`` for an
+                action's. An ``<Overlay>`` belongs to an action (``bloks=``).
             description: What the blok shows.
-            demo_state: State to render the blok with when there is none.
-            dependencies: Other apps' actions and states the blok uses: the
-                protocol classes this app :meth:`declare`\ d, by the key the
-                tree uses (``{"camera": CameraProtocol}``). This app's own are
-                inferred.
-            catalog: The UI catalog the blok renders against: the standard one
-                when left out, or one this app declared with :meth:`ui_catalog`.
-                The tree's components, props and util operations are checked
-                against it now.
-            local_state: The blok's own UI state and its initial values, e.g.
-                ``{"form": {"iterations": 15}}``: roots the tree binds controls
-                to (``bind="form.iterations"``) and reads back in a call
-                (``@self.run(iterations=form.iterations)``).
-            context: The renderer for the blok's root: ``"html"`` for a panel,
-                ``"scene"`` for a full 3D view, whose root is a ``<Scene>``, or
-                ``"logo"`` for the app's logo, whose root is an ``<SVG>``. A logo
-                is drawn against ``demo_state`` only, never the live state.
-            default: Whether this is the app's default blok for its context:
-                the panel, the 3D view or the logo a client shows for the app.
+            locals: Its form state, written only through ``bind`` on a control
+                (``<Input bind={iterations} />``) and read bare in a call:
+                ``{"iterations": Local(15, persist=True)}``. A local is a port, and
+                ``Local()`` is usually enough: its kind comes, in order, from a type
+                (``Local[float]()``, ``Local(type=list[str])``, a registered structure),
+                an action's argument (``Local.like(deconvolve, "iterations")``, which
+                copies that port), its default (``Local(15)`` is an INT), the call it is
+                passed to whole, or the control bound to it; else it is ANY, checked
+                against nothing. A bare value is a local with that default.
+            demo: What a preview renders it with, mirroring the roots it reads:
+                ``{"deps": {"self": {...}}, "args": {...}, "queries": {...}}``.
+                Placeholders for the states of ``self`` it reads when left out.
+            queries: Its declared reads, ``queries.<name>``, each a :class:`Query`.
+            subscriptions: Its declared streams, ``subscriptions.<name>``, each a
+                :class:`Subscription`.
+            catalogs: The catalogs it needs (``"ui@1"``, ``"scene@1"``); those its
+                components come from when left out.
+            module: The module (an app's own unversioned extras) it renders
+                against besides its catalogs: the Orkestrator's when left out, or
+                one this app declared with :meth:`ui_catalog`.
+            default: Whether this is the app's default blok for its context.
                 Declaring another default for the same context replaces it.
-            for_model: The model (``"sha256:..."``) this blok decorates: a
-                viewer showing that model, in any app's scene, offers this blok
-                where ``for_node`` is clicked. Html bloks only.
+            for_model: The model (``"sha256:..."``) this blok decorates: a viewer
+                showing that model offers it where ``for_node`` is clicked. Html
+                bloks only.
             for_node: The node of ``for_model`` to attach to; the model's root
                 when left out.
             args: The items the blok is opened for, typed like an action's
-                arguments (``{"dataset": ArrayDataset}``; ``Optional`` for one it
-                can do without, ``Annotated[..., Requires(...)]`` to narrow it).
-                A client offers the blok on any item they accept ("Open in…"),
-                and the tree reads the item at ``@args.dataset``, null until the
-                blok is opened for one. Html bloks only.
-            persist: The locals a renderer may keep between openings, on the
-                device that set them and never on a server: ``["pose"]``, or
-                ``{"pose": "Where the gizmo left it"}`` with a description. Each
-                is a ``local_state`` (or ``demo_state``) key whose value there is
-                the default, e.g. a pose set once with a gizmo.
-            mode: How the catalog holds the tree: ``"warning"`` (the default)
-                warns about an unknown component or prop, ``"strict"`` refuses it.
+                arguments (``{"dataset": ArrayDataset}``) and read as
+                ``args.dataset``. Html bloks only.
+            mode: ``"warning"`` (the default) warns about a catalog finding,
+                ``"strict"`` refuses it.
 
         Raises:
-            ValueError: If ``name`` is empty, the catalog rejects the tree in strict mode,
-                a ``local_state`` key is reserved or names a dependency, the
-                blok's context and target do not fit together, the tree reads
-                an arg the blok does not declare, or ``persist`` names a key that
-                is not a local.
+            ValueError: If the BSX does not parse or the tree breaks a rule of the
+                language (a :class:`~arkitekt_spec.blok.vocabulary.BlokError` with its
+                code), or the declaration contradicts itself.
         """
-        # Passed only when given: an arkitekt-spec older than `persist` still takes every other blok.
-        kept: Dict[str, Union[Mapping[str, Optional[str]], Sequence[str]]] = {} if persist is None else {"persist": persist}
         self.registry.register_blok(
             name,
             component,
             description=description,
-            demo_state=demo_state,
-            dependencies=dependencies,
-            catalog=catalog,
-            local_state=local_state,
-            context=context,
+            locals=locals,
+            demo=demo,
+            queries=queries,
+            subscriptions=subscriptions,
+            catalogs=catalogs,
+            module=module,
             default=default,
             for_model=for_model,
             for_node=for_node,
             args=args,
             mode=mode,
-            **kept,
         )
 
     def register_asset(
@@ -1263,14 +1292,14 @@ class App(Generic[Ctx]):
     ) -> None:
         """Register a file the app uses, under the name its bloks call it by.
 
-        A blok names it as ``@self.assets.<name>``: the model of a scene blok, an
+        A blok names it as ``self.assets.<name>``: the model of a scene blok, an
         image in a panel::
 
             app.register_asset("scope", "models/scope.glb")
             app.register_asset("logo", "art/logo.png")
 
-            app.blok("view", bsx('<Scene><Model src="@self.assets.scope" /></Scene>'), context="scene")
-            app.blok("panel", bsx('<img src="@self.assets.logo" />'))
+            app.blok("view", '<Scene><Model src={self.assets.scope} /></Scene>')
+            app.blok("panel", '<Html><Image src={self.assets.logo} /></Html>')
 
         When the app runs, a file the server does not hold yet is uploaded. The
         server checks it against its hash and the rules of its kind; one it
@@ -1312,24 +1341,24 @@ class App(Generic[Ctx]):
         operations: Optional[Sequence[OperationSpec]] = None,
         description: Optional[str] = None,
     ) -> None:
-        """Declare a UI catalog: what a renderer can draw and evaluate.
+        """Declare a module: what a renderer draws and evaluates beyond the spec's catalogs.
 
-        Bloks naming it are validated against it offline, when they are declared,
-        rather than only once the server sees them. The same declaration is what a
-        UI app uploads with ``registerUiCatalog``.
+        Bloks naming it as their ``module`` are validated against it offline, when they
+        are declared, rather than only once the server sees them. The same declaration
+        is what a UI app uploads with ``registerModule``.
 
         Unlike the other declarations this offers nothing and needs no agent: a UI
-        app registering its catalog, or an author declaring one purely to validate,
+        app registering its module, or an author declaring one purely to validate,
         should not be made to serve.
 
         Args:
-            name: The catalog's name, as bloks refer to it.
+            name: The module's name, as bloks name it (``module="electron"``).
             components: The components the UI can render.
             operations: Pure operations the UI can evaluate, extending the base catalog.
-            description: What the catalog is.
+            description: What the module is.
 
         Raises:
-            ValueError: If it redefines a base operation, or a different catalog is
+            ValueError: If it redefines a base operation, or a different module is
                 already declared under ``name``.
         """
         self.registry.declare_ui_catalog(
@@ -1480,8 +1509,9 @@ class App(Generic[Ctx]):
 
         Args:
             cls: The class to keep on the agent.
-            identifier: What it travels as. Defaults to one derived from the class
-                (``numpy.ndarray`` -> ``@numpy/ndarray``).
+            identifier: What it travels as. Defaults to the class name in the app's
+                namespace for a class the app defines (``@myapp/blob``), else in its
+                module (``numpy.ndarray`` -> ``@numpy/ndarray``).
             description: What it is, for the UI.
         """
         self.registry.register_memory_structure(cls, identifier=identifier, description=description)

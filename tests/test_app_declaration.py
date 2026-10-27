@@ -281,3 +281,18 @@ def test_a_plain_action_calling_another_app_is_refused() -> None:
         def calls(lab: Lab, n: int) -> int:
             """Calls the lab."""
             return lab.ping(n)
+
+
+def test_a_named_return_is_read_by_its_key() -> None:
+    from typing import Annotated
+
+    from arkitekt import Key
+
+    app = App("named")
+
+    @app.action
+    def count(values: list[int]) -> Annotated[int, Key("count")]:
+        """Count"""
+        return len(values)
+
+    assert [port.key for port in app.registry.implementations["count"].definition.returns] == ["count"]

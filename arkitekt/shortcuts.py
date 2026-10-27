@@ -39,7 +39,7 @@ from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
 from fakts.mesh import MeshOptions, MeshProxy
 from koil import Koil
 
-from arkitekt.app.app import App, _app_root, _caller_file
+from arkitekt.app.app import App, _app_namespace, _app_root, _caller
 from arkitekt.app.sources import DISCOVER, Source
 from arkitekt.runtime import Runtime, connect
 
@@ -195,7 +195,8 @@ def _build(
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> "Easy[Any]":
     # Three frames up: the caller of easy()/aeasy()/interactive(), not this module.
-    constructed_in = _caller_file(3)
+    caller = _caller(3)
+    constructed_in = caller[0]
     app = App(
         identifier or constructed_in.stem,
         version,
@@ -205,6 +206,8 @@ def _build(
         services=list(services),
         root=_app_root(constructed_in),
     )
+    # The caller's source is the app's own, not this module's.
+    app.registry.structure_registry.namespace = _app_namespace(app.identifier, caller)
     connection: Dict[str, Any] = dict(
         url=url,
         token=token,

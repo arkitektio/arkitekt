@@ -420,7 +420,7 @@ def test_a_panel_that_names_what_the_app_does_not_have_fails_its_tests(tmp_path:
     assert create(tmp_path, "analyst", "-t", "blok", *IDENTITY).exit_code == 0
     project = tmp_path / "analyst"
     app_file = project / "app.py"
-    app_file.write_text(app_file.read_text().replace("@self.Analysis.status", "@self.Analysis.statuz"))
+    app_file.write_text(app_file.read_text().replace("{self.Analysis.status}", "{self.Analysis.statuz}"))
 
     ran = _pytest_in(project, "-q", "-k", "panel_is_declared")
 

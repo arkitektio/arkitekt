@@ -1,25 +1,25 @@
-"""arkitekt: declare an app, run it, call others. The one import an app author needs.
+"""arkitekt: declare an app, run it, and then let your friends run it too.
 
     from arkitekt import App, Task, run
 
     app = App("my-app", app_context=Config)
 
     @app.action
-    def measure(x: int, task: Task) -> int: ...
+    def measure(x: int, task: Task) -> int:
+        ... your code here ...
 
     run(app, context=Config())
 
-``from arkitekt import ...`` is the canonical import for an app. Everything an app
-writes is here: the task it runs as (``Task``, what it logs and calls, and the
-errors a call can raise), the ``Annotated`` markers, the options ``@app.action``
-takes, the blok and catalog models, and the widgets in :mod:`arkitekt.widgets`.
-They are defined in arkitekt-spec, which is the definition space the SDKs and
-runtimes build on; an app should not need to import it.
+Most exports are usable through ``from arkitekt import ...`` so just import what you need.
 
-arkitekt does not depend on a runtime. ``run(app)`` runs the app in distributed mode
-through rekuest and ``serve(app, fastapi_app)`` serves it over HTTP (arkitekt-fastapi):
-install ``arkitekt[rekuest]`` / ``arkitekt[serve]`` for those. Declaring,
-inspecting and building an app, and ``connect(app)`` to services, need neither.
+Depending on your use case, you may need to install extra dependencies. arkitekt is split into three main parts:
+- arkitekt-spec: the declarations and their types, which are used to declare an app and its actions, and to inspect and validate them. This is the only part that is needed to declare an app. It
+however does not run an app, and does not connect to services.
+- arkitekt-runtime: the runtime that runs an app, connects it to services, and manages its lifecycle. This is needed if you have declared
+actions and states and want to run them, or if you want to connect to services. It does however not a transport to give a task to your app.
+- arkitekt-fastapi: a transport that serves an app over HTTP, so that other apps can call it.
+- rekuest: a transport that runs an app in distributed mode, so that other apps can call it. This is needed if you want to run your app in distributed mode, but not if you just want to run it or connect to services.
+
 """
 
 from arkitekt_spec.actions import (
@@ -27,7 +27,10 @@ from arkitekt_spec.actions import (
     ActionDependencyInput,
     AgentDependencyInput,
     ArgPortInput,
+    ReturnPortInput,
     AssetKind,
+    BlokDemoInput,
+    BlokLocalInput,
     ComponentContext,
     ComponentNodeInput,
     ComponentPropInput,
@@ -46,7 +49,11 @@ from arkitekt_spec.actions import (
     UtilCallInput,
     ValidatorInput,
 )
-from arkitekt_spec.declare.actors.policy import CancelOnDisconnect, DisconnectPolicy, OnDisconnect
+from arkitekt_spec.declare.actors.policy import (
+    CancelOnDisconnect,
+    DisconnectPolicy,
+    OnDisconnect,
+)
 from arkitekt_spec.declare.actors.types import Actifier
 from arkitekt_spec.declare.agents.connection import (
     ConnectionListener,
@@ -56,23 +63,47 @@ from arkitekt_spec.declare.agents.connection import (
     TaskListener,
 )
 from arkitekt_spec.declare.agents.errors import NoCallerError
-from arkitekt_spec.declare.annotations import Default, Description, Provides, Requires, Units
+from arkitekt_spec.declare.annotations import (
+    Default,
+    Description,
+    Key,
+    Provides,
+    Requires,
+    Units,
+)
 from arkitekt_spec.declare.app import AppRegistry
-from arkitekt_spec.declare.blok.from_svg import SvgConversionError, SvgConversionWarning, from_svg
+from arkitekt_spec.declare.blok.from_svg import (
+    SvgConversionError,
+    SvgConversionWarning,
+    from_svg,
+)
 from arkitekt_spec.declare.blok.action import ActionBlok
 from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
-from arkitekt_spec.declare.blok.registry import demo_state_for
+from arkitekt_spec.declare.blok.declarations import Local, Query, Subscription
 from arkitekt_spec.declare.blok.unparse import to_bsx
 from arkitekt_spec.declare.blok.validate import (
-    RESERVED_ROOTS,
-    check_args_reads,
-    check_context_root,
-    check_logo_complexity,
-    check_logo_palette,
-    local_roots_of,
+    BlokScope,
+    check_blok_tree,
     validate_blok,
     validate_bsx,
 )
+from arkitekt_spec.blok.bsx import parse_bsx, parse_bsx_with_spans
+from arkitekt_spec.blok.prompt import (
+    blok_prompt,
+    component_signature,
+    function_signature,
+)
+from arkitekt_spec.blok.catalogs import (
+    ORKESTRATOR_MODULE,
+    STANDARD_CATALOGS,
+    BlokView,
+    blok_view,
+    default_view,
+    orkestrator_module,
+    standard_catalog,
+)
+from arkitekt_spec.declare.blok.registry import catalogs_of
+from arkitekt_spec.blok.vocabulary import BlokError, Finding, Function, load_vocabulary
 from arkitekt_spec.declare.catalogs import (
     BLOK_ARGS_ROOT,
     BlokCheckMode,
@@ -82,6 +113,7 @@ from arkitekt_spec.declare.catalogs import (
     Diagnostic,
     OperationSpec,
     standard_view,
+    parse_ui_catalog,
     ui_catalog_view,
 )
 from arkitekt_spec.declare.coercible_types import ToOptimisticProtocol
@@ -204,7 +236,7 @@ __all__ = [
     "OptimisticInput",
     "ToOptimisticProtocol",
     "PortKind",
-    # bloks and UI catalogs
+    # bloks, catalogs and modules
     "AgentDependencyInput",
     "ActionDependencyInput",
     "StateDependencyInput",
@@ -212,18 +244,34 @@ __all__ = [
     "StateDemandInput",
     "PortMatchInput",
     "ArgPortInput",
+    "ReturnPortInput",
     "ComponentNodeInput",
     "ComponentPropInput",
     "validate_blok",
     "validate_bsx",
-    "check_context_root",
-    "check_logo_complexity",
-    "check_logo_palette",
-    "check_args_reads",
-    "RESERVED_ROOTS",
+    "BlokScope",
+    "check_blok_tree",
+    "parse_bsx",
+    "parse_bsx_with_spans",
+    "BlokView",
+    "BlokDemoInput",
+    "BlokLocalInput",
+    "parse_ui_catalog",
+    "blok_view",
+    "default_view",
+    "STANDARD_CATALOGS",
+    "ORKESTRATOR_MODULE",
+    "standard_catalog",
+    "orkestrator_module",
+    "catalogs_of",
+    "BlokError",
+    "Finding",
+    "load_vocabulary",
+    "Function",
+    "Local",
+    "Query",
+    "Subscription",
     "BLOK_ARGS_ROOT",
-    "local_roots_of",
-    "demo_state_for",
     "standard_view",
     "ui_catalog_view",
     "Diagnostic",
@@ -236,6 +284,9 @@ __all__ = [
     "ActionBlok",
     "bsx",
     "to_bsx",
+    "blok_prompt",
+    "component_signature",
+    "function_signature",
     "from_svg",
     "ComponentContext",
     "SvgConversionError",
@@ -244,6 +295,7 @@ __all__ = [
     "withValidator",
     "withEffect",
     "Description",
+    "Key",
     "Requires",
     "Provides",
     "DescriptorOperator",

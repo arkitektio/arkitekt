@@ -1,5 +1,7 @@
 """`arkitekt check`, and what any command says when the app does not import."""
 
+from pathlib import Path
+
 import pytest
 from typer.testing import CliRunner
 
@@ -49,6 +51,66 @@ def test_check_connects_to_nothing(tmp_path, monkeypatch):
     (tmp_path / "app.py").write_text(VALID)
 
     assert _invoke(tmp_path, "check").exit_code == 0
+
+
+RUNS_AT_IMPORT = VALID + "\nfrom arkitekt import run\nrun(app)\n"
+
+CONNECTS_AT_IMPORT = (
+    VALID + "\nfrom arkitekt import connect\n"
+    "with connect(app) as rt:\n"
+    "    print(rt)\n"
+)
+
+EASY_AT_IMPORT = (
+    VALID + "\nfrom arkitekt import easy\n"
+    "with easy('checked') as rt:\n"
+    "    print(rt)\n"
+)
+
+
+@pytest.fixture
+def no_server(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Every real way to a server raises: a check that reached one fails loudly."""
+
+    def never(*args: object, **kwargs: object) -> None:
+        raise AssertionError("check reached a server")
+
+    async def anever(*args: object, **kwargs: object) -> None:
+        raise AssertionError("check reached a server")
+
+    monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
+    monkeypatch.setattr("arkitekt.runtime.Runtime.arun", anever)
+
+
+def test_check_imports_an_app_that_runs_at_import_without_running_it(tmp_path: Path, no_server: None) -> None:
+    (tmp_path / "app.py").write_text(RUNS_AT_IMPORT)
+
+    result = _invoke(tmp_path, "check")
+
+    assert result.exit_code == 0, result.output
+    assert "checked 1.2.3 is valid" in result.output
+
+
+@pytest.mark.parametrize("source", [CONNECTS_AT_IMPORT, EASY_AT_IMPORT], ids=["connect", "easy"])
+def test_check_refuses_an_app_that_connects_at_import(tmp_path: Path, no_server: None, source: str) -> None:
+    (tmp_path / "app.py").write_text(source)
+
+    result = _invoke(tmp_path, "check")
+
+    assert result.exit_code == 1
+    said = " ".join(result.output.split())
+    assert "app.py:9" in said and "connects" in said and "__main__" in said
+
+
+def test_the_stubs_are_gone_after_the_check(tmp_path: Path, no_server: None) -> None:
+    import arkitekt
+    import arkitekt.runtime
+
+    before = (arkitekt.run, arkitekt.runtime.run, arkitekt.runtime.Runtime.__dict__.get("__enter__"))
+    (tmp_path / "app.py").write_text(RUNS_AT_IMPORT)
+
+    assert _invoke(tmp_path, "check").exit_code == 0
+    assert (arkitekt.run, arkitekt.runtime.run, arkitekt.runtime.Runtime.__dict__.get("__enter__")) == before
 
 
 @pytest.mark.parametrize("command", [["check"], ["run", "prod"], ["inspect", "all"], ["status"]])
@@ -107,24 +169,24 @@ def test_check_refuses_an_app_a_run_would_refuse(tmp_path):
 def test_check_lists_what_a_blok_uses_that_its_catalog_does_not_know(tmp_path):
     """A catalog finding does not block a run, so check says it and still passes."""
     (tmp_path / "app.py").write_text(
-        VALID + "\napp.blok('panel', '<Card><Slidr /><Button lable=\"Go\" /></Card>')\n"
+        VALID + "\napp.blok('panel', '<Html><Card><Slidr /><Button lable=\"Go\" /></Card></Html>')\n"
     )
 
     result = _invoke(tmp_path, "check")
 
     assert result.exit_code == 0, result.output
     said = " ".join(result.output.split())  # the console wraps long lines
-    assert "'Slidr' is not registered" in said
-    assert "has no props ['lable']" in said
+    assert "<Slidr>" in said and "[catalog.unknown_component]" in said
+    assert "'lable'" in said and "[catalog.props]" in said
     assert "2 warnings" in said
 
 
 def test_check_refuses_a_strict_blok_its_catalog_does_not_know(tmp_path):
     (tmp_path / "app.py").write_text(
-        VALID + "\napp.blok('panel', '<Card><Slidr /></Card>', mode='strict')\n"
+        VALID + "\napp.blok('panel', '<Html><Card><Slidr /></Card></Html>', mode='strict')\n"
     )
 
     result = _invoke(tmp_path, "check")
 
     assert result.exit_code == 1
-    assert "'Slidr' is not registered" in " ".join(result.output.split())
+    assert "[catalog.unknown_component]" in " ".join(result.output.split())

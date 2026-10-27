@@ -9,6 +9,7 @@ from rich.markup import escape
 
 from arkitekt.app.terminal import done, notice
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
+from arkitekt.cli.offline import offline
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.vars import get_console
 
@@ -34,8 +35,10 @@ def check(ctx: typer.Context, target: TargetArgument = DEFAULT_TARGET) -> None:
 
     Imports the app and validates what it declares the way a run does before it
     connects: every action's arguments and results, every structure and the
-    service that resolves it. Nothing is connected or logged in to. Exits with 1
-    and says where the problem is otherwise, so it also serves in CI.
+    service that resolves it. Nothing is connected or logged in to: the app is
+    imported with ``run`` stubbed out, and a module that connects while it is
+    imported (``with connect(app)`` at module level) is refused at that line.
+    Exits with 1 and says where the problem is otherwise, so it also serves in CI.
 
     What does not block a run is listed as a warning: a blok using a component or
     prop its catalog does not know (unless it was declared ``mode="strict"``), or
@@ -44,8 +47,9 @@ def check(ctx: typer.Context, target: TargetArgument = DEFAULT_TARGET) -> None:
     console = get_console(ctx)
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always", CatalogWarning)
-        app = load_app_or_exit(ctx, target)
-        snapshot = run_snapshot_or_exit(app)
+        with offline():
+            app = load_app_or_exit(ctx, target)
+            snapshot = run_snapshot_or_exit(app)
     findings = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
     for warning in findings:
         notice(console, escape(str(warning.message)))

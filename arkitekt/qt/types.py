@@ -11,7 +11,7 @@ from fakts.models import PublicSource
 from koil import run_threaded
 from koil.qt import async_to_qt
 
-from arkitekt.app.app import App, Ctx, _app_root, _caller_file
+from arkitekt.app.app import App, Ctx, _app_namespace, _app_root, _caller
 
 R = TypeVar("R")
 P = ParamSpec("P")
@@ -91,7 +91,8 @@ class QtApp(App[Ctx]):
     ) -> None:
         # The file that constructs the QtApp, not this one: it names the app and
         # is where its assets are.
-        constructed_in = _caller_file()
+        caller = _caller()
+        constructed_in = caller[0]
         # Through App's overloads: with a context class, or without one.
         if app_context is None:
             # QtApp's overloads make Ctx None exactly when no context class is given;
@@ -121,6 +122,8 @@ class QtApp(App[Ctx]):
                 app_context=app_context,
                 root=_app_root(constructed_in),
             )
+        # The caller's source is the app's own, not this module's.
+        self.registry.structure_registry.namespace = _app_namespace(self.identifier, caller)
         self.parent = parent
 
     def _offer_with(

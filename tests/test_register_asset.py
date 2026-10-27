@@ -20,7 +20,7 @@ def test_an_app_registers_a_model_and_names_it_in_a_scene_blok(tmp_path: Path) -
     app = App("asset-app", "0.1.0", root=tmp_path)
 
     app.register_asset("scope", "models/scope.glb")
-    app.blok("view", bsx('<Scene><Model src="@self.assets.scope" /></Scene>'), context="scene")
+    app.blok("view", bsx('<Scene><Model src="@self.assets.scope" /></Scene>'))
 
     asset = app.registry.registered_assets["scope"]
     assert asset.kind is AssetKind.MODEL_3D and asset.path == tmp_path / "models" / "scope.glb"
@@ -44,7 +44,7 @@ def test_an_app_names_a_file_it_does_not_ship_by_its_source_and_hash(tmp_path: P
     ref = "sha256:" + "9f" * 32
 
     app.register_asset("robot", source="https://vendor.example/ur5.glb", ref=ref)
-    app.blok("view", bsx('<Scene><Model src="@self.assets.robot" /></Scene>'), context="scene")
+    app.blok("view", bsx('<Scene><Model src="@self.assets.robot" /></Scene>'))
 
     assets = app.registry.to_implement_agent_input(name="asset-app").assets
     assert assets is not None

@@ -1,12 +1,12 @@
 """ An example of a blok agent for Arkitekt: it analyses images, and shows what it finds in a panel of its own"""
 
 from dataclasses import field
-from typing import List, Optional
+from typing import Annotated, List, Optional
 
 import numpy as np
 import xarray as xr
 
-from arkitekt import App, Task, bsx, run
+from arkitekt import App, Key, Local, Task, run
 from mikro import Mikro, mikro_service
 from mikro.api.schema import IdentityTransformInput, LensDerivedFromInput, ValueRelation
 from mikro.arkitekt.specs import Image, LabelMask
@@ -169,7 +169,7 @@ def generate_test_image(
     task: Task,
     objects: int = 12,
     size: int = 256,
-) -> Image:
+) -> Annotated[Image, Key("image")]:
     """Generate Test Image
 
     Makes an image of bright blobs on a noisy background, to have something to analyse
@@ -237,7 +237,8 @@ def analyse_image(image: Image, state: Analysis, task: Task, bins: int = 12) -> 
         state.objects = count_objects(pixels, threshold)
 
         state.analysed += 1
-        state.history = [f"{image.label}: {state.objects} objects", *state.history][:HISTORY_LENGTH]
+        # Numbered, so every entry is its own: the panel keys its list by the entry.
+        state.history = [f"#{state.analysed} {image.label}: {state.objects} objects", *state.history][:HISTORY_LENGTH]
         step(state, task, 100, "Idle")
         return state.objects
     finally:
@@ -306,90 +307,102 @@ def clear_history(state: Analysis) -> None:
 
 # ---------------------------------------------------------------------------
 # The blok: the agent's own panel. A tree of components the user interface
-# draws; it reads the state (`@self.Analysis...`), keeps the values of its
-# controls for itself (`form`), and its buttons call the actions above.
-# `.into(name)` keeps a call at hand: `name.running`, `name.result`.
+# draws, its root `<Html>` naming it a panel (`<Scene>` would be a 3D view); it reads the state (`self.Analysis...`), keeps the value of its
+# slider in a local (`objects`, written only by the slider it is bound to), and
+# its buttons call the actions above. `into name` keeps a call at hand as a task
+# record: `name.running`, `name.done`, and what it returned, `name.returns.<key>`.
+# A return is read by the key the action gives it (`Annotated[Image, Key("image")]`,
+# or the fields of a NamedTuple); an unnamed one is `return0`, which is warned about.
+# A `foreach` over plain values (the histogram's numbers) needs no `key`: its
+# items are kept apart by their position. A list of objects is keyed by a field.
 #
 # The components and their props are the ones the Orkestrator app renders. They
 # are checked right here, when the blok is declared: one it does not have is
-# refused, so a typo fails the tests and not the user interface.
+# reported, so a typo fails the tests and not the user interface.
 # ---------------------------------------------------------------------------
 
 app.blok(
     "analysis",
-    bsx("""
-        <Card className="w-[420px] shadow-md">
-            <CardHeader>
-                <div className="flex items-center justify-between">
-                    <CardTitle text="Image analysis" />
-                    <Badge text="@self.Analysis.status" />
-                </div>
-                <CardDescription text="@self.Analysis.image_name" />
-            </CardHeader>
-            <CardContent className="grid gap-4">
-                <Progress value="@self.Analysis.progress" />
-
-                <div className="grid grid-cols-3 gap-2">
-                    <div className="rounded-md border p-3">
-                        <span className="text-xs text-muted-foreground" text="Objects" />
-                        <span className="block text-2xl font-bold" text="@self.Analysis.objects" />
-                    </div>
-                    <div className="rounded-md border p-3">
-                        <span className="text-xs text-muted-foreground" text="Mean" />
-                        <span className="block text-2xl font-bold" text="@self.Analysis.mean" />
-                    </div>
-                    <div className="rounded-md border p-3">
-                        <span className="text-xs text-muted-foreground" text="Threshold" />
-                        <span className="block text-2xl font-bold" text="@self.Analysis.threshold" />
-                    </div>
-                </div>
-
-                <div className="grid gap-1">
-                    <span className="text-xs text-muted-foreground" text="Intensities" />
-                    <foreach items="@self.Analysis.histogram" let="#bin">
-                        <Progress className="h-1" value="@bin" />
-                    </foreach>
-                </div>
-
-                <Separator />
-
-                <div className="grid gap-2">
-                    <span className="text-xs text-muted-foreground" text="Blobs in a test image" />
-                    <Slider bind="form.objects" min="1" max="40" step="1" />
-                    <Button
-                        label="Generate a test image"
-                        onClick="@self.generate_test_image(objects=form.objects).into(generated)"
-                        disabled="@self.Analysis.busy"
-                    />
-                    <Button
-                        label="Analyse it"
-                        onClick="@self.analyse_image(image=generated.result).into(analysed)"
-                        disabled="@utils.eq(generated.done, False)"
-                    />
-                    <Button
-                        label="Store its objects"
-                        variant="outline"
-                        onClick="@self.segment_image(image=generated.result).into(segmented)"
-                        disabled="@utils.eq(generated.done, False)"
-                    />
-                </div>
-
-                <Separator />
-
-                <div className="grid gap-1">
+    """
+        <Html>
+            <Card className="w-[420px] shadow-md">
+                <CardHeader>
                     <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground" text="Last runs" />
-                        <Button label="Clear" variant="ghost" onClick="@self.clear_history()" />
+                        <CardTitle>Image analysis</CardTitle>
+                        <Badge>{self.Analysis.status}</Badge>
                     </div>
-                    <foreach items="@self.Analysis.history" let="#entry">
-                        <span className="text-sm" text="@entry" />
-                    </foreach>
-                </div>
-            </CardContent>
-        </Card>
-    """),
+                    <CardDescription>{self.Analysis.image_name}</CardDescription>
+                </CardHeader>
+                <CardContent className="grid gap-4">
+                    <Progress value={self.Analysis.progress} />
+
+                    <div className="grid grid-cols-3 gap-2">
+                        <div className="rounded-md border p-3">
+                            <span className="text-xs text-muted-foreground">Objects</span>
+                            <span className="block text-2xl font-bold">{self.Analysis.objects}</span>
+                        </div>
+                        <div className="rounded-md border p-3">
+                            <span className="text-xs text-muted-foreground">Mean</span>
+                            <span className="block text-2xl font-bold">{self.Analysis.mean}</span>
+                        </div>
+                        <div className="rounded-md border p-3">
+                            <span className="text-xs text-muted-foreground">Threshold</span>
+                            <span className="block text-2xl font-bold">{self.Analysis.threshold}</span>
+                        </div>
+                    </div>
+
+                    <div className="grid gap-1">
+                        <span className="text-xs text-muted-foreground">Intensities</span>
+                        <foreach items={self.Analysis.histogram} let="bin">
+                            <Progress className="h-1" value={bin} />
+                        </foreach>
+                    </div>
+
+                    <Separator />
+
+                    <div className="grid gap-2">
+                        <span className="text-xs text-muted-foreground">Blobs in a test image</span>
+                        <Slider bind={objects} min={1} max={40} step={1} />
+                        <Button
+                            onClick={self.generate_test_image(objects: objects) into generated}
+                            disabled={self.Analysis.busy}
+                        >
+                            Generate a test image
+                        </Button>
+                        <Button
+                            onClick={self.analyse_image(image: generated.returns.image) into analysed}
+                            disabled={!generated.done}
+                        >
+                            Analyse it
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={self.segment_image(image: generated.returns.image) into segmented}
+                            disabled={!generated.done}
+                        >
+                            Store its objects
+                        </Button>
+                    </div>
+
+                    <Separator />
+
+                    <div className="grid gap-1">
+                        <div className="flex items-center justify-between">
+                            <span className="text-xs text-muted-foreground">Last runs</span>
+                            <Button variant="ghost" onClick={self.clear_history()}>Clear</Button>
+                        </div>
+                        <foreach items={self.Analysis.history} let="entry" key={entry}>
+                            <span className="text-sm">{entry}</span>
+                        </foreach>
+                    </div>
+                </CardContent>
+            </Card>
+        </Html>
+    """,
     description="What the agent is analysing, what it found, and buttons to run it",
-    local_state={"form": {"objects": 12}},
+    # The slider's local is a port like the action's argument it feeds: an INT that
+    # starts at the argument's default.
+    locals={"objects": Local.like(generate_test_image, "objects")},
 )
 
 
