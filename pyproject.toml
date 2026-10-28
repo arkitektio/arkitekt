@@ -24,7 +24,8 @@ dependencies = [
     "aiohttp>=3.9",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
-    "arkitekt-spec>=4.0",
+    # 5.0: a service reads the scopes its client needs off the client class (App.scopes).
+    "arkitekt-spec>=5.0",
 ]
 
 [project.optional-dependencies]
