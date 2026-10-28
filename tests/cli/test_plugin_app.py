@@ -162,11 +162,13 @@ def test_an_app_asks_for_what_its_services_clients_need():
     from arkitekt_spec.declare.app import AppRegistry
 
     class Client:
-        pass
+        """A client whose generated part says what its operations need."""
+
+        __scopes__ = ("mikro_write", "mikro_read")
 
     registry = AppRegistry()
 
-    @registry.service(scopes=["mikro_write", "mikro_read"])
+    @registry.service()
     def mikro() -> Client:
         """Talks to mikro."""
         return Client()
