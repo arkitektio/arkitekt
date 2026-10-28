@@ -1,7 +1,7 @@
 from typing import Annotated
 import typer
 
-from arkitekt.app.spec import app_inspection, app_manifest
+from arkitekt.app.spec import app_declaration
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE, run_snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.utils import emit_machine_readable
@@ -40,16 +40,17 @@ def all(
 
     # The spec's Inspection, which the build on the host reads back with the same
     # model. The action language inside it is validated by rekuest on the way out.
-    agent = app_inspection(app, run).model_dump(mode="json", by_alias=True, exclude_none=True)
+    declaration = app_declaration(app, run, entrypoint=target)
+    agent = declaration.to_inspection().model_dump(mode="json", by_alias=True, exclude_none=True)
 
     if machine_readable:
         emit_machine_readable("AGENT", agent)
         # Who the image says it is. `plugin release` holds this against the release
         # it is about to describe: the version a container registers under is the
         # one it carries, whatever the tag on it claims.
-        emit_machine_readable(
-            "MANIFEST", app_manifest(app, entrypoint=target).model_dump(mode="json")
-        )
+        # The declaration's manifest, scopes included the way a run asks for them (its
+        # provider's services' too): a mandate key is pinned to it.
+        emit_machine_readable("MANIFEST", declaration.manifest.model_dump(mode="json"))
 
     else:
         if pretty:

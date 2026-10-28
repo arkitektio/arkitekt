@@ -417,6 +417,21 @@ def test_inspect_all_carries_the_apps_requirements_and_actions(app_dir, no_conne
     assert "extra" in {item["key"] for item in agent["requirements"]}
 
 
+def test_the_manifest_an_image_says_asks_for_what_a_run_asks_for(app_dir, no_connecting):
+    """A mandate key is pinned to the MANIFEST a build reads: it must carry the scopes a run asks
+    for, the rekuest provider's among them, or the running container cannot log in."""
+    from rekuest.arkitekt import rekuest_service
+
+    (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
+
+    result = _invoke(app_dir, "inspect", "all", "-mr")
+
+    assert result.exit_code == 0, result.output
+    manifest = _between(result.output, "--START_MANIFEST--", "--END_MANIFEST--")
+    assert set(rekuest_service.get_scopes()) <= set(manifest["scopes"])
+    assert rekuest_service.get_scopes(), "rekuest's client says what it needs"
+
+
 def test_inspect_an_app_that_offers_nothing(app_dir, no_connecting):
     (app_dir / "app.py").write_text("from arkitekt import App\napp = App('quiet')\n")
 
