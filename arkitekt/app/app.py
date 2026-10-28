@@ -118,6 +118,15 @@ def _requirements_of(registry: AppRegistry) -> List[Requirement]:
     )
 
 
+#: The scope every app asks for: it logs a user in.
+BASE_SCOPES = ("openid",)
+
+
+def _scopes_of(registry: AppRegistry, asked: Iterable[str] = ()) -> List[str]:
+    """The scopes an app with ``registry`` asks for: its own and what each service's client needs."""
+    return sorted({*BASE_SCOPES, *asked, *(scope for builder in registry.services.values() for scope in builder.get_scopes())})
+
+
 def _caller(depth: int = 2) -> Tuple[Path, Optional[str]]:
     """The file and module some caller up the stack is defined in.
 
@@ -173,7 +182,7 @@ class App(Generic[Ctx]):
             beside its name, which is what tells two agents of the same app
             apart from what they are.
         logo: A public http url of the app's logo.
-        scopes: The scopes the app requests. Defaults to ``["openid"]``.
+        scopes: Scopes the app asks for beyond what its services' clients need (those, and ``openid``, are asked for anyway).
         author: Who wrote the app. Used when packaging it.
         public_sources: Public sources the app announces in its manifest.
         services: The services the app uses (``[mikro_service]``). The same as
@@ -259,7 +268,8 @@ class App(Generic[Ctx]):
         self.version = os.environ.get(VERSION_ENV) or version
         self.description = description
         self.logo = logo
-        self.scopes: List[str] = list(scopes) if scopes else ["openid"]
+        # What the app asks for beyond what its services' clients need (see `scopes`).
+        self.asked_scopes: List[str] = list(scopes or [])
         self.author = author
         self.public_sources: List[PublicSource] = list(public_sources or [])
         self.registry: AppRegistry = registry if registry is not None else AppRegistry()
@@ -368,6 +378,18 @@ class App(Generic[Ctx]):
     # ------------------------------------------------------------------ #
 
     @property
+    def scopes(self) -> List[str]:
+        """What this app asks to be allowed to do: what its services' clients need, and its own.
+
+        Each service says what its client's operations need at the server (its
+        generated code gathers it from the schema), so an app rarely names a
+        scope itself: ``App(scopes=...)`` adds to them, for something no client
+        here does. A run adds what its provider's services need; see
+        :meth:`snapshot`.
+        """
+        return _scopes_of(self.registry, self.asked_scopes)
+
+    @property
     def requirements(self) -> List[Requirement]:
         """What this app requires of a deployment: exactly what its services need.
 
@@ -428,7 +450,7 @@ class App(Generic[Ctx]):
             registry.register_provider(provider)
 
         manifest = self.manifest.model_copy(
-            update={"requirements": _requirements_of(registry)}
+            update={"requirements": _requirements_of(registry), "scopes": _scopes_of(registry, self.asked_scopes)}
         )
         if device_id is not None:
             manifest = manifest.model_copy(update={"device_id": device_id})

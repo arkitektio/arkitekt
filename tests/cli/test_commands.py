@@ -295,7 +295,7 @@ def test_every_template_scaffolds_an_importable_app(tmp_path, template):
         "--identifier", "com.example.thing",
         "--version", "1.2.3",
         "--author", "Jane O'Neil",
-        "--scopes", "read", "--scopes", "write",
+        "--scopes", "kabinet_deploy",
         "--logo", "https://example.com/logo.png",
         "--starter", template,
         "--entrypoint", "main",
@@ -309,7 +309,8 @@ def test_every_template_scaffolds_an_importable_app(tmp_path, template):
     app = module.app
     assert isinstance(app, App)
     assert (app.identifier, app.version, app.author) == ("com.example.thing", "1.2.3", "Jane O'Neil")
-    assert app.scopes == ["read", "write"]
+    # What it asked for, beside what its services' clients need and the login itself.
+    assert "kabinet_deploy" in app.scopes and "openid" in app.scopes
     assert app.logo == "https://example.com/logo.png"
     # What it declares is valid: the snapshot a run would take succeeds.
     assert app.snapshot().registry.get_implementations()

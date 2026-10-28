@@ -3,11 +3,6 @@ from typing import List
 import os
 
 
-def compile_scopes() -> List[str]:
-    """Compile all available scopes"""
-    return ["read", "write"]
-
-
 def compile_dockerfiles() -> List[str]:
     z = build_relative_dir("dockerfiles")
     return [

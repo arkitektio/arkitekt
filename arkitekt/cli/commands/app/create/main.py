@@ -9,8 +9,7 @@ from typing import Annotated, List, Optional
 import typer
 import semver
 
-from arkitekt.cli.constants import compile_scopes
-from arkitekt.cli.validators import validate_scopes, validate_template
+from arkitekt.cli.validators import validate_template
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import done, escape, notice
@@ -297,9 +296,8 @@ def render_app_arguments(
     if author:
         arguments.append(f"author={author!r}")
     if scopes:
-        arguments.append(
-            f"scopes={list(scopes)!r}"
-        )  # lets forget scopes as of now, i would like to have them be infered in the future from which service actions are needed (because scopes are service specific)
+        # Only what no service's client needs: theirs are asked for anyway.
+        arguments.append(f"scopes={list(scopes)!r}")
     if logo:
         arguments.append(f"logo={logo!r}")
     return ", ".join(arguments)
@@ -394,10 +392,9 @@ def create_command(
         typer.Option(
             "--scopes",
             "-s",
-            help=f"The scopes of the app. You can choose multiple for your app. Available: {', '.join(compile_scopes())}",
-            callback=validate_scopes,
+            help="Scopes the app asks for beyond what its services' clients need (those are asked for anyway): rarely needed.",
         ),
-    ] = ["read"],
+    ] = [],
     template: Annotated[
         str,
         typer.Option(

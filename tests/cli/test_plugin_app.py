@@ -28,7 +28,7 @@ def test_an_image_reports_the_apps_identity_and_target():
             "com.x",
             "1.2.3",
             author="me",
-            scopes=["read"],
+            scopes=["mikro_read"],
             logo="http://l",
             description="What it is",
         ),
@@ -36,7 +36,7 @@ def test_an_image_reports_the_apps_identity_and_target():
     )
 
     assert (manifest.identifier, manifest.version, manifest.author) == ("com.x", "1.2.3", "me")
-    assert manifest.scopes == ["read"]
+    assert manifest.scopes == ["mikro_read", "openid"]
     assert manifest.description == "What it is"
     assert manifest.logo == "http://l"
     assert manifest.entrypoint == "main:api"
@@ -156,3 +156,22 @@ def test_plugin_init_devcontainer_without_an_app_is_a_clean_error(tmp_path, monk
 
     assert result.exit_code != 0
     assert "Could not find the app module 'app'" in result.output
+
+
+def test_an_app_asks_for_what_its_services_clients_need():
+    from arkitekt_spec.declare.app import AppRegistry
+
+    class Client:
+        pass
+
+    registry = AppRegistry()
+
+    @registry.service(scopes=["mikro_write", "mikro_read"])
+    def mikro() -> Client:
+        """Talks to mikro."""
+        return Client()
+
+    app = App("com.x", "1.0", services=[mikro])
+    assert app.scopes == ["mikro_read", "mikro_write", "openid"]
+    assert app.manifest.scopes == ["mikro_read", "mikro_write", "openid"]
+    assert App("com.y", "1.0", services=[mikro], scopes=["kabinet_deploy"]).scopes == ["kabinet_deploy", "mikro_read", "mikro_write", "openid"]

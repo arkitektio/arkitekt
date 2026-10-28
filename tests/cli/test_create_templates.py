@@ -89,7 +89,7 @@ def test_the_default_app_makes_a_random_image_and_blurs_one(tmp_path: Path, fake
 
     source = (tmp_path / "my-app" / "app.py").read_text()
     assert '__version__ = "0.0.1"' in source
-    assert "App('com.test.app', __version__, author='me', scopes=['read'], services=[mikro_service])" in source
+    assert "App('com.test.app', __version__, author='me', services=[mikro_service])" in source
     assert "def generate_random_image(" in source and "def blur_image(" in source
 
 
@@ -391,7 +391,7 @@ def test_the_blok_template_is_a_whole_project_around_a_blok_agent(tmp_path: Path
 
     source = (project / "app.py").read_text()
     assert '__version__ = "0.0.1"' in source
-    assert "App('com.test.app', __version__, author='me', scopes=['read'], services=[mikro_service])" in source
+    assert "App('com.test.app', __version__, author='me', services=[mikro_service])" in source
     assert "@app.state" in source and 'app.blok(\n    "analysis",' in source
     output = " ".join(result.output.split())
     assert f"{HUB_TEST} tests it against a hub" in output
@@ -454,7 +454,7 @@ def test_the_qt_template_is_a_project_without_an_image(tmp_path: Path, fake_uv):
     compile(source, "app.py", "exec")
     assert '__version__ = "0.0.1"' in source
     # The window is the app's context: an action asks for it by its class.
-    assert "app = QtApp('com.test.app', __version__, author='me', scopes=['read'], app_context=Window)" in source
+    assert "app = QtApp('com.test.app', __version__, author='me', app_context=Window)" in source
     assert "MagicBar(self.runtime, context=self)" in source
     assert "def show_message(text: str, window: Window) -> str:" in source
     assert "app_context=Window" in source

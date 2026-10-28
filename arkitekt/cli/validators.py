@@ -9,7 +9,7 @@ from typing import Callable, List, Optional
 
 import typer
 
-from arkitekt.cli.constants import compile_dockerfiles, compile_scopes, compile_templates
+from arkitekt.cli.constants import compile_dockerfiles, compile_templates
 
 
 def _one_of(what: Callable[[], List[str]]) -> Callable[[Optional[str]], Optional[str]]:
@@ -41,23 +41,4 @@ validate_dockerfile = _one_of(compile_dockerfiles)
 """Check ``--template`` against the dockerfiles in ``cli/dockerfiles``."""
 
 
-def validate_scopes(value: List[str]) -> List[str]:
-    """Check every ``--scope`` against the known scopes.
-
-    Args:
-        value: The scopes as passed.
-
-    Returns:
-        The scopes, unchanged.
-
-    Raises:
-        typer.BadParameter: On the first scope that is not a known one.
-    """
-    valid = compile_scopes()
-    for scope in value:
-        if scope not in valid:
-            raise typer.BadParameter(f"'{scope}' is not one of {', '.join(valid)}.")
-    return value
-
-
-__all__ = ["validate_template", "validate_dockerfile", "validate_scopes"]
+__all__ = ["validate_template", "validate_dockerfile"]

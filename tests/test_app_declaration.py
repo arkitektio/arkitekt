@@ -28,7 +28,7 @@ def test_the_manifest_is_read_off_the_declaration() -> None:
     app = App(
         "com.test.decl",
         "1.2.3",
-        scopes=["read"],
+        scopes=["pictures_read"],
         logo="http://logo",
         services=[PictureService(), OtherService()],
     )
@@ -37,7 +37,7 @@ def test_the_manifest_is_read_off_the_declaration() -> None:
     assert (manifest.identifier, manifest.version, manifest.scopes, manifest.logo) == (
         "com.test.decl",
         "1.2.3",
-        ["read"],
+        ["openid", "pictures_read"],
         "http://logo",
     )
     assert manifest.requirements is not None
