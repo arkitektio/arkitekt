@@ -509,20 +509,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
                 "Only a local run calls its own actions in-process: "
                 "`connect_local(app)`, or `local_app(app)` in a test."
             )
-        if isinstance(action, str):
-            return agent, action
-        interface = getattr(action, "interface", None)
-        if isinstance(interface, str):
-            return agent, interface
-        # The plain function, as a module that kept it from before decorating has it.
-        declared = agent.app_registry.declared_implementations
-        for name, implementation in declared.items():
-            if implementation.function is action:
-                return agent, name
-        raise KeyError(
-            f"{getattr(action, '__name__', action)!r} is not an action of this app. "
-            f"It has: {', '.join(sorted(declared)) or 'none'}."
-        )
+        return agent, _interface_of(agent, action)
 
     async def acall_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """Call one of the app's own actions in-process and return its result.
@@ -577,6 +564,28 @@ class Runtime(KoiledModel, Generic[Ctx]):
     def call_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """Call one of the app's own actions in-process (see :meth:`acall_local`)."""
         return unkoil(self.acall_local, action, *args, **kwargs)
+
+
+def _interface_of(agent: Any, action: Any) -> str:  # noqa: ANN401
+    """The interface ``action`` names on ``agent``: its name, the decorated function, or the plain one.
+
+    Raises:
+        KeyError: If the app has no such action.
+    """
+    if isinstance(action, str):
+        return action
+    interface = getattr(action, "interface", None)
+    if isinstance(interface, str):
+        return interface
+    # The plain function, as a module that kept it from before decorating has it.
+    declared = agent.app_registry.declared_implementations
+    for name, implementation in declared.items():
+        if implementation.function is action:
+            return name
+    raise KeyError(
+        f"{getattr(action, '__name__', action)!r} is not an action of this app. "
+        f"It has: {', '.join(sorted(declared)) or 'none'}."
+    )
 
 
 def _local_agent(snapshot: RunSnapshot) -> Any:  # noqa: ANN401

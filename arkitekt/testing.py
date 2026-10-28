@@ -46,15 +46,25 @@ app's run. Annotate it with the app's context (``None`` for an app without one):
         folder = teststack.call("make_folder", name="results")
         assert teststack.runtime.require(Mikro).get_folder(folder.id).name == "results"
 
+On a hub, a call goes to the app's agent in-process by default: the services are
+real, the server that assigns tasks is not asked. Set
+``ARKITEKT_CALL_THROUGH_REKUEST=1`` (or override the ``arkitekt_call_through_rekuest``
+fixture) and the app registers with the hub's rekuest and is served, and every
+``teststack.call`` / ``hub_call`` is a task rekuest assigns to it, as another app's
+call would be: same tests, the whole path.
+
 Nothing here is loaded unless a project asks for it, and nothing is autouse.
 :func:`local_app` needs no pytest; the fixtures exist when it is installed.
 """
 
 import os
 import sys
+import threading
+import time
 from collections.abc import Callable, Iterator, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic, Optional
+from typing import TYPE_CHECKING, Any, Generic, Optional, cast
 
 try:
     from arkitekt_runtime.local import LocalCallCancelledError, LocalCallError
@@ -65,13 +75,40 @@ except ImportError as e:  # pragma: no cover - depends on what is installed
     ) from e
 
 from arkitekt.app.app import App, Ctx
-from arkitekt.runtime import Runtime, _provider_for, connect_local
+from arkitekt.runtime import ConnectionState, Runtime, _interface_of, _provider_for, connect, connect_local
 
 if TYPE_CHECKING:
     from konstruktor import Hub  # pyright: ignore[reportMissingImports]
 
 #: The environment variable naming the app under test, as the CLI reads it.
 TARGET_ENVVAR = "ARKITEKT_APP"
+#: The environment variable that sends a hub test's calls through the hub's rekuest.
+THROUGH_REKUEST_ENVVAR = "ARKITEKT_CALL_THROUGH_REKUEST"
+#: How long a run served for a test may take to register with rekuest, in seconds.
+REGISTRATION_TIMEOUT = 120.0
+
+
+def call_through_rekuest_requested() -> bool:
+    """Whether ``$ARKITEKT_CALL_THROUGH_REKUEST`` asks for calls through rekuest (1, true, yes, on)."""
+    return os.environ.get(THROUGH_REKUEST_ENVVAR, "").strip().lower() in ("1", "true", "yes", "on")
+
+
+def call_through_rekuest(runtime: Runtime[Any], action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    """Call one of the app's own actions as a task rekuest assigns to it, and return its result.
+
+    ``runtime`` is a run of the app that provides it (``connect(app, provide=True)``,
+    running): the call is a root task on the app's own implementation, made with the
+    AUTO policy, since nobody is there to approve what it asks for.
+    """
+    from arkitekt_runtime.types import TaskPolicy
+    from rekuest.client.client import Rekuest
+
+    agent = runtime.agent
+    if agent is None:
+        raise LookupError("Only a run that provides the app is called through rekuest: `connect(app, provide=True)`.")
+    rekuest = runtime.require(Rekuest)
+    implementation = rekuest.my_implementation_at(interface=_interface_of(agent, action))
+    return rekuest.call(implementation, *args, policy=TaskPolicy.AUTO, **kwargs)
 
 
 def local_app(
@@ -102,6 +139,49 @@ def local_app(
     return connect_local(app, clients=clients, context=context, offline=True)
 
 
+@contextmanager
+def served_app(
+    app: App[Ctx],
+    *,
+    url: str,
+    mandate_key: str,
+    context: Optional[Ctx] = None,
+    timeout: float = REGISTRATION_TIMEOUT,
+) -> Iterator[Runtime[Ctx]]:
+    """``app`` logged in at ``url``, registered with its rekuest and served, until the block is left.
+
+    What a hub test runs through rekuest is made of: entered, the app is a real agent
+    rekuest assigns tasks to (:func:`call_through_rekuest`), and its services are the
+    real ones (``runtime.require(Mikro)``).
+
+    Raises:
+        TimeoutError: If it does not register within ``timeout`` seconds.
+        RuntimeError: If its run stops before it registers (or what stopped it).
+    """
+    registered = threading.Event()
+
+    async def on_state(state: ConnectionState) -> None:
+        if state is ConnectionState.REGISTERED:
+            registered.set()
+
+    with connect(
+        app, provide=True, url=url, mandate_key=mandate_key, headless=True, connection_listener=on_state
+    ) as runtime:
+        # None is the context of an app that declares none; run_detached checks it against the app.
+        running = runtime.run_detached(cast(Ctx, context))
+        try:
+            deadline = time.monotonic() + timeout
+            while not registered.wait(0.5):
+                if running.done():
+                    running.result()  # raises what stopped it
+                    raise RuntimeError("The app's run stopped before it registered with rekuest.")
+                if time.monotonic() > deadline:
+                    raise TimeoutError(f"The app did not register with rekuest within {timeout:.0f}s.")
+            yield runtime
+        finally:
+            running.cancel()
+
+
 @dataclass(frozen=True)
 class TestStack(Generic[Ctx]):
     """The app under test, logged in to a hub made for the tests.
@@ -121,9 +201,13 @@ class TestStack(Generic[Ctx]):
     app: App[Ctx]
     #: The app, started and logged in to the hub: ``runtime.require(Client)``.
     runtime: Runtime[Ctx]
+    #: Whether :meth:`call` goes through the hub's rekuest rather than to the agent in-process.
+    through_rekuest: bool = False
 
     def call(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
         """Call one of the app's actions, with its services real: ``teststack.call("segment", image)``."""
+        if self.through_rekuest:
+            return call_through_rekuest(self.runtime, action, *args, **kwargs)
         return self.runtime.call_local(action, *args, **kwargs)
 
 
@@ -271,33 +355,60 @@ if pytest is not None:
             yield hub
 
 
+    @pytest.fixture(scope="session")
+    def arkitekt_call_through_rekuest() -> bool:
+        """Whether a hub test's calls are tasks the hub's rekuest assigns, rather than in-process calls.
+
+        ``$ARKITEKT_CALL_THROUGH_REKUEST`` by default (see
+        :func:`call_through_rekuest_requested`); override it to pin a suite to one way.
+        """
+        return call_through_rekuest_requested()
+
+
     @pytest.fixture()
     def hub_runtime(
         arkitekt_app: App[Any],
         arkitekt_hub: "Hub",
         arkitekt_clients: Sequence[Any],
         arkitekt_context: Any,  # noqa: ANN401
+        arkitekt_call_through_rekuest: bool,
     ) -> Iterator[Runtime[Any]]:
         """The app under test, started and logged in to its hub, for the length of one test.
 
         Its services are the real ones: ``hub_runtime.require(Mikro)`` is a client
-        of the hub's mikro, and what an action is handed.
+        of the hub's mikro, and what an action is handed. Through rekuest, the app
+        is also registered with the hub's rekuest and served until the test ends.
         """
-        with connect_local(
-            arkitekt_app,
-            clients=arkitekt_clients,
-            context=arkitekt_context,
-            offline=False,
-            url=arkitekt_hub.fakts_url,
-            mandate_key=arkitekt_hub.mandate_key(arkitekt_app.identifier),
-            headless=True,
-        ) as runtime:
+        url = arkitekt_hub.fakts_url
+        mandate_key = arkitekt_hub.mandate_key(arkitekt_app.identifier)
+        if not arkitekt_call_through_rekuest:
+            with connect_local(
+                arkitekt_app,
+                clients=arkitekt_clients,
+                context=arkitekt_context,
+                offline=False,
+                url=url,
+                mandate_key=mandate_key,
+                headless=True,
+            ) as runtime:
+                yield runtime
+            return
+
+        if arkitekt_clients:
+            raise ValueError(
+                "`arkitekt_clients` replaces services in an in-process run only: called through "
+                "rekuest, the app is a real agent and is handed its real services. Unset "
+                f"${THROUGH_REKUEST_ENVVAR} for this suite, or drop the replacement clients."
+            )
+        with served_app(arkitekt_app, url=url, mandate_key=mandate_key, context=arkitekt_context) as runtime:
             yield runtime
 
 
     @pytest.fixture()
-    def hub_call(hub_runtime: Runtime[Any]) -> Callable[..., Any]:
+    def hub_call(hub_runtime: Runtime[Any], arkitekt_call_through_rekuest: bool) -> Callable[..., Any]:
         """Call one of the app's actions, with its services real: ``hub_call("segment", image)``."""
+        if arkitekt_call_through_rekuest:
+            return lambda action, *args, **kwargs: call_through_rekuest(hub_runtime, action, *args, **kwargs)
         return hub_runtime.call_local
 
 
@@ -306,19 +417,37 @@ if pytest is not None:
         arkitekt_app: App[Any],
         arkitekt_hub: "Hub",
         hub_runtime: Runtime[Any],
+        arkitekt_call_through_rekuest: bool,
     ) -> TestStack[Any]:
         """The hub, the app under test and its run on that hub, for the length of one test.
 
         Annotate it with the app's context: ``teststack: TestStack[Config]``. The
         run is ``hub_runtime``'s own, so a test may ask for both.
         """
-        return TestStack(hub=arkitekt_hub, app=arkitekt_app, runtime=hub_runtime)
+        return TestStack(
+            hub=arkitekt_hub,
+            app=arkitekt_app,
+            runtime=hub_runtime,
+            through_rekuest=arkitekt_call_through_rekuest,
+        )
 
 
-__all__ = ["LocalCallCancelledError", "LocalCallError", "NoImageError", "TestStack", "local_app", "service_images"]
+__all__ = [
+    "THROUGH_REKUEST_ENVVAR",
+    "LocalCallCancelledError",
+    "LocalCallError",
+    "NoImageError",
+    "TestStack",
+    "call_through_rekuest",
+    "call_through_rekuest_requested",
+    "local_app",
+    "served_app",
+    "service_images",
+]
 if pytest is not None:
     __all__ += [
         "arkitekt_app",
+        "arkitekt_call_through_rekuest",
         "arkitekt_clients",
         "arkitekt_context",
         "arkitekt_hub",

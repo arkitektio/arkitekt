@@ -29,10 +29,12 @@ from rekuest.arkitekt import rekuest_service  # noqa: E402
 from rekuest.client.client import Rekuest  # noqa: E402
 
 from arkitekt.runtime import connect_local  # noqa: E402
+from arkitekt.testing import call_through_rekuest, served_app  # noqa: E402
 
 from arkitekt import (  # noqa: E402
     App,
     ConnectionState,
+    Task,
     TaskEvent,
     TaskEventKind,
     connect,
@@ -118,6 +120,27 @@ def test_an_app_offers_an_action_and_is_called(hub: Hub) -> None:
             running.cancel()
 
     assert answer == "KONSTRUKTOR!"
+
+
+def test_a_hub_test_through_rekuest_calls_the_app_as_a_task_rekuest_assigns(hub: Hub) -> None:
+    """``served_app`` + ``call_through_rekuest``: what ``teststack.call`` runs under
+    ``$ARKITEKT_CALL_THROUGH_REKUEST``. The task the action runs as is the server's:
+    its organization is the hub's ``<iss>#<org>`` identifier, never the local run's."""
+    app = App("live.arkitekt.tests.served", "0.1.0")
+    orgs: list[str] = []
+
+    @app.action
+    def double(x: int, task: Task) -> int:
+        """Double"""
+        orgs.append(task.org)
+        return 2 * x
+
+    with served_app(app, url=hub.fakts_url, mandate_key=hub.mandate_key("served"), timeout=REGISTRATION_TIMEOUT) as rt:
+        by_name = call_through_rekuest(rt, "double", x=21)
+        by_function = call_through_rekuest(rt, double, 4)
+
+    assert (by_name, by_function) == (42, 8)
+    assert len(orgs) == 2 and all("#" in org for org in orgs), orgs
 
 
 def test_a_detached_run_is_called_and_tells_its_host(hub: Hub) -> None:
