@@ -15,7 +15,7 @@ The action and dataset ids come from the UI ("Copy id") to keep this short.
 """
 
 from mikro import mikro_service
-from rekuest.arkitekt import rekuest_service
+from rekuest.arkitekt import rekuest_caller_service
 
 from arkitekt import AgentLost, easy, retry
 
@@ -27,7 +27,7 @@ IMAGE_DATASET = "1234"  # an image already in mikro
 
 def main() -> None:
     """Count the cells, then dose: retry the one, ask a person about the other."""
-    with easy("plate-runner", rekuest_service, mikro_service) as (rekuest, mikro):
+    with easy("plate-runner", rekuest_caller_service, mikro_service) as (rekuest, mikro):
         image = mikro.get_array_dataset(IMAGE_DATASET).lens()
 
         # Counting changes nothing: if its agent dies, try again, even after it started.

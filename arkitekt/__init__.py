@@ -72,6 +72,7 @@ from arkitekt_spec.declare.annotations import (
     Units,
 )
 from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.interactions import ask, inform
 from arkitekt_spec.declare.blok.from_svg import (
     SvgConversionError,
     SvgConversionWarning,
@@ -120,8 +121,10 @@ from arkitekt_spec.declare.coercible_types import ToOptimisticProtocol
 from arkitekt_spec.declare.errors import (
     AgentLost,
     DeniedError,
+    DismissedError,
     NonDeterministicWorkflow,
     NotAWorkflowError,
+    NotDeclaredError,
     StateChanged,
     StatePreconditionFailed,
 )
@@ -207,6 +210,11 @@ __all__ = [
     "AssignPrompt",
     "Decision",
     "TaskBlok",
+    # the bloks an action asks through or shows, declared (`@app.interactions`)
+    "ask",
+    "inform",
+    "DismissedError",
+    "NotDeclaredError",
     "HookInput",
     "HookKind",
     "CallTarget",

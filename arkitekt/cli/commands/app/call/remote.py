@@ -44,7 +44,7 @@ def cli_app() -> App[None]:
         RuntimeNotInstalledError: If rekuest is not installed.
     """
     try:
-        from rekuest.arkitekt import rekuest_service
+        from rekuest.arkitekt import rekuest_caller_service
     except ImportError as e:
         raise RuntimeNotInstalledError(
             "Calling actions needs rekuest, which is not installed: "
@@ -54,7 +54,7 @@ def cli_app() -> App[None]:
     return App(
         CLI_APP_IDENTIFIER,
         description="The arkitekt command line, calling actions on the server.",
-        services=[rekuest_service],
+        services=[rekuest_caller_service],
     )
 
 
@@ -88,10 +88,10 @@ async def call_app(
     The call goes through the run's rekuest client, so only actions available on
     the connected server can be called.
     """
-    from rekuest.client.client import Rekuest
+    from rekuest.client.client import RekuestCaller
 
     async with connected(console, app, options) as rt:
-        rekuest = rt.require(Rekuest)
+        rekuest = rt.require(RekuestCaller)
         action = await rekuest.afind(hash=hash)
         return await rekuest.acall_raw(kwargs=kwargs, action=action)
 

@@ -25,8 +25,8 @@ pytest.importorskip("mikro")
 
 from konstruktor import Hub  # noqa: E402
 from mikro import Mikro, mikro_service  # noqa: E402
-from rekuest.arkitekt import rekuest_service  # noqa: E402
-from rekuest.client.client import Rekuest  # noqa: E402
+from rekuest.arkitekt import rekuest_caller_service  # noqa: E402
+from rekuest.client.client import RekuestCaller  # noqa: E402
 
 from arkitekt.runtime import connect_local  # noqa: E402
 from arkitekt.testing import call_through_rekuest, served_app  # noqa: E402
@@ -99,7 +99,7 @@ def test_a_local_run_calls_its_action_with_the_hubs_service(hub: Hub) -> None:
 
 def test_an_app_offers_an_action_and_is_called(hub: Hub) -> None:
     """An action registered over the agent socket, called back through the server."""
-    app = App("live.arkitekt.tests.shouter", "0.1.0")
+    app = App("live.arkitekt.tests.shouter", "0.1.0", services=[rekuest_caller_service])
 
     @app.action
     def shout(text: str = "hello") -> str:
@@ -112,7 +112,7 @@ def test_an_app_offers_an_action_and_is_called(hub: Hub) -> None:
         running = rt.run_detached()
         try:
             answer = eventually(
-                lambda: rt.require(Rekuest).call(shout, text="konstruktor"),
+                lambda: rt.require(RekuestCaller).call(shout, text="konstruktor"),
                 timeout=REGISTRATION_TIMEOUT,
                 still_running=lambda: not running.done(),
             )
@@ -172,12 +172,12 @@ def test_a_detached_run_is_called_and_tells_its_host(hub: Hub) -> None:
         connection_listener=on_state,
         task_listener=on_task,
     )
-    caller = App("live.arkitekt.tests.detached-caller", "0.1.0", services=[rekuest_service])
+    caller = App("live.arkitekt.tests.detached-caller", "0.1.0", services=[rekuest_caller_service])
     try:
         with connect(
             caller, url=hub.fakts_url, mandate_key=hub.mandate_key("detached-caller")
         ) as rt:
-            rekuest = rt.require(Rekuest)
+            rekuest = rt.require(RekuestCaller)
 
             def call() -> str:
                 (offered,) = [i for i in rekuest.list_implementations() if i.interface == "whisper"]
@@ -215,11 +215,11 @@ def test_a_script_run_with_nothing_but_its_environment_is_callable(hub: Hub) -> 
         stderr=subprocess.STDOUT,
         text=True,
     )
-    caller = App("live.arkitekt.tests.caller", "0.1.0", services=[rekuest_service])
+    caller = App("live.arkitekt.tests.caller", "0.1.0", services=[rekuest_caller_service])
 
     try:
         with connect(caller, url=hub.fakts_url, mandate_key=hub.mandate_key("caller")) as rt:
-            rekuest = rt.require(Rekuest)
+            rekuest = rt.require(RekuestCaller)
 
             def greet() -> str:
                 (offered,) = [i for i in rekuest.list_implementations() if i.interface == "greet"]

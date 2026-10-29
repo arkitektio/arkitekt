@@ -123,8 +123,16 @@ BASE_SCOPES = ("openid",)
 
 
 def _scopes_of(registry: AppRegistry, asked: Iterable[str] = ()) -> List[str]:
-    """The scopes an app with ``registry`` asks for: its own and what each service's client needs."""
-    return sorted({*BASE_SCOPES, *asked, *(scope for builder in registry.services.values() for scope in builder.get_scopes())})
+    """The scopes an app with ``registry`` asks for: its own, what each service's client needs,
+    and what its actions' dynamic asks and calls need."""
+    return sorted(
+        {
+            *BASE_SCOPES,
+            *asked,
+            *(scope for builder in registry.services.values() for scope in builder.get_scopes()),
+            *registry.get_scopes(),
+        }
+    )
 
 
 def _caller(depth: int = 2) -> Tuple[Path, Optional[str]]:
@@ -491,6 +499,9 @@ class App(Generic[Ctx]):
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
         bloks: Optional[ActionBloks] = None,
+        dynamic_asks: bool = False,
+        dynamic_calls: bool = False,
+        dynamic_informs: bool = False,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def action(
@@ -521,6 +532,9 @@ class App(Generic[Ctx]):
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
         bloks: Optional[ActionBloks] = None,
+        dynamic_asks: bool = False,
+        dynamic_calls: bool = False,
+        dynamic_informs: bool = False,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
@@ -571,6 +585,15 @@ class App(Generic[Ctx]):
                 They name devices only by the function's dependency
                 parameters, read the run under ``@task``, are checked now, and are not
                 part of the action's hash.
+            dynamic_asks: Whether a task may also ask through a blok made at ask time
+                (``task.dynamic_ask``), not only its asks (``@ask`` on an interactions
+                protocol it is handed). The app then asks for the ``rekuest_dynamic_ask`` scope.
+            dynamic_calls: Whether a task may also call actions it found at run time
+                (``task.call``), not only its dependencies. A workflow only; the app then
+                asks for the ``rekuest_dynamic_call`` scope.
+            dynamic_informs: Whether a task may show a blok made at inform time
+                (``task.dynamic_inform``), not only its informs (``@inform``). The app
+                then asks for the ``rekuest_dynamic_inform`` scope.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -608,6 +631,9 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 bloks=bloks,
+                dynamic_asks=dynamic_asks,
+                dynamic_calls=dynamic_calls,
+                dynamic_informs=dynamic_informs,
             )
 
         if function is not None:
@@ -642,6 +668,9 @@ class App(Generic[Ctx]):
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
         bloks: Optional[ActionBloks] = None,
+        dynamic_asks: bool = False,
+        dynamic_calls: bool = False,
+        dynamic_informs: bool = False,
     ) -> WrappedFunction[P, R]:
         """Offer a function as an action, as a plain call: ``app.register_action(function, name=...)``.
 
@@ -686,6 +715,10 @@ class App(Generic[Ctx]):
                 logo=logo,
                 # Only when given, so an arkitekt-spec without action bloks still registers the rest.
                 **({"bloks": bloks} if bloks else {}),
+                # The same for the dynamic flags: an arkitekt-spec without them registers the rest.
+                **({"dynamic_asks": True} if dynamic_asks else {}),
+                **({"dynamic_calls": True} if dynamic_calls else {}),
+                **({"dynamic_informs": True} if dynamic_informs else {}),
             ),
         )
         return decorate(function)
@@ -721,6 +754,9 @@ class App(Generic[Ctx]):
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
         bloks: Optional[ActionBloks] = None,
+        dynamic_asks: bool = False,
+        dynamic_calls: bool = False,
+        dynamic_informs: bool = False,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def workflow(
@@ -751,6 +787,9 @@ class App(Generic[Ctx]):
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
         bloks: Optional[ActionBloks] = None,
+        dynamic_asks: bool = False,
+        dynamic_calls: bool = False,
+        dynamic_informs: bool = False,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a workflow: an action that may call other actions. ``@app.workflow``.
 
@@ -810,6 +849,15 @@ class App(Generic[Ctx]):
                 They name devices only by the function's dependency
                 parameters, read the run under ``@task``, are checked now, and are not
                 part of the action's hash.
+            dynamic_asks: Whether a task may also ask through a blok made at ask time
+                (``task.dynamic_ask``), not only its asks (``@ask`` on an interactions
+                protocol it is handed). The app then asks for the ``rekuest_dynamic_ask`` scope.
+            dynamic_calls: Whether a task may also call actions it found at run time
+                (``task.call``), not only its dependencies. A workflow only; the app then
+                asks for the ``rekuest_dynamic_call`` scope.
+            dynamic_informs: Whether a task may show a blok made at inform time
+                (``task.dynamic_inform``), not only its informs (``@inform``). The app
+                then asks for the ``rekuest_dynamic_inform`` scope.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -847,6 +895,9 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 bloks=bloks,
+                dynamic_asks=dynamic_asks,
+                dynamic_calls=dynamic_calls,
+                dynamic_informs=dynamic_informs,
             )
 
         if function is not None:
@@ -881,6 +932,9 @@ class App(Generic[Ctx]):
         effects: Optional[Effects] = None,
         logo: Optional[Union[str, ComponentNodeInput]] = None,
         bloks: Optional[ActionBloks] = None,
+        dynamic_asks: bool = False,
+        dynamic_calls: bool = False,
+        dynamic_informs: bool = False,
     ) -> WrappedFunction[P, R]:
         """Offer a function as a workflow, as a plain call: ``app.register_workflow(function, name=...)``.
 
@@ -926,6 +980,10 @@ class App(Generic[Ctx]):
                 execution=Execution.WORKFLOW,
                 # Only when given, so an arkitekt-spec without action bloks still registers the rest.
                 **({"bloks": bloks} if bloks else {}),
+                # The same for the dynamic flags: an arkitekt-spec without them registers the rest.
+                **({"dynamic_asks": True} if dynamic_asks else {}),
+                **({"dynamic_calls": True} if dynamic_calls else {}),
+                **({"dynamic_informs": True} if dynamic_informs else {}),
             ),
         )
         return decorate(function)
@@ -1435,6 +1493,47 @@ class App(Generic[Ctx]):
         return self.registry.declare(
             app, auto_resolvable=auto_resolvable, min=min, max=max, version=version
         )
+
+    def interactions(self, cls: C, /) -> C:
+        """Declare an interactions protocol: the bloks an action asks a person through or
+        shows them. ``@app.interactions``.
+
+        Each method decorated with :func:`~arkitekt_spec.declare.interactions.ask` is one ask:
+        its parameters are the blok's args, its return what an answer holds. Each decorated
+        with :func:`~arkitekt_spec.declare.interactions.inform` is one inform: its parameters
+        are the blok's args, and it returns nothing. The docstring is what either is listed
+        as. Their ports are built and their bloks checked now. An action parameter annotated
+        with the class is handed a proxy, and the action declares each, so the server shows
+        them without ``dynamic_asks``/``dynamic_informs``::
+
+            @app.interactions
+            class UI(Protocol):
+                @ask('<Html><Button label="Go" onClick={task.answer(values: {ok: true})} /></Html>')
+                def go(self, name: str) -> Annotated[bool, Key("ok")]:
+                    \"\"\"Go on?\"\"\"
+
+                @inform("<Html><Text text={args.name} /></Html>")
+                def started(self, name: str) -> None:
+                    \"\"\"Started.\"\"\"
+
+            @app.action
+            def run(name: str, ui: UI) -> str:
+                ui.go(name=name)        # DismissedError when dismissed
+                ui.started(name=name)   # shown; the task goes on
+                return name
+
+        Returns:
+            The class, unchanged.
+
+        Raises:
+            DefinitionError: If a public method is neither an ask nor an inform, or its blok breaks a rule.
+        """
+        self.registry.register_interactions(cls)
+        return cls
+
+    def register_interactions(self, cls: type[Any], /) -> None:
+        """Declare an interactions protocol, as a plain call: the twin of :meth:`interactions`."""
+        self.registry.register_interactions(cls)
 
     def register_protocol(
         self,
