@@ -72,7 +72,7 @@ from arkitekt_spec.declare.annotations import (
     Units,
 )
 from arkitekt_spec.declare.app import AppRegistry
-from arkitekt_spec.declare.interactions import ask, inform
+from arkitekt_spec.declare.interactions import AskMethod, InformMethod, ask, inform
 from arkitekt_spec.declare.blok.from_svg import (
     SvgConversionError,
     SvgConversionWarning,
@@ -213,6 +213,8 @@ __all__ = [
     # the bloks an action asks through or shows, declared (`@app.interactions`)
     "ask",
     "inform",
+    "AskMethod",
+    "InformMethod",
     "DismissedError",
     "NotDeclaredError",
     "HookInput",

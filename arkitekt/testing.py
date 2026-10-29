@@ -99,8 +99,8 @@ def call_through_rekuest(runtime: Runtime[Any], action: Any, *args: Any, **kwarg
     ``runtime`` is a run of the app that provides it (``connect(app, provide=True)``,
     running): the call is a root task on the app's own implementation, made with the
     AUTO policy, since nobody is there to approve what it asks for. Starting a task takes
-    the caller client, so the app takes in ``rekuest_caller_service`` (``hub_runtime``
-    does that for a suite run through rekuest).
+    the caller client, so the app takes in ``rekuest_caller_service`` (:func:`served_app`
+    does that).
     """
     from arkitekt_runtime.types import TaskPolicy
     from rekuest.client.client import RekuestCaller
@@ -160,6 +160,11 @@ def served_app(
         TimeoutError: If it does not register within ``timeout`` seconds.
         RuntimeError: If its run stops before it registers (or what stopped it).
     """
+    # A test starts the app's tasks as the app: it takes in the caller, whose scope it then
+    # asks for at login.
+    from rekuest.arkitekt import rekuest_caller_service
+
+    app.service(rekuest_caller_service)
     registered = threading.Event()
 
     async def on_state(state: ConnectionState) -> None:
@@ -381,12 +386,6 @@ if pytest is not None:
         of the hub's mikro, and what an action is handed. Through rekuest, the app
         is also registered with the hub's rekuest and served until the test ends.
         """
-        if arkitekt_call_through_rekuest:
-            # The test starts the app's tasks as the app: it takes in the caller, before
-            # its mandate is minted for what it asks.
-            from rekuest.arkitekt import rekuest_caller_service
-
-            arkitekt_app.service(rekuest_caller_service)
         url = arkitekt_hub.fakts_url
         mandate_key = arkitekt_hub.mandate_key(arkitekt_app.identifier)
         if not arkitekt_call_through_rekuest:

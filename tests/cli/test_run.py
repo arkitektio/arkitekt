@@ -368,7 +368,7 @@ def test_call_args_are_read_as_json_when_they_parse():
 
 
 def test_call_remote_connects_the_app_and_calls_through_its_rekuest(app_dir, monkeypatch):
-    from rekuest.client.client import Rekuest
+    from rekuest.client.client import RekuestCaller
 
     seen = {}
 
@@ -383,7 +383,7 @@ def test_call_remote_connects_the_app_and_calls_through_its_rekuest(app_dir, mon
 
     class FakeRuntime:
         def require(self, cls):
-            assert cls is Rekuest
+            assert cls is RekuestCaller
             return FakeRekuest()
 
     @asynccontextmanager
@@ -445,7 +445,8 @@ def test_the_cli_app_uses_rekuest_and_offers_nothing():
 
     app = make_cli_app()
 
-    assert app.services == ["rekuest"]
+    # It starts tasks as roots: the caller, which brings rekuest with it.
+    assert sorted(app.services) == ["rekuest", "rekuest_caller"]
     assert app.registry.is_empty()
     # call remote only connects: no agent is built, so nothing is provided.
     assert runtime.connect(app).provider is None
