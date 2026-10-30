@@ -36,7 +36,8 @@ def lifecycle(
 ):
     """Lists the agent lifecycle hooks: startup, shutdown and background.
 
-    Startup hooks populate states/contexts when the agent starts; background
+    Startup hooks populate states/contexts when the agent starts (a ``@app.lifecycle``
+    hook is listed among them, as it runs among them); background
     workers run alongside it; shutdown hooks run on teardown. All are read from
     the app registry without connecting to a server.
     """

@@ -370,10 +370,10 @@ requires-dist = [
     { name = "alpaka", marker = "extra == 'all'", specifier = ">=3.4" },
     { name = "alpaka", marker = "extra == 'alpaka'", specifier = ">=3.4" },
     { name = "arkitekt-fastapi", marker = "extra == 'serve'", specifier = ">=3.0" },
-    { name = "arkitekt-runtime", marker = "extra == 'all'", specifier = ">=7.2" },
-    { name = "arkitekt-runtime", marker = "extra == 'rekuest'", specifier = ">=7.2" },
+    { name = "arkitekt-runtime", marker = "extra == 'all'", specifier = ">=7.3.0" },
+    { name = "arkitekt-runtime", marker = "extra == 'rekuest'", specifier = ">=7.3.0" },
     { name = "arkitekt-runtime", extras = ["qt"], marker = "extra == 'qt'", specifier = ">=6.0" },
-    { name = "arkitekt-spec", specifier = ">=6.2" },
+    { name = "arkitekt-spec", specifier = ">=6.3.1" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=5" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=5" },
@@ -469,7 +469,7 @@ wheels = [
 
 [[package]]
 name = "arkitekt-runtime"
-version = "7.2.0"
+version = "7.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "arkitekt-spec" },
@@ -478,9 +478,9 @@ dependencies = [
     { name = "koil" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/92/fa/f22879848e59566acf862f2f79c0fcb7b7e01540014b573b0a60df053a7f/arkitekt_runtime-7.2.0.tar.gz", hash = "sha256:08abeb150d9de240871ddafb49673a4a326b412c73ee7d3a393946bce0657917", size = 129269, upload-time = "2026-10-30T19:06:26.47Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/2d/47/9fc8c4802178a71182b16c65bd35474a16d93a48efd7741c884b6cf48f68/arkitekt_runtime-7.3.0.tar.gz", hash = "sha256:4dbcc41b7ccc5fe53de28bbb662a21c42bd4c7f5c389e7e946aebb77203771a9", size = 130224, upload-time = "2026-10-30T20:15:06.843Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/7c/36e2b6dda49ad681d64384a583670db1bae958ed122e6f259493845aed41/arkitekt_runtime-7.2.0-py3-none-any.whl", hash = "sha256:5f4456bb6d1dabd427675670958c0aec12f8e834b8f5d4d5cac7a47c0bbb3c42", size = 159477, upload-time = "2026-10-30T19:06:25.082Z" },
+    { url = "https://files.pythonhosted.org/packages/70/3a/f3be818be19eb3bca36d71e317e103671213d56235be502c24dd14dc4512/arkitekt_runtime-7.3.0-py3-none-any.whl", hash = "sha256:23369a418be2ec32818bb8956b62dd2adb7386a47f19a18505edfe6d473fb00f", size = 160480, upload-time = "2026-10-30T20:15:05.704Z" },
 ]
 
 [package.optional-dependencies]
@@ -490,7 +490,7 @@ qt = [
 
 [[package]]
 name = "arkitekt-spec"
-version = "6.2.0"
+version = "6.3.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -500,9 +500,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b5/46/6249695f5b2b94180abbb8401b09acc93f88a8e2f28f9f7497c9c5e04eed/arkitekt_spec-6.2.0.tar.gz", hash = "sha256:7ed476d69b3c2fdb3360e8a566f5d7c62f7f6655267c2a236305d022ac705a19", size = 357083, upload-time = "2026-10-30T19:01:52.969Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/95/5c/04ea0e2e352f7983038efbe4be2cf23831378daaf03c01c4b6c3b06f5f9a/arkitekt_spec-6.3.1.tar.gz", hash = "sha256:6222fcc80bcc98f0baea7447e7c0062c1eab2c737bf13ae592d02ec98fb2b8e5", size = 358265, upload-time = "2026-10-30T20:12:34.827Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8d/59/2d797d0c56cdc478f3855757d390ebecdd456de247dd6cc95a69a4eef772/arkitekt_spec-6.2.0-py3-none-any.whl", hash = "sha256:55fa83d354e56f7b263b3f8516d90d9baf03eb9fccd8fa0e3dd7b0ff7f69fb17", size = 412040, upload-time = "2026-10-30T19:01:51.635Z" },
+    { url = "https://files.pythonhosted.org/packages/6c/ec/dccc70cbe9392daa70bbc4a27b14f3ea1c007dace4cd88faa4ff238d64eb/arkitekt_spec-6.3.1-py3-none-any.whl", hash = "sha256:5c1dac38ca8f6e2b931a31a9bfa6e0c668138cb28b43836924a0c236ac511666", size = 413167, upload-time = "2026-10-30T20:12:33.6Z" },
 ]
 
 [[package]]

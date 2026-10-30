@@ -158,9 +158,13 @@ if __name__ == "__main__":
 ```
 
 Beyond actions, an app can declare `@app.model` result types, `@app.state` that the platform publishes
-live, `@app.startup`/`@app.shutdown` hooks and `@app.background` tasks, and a typed app context
+live, `@app.startup`/`@app.shutdown` hooks (or both in one async generator, `@app.lifecycle`) and `@app.background` tasks, and a typed app context
 (`App(..., app_context=Setup)` together with `run(app, context=Setup(...))`). The
 [examples](examples/README.md) show one each.
+
+An app can be declared in parts: each part is an `App` or an `AppRegistry` of its own, with the same decorators.
+`App("microscope", registry=merge(stage, camera))` runs them as one, and `app.merge(stage, camera)` takes them into
+an app you already have. What the parts share counts once, and clashing names are refused.
 
 ### Workflows: actions that call other apps
 

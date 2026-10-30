@@ -168,6 +168,35 @@ def _app_root(constructed_in: Path) -> Path:
     return constructed_in.resolve().parent if constructed_in.is_file() else Path.cwd()
 
 
+def _registry_of(app: Union["App[Any]", AppRegistry]) -> AppRegistry:
+    return app.registry if isinstance(app, App) else app
+
+
+def merge(
+    first: Union["App[Any]", AppRegistry], /, *others: Union["App[Any]", AppRegistry]
+) -> AppRegistry:
+    """One new registry holding what the given apps and registries declare.
+
+    Run it as an app of its own, under its own identifier::
+
+        app = App("microscope", registry=merge(stage, camera))
+
+    What several of them share (a service they all use, a registry they all took) counts
+    once. Clashing names are refused. See :meth:`App.merge` to merge into an existing app.
+
+    Args:
+        first: An app or registry to take.
+        others: Any more. None of them is changed.
+
+    Returns:
+        The new registry.
+    """
+    merged = AppRegistry()
+    for part in (first, *others):
+        merged.merge(_registry_of(part))
+    return merged
+
+
 class App(Generic[Ctx]):
     """What an app is and what it offers. Pure declaration: no I/O, no clients.
 
@@ -1261,6 +1290,66 @@ class App(Generic[Ctx]):
             The function.
         """
         return self._register_hook("startup", function, name)
+
+    def merge(self, *others: Union["App[Any]", AppRegistry]) -> "App[Ctx]":
+        """Take what other apps or registries declare into this app, in place.
+
+        Declare parts of an app apart from each other, and bring them together here::
+
+            app = App("microscope").merge(stage, camera)
+
+        It takes what they hold now: what is declared on them afterwards does not
+        follow. Each part's actions keep the ``effects`` they were declared with, this
+        app's default only reaches what is declared on it. Clashing names are refused.
+
+        Args:
+            others: The apps or registries to take. They are not changed.
+
+        Returns:
+            This app.
+        """
+        for other in others:
+            self.registry.merge(_registry_of(other))
+        return self
+
+    @overload
+    def lifecycle(self, function: F, /) -> F: ...
+
+    @overload
+    def lifecycle(self, /, *, name: Optional[str] = None) -> Callable[[F], F]: ...
+
+    def lifecycle(
+        self, function: Optional[F] = None, /, *, name: Optional[str] = None
+    ) -> Union[F, Callable[[F], F]]:
+        """Set something up and tear it down in one async generator: ``@app.lifecycle``.
+
+        What it yields sets up the app's states and contexts, as a startup hook's return
+        does. What follows the yield runs when the app stops providing, after the shutdown
+        hooks, so ``async with`` works across the app's whole run::
+
+            @app.lifecycle
+            async def mikro(settings: Settings) -> AsyncIterator[Mikro]:
+                async with connect(settings) as client:
+                    yield client
+
+        It runs in a task of its own, so what it enters is left in the same task.
+
+        Args:
+            function: The function, when used bare as ``@app.lifecycle``.
+            name: The hook's name. Defaults to the function name.
+
+        Returns:
+            The function, or, with options, a decorator returning it.
+        """
+        return self._hook("lifecycle", function, name)
+
+    def register_lifecycle(self, function: F, /, *, name: Optional[str] = None) -> F:
+        """Set up and tear down in one async generator, as a plain call: the twin of :meth:`lifecycle`.
+
+        Returns:
+            The function.
+        """
+        return self._register_hook("lifecycle", function, name)
 
     @overload
     def shutdown(self, function: F, /) -> F: ...
