@@ -329,7 +329,7 @@ def import_target_or_exit(ctx: typer.Context, target: str) -> tuple[ModuleType, 
             cli_error(describe_import_failure(e, parsed.module, get_work_dir(ctx)))
 
 
-def _project_frame(error: BaseException, work_dir: str) -> Optional[traceback.FrameSummary]:
+def project_frame(error: BaseException, work_dir: str) -> Optional[traceback.FrameSummary]:
     """The deepest frame of ``error`` that is the user's own code, if any is.
 
     The user's code is what lives under the work dir and outside an environment
@@ -366,7 +366,7 @@ def describe_import_failure(error: BaseException, module: str, work_dir: str) ->
             lines.append(f"    {error.text.strip()}")
         lines.append(f"  {type(error).__name__}: {error.msg}")
         return "\n".join(lines)
-    frame = _project_frame(error, work_dir)
+    frame = project_frame(error, work_dir)
     if frame is not None:
         where = os.path.relpath(frame.filename, work_dir)
         inside = "" if frame.name == "<module>" else f", in {frame.name}"

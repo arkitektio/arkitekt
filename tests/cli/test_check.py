@@ -1,6 +1,7 @@
 """`arkitekt check`, and what any command says when the app does not import."""
 
 from pathlib import Path
+from typing import Any
 
 import pytest
 from typer.testing import CliRunner
@@ -190,3 +191,100 @@ def test_check_refuses_a_strict_blok_its_catalog_does_not_know(tmp_path):
 
     assert result.exit_code == 1
     assert "[catalog.unknown_component]" in " ".join(result.output.split())
+
+
+def _report(work_dir: Path, *args: str) -> tuple[int, Any]:
+    import json
+
+    out = work_dir / "report.json"
+    result = _invoke(work_dir, "check", "--json-out", str(out), *args)
+    return result.exit_code, json.loads(out.read_text())
+
+
+def _line_of(source: str, text: str) -> int:
+    return next(number for number, line in enumerate(source.splitlines(), start=1) if text in line)
+
+
+MULTILINE_BLOK = VALID + '\napp.blok(\n    "panel",\n    """\n    <Html><Card><Slidr /></Card></Html>\n    """,\n)\n'
+
+
+def test_check_json_out_places_each_warning_at_its_blok(tmp_path: Path) -> None:
+    """The report says which blok, which node and which declaring line: what an editor underlines."""
+    (tmp_path / "app.py").write_text(MULTILINE_BLOK)
+
+    code, report = _report(tmp_path)
+
+    assert code == 0
+    assert report["version"] == 1 and report["ok"] is True
+    assert report["app"] == {"identifier": "checked", "version": "1.2.3"}
+    (diagnostic,) = report["diagnostics"]
+    assert diagnostic["code"] == "catalog.unknown_component" and diagnostic["level"] == "warning"
+    assert diagnostic["blok"] == "panel" and "Slidr" in diagnostic["node"]
+    assert diagnostic["file"] == str(tmp_path / "app.py")
+    assert diagnostic["call_line"] == _line_of(MULTILINE_BLOK, "app.blok(")
+    (blok,) = report["bloks"]
+    assert blok["blok"] == "panel" and blok["context"] == "HTML"
+    assert blok["source"] in MULTILINE_BLOK, "the source as written: an editor finds the literal by it"
+    assert blok["call_line"] == diagnostic["call_line"]
+
+
+def test_check_json_out_names_an_action_blok_by_interface_and_context(tmp_path: Path) -> None:
+    source = (
+        "from arkitekt import App\n"
+        "app = App('checked', '1.2.3')\n\n"
+        "@app.workflow(bloks='<Html><Card><Slidr /><ask /></Card></Html>')\n"
+        "def add(a: int) -> int:\n"
+        "    return a\n"
+    )
+    (tmp_path / "app.py").write_text(source)
+
+    code, report = _report(tmp_path)
+
+    assert code == 0
+    assert {d["blok"] for d in report["diagnostics"]} == {"add:html"}
+    assert [blok["blok"] for blok in report["bloks"]] == ["add:html"]
+
+
+def test_check_json_out_records_the_refusal_that_stopped_it(tmp_path: Path) -> None:
+    source = VALID + "\napp.blok('panel', '<Html><Card><Slidr /></Card></Html>', mode='strict')\n"
+    (tmp_path / "app.py").write_text(source)
+
+    code, report = _report(tmp_path)
+
+    assert code == 1
+    assert report["ok"] is False and report["bloks"] == []
+    (error,) = report["diagnostics"]
+    assert error["level"] == "error" and error["code"] == "catalog.unknown_component"
+    assert "Slidr" in error["node"]
+    assert (error["file"], error["call_line"]) == (str(tmp_path / "app.py"), _line_of(source, "app.blok("))
+
+
+def test_check_json_out_places_a_parse_error_in_the_bsx(tmp_path: Path) -> None:
+    source = VALID + "\napp.blok('panel', '<Html><Card></Html>')\n"
+    (tmp_path / "app.py").write_text(source)
+
+    code, report = _report(tmp_path)
+
+    assert code == 1
+    (error,) = report["diagnostics"]
+    assert error["code"] and error["line"] == 1 and error["column"] >= 1
+    assert error["call_line"] == _line_of(source, "app.blok(")
+
+
+def test_check_json_out_records_an_app_that_does_not_import(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text(UNCLOSED)
+
+    code, report = _report(tmp_path)
+
+    assert code == 1
+    assert report["app"] is None
+    (error,) = report["diagnostics"]
+    assert error["message"].startswith("SyntaxError") and error["file"] == str(tmp_path / "app.py")
+
+
+def test_check_json_out_is_not_corrupted_by_what_the_app_prints(tmp_path: Path) -> None:
+    (tmp_path / "app.py").write_text("print('{not json')\n" + VALID)
+
+    code, report = _report(tmp_path)
+
+    assert code == 0 and report["ok"] is True
