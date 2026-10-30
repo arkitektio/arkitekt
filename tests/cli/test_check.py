@@ -282,6 +282,25 @@ def test_check_json_out_lists_the_protocols_and_who_takes_them(tmp_path: Path) -
     assert [dependency["key"] for dependency in blok["scope"]["dependencies"]] == ["lab"]
 
 
+def test_check_json_out_names_the_class_behind_each_identifier(tmp_path: Path) -> None:
+    """What an editor needs to write a port's type: the identifier's class, and where to import it."""
+    (tmp_path / "shapes.py").write_text("class Cell:\n    id: str\n")
+    (tmp_path / "app.py").write_text(
+        "from arkitekt import App\nfrom shapes import Cell\n"
+        "app = App('checked', '1.2.3')\n"
+        "@app.registry.structure_registry.structure('@t/cell', cls=Cell)\n"
+        "async def expand(id: str) -> Cell:\n"
+        "    return Cell()\n"
+    )
+
+    code, report = _report(tmp_path)
+
+    assert code == 0, report["diagnostics"]
+    cell = next(record for record in report["structures"] if record["identifier"] == "@t/cell")
+    assert (cell["kind"], cell["name"], cell["module"]) == ("STRUCTURE", "Cell", "shapes")
+    assert cell["file"] == str(tmp_path / "shapes.py")
+
+
 def test_check_json_out_records_the_refusal_that_stopped_it(tmp_path: Path) -> None:
     source = VALID + "\napp.blok('panel', '<Html><Card><Slidr /></Card></Html>', mode='strict')\n"
     (tmp_path / "app.py").write_text(source)

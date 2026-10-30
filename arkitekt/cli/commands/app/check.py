@@ -26,7 +26,8 @@ REPORT_VERSION = 2
 """The shape of a ``--json-out`` report; raised when a field changes meaning or goes.
 
 2: every blok carries its ``scope``, an action's blok where its action was declared, and the
-report lists the dependency ``protocols`` the app declares."""
+report lists the dependency ``protocols`` the app declares. It also lists the ``structures``
+the app knows, by the class behind each identifier; a reader takes their absence as knowing none."""
 
 
 def _counted(count: int, what: str) -> str:
@@ -217,6 +218,27 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     return records
 
 
+def structure_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
+    """The Python class behind each identifier this app knows, its services' included: what an editor
+    writes when a port names one. An enum spelled as a Literal, or a nested class, has no name to import."""
+    structures = registry.structure_registry
+    records: list[dict[str, Any]] = []
+    for kind, known in (
+        ("STRUCTURE", structures.identifier_structure_map),
+        ("MODEL", structures.identifier_model_map),
+        ("ENUM", structures.identifier_enum_map),
+        ("MEMORY_STRUCTURE", structures.identifier_memory_structure_map),
+    ):
+        for identifier, fullfilled in known.items():
+            cls = fullfilled.cls
+            name, module = getattr(cls, "__qualname__", None), getattr(cls, "__module__", None)
+            if isinstance(name, str) and isinstance(module, str) and "." not in name:
+                records.append(
+                    _compact({"identifier": identifier, "kind": kind, "name": name, "module": module, "file": _declared_at(cls)[0]})
+                )
+    return records
+
+
 def protocol_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     """Each dependency protocol the app declares: where, the dependency it stands for, and the
     action parameters that take it.
@@ -296,6 +318,7 @@ def check(
         "app": None,
         "bloks": [],
         "protocols": [],
+        "structures": [],
         "diagnostics": [],
     }
     with warnings.catch_warnings(record=True) as caught:
@@ -322,6 +345,7 @@ def check(
             ok=True,
             bloks=blok_records(snapshot.registry),
             protocols=protocol_records(snapshot.registry),
+            structures=structure_records(snapshot.registry),
             diagnostics=[warning_record(warning) for warning in findings],
         )
         write_report(json_out, report)
