@@ -42,7 +42,8 @@ def _run_cli(work_dir, *args):
             "--work-dir", str(work_dir), *args,
         ],
         capture_output=True,
-        text=True,
+        encoding="utf-8",
+        errors="replace",
     )
     if result.returncode != 0:
         print(result.stdout)
@@ -237,7 +238,7 @@ def test_gen_init_writes_a_project_for_each_service(app_dir):
     assert "documents" not in turms
     # the sibling project it names lives in rekuest's repo, not in this config
     assert all(e["from_project"] is None for e in turms["external_modules"])
-    assert "type" in (app_dir / "schemas" / "rekuest.graphql").read_text()
+    assert "type" in (app_dir / "schemas" / "rekuest.graphql").read_text(encoding="utf-8")
     assert (app_dir / "graphql" / "rekuest").is_dir()
 
 

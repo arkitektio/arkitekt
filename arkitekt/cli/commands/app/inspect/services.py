@@ -83,7 +83,8 @@ def services(
             sdl = svc.get_graphql_schema()
         except Exception as e:
             cli_error(f"Service '{schema}' ships no GraphQL schema: {e}")
-        print(sdl)
+        # Bytes: a pipe on Windows would encode text as cp1252, and a schema is UTF-8.
+        typer.echo((sdl or "").encode("utf-8"))
         return
 
     records = [

@@ -113,7 +113,7 @@ def init(
 
         os.makedirs(os.path.join(app_directory, "schemas"), exist_ok=True)
         os.makedirs(os.path.join(app_directory, "graphql", name), exist_ok=True)
-        with open(os.path.join(app_directory, "schemas", f"{name}.graphql"), "w") as f:
+        with open(os.path.join(app_directory, "schemas", f"{name}.graphql"), "w", encoding="utf-8") as f:
             f.write(schema)
         projects[name] = _app_project(name, project, api)
         written.append(name)
