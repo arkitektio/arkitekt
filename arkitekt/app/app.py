@@ -502,6 +502,8 @@ class App(Generic[Ctx]):
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
+        estimated_runtime: Optional[str] = None,
+        estimated_runtime_ui: Optional[str] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def action(
@@ -535,6 +537,8 @@ class App(Generic[Ctx]):
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
+        estimated_runtime: Optional[str] = None,
+        estimated_runtime_ui: Optional[str] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
@@ -594,6 +598,14 @@ class App(Generic[Ctx]):
             dynamic_informs: Whether a task may show a blok made at inform time
                 (``task.dynamic_inform``), not only its informs (``@inform``). The app
                 then asks for the ``rekuest_dynamic_inform`` scope.
+            estimated_runtime: A formula for how long it runs, in seconds, such as
+                ``'args.image["@mikro/size"] / agent.cpu_count / 5e7'``. Parsed at
+                declaration, never run. The action query filters and sorts by it, so it
+                is refused unless the server can compute it: arithmetic over one
+                structure argument's descriptors and the agent's hardware.
+            estimated_runtime_ui: A richer formula for the form only, shown instead of
+                ``estimated_runtime``, which it requires: any pure function, and the
+                form's values too. The two can disagree.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -634,6 +646,8 @@ class App(Generic[Ctx]):
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
+                estimated_runtime=estimated_runtime,
+                estimated_runtime_ui=estimated_runtime_ui,
             )
 
         if function is not None:
@@ -671,6 +685,8 @@ class App(Generic[Ctx]):
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
+        estimated_runtime: Optional[str] = None,
+        estimated_runtime_ui: Optional[str] = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as an action, as a plain call: ``app.register_action(function, name=...)``.
 
@@ -719,6 +735,8 @@ class App(Generic[Ctx]):
                 **({"dynamic_asks": True} if dynamic_asks else {}),
                 **({"dynamic_calls": True} if dynamic_calls else {}),
                 **({"dynamic_informs": True} if dynamic_informs else {}),
+                **({"estimated_runtime": estimated_runtime} if estimated_runtime else {}),
+                **({"estimated_runtime_ui": estimated_runtime_ui} if estimated_runtime_ui else {}),
             ),
         )
         return decorate(function)
@@ -757,6 +775,8 @@ class App(Generic[Ctx]):
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
+        estimated_runtime: Optional[str] = None,
+        estimated_runtime_ui: Optional[str] = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def workflow(
@@ -790,6 +810,8 @@ class App(Generic[Ctx]):
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
+        estimated_runtime: Optional[str] = None,
+        estimated_runtime_ui: Optional[str] = None,
     ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
         """Offer a workflow: an action that may call other actions. ``@app.workflow``.
 
@@ -858,6 +880,14 @@ class App(Generic[Ctx]):
             dynamic_informs: Whether a task may show a blok made at inform time
                 (``task.dynamic_inform``), not only its informs (``@inform``). The app
                 then asks for the ``rekuest_dynamic_inform`` scope.
+            estimated_runtime: A formula for how long it runs, in seconds, such as
+                ``'args.image["@mikro/size"] / agent.cpu_count / 5e7'``. Parsed at
+                declaration, never run. The action query filters and sorts by it, so it
+                is refused unless the server can compute it: arithmetic over one
+                structure argument's descriptors and the agent's hardware.
+            estimated_runtime_ui: A richer formula for the form only, shown instead of
+                ``estimated_runtime``, which it requires: any pure function, and the
+                form's values too. The two can disagree.
 
         Returns:
             The function, still callable as itself -- pass it its clients and a
@@ -898,6 +928,8 @@ class App(Generic[Ctx]):
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
+                estimated_runtime=estimated_runtime,
+                estimated_runtime_ui=estimated_runtime_ui,
             )
 
         if function is not None:
@@ -935,6 +967,8 @@ class App(Generic[Ctx]):
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
+        estimated_runtime: Optional[str] = None,
+        estimated_runtime_ui: Optional[str] = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as a workflow, as a plain call: ``app.register_workflow(function, name=...)``.
 
@@ -984,6 +1018,8 @@ class App(Generic[Ctx]):
                 **({"dynamic_asks": True} if dynamic_asks else {}),
                 **({"dynamic_calls": True} if dynamic_calls else {}),
                 **({"dynamic_informs": True} if dynamic_informs else {}),
+                **({"estimated_runtime": estimated_runtime} if estimated_runtime else {}),
+                **({"estimated_runtime_ui": estimated_runtime_ui} if estimated_runtime_ui else {}),
             ),
         )
         return decorate(function)

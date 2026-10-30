@@ -25,7 +25,7 @@ dependencies = [
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
     # 6.0: CatalogWarning.finding/.blok, BlokError.node and action_blok_id (check --json-out).
-    "arkitekt-spec>=6.0",
+    "arkitekt-spec>=6.1",
 ]
 
 [project.optional-dependencies]
@@ -35,8 +35,8 @@ dependencies = [
 rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
-    "rekuest>=12.0.0",
-    "arkitekt-runtime>=7.0",
+    "rekuest>=12.1.0",
+    "arkitekt-runtime>=7.1",
 ]
 alpaka = [
     "alpaka>=3.4",
@@ -45,7 +45,7 @@ kraph = [
     "kraph>=4.1.1",
 ]
 mikro = [
-    "mikro>=12.0.1",
+    "mikro>=12.2.0",
 ]
 # The kabinet client, for apps that manage deployments. The plugin commands do not
 # need it: they speak arkitekt-spec.
@@ -112,14 +112,14 @@ dev-dependencies = [
     "pytest-asyncio>=1.2",
     "pytest-cov>=6",
     "pytest-aiohttp>=1.0.4,<2",
-    "mikro>=12.0.1",
+    "mikro>=12.2.0",
     "python-semantic-release>=9.21.1",
     # Builds the hub tests/integration runs against; 0.17 is where a hub is a dokker
     # deployment a test can look into.
     "konstruktor>=0.34.1",
     "qtpy>=2.4.3",
     "numpy>=2",
-    "rekuest>=12.0.0",
+    "rekuest>=12.1.0",
     "kabinet>=6.0",
     "alpaka>=3.4",
     "kraph>=4.1.1",

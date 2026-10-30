@@ -68,6 +68,7 @@ from arkitekt_spec.declare.annotations import (
     Description,
     Key,
     Provides,
+    Fits,
     Requires,
     Units,
 )
@@ -306,6 +307,7 @@ __all__ = [
     "withEffect",
     "Description",
     "Key",
+    "Fits",
     "Requires",
     "Provides",
     "DescriptorOperator",
