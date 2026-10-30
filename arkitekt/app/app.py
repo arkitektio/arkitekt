@@ -1032,6 +1032,7 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         required_locks: Optional[List[str]] = None,
+        persist: Union[Literal["synchronous"], float, None] = None,
     ) -> C: ...
 
     @overload
@@ -1041,6 +1042,7 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         required_locks: Optional[List[str]] = None,
+        persist: Union[Literal["synchronous"], float, None] = None,
     ) -> Callable[[C], C]: ...
 
     @dataclass_transform(field_specifiers=(model_field,))
@@ -1051,6 +1053,7 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         required_locks: Optional[List[str]] = None,
+        persist: Union[Literal["synchronous"], float, None] = None,
     ) -> Union[C, Callable[[C], C]]:
         """Declare a class as a state other apps can observe: ``@app.state``.
 
@@ -1059,13 +1062,19 @@ class App(Generic[Ctx]):
             name: The interface the state is offered at. Defaults to the class name.
             required_locks: Locks every action taking the state holds (inferred), so
                 no two actions command it at once. Not a write guard.
+            persist: Keep its last value on disk, so a startup hook of the next run can
+                take it as ``old: ThisState | None``: ``"synchronous"`` for every change
+                (an fsync on the event loop), or a period in seconds. ``None`` keeps
+                nothing, and such a state cannot be taken by a startup hook.
 
         Returns:
             The class, or, with options, a decorator returning it.
         """
 
         def declare(cls: C) -> C:
-            return self.register_state(cls, name=name, required_locks=required_locks)
+            return self.register_state(
+                cls, name=name, required_locks=required_locks, persist=persist
+            )
 
         if cls is not None:
             return declare(cls)
@@ -1079,13 +1088,14 @@ class App(Generic[Ctx]):
         *,
         name: Optional[str] = None,
         required_locks: Optional[List[str]] = None,
+        persist: Union[Literal["synchronous"], float, None] = None,
     ) -> C:
         """Declare a class as a state, as a plain call: the twin of :meth:`state`.
 
         Returns:
             The class.
         """
-        self.registry.state(cls, name=name, required_locks=required_locks)
+        self.registry.state(cls, name=name, required_locks=required_locks, persist=persist)
         return cls
 
     @overload

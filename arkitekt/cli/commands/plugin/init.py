@@ -83,6 +83,7 @@ BUILD_CONTEXT_IGNORE = """# The image builds its own environment, at /opt/venv.
 .arkitekt/cache/
 .arkitekt/servers/
 .arkitekt/rekuest_journal.db*
+.arkitekt/rekuest_state.db*
 """
 
 

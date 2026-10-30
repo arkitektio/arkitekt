@@ -54,6 +54,7 @@ ARKITEKT_FOLDER_IGNORED = [
     "cache/",
     "servers/",
     "rekuest_journal.db*",
+    "rekuest_state.db*",
 ]
 
 

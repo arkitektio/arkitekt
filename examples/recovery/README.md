@@ -13,6 +13,7 @@ The server re-runs nothing on its own, except a task that never started (it is r
 | `declare_analysis.py` | `effects=`: `count_cells` is `NONE`; `segment` makes no claim, because it stores a new dataset |
 | `declare_robot.py` | `App(effects=Effects.IRREVERSIBLE)` as the app's default, and an `@app.state` plate to guard on |
 | `workflow.py` | `@app.workflow`, `task.retry`, handling `AgentLost`, `task.hold(lost=...)`, `task.guard` / `StateChanged` |
+| `persisted_state.py` | `@app.state(persist=...)`: a startup hook takes `old: Stage \| None` and works out what happened before a restart or power cut |
 | `call_directly.py` | a script deciding about a lost task: `retry`, and `AgentLost.started` |
 
 Images cross between apps as **mikro structures** (a `SingleChannelImage` lens): each app

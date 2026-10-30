@@ -25,7 +25,7 @@ dependencies = [
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
     # 6.0: CatalogWarning.finding/.blok, BlokError.node and action_blok_id (check --json-out).
-    "arkitekt-spec>=6.1",
+    "arkitekt-spec>=6.2",
 ]
 
 [project.optional-dependencies]
@@ -35,8 +35,8 @@ dependencies = [
 rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
-    "rekuest>=12.1.0",
-    "arkitekt-runtime>=7.1",
+    "rekuest>=12.2.0",
+    "arkitekt-runtime>=7.2",
 ]
 alpaka = [
     "alpaka>=3.4",
@@ -119,7 +119,7 @@ dev-dependencies = [
     "konstruktor>=0.34.1",
     "qtpy>=2.4.3",
     "numpy>=2",
-    "rekuest>=12.1.0",
+    "rekuest>=12.2.0",
     "kabinet>=6.0",
     "alpaka>=3.4",
     "kraph>=4.1.1",
