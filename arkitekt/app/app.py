@@ -758,14 +758,12 @@ class App(Generic[Ctx]):
                 protocols=protocols,
                 effects=effects,
                 logo=logo,
-                # Only when given, so an arkitekt-spec without action bloks still registers the rest.
-                **({"bloks": bloks} if bloks else {}),
-                # The same for the dynamic flags: an arkitekt-spec without them registers the rest.
-                **({"dynamic_asks": True} if dynamic_asks else {}),
-                **({"dynamic_calls": True} if dynamic_calls else {}),
-                **({"dynamic_informs": True} if dynamic_informs else {}),
-                **({"estimated_runtime": estimated_runtime} if estimated_runtime else {}),
-                **({"estimated_runtime_ui": estimated_runtime_ui} if estimated_runtime_ui else {}),
+                bloks=bloks,
+                dynamic_asks=dynamic_asks,
+                dynamic_calls=dynamic_calls,
+                dynamic_informs=dynamic_informs,
+                estimated_runtime=estimated_runtime,
+                estimated_runtime_ui=estimated_runtime_ui,
             ),
         )
         return decorate(function)
@@ -1041,14 +1039,12 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 execution=Execution.WORKFLOW,
-                # Only when given, so an arkitekt-spec without action bloks still registers the rest.
-                **({"bloks": bloks} if bloks else {}),
-                # The same for the dynamic flags: an arkitekt-spec without them registers the rest.
-                **({"dynamic_asks": True} if dynamic_asks else {}),
-                **({"dynamic_calls": True} if dynamic_calls else {}),
-                **({"dynamic_informs": True} if dynamic_informs else {}),
-                **({"estimated_runtime": estimated_runtime} if estimated_runtime else {}),
-                **({"estimated_runtime_ui": estimated_runtime_ui} if estimated_runtime_ui else {}),
+                bloks=bloks,
+                dynamic_asks=dynamic_asks,
+                dynamic_calls=dynamic_calls,
+                dynamic_informs=dynamic_informs,
+                estimated_runtime=estimated_runtime,
+                estimated_runtime_ui=estimated_runtime_ui,
             ),
         )
         return decorate(function)
