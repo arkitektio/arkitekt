@@ -215,7 +215,7 @@ def test_check_json_out_places_each_warning_at_its_blok(tmp_path: Path) -> None:
     code, report = _report(tmp_path)
 
     assert code == 0
-    assert report["version"] == 1 and report["ok"] is True
+    assert report["version"] == 2 and report["ok"] is True
     assert report["app"] == {"identifier": "checked", "version": "1.2.3"}
     (diagnostic,) = report["diagnostics"]
     assert diagnostic["code"] == "catalog.unknown_component" and diagnostic["level"] == "warning"
@@ -226,6 +226,8 @@ def test_check_json_out_places_each_warning_at_its_blok(tmp_path: Path) -> None:
     assert blok["blok"] == "panel" and blok["context"] == "HTML"
     assert blok["source"] in MULTILINE_BLOK, "the source as written: an editor finds the literal by it"
     assert blok["call_line"] == diagnostic["call_line"]
+    assert blok["scope"]["kind"] == "agent" and blok["scope"]["context"] == "HTML"
+    assert blok["scope"]["args"] == [], "an app blok declaring no args reads none"
 
 
 def test_check_json_out_names_an_action_blok_by_interface_and_context(tmp_path: Path) -> None:
@@ -242,7 +244,42 @@ def test_check_json_out_names_an_action_blok_by_interface_and_context(tmp_path: 
 
     assert code == 0
     assert {d["blok"] for d in report["diagnostics"]} == {"add:html"}
-    assert [blok["blok"] for blok in report["bloks"]] == ["add:html"]
+    (blok,) = report["bloks"]
+    assert blok["blok"] == "add:html"
+    assert (blok["file"], blok["call_line"]) == (str(tmp_path / "app.py"), _line_of(source, "@app.workflow"))
+    assert blok["scope"]["kind"] == "action" and blok["scope"]["args"] == ["a"]
+
+
+DEPENDENT = (
+    "from typing import Protocol\n"
+    "from arkitekt import App\n"
+    "app = App('checked', '1.2.3')\n\n"
+    "@app.declare(app='lab')\n"
+    "class Lab(Protocol):\n"
+    "    def ping(self, n: int) -> int:\n"
+    "        \"\"\"Ping.\"\"\"\n"
+    "        ...\n\n"
+    "@app.workflow(bloks='<Html><Card /></Html>')\n"
+    "def run(lab: Lab, a: int) -> int:\n"
+    "    return a\n"
+)
+
+
+def test_check_json_out_lists_the_protocols_and_who_takes_them(tmp_path: Path) -> None:
+    """What an editor asks a server about: each protocol, its dependency and the parameters that take it."""
+    (tmp_path / "app.py").write_text(DEPENDENT)
+
+    code, report = _report(tmp_path)
+
+    assert code == 0, report["diagnostics"]
+    (protocol,) = report["protocols"]
+    assert protocol["name"] == "Lab" and protocol["file"] == str(tmp_path / "app.py")
+    assert protocol["line"] == _line_of(DEPENDENT, "@app.declare")
+    assert protocol["dependency"]["app"] == "lab"
+    assert [action["key"] for action in protocol["dependency"]["action_dependencies"]] == ["ping"]
+    assert protocol["used_by"] == [{"action": "run", "key": "lab"}]
+    (blok,) = report["bloks"]
+    assert [dependency["key"] for dependency in blok["scope"]["dependencies"]] == ["lab"]
 
 
 def test_check_json_out_records_the_refusal_that_stopped_it(tmp_path: Path) -> None:

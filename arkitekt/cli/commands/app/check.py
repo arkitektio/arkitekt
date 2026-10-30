@@ -1,13 +1,16 @@
 """Checking an app: everything a run would refuse, found without running it."""
 
+import inspect
 import json
 import os
 import warnings
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Annotated, Any
 
 import typer
 from arkitekt_spec.actions import ComponentContext
+from arkitekt_spec.declare.agents.dependency import prepare_dependency_variables
 from arkitekt_spec.blok.vocabulary import BlokError
 from arkitekt_spec.declare.blok.action import action_blok_id
 from arkitekt_spec.declare.catalogs import CatalogWarning
@@ -19,8 +22,11 @@ from arkitekt.cli.offline import offline
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit, project_frame
 from arkitekt.cli.vars import get_console, get_work_dir
 
-REPORT_VERSION = 1
-"""The shape of a ``--json-out`` report; raised when a field changes meaning or goes."""
+REPORT_VERSION = 2
+"""The shape of a ``--json-out`` report; raised when a field changes meaning or goes.
+
+2: every blok carries its ``scope``, an action's blok where its action was declared, and the
+report lists the dependency ``protocols`` the app declares."""
 
 
 def _counted(count: int, what: str) -> str:
@@ -89,37 +95,161 @@ def error_record(error: BaseException, work_dir: str) -> dict[str, Any]:
     return _compact(record)
 
 
-def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
-    """Each blok the app declares with the BSX it was written as, for a reader to find it by.
+def _dumped(models: Iterable[Any]) -> list[dict[str, Any]]:
+    return [model.model_dump(mode="json", exclude_none=True) for model in models]
 
-    An app blok also says where it was declared; an action's blok is named
-    :func:`~arkitekt_spec.declare.blok.action.action_blok_id`, and its warnings say where.
+
+def _declared_at(obj: Any) -> tuple[str | None, int | None]:  # noqa: ANN401
+    """The file and first line (its first decorator's) of a function or class, if it has source."""
+    try:
+        target = inspect.unwrap(obj) if callable(obj) and not isinstance(obj, type) else obj
+        file = inspect.getsourcefile(target)
+        _, line = inspect.getsourcelines(target)
+    except (OSError, TypeError):
+        return None, None
+    return (os.path.abspath(file) if file else None), line
+
+
+def scope_record(
+    *,
+    kind: str,
+    context: str,
+    dependencies: Iterable[Any] = (),
+    locals_: Iterable[Any] = (),
+    queries: Iterable[Any] = (),
+    subscriptions: Iterable[Any] = (),
+    args: Iterable[str] | None = None,
+    catalogs: Iterable[str] = (),
+    module: str | None = None,
+    assets: Iterable[str] | None = None,
+) -> dict[str, Any]:
+    """What a blok's reads and calls resolve against, as the BSX core takes it (``BlokCheckScope``).
+
+    Field names as the models spell them (snake_case), like the corpus' ``scope``: an editor
+    completes ``deps.<key>``, ``args.<key>`` and the locals from it. A local's kind is as
+    declared; the core infers the rest from the tree.
     """
+    return {
+        "kind": kind,
+        "context": context,
+        "dependencies": _dumped(dependencies),
+        "locals": _dumped(locals_),
+        "queries": _dumped(queries),
+        "subscriptions": _dumped(subscriptions),
+        "args": list(args) if args is not None else None,
+        "catalogs": list(catalogs),
+        "module": module,
+        "assets": sorted(assets) if assets is not None else None,
+    }
+
+
+def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
+    """Each blok the app declares with the BSX it was written as, for a reader to find it by,
+    and its scope.
+
+    An app blok says where it was declared, an action's blok where its action was (the
+    decorator's line); an action's blok is named
+    :func:`~arkitekt_spec.declare.blok.action.action_blok_id`.
+    """
+    # Built again for the dependencies a blok's ``self`` reads; what it warns was told already.
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        try:
+            built = registry.get_declared_bloks()
+        except Exception:  # noqa: BLE001 - the check passed; a scope is a convenience
+            built = {}
+    assets = list(registry.registered_assets)
     records: list[dict[str, Any]] = []
     for key, declaration in registry.registered_bloks.items():
         at = declaration.declared_at
+        context = ComponentContext(declaration.context).value
+        blok = built.get(key)
         records.append(
             _compact(
                 {
                     "blok": key,
-                    "context": ComponentContext(declaration.context).value,
+                    "context": context,
                     "source": declaration.source,
                     "file": os.path.abspath(at.filename) if at is not None else None,
                     "call_line": at.lineno if at is not None else None,
+                    "scope": scope_record(
+                        kind="action_logo" if context == ComponentContext.ACTION_LOGO.value else "agent",
+                        context=context,
+                        dependencies=blok.dependencies if blok is not None else (),
+                        locals_=declaration.locals,
+                        queries=declaration.queries,
+                        subscriptions=declaration.subscriptions,
+                        args=[port.key for port in declaration.args],
+                        catalogs=(blok.catalogs or ()) if blok is not None else declaration.catalogs,
+                        module=declaration.module,
+                        assets=assets,
+                    ),
                 }
             )
         )
     for interface, implementation in registry.implementations.items():
+        declared = registry.declared_implementations.get(interface)
+        file, line = _declared_at(declared.function) if declared is not None else (None, None)
         for blok in implementation.definition.bloks or ():
+            context = ComponentContext(blok.context).value
             records.append(
                 _compact(
                     {
                         "blok": action_blok_id(interface, blok.context),
-                        "context": ComponentContext(blok.context).value,
+                        "context": context,
                         "source": blok.source,
+                        "file": file,
+                        "call_line": line,
+                        "scope": scope_record(
+                            kind="action",
+                            context=context,
+                            dependencies=implementation.dependencies,
+                            locals_=blok.locals,
+                            queries=blok.queries,
+                            subscriptions=blok.subscriptions,
+                            args=[port.key for port in implementation.definition.args or ()],
+                            catalogs=blok.catalogs,
+                            module=blok.module,
+                        ),
                     }
                 )
             )
+    return records
+
+
+def protocol_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
+    """Each dependency protocol the app declares: where, the dependency it stands for, and the
+    action parameters that take it.
+
+    ``dependency`` is the protocol's ``AgentDependencyInput`` as the models spell it (snake_case),
+    keyed by its interface: what an editor asks a server for the agents that would satisfy it.
+    """
+    structures = registry.structure_registry
+    used: dict[Any, list[dict[str, str]]] = {}
+    for interface, declared in registry.declared_implementations.items():
+        try:
+            variables = prepare_dependency_variables(declared.function, structures).dependency_variables
+        except Exception:  # noqa: BLE001 - registering it already said what is wrong
+            continue
+        for key, cls in variables.items():
+            used.setdefault(cls, []).append({"action": interface, "key": key})
+    records: list[dict[str, Any]] = []
+    for cls, protocol in structures.protocols.items():
+        file, line = _declared_at(cls)
+        records.append(
+            _compact(
+                {
+                    "name": cls.__qualname__,
+                    "interface": protocol.interface,
+                    "file": file,
+                    "line": line,
+                    "dependency": protocol.to_dependency_input(protocol.interface).model_dump(
+                        mode="json", exclude_none=True
+                    ),
+                    "used_by": used.get(cls, []),
+                }
+            )
+        )
     return records
 
 
@@ -160,7 +290,14 @@ def check(
     what the app's modules print never reaches it.
     """
     console = get_console(ctx)
-    report: dict[str, Any] = {"version": REPORT_VERSION, "ok": False, "app": None, "bloks": [], "diagnostics": []}
+    report: dict[str, Any] = {
+        "version": REPORT_VERSION,
+        "ok": False,
+        "app": None,
+        "bloks": [],
+        "protocols": [],
+        "diagnostics": [],
+    }
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always", CatalogWarning)
         try:
@@ -184,6 +321,7 @@ def check(
         report.update(
             ok=True,
             bloks=blok_records(snapshot.registry),
+            protocols=protocol_records(snapshot.registry),
             diagnostics=[warning_record(warning) for warning in findings],
         )
         write_report(json_out, report)
