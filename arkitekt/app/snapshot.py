@@ -51,26 +51,8 @@ class RunSnapshot(BaseModel):
         return self.registry.services
 
     @property
-    def providers(self) -> Dict[str, "Provider[Any]"]:
-        """The providers the run may build its agent from, by name: the registry's."""
-        return self.registry.providers
-
-    @property
     def provider(self) -> Optional["Provider[Any]"]:
         """The one provider the app declared, or ``None`` for an app offering nothing."""
         return self.registry.provider_declaration
-
-    @property
-    def app_context_class(self) -> Optional[type]:
-        """The class the run's ``context=`` must be an instance of, or ``None``."""
-        return self.registry.app_context_class
-
-    @property
-    def needs_fakts(self) -> bool:
-        """Whether a run of this snapshot resolves anything through fakts."""
-        return any(s.needs_fakts for s in self.services.values()) or (
-            self.provider is not None and self.provider.needs_fakts
-        )
-
 
 __all__ = ["RunSnapshot"]

@@ -35,13 +35,11 @@ def loose_umask() -> Iterator[None]:
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
 def test_arkitekt_folder_is_private(tmp_path: Path, loose_umask: None) -> None:
-    """Both levels, not just `cache/`: the folder also holds `servers/` and the
-    credential JSONs its own generated .gitignore exists to hide."""
-    create_arkitekt_folder(base_dir=str(tmp_path), with_cache=True)
+    """The folder holds `servers/` and the credential JSONs its own generated
+    .gitignore exists to hide."""
+    create_arkitekt_folder(base_dir=str(tmp_path))
 
-    folder = tmp_path / ".arkitekt"
-    assert stat.S_IMODE(folder.stat().st_mode) == 0o700
-    assert stat.S_IMODE((folder / "cache").stat().st_mode) == 0o700
+    assert stat.S_IMODE((tmp_path / ".arkitekt").stat().st_mode) == 0o700
 
 
 @pytest.mark.skipif(os.name != "posix", reason="POSIX permission semantics")
@@ -50,12 +48,11 @@ def test_arkitekt_folder_narrows_an_existing_loose_folder(
 ) -> None:
     """The usual case: the directory already exists at 0775 because an earlier
     version created it, and `exist_ok=True` applies no mode to it."""
-    existing = tmp_path / ".arkitekt" / "cache"
-    existing.mkdir(parents=True)
+    existing = tmp_path / ".arkitekt"
+    existing.mkdir()
     os.chmod(existing, 0o775)
-    os.chmod(tmp_path / ".arkitekt", 0o775)
 
-    create_arkitekt_folder(base_dir=str(tmp_path), with_cache=True)
+    create_arkitekt_folder(base_dir=str(tmp_path))
 
     assert stat.S_IMODE(existing.stat().st_mode) == 0o700
 

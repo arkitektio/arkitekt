@@ -12,6 +12,9 @@ from typing import List
 
 ARKITEKT_PACKAGES: List[str] = [
     "arkitekt",
+    "arkitekt-spec",
+    "arkitekt-runtime",
+    "arkitekt-fastapi",
     "rekuest",
     "mikro",
     "fakts",

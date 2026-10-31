@@ -156,17 +156,6 @@ class ArkitektLogs(QtWidgets.QDialog):
         logging.getLogger().setLevel(self.log_level)
         self.setLayout(self.mylayout)
 
-    def update_log_level(self, level: str) -> None:
-        """Update the log level.
-
-        Parameters
-        ----------
-        level : str
-           Update the log level to this level.
-        """
-        logging.getLogger().setLevel(level)
-        self.settings.setValue(self.log_level_key, level)
-
     @property
     def log_to_file(self) -> bool:
         """Should the logs be written to a file."""
@@ -566,21 +555,6 @@ class MagicBar(QtWidgets.QWidget):
         else:
             logger.error(f"Error {repr(ex)}")
 
-    def task_errored(self, ex: Exception) -> None:
-        """_summary_
-
-        Parameters
-        ----------
-        ex : Exception
-            _description_
-
-        Raises
-        ------
-        ex
-            _description_
-        """
-        raise ex
-
     def configure_errored(self, ex: BaseException) -> None:
         self.set_unkonfigured()
         self.show_error(ex)
@@ -593,17 +567,8 @@ class MagicBar(QtWidgets.QWidget):
         self.set_unprovided()
         self.show_error(ex)
 
-    def on_configured(self) -> None:
-        self.magicb.setText("Log in")
-
     def on_login(self) -> None:
         self.magicb.setText("Provide")
-
-    def on_provided(self) -> None:
-        self.magicb.setText("Provide ended")
-
-    def on_providing_ended(self) -> None:
-        pass
 
     def gear_button_clicked(self) -> None:
         self.profile.show()

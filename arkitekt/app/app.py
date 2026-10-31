@@ -55,12 +55,10 @@ from arkitekt_spec.actions import (
     AssignWidgetInput,
     BlokDemoInput,
     ComponentNodeInput,
-    EffectInput,
     Effects,
     Execution,
     PortGroupInput,
     TestTargetInput,
-    TrackInput,
     ValidatorInput,
 )
 from arkitekt_spec.declare.actors.policy import KEEP, DisconnectPolicy
@@ -513,12 +511,10 @@ class App(Generic[Ctx]):
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
         collections: Optional[List[str]] = None,
         port_groups: Optional[List[PortGroupInput]] = None,
-        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
         is_test_for: Optional[List[TestTargetInput]] = None,
         validators: Optional[Dict[str, List[ValidatorInput]]] = None,
         optimistics: Optional[List[OptimisticCoercible]] = None,
         in_process: bool = False,
-        tracks: Optional[List[TrackInput]] = None,
         locks: Optional[List[str]] = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
@@ -548,12 +544,10 @@ class App(Generic[Ctx]):
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
         collections: Optional[List[str]] = None,
         port_groups: Optional[List[PortGroupInput]] = None,
-        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
         is_test_for: Optional[List[TestTargetInput]] = None,
         validators: Optional[Dict[str, List[ValidatorInput]]] = None,
         optimistics: Optional[List[OptimisticCoercible]] = None,
         in_process: bool = False,
-        tracks: Optional[List[TrackInput]] = None,
         locks: Optional[List[str]] = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
@@ -589,12 +583,10 @@ class App(Generic[Ctx]):
             widgets: Widgets per argument.
             collections: Collections the action is grouped into.
             port_groups: Port group assignments.
-            port_effects: UI effects per port (hide, disable, … as its values change).
             is_test_for: Actions this one tests.
             validators: Input validation rules per argument.
             optimistics: Optimistic outputs.
             in_process: Run in the event loop instead of a worker thread.
-            tracks: Tracks the implementation follows.
             locks: Locks held while an assignment runs.
             concurrency: Whether assignments may run concurrently.
             policy: What happens to a running assignment when its caller
@@ -657,12 +649,10 @@ class App(Generic[Ctx]):
                 widgets=widgets,
                 collections=collections,
                 port_groups=port_groups,
-                port_effects=port_effects,
                 is_test_for=is_test_for,
                 validators=validators,
                 optimistics=optimistics,
                 in_process=in_process,
-                tracks=tracks,
                 locks=locks,
                 concurrency=concurrency,
                 policy=policy,
@@ -696,12 +686,10 @@ class App(Generic[Ctx]):
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
         collections: Optional[List[str]] = None,
         port_groups: Optional[List[PortGroupInput]] = None,
-        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
         is_test_for: Optional[List[TestTargetInput]] = None,
         validators: Optional[Dict[str, List[ValidatorInput]]] = None,
         optimistics: Optional[List[OptimisticCoercible]] = None,
         in_process: bool = False,
-        tracks: Optional[List[TrackInput]] = None,
         locks: Optional[List[str]] = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
@@ -744,12 +732,10 @@ class App(Generic[Ctx]):
                 widgets=widgets,
                 collections=collections,
                 port_groups=port_groups,
-                port_effects=port_effects,
                 is_test_for=is_test_for,
                 validators=validators,
                 optimistics=optimistics,
                 in_process=in_process,
-                tracks=tracks,
                 locks=locks,
                 concurrency=concurrency,
                 policy=policy,
@@ -784,12 +770,10 @@ class App(Generic[Ctx]):
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
         collections: Optional[List[str]] = None,
         port_groups: Optional[List[PortGroupInput]] = None,
-        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
         is_test_for: Optional[List[TestTargetInput]] = None,
         validators: Optional[Dict[str, List[ValidatorInput]]] = None,
         optimistics: Optional[List[OptimisticCoercible]] = None,
         in_process: bool = False,
-        tracks: Optional[List[TrackInput]] = None,
         locks: Optional[List[str]] = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
@@ -819,12 +803,10 @@ class App(Generic[Ctx]):
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
         collections: Optional[List[str]] = None,
         port_groups: Optional[List[PortGroupInput]] = None,
-        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
         is_test_for: Optional[List[TestTargetInput]] = None,
         validators: Optional[Dict[str, List[ValidatorInput]]] = None,
         optimistics: Optional[List[OptimisticCoercible]] = None,
         in_process: bool = False,
-        tracks: Optional[List[TrackInput]] = None,
         locks: Optional[List[str]] = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
@@ -869,12 +851,10 @@ class App(Generic[Ctx]):
             widgets: Widgets per argument.
             collections: Collections the action is grouped into.
             port_groups: Port group assignments.
-            port_effects: UI effects per port (hide, disable, … as its values change).
             is_test_for: Actions this one tests.
             validators: Input validation rules per argument.
             optimistics: Optimistic outputs.
             in_process: Run in the event loop instead of a worker thread.
-            tracks: Tracks the implementation follows.
             locks: Locks held while an assignment runs.
             concurrency: Whether assignments may run concurrently.
             policy: What happens to a running assignment when its caller
@@ -937,12 +917,10 @@ class App(Generic[Ctx]):
                 widgets=widgets,
                 collections=collections,
                 port_groups=port_groups,
-                port_effects=port_effects,
                 is_test_for=is_test_for,
                 validators=validators,
                 optimistics=optimistics,
                 in_process=in_process,
-                tracks=tracks,
                 locks=locks,
                 concurrency=concurrency,
                 policy=policy,
@@ -976,12 +954,10 @@ class App(Generic[Ctx]):
         widgets: Optional[Dict[str, AssignWidgetInput]] = None,
         collections: Optional[List[str]] = None,
         port_groups: Optional[List[PortGroupInput]] = None,
-        port_effects: Optional[Dict[str, List[EffectInput]]] = None,
         is_test_for: Optional[List[TestTargetInput]] = None,
         validators: Optional[Dict[str, List[ValidatorInput]]] = None,
         optimistics: Optional[List[OptimisticCoercible]] = None,
         in_process: bool = False,
-        tracks: Optional[List[TrackInput]] = None,
         locks: Optional[List[str]] = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
@@ -1024,12 +1000,10 @@ class App(Generic[Ctx]):
                 widgets=widgets,
                 collections=collections,
                 port_groups=port_groups,
-                port_effects=port_effects,
                 is_test_for=is_test_for,
                 validators=validators,
                 optimistics=optimistics,
                 in_process=in_process,
-                tracks=tracks,
                 locks=locks,
                 concurrency=concurrency,
                 policy=policy,
@@ -1705,8 +1679,8 @@ class App(Generic[Ctx]):
 
         For a type a *shared library* defines -- one that both the sending and the
         receiving app know, because both import it. A service's own types do not
-        go through here: those are :class:`~arkitekt_spec.declare.structures.description.StructureDescription`
-        in the service's ``structures=``, and are expanded by that service's client.
+        go through here: the service declares those on its own registry
+        (``@registry.structure``), and they are expanded by that service's client.
 
         The expander says what it needs by annotation, the same way an action
         does, and a run hands it exactly those::

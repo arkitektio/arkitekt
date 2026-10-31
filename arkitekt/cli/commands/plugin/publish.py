@@ -105,11 +105,6 @@ def publish(
         )
 
     for build_id, build_model in builds.items():
-        if build_model.manifest.version == "dev":
-            cli_error(
-                "You cannot deploy a dev version. Please run `arkitekt version` first to set a version"
-            )
-
         check_if_build_already_deployed(build_model, work_dir)
 
         if build_model.inspection is None:

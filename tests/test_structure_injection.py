@@ -1,7 +1,6 @@
 """A hand-registered structure whose expander asks for clients by annotation.
 
-The service-owned path (``StructureDescription`` + ``declare``) is unchanged and
-covered in rekuest. What is new here is the other path: a type a shared library
+The service-owned path (``declare``) is unchanged and covered in rekuest. What is new here is the other path: a type a shared library
 defines, fetched back through a client the run supplies.
 """
 

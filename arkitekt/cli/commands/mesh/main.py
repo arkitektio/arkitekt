@@ -32,8 +32,6 @@ from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 #: Where to point users who do not have tailscale installed yet.
 TAILSCALE_INSTALL_URL = "https://tailscale.com/download"
-#: Reference for the ``tailscale up`` command this group drives.
-TAILSCALE_UP_DOCS_URL = "https://tailscale.com/kb/1080/cli#up"
 #: How often to poll the mesh challenge endpoint while waiting for authorization.
 POLL_INTERVAL_SECONDS = 1
 #: How long to let a single ``tailscale`` invocation (``up`` / ``cert`` /

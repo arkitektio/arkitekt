@@ -40,7 +40,7 @@ def stage(
             )
         except StopIteration:
             cli_error(
-                f"Could not find a build for flavour {flavour}. Please run `arkitekt port build` "
+                f"Could not find a build for flavour {flavour}. Please run `arkitekt plugin build` "
                 + "first to build the flavour"
             )
 

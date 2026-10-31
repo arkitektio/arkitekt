@@ -5,7 +5,7 @@ from typing import Optional
 from fakts.cache.file import ensure_private_dir
 
 
-def create_arkitekt_folder(with_cache: bool = False, base_dir: Optional[str] = None) -> str:
+def create_arkitekt_folder(base_dir: Optional[str] = None) -> str:
     """Creates the .arkitekt folder in the given directory (defaults to cwd).
 
     If the folder already exists, it does nothing.
@@ -14,11 +14,6 @@ def create_arkitekt_folder(with_cache: bool = False, base_dir: Optional[str] = N
 
     Parameters
     ----------
-    with_cache : bool, optional
-        Create an (empty) `cache/` subdirectory, by default False. The fakts
-        session cache no longer lives here -- it moved to a private per-user
-        directory, see `arkitekt.app.fakts._cache_path` -- so nothing writes
-        into it any more. Kept only for callers that still expect the folder.
     base_dir : str, optional
         Base directory to create the folder in. Defaults to os.getcwd().
 
@@ -37,8 +32,6 @@ def create_arkitekt_folder(with_cache: bool = False, base_dir: Optional[str] = N
     # what used to make fakts refuse to read its own cache and silently
     # re-run the device-code flow.
     ensure_private_dir(folder)
-    if with_cache:
-        ensure_private_dir(os.path.join(folder, "cache"))
 
     ensure_ignored(os.path.join(folder, ".gitignore"))
     ensure_ignored(os.path.join(folder, ".dockerignore"))
