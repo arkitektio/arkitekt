@@ -239,6 +239,29 @@ def structure_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     return records
 
 
+def action_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
+    """Each action the app declares: where, and the hash of its definition, which is the hash the
+    server finds it by whichever agent provides it (``call remote``'s ``hash_of``)."""
+    from arkitekt_spec import definition_hash
+
+    records: list[dict[str, Any]] = []
+    for interface, implementation in registry.implementations.items():
+        declared = registry.declared_implementations.get(interface)
+        file, line = _declared_at(declared.function) if declared is not None else (None, None)
+        records.append(
+            _compact(
+                {
+                    "interface": interface,
+                    "name": implementation.definition.name,
+                    "hash": definition_hash(implementation.definition),
+                    "file": file,
+                    "line": line,
+                }
+            )
+        )
+    return records
+
+
 def protocol_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     """Each dependency protocol the app declares: where, the dependency it stands for, and the
     action parameters that take it.
@@ -344,6 +367,7 @@ def check(
         report.update(
             ok=True,
             bloks=blok_records(snapshot.registry),
+            actions=action_records(snapshot.registry),
             protocols=protocol_records(snapshot.registry),
             structures=structure_records(snapshot.registry),
             diagnostics=[warning_record(warning) for warning in findings],

@@ -344,3 +344,15 @@ def test_check_json_out_is_not_corrupted_by_what_the_app_prints(tmp_path: Path) 
     code, report = _report(tmp_path)
 
     assert code == 0 and report["ok"] is True
+
+
+def test_check_json_out_lists_each_action_by_the_hash_the_server_finds_it_by(tmp_path: Path) -> None:
+    import json
+
+    (tmp_path / "app.py").write_text(VALID)
+    out = tmp_path / "report.json"
+
+    assert _invoke(tmp_path, "check", "--json-out", str(out)).exit_code == 0
+
+    (action, *_) = json.loads(out.read_text())["actions"]
+    assert action["hash"] and action["line"] and action["file"].endswith("app.py")
