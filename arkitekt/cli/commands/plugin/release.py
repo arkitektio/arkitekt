@@ -27,7 +27,13 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any, Optional
 
 import typer
-from arkitekt_spec import AppManifest, Inspection, ReleaseDescriptor, ReleaseFlavour
+from arkitekt_spec import (
+    AppManifest,
+    Inspection,
+    ReleaseDescriptor,
+    ReleaseFlavour,
+    current_spec_version,
+)
 from arkitekt_spec.release import channel_tag, channel_version, image_tag, release_tag
 
 from arkitekt.app.app import VERSION_ENV
@@ -484,6 +490,7 @@ def release(
         )
 
     descriptor = ReleaseDescriptor(
+        spec_version=current_spec_version(),
         manifest=manifest,
         channel=resolved.channel,
         revision=resolved.revision,

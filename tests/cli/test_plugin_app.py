@@ -93,7 +93,7 @@ def test_a_build_records_who_the_image_says_it_is_without_importing_the_app(tmp_
     reported = AppManifest(identifier="from.the.image", version="9.9.9", entrypoint="main:api")
 
     with patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"), patch(
-        "arkitekt.cli.commands.plugin.build.inspect_build", return_value=(Inspection(), reported)
+        "arkitekt.cli.commands.plugin.build.inspect_build", return_value=(Inspection(spec_version="8.0.0"), reported)
     ) as inspected:
         result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "main:api"])
 

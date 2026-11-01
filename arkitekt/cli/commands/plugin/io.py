@@ -2,7 +2,7 @@ import datetime
 import uuid
 from arkitekt.utils import create_arkitekt_folder
 import os
-from typing import Optional, List, Dict
+from typing import NoReturn, Optional, List, Dict
 
 from .types import (
     DEFAULT_BUILD_COMMAND,
@@ -24,6 +24,7 @@ from arkitekt_spec import (
 
 import yaml
 import json
+from pydantic import ValidationError
 from arkitekt.cli.errors import cli_error
 
 
@@ -74,6 +75,22 @@ def get_flavours(base_dir: Optional[str] = None, select: Optional[str] = None) -
     return flavours
 
 
+def _unreadable(config_file: str, error: ValidationError) -> NoReturn:
+    """A file this CLI refuses, which is usually one written before files named their spec."""
+    cli_error(
+        f"Could not read {config_file}. If it was written by an older arkitekt, which named no "
+        f"spec version, delete it: `arkitekt plugin build` writes a new one.\n\n{error}"
+    )
+
+
+def _read_builds(config_file: str) -> BuildsConfigFile:
+    with open(config_file, "r") as file:
+        try:
+            return BuildsConfigFile(**yaml.safe_load(file))
+        except ValidationError as error:
+            _unreadable(config_file, error)
+
+
 def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = None) -> Dict[str, Build]:
     """Loads the builds.yaml file and returns a dictionary of builds keyed by build_id."""
     path = create_arkitekt_folder(base_dir=base_dir)
@@ -84,8 +101,7 @@ def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = Non
             "Could not find any builds. Please run `arkitekt plugin build` first"
         )
 
-    with open(config_file, "r") as file:
-        config = BuildsConfigFile(**yaml.safe_load(file))
+    config = _read_builds(config_file)
 
     selected_run = selected_run or config.latest_build_run
     return {
@@ -122,15 +138,14 @@ def generate_build(
     )
 
     if os.path.exists(config_file):
-        with open(config_file, "r") as file:
-            config = BuildsConfigFile(**yaml.safe_load(file))
-            config.builds.append(build)
-            config.latest_build_run = build_run
+        config = _read_builds(config_file)
+        config.builds.append(build)
+        config.latest_build_run = build_run
+        config.spec_version = current_spec_version()
     else:
-        config = BuildsConfigFile(builds=[build], latest_build_run=build_run)
-
-    # Assigned, because the dump below leaves out whatever was not set.
-    config.spec_version = current_spec_version()
+        config = BuildsConfigFile(
+            spec_version=current_spec_version(), builds=[build], latest_build_run=build_run
+        )
 
     with open(config_file, "w") as file:
         yaml.safe_dump(
@@ -152,8 +167,11 @@ def get_deployments(base_dir: Optional[str] = None) -> DeploymentsFile:
     config_file = os.path.join(path, "deployments.yaml")
     if os.path.exists(config_file):
         with open(config_file, "r") as file:
-            return load_deployments(file.read())
-    return DeploymentsFile()
+            try:
+                return load_deployments(file.read())
+            except ValidationError as error:
+                _unreadable(config_file, error)
+    return DeploymentsFile(spec_version=current_spec_version())
 
 
 def generate_deployment(

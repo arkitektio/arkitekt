@@ -192,6 +192,6 @@ class Build(BaseModel):
 
 class BuildsConfigFile(BaseModel):
     #: The arkitekt-spec that last wrote this file. Each build's inspection names its own.
-    spec_version: str | int | None = None
+    spec_version: str
     builds: List[Build] = Field(default_factory=list)
     latest_build_run: Optional[str] = None

@@ -160,7 +160,7 @@ def test_kind_less_locals_register_without_a_kind() -> None:
     app.blok("panel", "<Html><Card><Button onClick={self.scale(factor: factor)}>Go</Button></Card></Html>", locals={"factor": Local()})
 
     agent_input = app.registry.to_implement_agent_input(name="flow")
-    register = messages.Register(token="t", **agent_input.model_dump(mode="json", by_alias=False, exclude_unset=True))
+    register = messages.Register(token="t", spec_version="8.0.0", **agent_input.model_dump(mode="json", by_alias=False, exclude_unset=True))
     wire = json.loads(register.model_dump_json())
 
     [panel] = [blok for blok in wire["bloks"] if blok["key"] == "panel"]

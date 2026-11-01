@@ -54,7 +54,7 @@ def test_capabilities_reach_the_build_and_the_deployments_file(tmp_path):
         "vanilla",
         flavour,
         AppManifest(identifier="engine", version="0.1.0"),
-        Inspection(),
+        Inspection(spec_version="8.0.0"),
         base_dir=str(tmp_path),
     )
     assert build.capabilities == granted

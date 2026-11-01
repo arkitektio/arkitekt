@@ -38,6 +38,7 @@ pytestmark = pytest.mark.needs_docker
 # A minimal but schema-valid runtime payload, standing in for the result of running
 # ``arkitekt inspect all`` inside the container (keys map to InspectionInput).
 _FAKE_RUNTIME = {
+    "spec_version": "8.0.0",
     "locks": [],
     "implementations": [],
     "states": [],

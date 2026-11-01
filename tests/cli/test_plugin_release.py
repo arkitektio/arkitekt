@@ -290,8 +290,13 @@ def repository() -> Iterator[Repository]:
 def a_release(**changes: object) -> ReleaseDescriptor:
     return ReleaseDescriptor.model_validate(
         {
+            "spec_version": "8.0.0",
             "manifest": MANIFEST,
-            "flavours": [ReleaseFlavour(name="vanilla", image=PINNED, inspection=Inspection())],
+            "flavours": [
+                ReleaseFlavour(
+                    name="vanilla", image=PINNED, inspection=Inspection(spec_version="8.0.0")
+                )
+            ],
             **changes,
         }
     )
@@ -352,7 +357,7 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
 
     def canned(image: str, target: str, platform: str | None = None):
         assert "@sha256:" in image and image.startswith(docker_registry)
-        return Inspection(), reported[-1]
+        return Inspection(spec_version="8.0.0"), reported[-1]
 
     def identity(image: str, url: str, target: str):
         assert image.startswith("arkitekt-identify-")

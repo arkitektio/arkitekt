@@ -158,6 +158,7 @@ def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
     assert len(inspection.implementations) >= 3
 
     file = DeploymentsFile(
+        spec_version="8.0.0",
         app_images=[
             AppImage(
                 appImageId="x",
