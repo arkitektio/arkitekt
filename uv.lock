@@ -373,7 +373,7 @@ requires-dist = [
     { name = "arkitekt-runtime", marker = "extra == 'all'", specifier = ">=8.0.0" },
     { name = "arkitekt-runtime", marker = "extra == 'rekuest'", specifier = ">=8.0.0" },
     { name = "arkitekt-runtime", extras = ["qt"], marker = "extra == 'qt'", specifier = ">=6.0" },
-    { name = "arkitekt-spec", specifier = ">=7" },
+    { name = "arkitekt-spec", specifier = ">=7.1" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=5" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=5" },
@@ -490,7 +490,7 @@ qt = [
 
 [[package]]
 name = "arkitekt-spec"
-version = "7.0.0"
+version = "7.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -500,9 +500,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/84/4b/2568f3358869270f98a9e709b98775eda868bd89af566dc4c36ac0212f4f/arkitekt_spec-7.0.0.tar.gz", hash = "sha256:632d80b91c2caf02eaaeb1620549e161aa4203fc96f569b6749594f7654d3c81", size = 325349, upload-time = "2026-11-01T09:10:54.557Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/71/11/f49d58e0c70620ca2a287a7cd88523c6b2bce8e8d13a89d70a90501e1d62/arkitekt_spec-7.1.0.tar.gz", hash = "sha256:fb437aef7da8ab134e8c6446b22298b64ceae9041c4dca1184fe7fd29912a8a2", size = 325718, upload-time = "2026-11-01T09:58:21.911Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/40/b7/39f657ef6a57a3c0a9d3b8772e4e5bf1a51e5d80001347061cabac5f3e21/arkitekt_spec-7.0.0-py3-none-any.whl", hash = "sha256:1ab4b66b8b9dc3721a4a3198c716f2679bb2b870d61523b536af7819dc569e3f", size = 378287, upload-time = "2026-11-01T09:10:53.555Z" },
+    { url = "https://files.pythonhosted.org/packages/2d/93/d09a7cad52d9aa2b0c219362a045ead43c6affb4d16e2671afd3226d37ce/arkitekt_spec-7.1.0-py3-none-any.whl", hash = "sha256:8edd4f9851259736c9f33ae296a4da9e1eb627cc3914af597506de9b8147fae3", size = 378620, upload-time = "2026-11-01T09:58:20.546Z" },
 ]
 
 [[package]]

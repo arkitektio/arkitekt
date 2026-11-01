@@ -44,6 +44,7 @@ from .build import (
     inspect_all,
     inspect_docker_container,
     machine_readable,
+    read_inspection,
 )
 from .registry import Repository, RegistryError
 
@@ -285,7 +286,7 @@ def inspect_image(
         cli_error(str(error))
 
     return (
-        Inspection.model_validate({**runtime, "size": size}),
+        read_inspection(runtime, size, image),
         AppManifest.model_validate(manifest) if manifest is not None else None,
     )
 

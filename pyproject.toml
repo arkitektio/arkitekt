@@ -25,7 +25,7 @@ dependencies = [
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
     # 6.0: CatalogWarning.finding/.blok, BlokError.node and action_blok_id (check --json-out).
-    "arkitekt-spec>=7",
+    "arkitekt-spec>=7.1",
 ]
 
 [project.optional-dependencies]

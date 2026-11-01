@@ -17,6 +17,7 @@ from arkitekt_spec import (
     DeploymentsFile,
     DockerImage,
     Inspection,
+    current_spec_version,
     dump_deployments,
     load_deployments,
 )
@@ -128,6 +129,9 @@ def generate_build(
     else:
         config = BuildsConfigFile(builds=[build], latest_build_run=build_run)
 
+    # Assigned, because the dump below leaves out whatever was not set.
+    config.spec_version = current_spec_version()
+
     with open(config_file, "w") as file:
         yaml.safe_dump(
             json.loads(
@@ -179,6 +183,7 @@ def generate_deployment(
     config = get_deployments(base_dir=base_dir)
     config.app_images.append(app_image)
     config.latest_app_image = app_image.app_image_id
+    config.spec_version = current_spec_version()
 
     with open(config_file, "w") as file:
         file.write(dump_deployments(config))

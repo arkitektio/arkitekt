@@ -30,6 +30,25 @@ class InspectionError(Exception):
     pass
 
 
+def read_inspection(runtime: dict[str, Any], size: Any, image: str) -> "Inspection":
+    """Read what an image declared, or say which two specs could not agree on it.
+
+    The arkitekt inside the image wrote this, and it may be older than this CLI's.
+    """
+    from arkitekt_spec import Inspection, current_spec_version
+    from pydantic import ValidationError
+
+    try:
+        return Inspection.model_validate({**runtime, "size": size})
+    except ValidationError as error:
+        written = runtime.get("spec_version") or "older than 7.1 (it names none)"
+        cli_error(
+            f"This CLI cannot read what {image} declares. The image's arkitekt-spec is {written}, "
+            f"this CLI's is {current_spec_version()}. If they differ, update the arkitekt the "
+            f"image installs (its lock), or run a CLI of the image's version.\n\n{error}"
+        )
+
+
 def flavour_relative_dir(flavour_name: str) -> str:
     """Where a flavour's Dockerfile lives, relative to the work dir."""
     return os.path.join(".arkitekt", "flavours", flavour_name, "")
@@ -265,15 +284,12 @@ def inspect_build(
     build_id: str, url: str, target: str = DEFAULT_TARGET
 ) -> tuple["Inspection", "AppManifest"]:
     """What a built image declares, and who it says it is."""
-    from arkitekt_spec import AppManifest, Inspection
+    from arkitekt_spec import AppManifest
 
     size, size_root_fs = inspect_docker_container(build_id)
     runtime, manifest = inspect_all(build_id, url, target)
     print("Runtime inspection result:", runtime)
-    return (
-        Inspection.model_validate({**runtime, "size": size}),
-        AppManifest.model_validate(manifest),
-    )
+    return read_inspection(runtime, size, build_id), AppManifest.model_validate(manifest)
 
 
 def build(

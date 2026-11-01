@@ -10,13 +10,14 @@ boundary is mocked.
 import json
 from unittest.mock import patch
 
+import yaml
 from typer.testing import CliRunner
 
 from arkitekt import App
 from arkitekt.app.spec import app_manifest
 from arkitekt.cli.commands.plugin.build import inspect_all
 from arkitekt.cli.commands.plugin.io import get_builds
-from arkitekt_spec import UNKNOWN_AUTHOR, AppManifest, Inspection
+from arkitekt_spec import UNKNOWN_AUTHOR, AppManifest, Inspection, current_spec_version
 from arkitekt.cli.commands.plugin.types import Build
 from arkitekt.cli.main import cli_app
 from arkitekt.cli.target import infer_package_manager
@@ -100,6 +101,22 @@ def test_a_build_records_who_the_image_says_it_is_without_importing_the_app(tmp_
     assert inspected.call_args.args[2] == "main:api"
     (build,) = get_builds(base_dir=str(tmp_path)).values()
     assert build.manifest == reported
+
+
+def test_builds_yaml_names_the_spec_that_wrote_it_and_the_one_the_image_used(tmp_path):
+    _flavour_without_an_app(tmp_path)
+    reported = AppManifest(identifier="from.the.image", version="9.9.9", entrypoint="main:api")
+
+    with patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"), patch(
+        "arkitekt.cli.commands.plugin.build.inspect_build",
+        return_value=(Inspection(spec_version="6.0.0"), reported),
+    ):
+        result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "main:api"])
+
+    assert result.exit_code == 0, result.output
+    written = yaml.safe_load((tmp_path / ".arkitekt" / "builds.yaml").read_text())
+    assert written["spec_version"] == current_spec_version()
+    assert written["builds"][0]["inspection"]["spec_version"] == "6.0.0"
 
 
 def test_a_build_that_is_not_inspected_is_not_recorded(tmp_path):
