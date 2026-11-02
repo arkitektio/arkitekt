@@ -1197,7 +1197,7 @@ class DetachedRun(Generic[Ctx]):
         self._error: BaseException | None = None
         self._thread: threading.Thread | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
-        self._task: "asyncio.Task[None]" | None = None
+        self._task: "asyncio.Task[None] | None" = None
         self._guard = threading.Lock()
 
     @property
