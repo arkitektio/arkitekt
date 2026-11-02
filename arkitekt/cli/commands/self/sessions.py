@@ -5,7 +5,7 @@ only the app in the current folder, and an app whose folder is gone still has
 its session here.
 """
 
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 from rich.markup import escape
@@ -22,7 +22,7 @@ from arkitekt.cli.vars import get_console
 def sessions(
     ctx: typer.Context,
     forget_name: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--forget",
             help="Forget the sessions of this app, as named in the list (on every server).",

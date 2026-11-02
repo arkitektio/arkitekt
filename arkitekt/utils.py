@@ -1,11 +1,10 @@
 import os
 import json
-from typing import Optional
 
 from fakts.cache.file import ensure_private_dir
 
 
-def create_arkitekt_folder(base_dir: Optional[str] = None) -> str:
+def create_arkitekt_folder(base_dir: str | None = None) -> str:
     """Creates the .arkitekt folder in the given directory (defaults to cwd).
 
     If the folder already exists, it does nothing.

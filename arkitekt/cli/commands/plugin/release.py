@@ -24,7 +24,7 @@ import shlex
 import subprocess
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Annotated, Any, Optional
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
 from arkitekt_spec import (
@@ -63,9 +63,9 @@ class Resolved:
     """What a run is about to release, as git says it."""
 
     version: str
-    channel: Optional[str]
+    channel: str | None
     revision: str
-    source: Optional[str]
+    source: str | None
 
     @property
     def tag(self) -> str:
@@ -73,7 +73,7 @@ class Resolved:
         return channel_tag(self.channel) if self.channel else release_tag(self.version)
 
 
-def _git(work_dir: str, *arguments: str) -> Optional[str]:
+def _git(work_dir: str, *arguments: str) -> str | None:
     """The output of a git command, or None when it fails (or there is no git)."""
     try:
         result = subprocess.run(
@@ -89,7 +89,7 @@ def _git(work_dir: str, *arguments: str) -> Optional[str]:
     return result.stdout.strip() if result.returncode == 0 else None
 
 
-def _source(work_dir: str) -> Optional[str]:
+def _source(work_dir: str) -> str | None:
     """Where the source lives, without whatever credentials the remote url carries."""
     url = _git(work_dir, "remote", "get-url", "origin")
     if not url:
@@ -127,7 +127,7 @@ def check_checkout(work_dir: str, allow_dirty: bool = False) -> str:
 
 
 def resolve(
-    declared_version: str, work_dir: str, channel: Optional[str] = None, allow_dirty: bool = False
+    declared_version: str, work_dir: str, channel: str | None = None, allow_dirty: bool = False
 ) -> Resolved:
     """Decide what this checkout releases.
 
@@ -166,7 +166,7 @@ def resolve(
     return Resolved(channel_version(declared_version, revision), channel, revision, source)
 
 
-def default_test_command(work_dir: str) -> Optional[list[str]]:
+def default_test_command(work_dir: str) -> list[str] | None:
     """The tests a repository has, when it does not say how to run them."""
     if not os.path.isdir(os.path.join(work_dir, "tests")):
         return None
@@ -253,8 +253,8 @@ def push_flavour(
 
 
 def inspect_image(
-    image: str, target: str, platform: Optional[str] = None
-) -> tuple[Inspection, Optional[AppManifest]]:
+    image: str, target: str, platform: str | None = None
+) -> tuple[Inspection, AppManifest | None]:
     """Run a pushed image and read what it declares, and who it says it is.
 
     The image is pulled by its digest, so this runs what the registry holds rather
@@ -298,7 +298,7 @@ def inspect_image(
 
 
 def check_identity(
-    name: str, reported: Optional[AppManifest], manifest: AppManifest, resolved: Resolved
+    name: str, reported: AppManifest | None, manifest: AppManifest, resolved: Resolved
 ) -> None:
     """Refuse an image that would register as something else than the release says.
 
@@ -335,7 +335,7 @@ def release(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
     repository: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--repository",
             "-r",
@@ -345,7 +345,7 @@ def release(
         ),
     ] = None,
     channel: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--channel",
             envvar="ARKITEKT_CHANNEL",
@@ -353,14 +353,14 @@ def release(
         ),
     ] = None,
     test_command: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--test-command", help="How to run the app's tests. Default: pytest, if there is a tests folder."
         ),
     ] = None,
     no_test: Annotated[bool, typer.Option("--no-test", help="Do not run the app's tests.")] = False,
     platform: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option(
             "--platform",
             "-p",
@@ -485,7 +485,7 @@ def release(
                 selectors=flavour.selectors,
                 capabilities=flavour.capabilities,
                 inspection=inspection,
-                built_at=datetime.datetime.now(datetime.timezone.utc),
+                built_at=datetime.datetime.now(datetime.UTC),
             )
         )
 

@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import Optional
 
 from pydantic import SecretStr
 
@@ -90,7 +89,7 @@ def build_device_code_fakts(
     skip_cache: bool = False,
     reauth: bool = False,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     allow_insecure_transport: bool = False,
     mesh: MeshOptions | MeshProxy | None = None,
 ) -> Fakts:

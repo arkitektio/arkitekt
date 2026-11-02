@@ -5,14 +5,14 @@ disk (:mod:`arkitekt.cli.constants`), so they cannot be a static ``Enum``. Every
 one of these callbacks was the same three lines, so they share one factory.
 """
 
-from typing import Callable, List, Optional
+from collections.abc import Callable
 
 import typer
 
 from arkitekt.cli.constants import compile_dockerfiles, compile_templates
 
 
-def _one_of(what: Callable[[], List[str]]) -> Callable[[Optional[str]], Optional[str]]:
+def _one_of(what: Callable[[], list[str]]) -> Callable[[str | None], str | None]:
     """Make a callback rejecting anything ``what()`` does not list.
 
     Args:
@@ -23,7 +23,7 @@ def _one_of(what: Callable[[], List[str]]) -> Callable[[Optional[str]], Optional
         :class:`typer.BadParameter` for an unlisted value.
     """
 
-    def validate(value: Optional[str]) -> Optional[str]:
+    def validate(value: str | None) -> str | None:
         if value is None:
             return value
         choices = what()

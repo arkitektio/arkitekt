@@ -1,6 +1,6 @@
 """Declare an app in parts: ``merge(a, b)`` is one registry, which runs as an app."""
 
-from typing import AsyncIterator
+from collections.abc import AsyncIterator
 
 from arkitekt import App, AppRegistry, merge
 

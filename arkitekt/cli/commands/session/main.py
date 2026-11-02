@@ -6,7 +6,7 @@ commands let that be done, undone and looked at without running the app.
 """
 
 import asyncio
-from typing import Any, Optional
+from typing import Any
 
 import typer
 from rich.console import Console
@@ -38,7 +38,7 @@ from arkitekt.constants import DEFAULT_ARKITEKT_URL
 LOGIN_OPTIONS = ("url", "token", "mandate_key", "headless")
 
 
-def _usable_session(console: Console, app: App[Any], server: str) -> Optional[Session]:
+def _usable_session(console: Console, app: App[Any], server: str) -> Session | None:
     """The saved session a run of ``app`` against ``server`` would use, if any.
 
     One is saved per app, version and server, for the manifest it was approved

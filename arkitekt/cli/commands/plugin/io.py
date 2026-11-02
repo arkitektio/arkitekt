@@ -2,7 +2,7 @@ import datetime
 import uuid
 from arkitekt.utils import create_arkitekt_folder
 import os
-from typing import NoReturn, Optional, List, Dict
+from typing import NoReturn
 
 from .types import (
     DEFAULT_BUILD_COMMAND,
@@ -28,7 +28,7 @@ from pydantic import ValidationError
 from arkitekt.cli.errors import cli_error
 
 
-def get_flavours(base_dir: Optional[str] = None, select: Optional[str] = None) -> Dict[str, Flavour]:
+def get_flavours(base_dir: str | None = None, select: str | None = None) -> dict[str, Flavour]:
     """Loads and validates all flavours from the .arkitekt/flavours directory."""
     arkitekt_folder = create_arkitekt_folder(base_dir=base_dir)
     flavours_folder = os.path.join(arkitekt_folder, "flavours")
@@ -38,7 +38,7 @@ def get_flavours(base_dir: Optional[str] = None, select: Optional[str] = None) -
             "Could not find the flavours folder. Please run `arkitekt plugin init` first"
         )
 
-    flavours: Dict[str, Flavour] = {}
+    flavours: dict[str, Flavour] = {}
 
     for dir_name in os.listdir(flavours_folder):
         dir_path = os.path.join(flavours_folder, dir_name)
@@ -84,14 +84,14 @@ def _unreadable(config_file: str, error: ValidationError) -> NoReturn:
 
 
 def _read_builds(config_file: str) -> BuildsConfigFile:
-    with open(config_file, "r") as file:
+    with open(config_file) as file:
         try:
             return BuildsConfigFile(**yaml.safe_load(file))
         except ValidationError as error:
             _unreadable(config_file, error)
 
 
-def get_builds(selected_run: Optional[str] = None, base_dir: Optional[str] = None) -> Dict[str, Build]:
+def get_builds(selected_run: str | None = None, base_dir: str | None = None) -> dict[str, Build]:
     """Loads the builds.yaml file and returns a dictionary of builds keyed by build_id."""
     path = create_arkitekt_folder(base_dir=base_dir)
     config_file = os.path.join(path, "builds.yaml")
@@ -117,9 +117,9 @@ def generate_build(
     flavour_name: str,
     flavour: Flavour,
     manifest: AppManifest,
-    inspection: Optional[Inspection],
-    base_dir: Optional[str] = None,
-    platforms: Optional[List[str]] = None,
+    inspection: Inspection | None,
+    base_dir: str | None = None,
+    platforms: list[str] | None = None,
 ) -> Build:
     """Generates a Build record and appends it to builds.yaml."""
     path = create_arkitekt_folder(base_dir=base_dir)
@@ -161,12 +161,12 @@ def generate_build(
     return build
 
 
-def get_deployments(base_dir: Optional[str] = None) -> DeploymentsFile:
+def get_deployments(base_dir: str | None = None) -> DeploymentsFile:
     """Loads deployments.yaml; returns an empty file if it does not exist."""
     path = create_arkitekt_folder(base_dir=base_dir)
     config_file = os.path.join(path, "deployments.yaml")
     if os.path.exists(config_file):
-        with open(config_file, "r") as file:
+        with open(config_file) as file:
             try:
                 return load_deployments(file.read())
             except ValidationError as error:
@@ -178,7 +178,7 @@ def generate_deployment(
     deployment_run: str,
     build: Build,
     image: str,
-    base_dir: Optional[str] = None,
+    base_dir: str | None = None,
 ) -> AppImage:
     """Generates a deployment record from a build and appends it to deployments.yaml."""
     if build.inspection is None:

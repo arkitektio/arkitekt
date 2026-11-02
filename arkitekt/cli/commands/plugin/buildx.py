@@ -17,7 +17,7 @@ import platform as _platform
 import re
 import subprocess
 from collections.abc import Sequence
-from typing import Any, Optional
+from typing import Any
 
 from arkitekt.cli.errors import cli_error
 
@@ -128,7 +128,7 @@ def _create_builder(name: str) -> None:
         )
 
 
-def ensure_builder(platforms: Sequence[str], console: Any = None) -> Optional[str]:
+def ensure_builder(platforms: Sequence[str], console: Any = None) -> str | None:
     """The builder to pass as ``--builder`` for these platforms.
 
     Building only for the host is what docker does out of the box, so that path

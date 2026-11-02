@@ -11,7 +11,7 @@ clients as any run does, and its actions are handed them by annotation.
 import asyncio
 import contextlib
 from collections.abc import AsyncIterator
-from typing import TYPE_CHECKING, Any, Optional, Union, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from arkitekt_spec.declare.app import AppRegistry
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
@@ -38,7 +38,7 @@ def serve(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -57,7 +57,7 @@ def serve(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -77,7 +77,7 @@ def serve(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,

@@ -1,7 +1,8 @@
 """Fake services and clients for the app and runtime tests: no fakts, no server."""
 
 from contextlib import asynccontextmanager
-from typing import Annotated, Any, AsyncIterator, Dict, List, Optional
+from typing import Annotated, Any
+from collections.abc import AsyncIterator
 
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.provider import Provider
@@ -13,7 +14,7 @@ from rath.expansion import ExpandsStructures
 class FakeClient:
     """Records being entered and left."""
 
-    def __init__(self, name: str, log: Optional[List[str]] = None) -> None:
+    def __init__(self, name: str, log: list[str] | None = None) -> None:
         self.name = name
         self.log = log if log is not None else []
 
@@ -41,7 +42,7 @@ class PictureClient(FakeClient, ExpandsStructures):
 
 
 def PictureService(  # noqa: N802
-    built: Optional[List[Any]] = None, log: Optional[List[str]] = None
+    built: list[Any] | None = None, log: list[str] | None = None
 ) -> Service[PictureClient]:
     """A pictures service. Pass ``built`` to record the client of each build.
 
@@ -52,7 +53,7 @@ def PictureService(  # noqa: N802
     ``pictures-2``, ... in build order, so two runs can be told apart. Kept
     capitalised so it still reads as the thing an app is given.
     """
-    record: List[Any] = built if built is not None else []
+    record: list[Any] = built if built is not None else []
     registry = AppRegistry()
 
     @registry.service()
@@ -77,7 +78,7 @@ class OtherClient(FakeClient):
 
 
 def OtherService(  # noqa: N802
-    log: Optional[List[str]] = None, client_cls: type = OtherClient
+    log: list[str] | None = None, client_cls: type = OtherClient
 ) -> Service[OtherClient]:
     """A second service, to test ordering and multiple clients.
 
@@ -99,10 +100,10 @@ class FakeRekuest(FakeClient, ExpandsStructures):
 class FakeAgent:
     """Stands in for the agent a run drives: records what it was handed and asked."""
 
-    def __init__(self, client: FakeRekuest, log: Optional[List[str]] = None) -> None:
+    def __init__(self, client: FakeRekuest, log: list[str] | None = None) -> None:
         self.client = client
         self.log = log if log is not None else []
-        self.provided: List[Any] = []
+        self.provided: list[Any] = []
         self.bound_app: Any = None
         self.force: Any = None
 
@@ -123,7 +124,7 @@ class FakeAgent:
         self.log.append("exit agent")
 
 
-def RekuestProvider(log: Optional[List[str]] = None) -> "Provider[FakeAgent]":  # noqa: N802
+def RekuestProvider(log: list[str] | None = None) -> "Provider[FakeAgent]":  # noqa: N802
     """The fake rekuest service and, beside it, the provider building a :class:`FakeAgent`.
 
     An app that offers something registers the real rekuest provider unless one
@@ -151,8 +152,8 @@ class RecordedRun:
     def __init__(
         self,
         app: Any,
-        options: Dict[str, Any],
-        runs: List[Any],
+        options: dict[str, Any],
+        runs: list[Any],
         listener: Any = None,
         fakts: Any = None,
         during: Any = None,
@@ -173,7 +174,7 @@ class RecordedRun:
             await self.during(self)
 
 
-def recording_connect(runs: List[Any], fakts: Any = None, during: Any = None) -> Any:  # noqa: ANN401
+def recording_connect(runs: list[Any], fakts: Any = None, during: Any = None) -> Any:  # noqa: ANN401
     """A stand-in for ``arkitekt.runtime.connect`` that connects nothing.
 
     ``runs`` collects ``(app, options)`` of every run, the options being what the
@@ -201,11 +202,11 @@ def write_session(
     identifier: str,
     version: str,
     url: str,
-    logged_in_at: Optional[float] = None,
-    refreshed_at: Optional[float] = None,
+    logged_in_at: float | None = None,
+    refreshed_at: float | None = None,
     deployment: str = "Lab",
     manifest_hash: str = "0" * 64,
-    revocation_endpoint: Optional[str] = None,
+    revocation_endpoint: str | None = None,
 ) -> str:
     """Save a session as a run would have, and return its path. Its tokens are
     recognisable, so a test can tell that none of them is ever shown."""

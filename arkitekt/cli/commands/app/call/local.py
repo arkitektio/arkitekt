@@ -1,6 +1,6 @@
 import asyncio
 from pathlib import Path
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
@@ -62,7 +62,7 @@ def describe_arguments(app: App[Any], action: str) -> str:
     return ", ".join(described) or "nothing"
 
 
-def require_arguments(app: App[Any], action: str, kwargs: Dict[str, Any]) -> None:
+def require_arguments(app: App[Any], action: str, kwargs: dict[str, Any]) -> None:
     """Refuse a call that names an argument the action lacks, or leaves a required one out.
 
     Raises:
@@ -89,18 +89,18 @@ async def call_locally(
     console: Console,
     app: App[Any],
     action: str,
-    kwargs: Dict[str, Any],
-    options: Dict[str, Any],
+    kwargs: dict[str, Any],
+    options: dict[str, Any],
     offline: bool = True,
     context: Any = None,  # noqa: ANN401
-) -> List[Any]:
+) -> list[Any]:
     """Start ``app`` for itself, call ``action`` once, and return everything it yielded.
 
     Each result is as it travels (JSON), without the port keys a server sees: the
     one value of an action returning one, a list of an action returning several.
     """
     keys = [port.key for port in app.registry.implementations[action].definition.returns]
-    results: List[Any] = []
+    results: list[Any] = []
     async with connected_local(console, app, options, offline=offline, context=context) as rt:
         async for returns in rt.aiterate_local_raw(action, kwargs):
             values = [returns.get(key) for key in keys]
@@ -116,7 +116,7 @@ def local(
     ],
     target: TargetArgument = DEFAULT_TARGET,
     args: Annotated[
-        List[str],
+        list[str],
         typer.Option(
             "--arg",
             "-a",

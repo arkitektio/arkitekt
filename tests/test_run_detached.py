@@ -7,7 +7,7 @@ it happens to be on. The run owns its thread and its loop; the host owns neither
 import asyncio
 import threading
 import time
-from typing import Annotated, Any, List
+from typing import Annotated, Any
 
 import pytest
 from aiohttp import web
@@ -41,7 +41,7 @@ class HeldAgent:
         self.force: Any = None
         self.connection_listener: Any = None
         self.task_listener: Any = None
-        self.provided: List[Any] = []
+        self.provided: list[Any] = []
 
     async def aprovide(self, context: Any = None) -> None:  # noqa: ANN401
         self.provided.append(context)
@@ -63,7 +63,7 @@ class HeldAgent:
         return None
 
 
-def held_provider(agents: List[HeldAgent], fail_with: List[BaseException]) -> "Provider[HeldAgent]":
+def held_provider(agents: list[HeldAgent], fail_with: list[BaseException]) -> "Provider[HeldAgent]":
     registry = AppRegistry()
 
     @registry.service()
@@ -81,7 +81,7 @@ def held_provider(agents: List[HeldAgent], fail_with: List[BaseException]) -> "P
     return rekuest_agent
 
 
-def held_app(agents: List[HeldAgent], fail_with: List[BaseException] | None = None) -> App[None]:
+def held_app(agents: list[HeldAgent], fail_with: list[BaseException] | None = None) -> App[None]:
     app = App("detached", providers=[held_provider(agents, fail_with if fail_with is not None else [])])
 
     @app.action
@@ -101,8 +101,8 @@ def _until(predicate, timeout: float = 5.0) -> None:  # noqa: ANN001
 
 
 def test_it_returns_at_once_and_reports_each_state_until_cancelled() -> None:
-    agents: List[HeldAgent] = []
-    heard: List[ConnectionState] = []
+    agents: list[HeldAgent] = []
+    heard: list[ConnectionState] = []
 
     async def listener(state: ConnectionState) -> None:
         heard.append(state)
@@ -119,7 +119,7 @@ def test_it_returns_at_once_and_reports_each_state_until_cancelled() -> None:
 
 
 def test_it_is_cancelled_from_another_thread_than_the_one_that_started_it() -> None:
-    agents: List[HeldAgent] = []
+    agents: list[HeldAgent] = []
     running = run_detached(held_app(agents))
     _until(lambda: running.state is S.REGISTERED)
 
@@ -132,7 +132,7 @@ def test_it_is_cancelled_from_another_thread_than_the_one_that_started_it() -> N
 
 
 def test_a_cancelled_run_starts_again_with_the_same_settings() -> None:
-    agents: List[HeldAgent] = []
+    agents: list[HeldAgent] = []
     running = run_detached(held_app(agents))
     _until(lambda: running.state is S.REGISTERED)
     running.cancel()
@@ -148,7 +148,7 @@ def test_a_cancelled_run_starts_again_with_the_same_settings() -> None:
 
 
 def test_starting_a_run_that_is_still_going_is_refused() -> None:
-    agents: List[HeldAgent] = []
+    agents: list[HeldAgent] = []
     running = run_detached(held_app(agents))
     try:
         with pytest.raises(RuntimeError, match="still going"):
@@ -158,8 +158,8 @@ def test_starting_a_run_that_is_still_going_is_refused() -> None:
 
 
 def test_a_run_that_fails_says_so_and_can_be_started_again() -> None:
-    agents: List[HeldAgent] = []
-    heard: List[ConnectionState] = []
+    agents: list[HeldAgent] = []
+    heard: list[ConnectionState] = []
 
     async def listener(state: ConnectionState) -> None:
         heard.append(state)
@@ -182,7 +182,7 @@ def test_a_run_that_fails_says_so_and_can_be_started_again() -> None:
 
 
 def test_cancelling_a_run_that_is_not_going_does_nothing() -> None:
-    agents: List[HeldAgent] = []
+    agents: list[HeldAgent] = []
     running = run_detached(held_app(agents))
     running.cancel()
     running.cancel()
@@ -190,7 +190,7 @@ def test_cancelling_a_run_that_is_not_going_does_nothing() -> None:
 
 
 def test_a_listener_that_raises_does_not_end_the_run() -> None:
-    agents: List[HeldAgent] = []
+    agents: list[HeldAgent] = []
 
     async def listener(state: ConnectionState) -> None:
         raise RuntimeError("the panel is gone")
@@ -220,8 +220,8 @@ def test_the_context_is_checked_at_the_call_not_on_the_runs_thread() -> None:
 
 def test_a_pending_login_is_handed_to_the_hook_and_then_reported() -> None:
     """The hook first: a listener told of the pending login finds what the hook kept."""
-    order: List[str] = []
-    kept: List[DeviceCodeChallenge] = []
+    order: list[str] = []
+    kept: list[DeviceCodeChallenge] = []
 
     async def hook(challenge: DeviceCodeChallenge) -> None:
         kept.append(challenge)
@@ -251,7 +251,7 @@ def test_a_pending_login_is_handed_to_the_hook_and_then_reported() -> None:
 
 
 def test_the_listeners_reach_the_agent() -> None:
-    agents: List[HeldAgent] = []
+    agents: list[HeldAgent] = []
 
     async def on_task(event: Any) -> None:  # noqa: ANN401
         return None
@@ -302,7 +302,7 @@ def test_logout_forgets_the_login() -> None:
 @pytest.mark.revokes
 @pytest.mark.asyncio
 async def test_logout_revokes_the_login_where_the_server_can() -> None:
-    revoked: List[dict[str, str]] = []
+    revoked: list[dict[str, str]] = []
 
     async def revoke(request: web.Request) -> web.Response:
         revoked.append(dict(await request.post()))  # pyright: ignore[reportArgumentType]
@@ -335,8 +335,8 @@ async def test_logout_revokes_the_login_where_the_server_can() -> None:
 @pytest.mark.asyncio
 async def test_a_login_stored_before_servers_said_where_to_revoke_is_still_revoked() -> None:
     """The stored session names no revocation endpoint: the server is asked for it."""
-    revoked: List[dict[str, str]] = []
-    base_holder: List[str] = []
+    revoked: list[dict[str, str]] = []
+    base_holder: list[str] = []
 
     async def well_known(request: web.Request) -> web.Response:
         base = base_holder[0]

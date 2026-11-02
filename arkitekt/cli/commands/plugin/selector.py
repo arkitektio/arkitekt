@@ -1,4 +1,4 @@
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 import typer
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
@@ -16,7 +16,7 @@ def add_selector(
     ctx: typer.Context,
     flavour: Annotated[str, typer.Argument()],
     kind: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--kind", "-k", help=f"The kind of selector ({KINDS})"),
     ] = None,
     required: Annotated[
@@ -27,69 +27,69 @@ def add_selector(
         ),
     ] = True,
     weight: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--weight", "-w", help="Scoring weight of an optional selector."),
     ] = None,
     # cpu
     min_count: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--min-count", help="cpu: the minimum number of CPU cores."),
     ] = None,
     frequency: Annotated[
-        Optional[float],
+        float | None,
         typer.Option("--frequency", "-fr", help="cpu: the minimum CPU frequency, in MHz."),
     ] = None,
     arch: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--arch", help="cpu: the CPU architecture of the image (amd64, arm64, ...)."),
     ] = None,
     # ram
     memory: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--memory", "-m", help="ram: the minimum system memory, in MB."),
     ] = None,
     # cuda
     compute_capability: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--compute-capability", help="cuda: the minimum CUDA compute capability (e.g. 8.6)."),
     ] = None,
     cuda_version: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--cuda-version", help="cuda: the minimum CUDA driver/runtime version."),
     ] = None,
     vram: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--vram", help="cuda: the minimum GPU memory (VRAM), in MB."),
     ] = None,
     count: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--count", help="cuda: the number of GPUs required."),
     ] = None,
     cuda_cores: Annotated[
-        Optional[int],
+        int | None,
         typer.Option("--cuda-cores", "-cc", help="cuda: deprecated, prefer --compute-capability and --vram."),
     ] = None,
     # rocm
     api_version: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--api-version", "-av", help="rocm: the minimum ROCm API version."),
     ] = None,
     api_thing: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--api-thing", "-at", help="rocm: an additional ROCm capability qualifier."),
     ] = None,
     # oneapi
     one_api_version: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--one-api-version", "-oav", help="oneapi: the minimum oneAPI version."),
     ] = None,
     # label
     key: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--key", help="label: the qualifier key the backend resource must carry."),
     ] = None,
     value: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--value", help="label: the qualifier value; omit to only require the key to exist."),
     ] = None,
 ) -> None:
@@ -125,7 +125,7 @@ def add_selector(
         )
         kind = typer.prompt(f"The kind of selector ({KINDS})")
 
-    with open(config_file, "r") as f:
+    with open(config_file) as f:
         data = yaml.safe_load(f)
 
     fl = Flavour(**data)

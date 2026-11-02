@@ -4,7 +4,6 @@ A run that fails in one of these ways needs no traceback: it needs to be told
 what happened and what to do next. Anything else is a bug and keeps its traceback.
 """
 
-from typing import Optional, Tuple
 
 from rich.console import Console
 from rich.markup import escape
@@ -32,7 +31,7 @@ _KNOWN = {
 }
 
 
-def explain(error: BaseException) -> Optional[Tuple[str, Optional[str]]]:
+def explain(error: BaseException) -> tuple[str, str | None] | None:
     """What to say about ``error``, and the hint to give, if it is a known failure."""
     names = [cls.__name__ for cls in type(error).__mro__]
     if "RuntimeNotInstalledError" in names:

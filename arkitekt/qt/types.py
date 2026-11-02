@@ -1,6 +1,7 @@
 """The Qt app: a declaration whose actions may run in, or talk to, the Qt event loop."""
 
-from typing import Any, Callable, Dict, List, Optional, ParamSpec, Sequence, TypeVar, cast, overload
+from typing import Any, ParamSpec, TypeVar, cast, overload
+from collections.abc import Callable, Sequence
 
 from arkitekt_spec.actions import AssignWidgetInput
 from arkitekt_spec.declare.actors.types import Actifier
@@ -44,50 +45,50 @@ class QtApp(App[Ctx]):
     @overload
     def __init__(
         self: "QtApp[None]",
-        identifier: Optional[str] = None,
+        identifier: str | None = None,
         version: str = "0.0.1",
         *,
-        parent: Optional[Any] = None,
-        logo: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
-        author: Optional[str] = None,
-        public_sources: Optional[List[PublicSource]] = None,
+        parent: Any | None = None,
+        logo: str | None = None,
+        scopes: list[str] | None = None,
+        author: str | None = None,
+        public_sources: list[PublicSource] | None = None,
         services: Sequence[Service[Any]] = (),
-        registry: Optional[AppRegistry] = None,
+        registry: AppRegistry | None = None,
         app_context: None = None,
     ) -> None: ...
 
     @overload
     def __init__(
         self,
-        identifier: Optional[str] = None,
+        identifier: str | None = None,
         version: str = "0.0.1",
         *,
-        parent: Optional[Any] = None,
-        logo: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
-        author: Optional[str] = None,
-        public_sources: Optional[List[PublicSource]] = None,
+        parent: Any | None = None,
+        logo: str | None = None,
+        scopes: list[str] | None = None,
+        author: str | None = None,
+        public_sources: list[PublicSource] | None = None,
         services: Sequence[Service[Any]] = (),
-        registry: Optional[AppRegistry] = None,
+        registry: AppRegistry | None = None,
         app_context: type[Ctx],
     ) -> None: ...
 
     def __init__(
         self,
-        identifier: Optional[str] = None,
+        identifier: str | None = None,
         version: str = "0.0.1",
         *,
         # A QtCore.QObject. qtpy re-exports the binding's classes at runtime, so
         # no checker can see the type; it is Any to them either way.
-        parent: Optional[Any] = None,
-        logo: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
-        author: Optional[str] = None,
-        public_sources: Optional[List[PublicSource]] = None,
+        parent: Any | None = None,
+        logo: str | None = None,
+        scopes: list[str] | None = None,
+        author: str | None = None,
+        public_sources: list[PublicSource] | None = None,
         services: Sequence[Service[Any]] = (),
-        registry: Optional[AppRegistry] = None,
-        app_context: Optional[type[Ctx]] = None,
+        registry: AppRegistry | None = None,
+        app_context: type[Ctx] | None = None,
     ) -> None:
         # The file that constructs the QtApp, not this one: it names the app and
         # is where its assets are.
@@ -130,12 +131,12 @@ class QtApp(App[Ctx]):
         self,
         actifier: Actifier,
         function: Callable[P, R],
-        name: Optional[str],
-        description: Optional[str],
-        interface: Optional[str],
-        widgets: Optional[Dict[str, AssignWidgetInput]],
-        collections: Optional[List[str]],
-        locks: Optional[List[str]],
+        name: str | None,
+        description: str | None,
+        interface: str | None,
+        widgets: dict[str, AssignWidgetInput] | None,
+        collections: list[str] | None,
+        locks: list[str] | None,
     ) -> WrappedFunction[P, R]:
         decorate: Callable[[Callable[P, R]], WrappedFunction[P, R]] = self.action(
             actifier=actifier,
@@ -152,12 +153,12 @@ class QtApp(App[Ctx]):
         self,
         function: Callable[P, R],
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        interface: Optional[str] = None,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        locks: Optional[List[str]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        interface: str | None = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        locks: list[str] | None = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function that runs in the Qt event loop.
 
@@ -186,12 +187,12 @@ class QtApp(App[Ctx]):
         self,
         function: Callable[P, R],
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        interface: Optional[str] = None,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        locks: Optional[List[str]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        interface: str | None = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        locks: list[str] | None = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function that answers through a future resolved in the Qt loop.
 
@@ -226,12 +227,12 @@ class QtApp(App[Ctx]):
         self,
         function: Callable[P, R],
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        interface: Optional[str] = None,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        locks: Optional[List[str]] = None,
+        name: str | None = None,
+        description: str | None = None,
+        interface: str | None = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        locks: list[str] | None = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function that streams results through a generator driven from the Qt loop.
 

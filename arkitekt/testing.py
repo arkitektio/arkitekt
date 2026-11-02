@@ -64,7 +64,7 @@ import time
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic, Optional, cast
+from typing import TYPE_CHECKING, Any, Generic, cast
 
 try:
     from arkitekt_runtime.local import LocalCallCancelledError, LocalCallError
@@ -117,7 +117,7 @@ def local_app(
     app: App[Ctx],
     *,
     clients: Sequence[Any] = (),
-    context: Optional[Ctx] = None,
+    context: Ctx | None = None,
 ) -> Runtime[Ctx]:
     """A run of ``app`` that reaches no server, to call its actions in.
 
@@ -147,7 +147,7 @@ def served_app(
     *,
     url: str,
     mandate_key: str,
-    context: Optional[Ctx] = None,
+    context: Ctx | None = None,
     timeout: float = REGISTRATION_TIMEOUT,
 ) -> Iterator[Runtime[Ctx]]:
     """``app`` logged in at ``url``, registered with its rekuest and served, until the block is left.

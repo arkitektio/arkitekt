@@ -1,7 +1,6 @@
 """ An example of a Qt app for Arkitekt: a window of its own, that others can call"""
 
 import sys
-from typing import Optional
 
 from qtpy import QtWidgets
 
@@ -19,7 +18,7 @@ class Window(QtWidgets.QWidget):
     this one.
     """
 
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         super().__init__(parent)
         self.setWindowTitle(app.identifier)
 

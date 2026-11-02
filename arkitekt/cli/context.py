@@ -12,7 +12,7 @@ prompt, not after a login.
 import inspect
 import json
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -23,8 +23,8 @@ from arkitekt.cli.target import TargetError, import_target, parse_target
 
 def load_context(
     app: App[Any],
-    context: Optional[str],
-    context_file: Optional[Path],
+    context: str | None,
+    context_file: Path | None,
     work_dir: str,
 ) -> Any:  # noqa: ANN401
     """The app context for a run of ``app``, from the flags; ``None`` when it declares none.

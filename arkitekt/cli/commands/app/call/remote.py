@@ -1,6 +1,6 @@
 import asyncio
 import json
-from typing import Annotated, Any, Dict, List, Optional
+from typing import Annotated, Any
 
 import typer
 
@@ -58,7 +58,7 @@ def cli_app() -> App[None]:
     )
 
 
-def parse_call_args(args: List[str]) -> Dict[str, Any]:
+def parse_call_args(args: list[str]) -> dict[str, Any]:
     """``["n=3", "name=bob"]`` -> ``{"n": 3, "name": "bob"}``.
 
     Values are read as JSON when they parse as JSON (numbers, booleans, lists,
@@ -68,7 +68,7 @@ def parse_call_args(args: List[str]) -> Dict[str, Any]:
     Raises:
         ValueError: If an argument has no ``=``.
     """
-    parsed: Dict[str, Any] = {}
+    parsed: dict[str, Any] = {}
     for arg in args:
         key, sep, raw = arg.partition("=")
         if not sep or not key:
@@ -81,7 +81,7 @@ def parse_call_args(args: List[str]) -> Dict[str, Any]:
 
 
 async def call_app(
-    console: Console, app: App[Any], hash: str, kwargs: Dict[str, Any], options: Dict[str, Any]
+    console: Console, app: App[Any], hash: str, kwargs: dict[str, Any], options: dict[str, Any]
 ) -> Any:  # noqa: ANN401
     """Connect ``app`` (without providing it), find the action by hash, and call it.
 
@@ -101,7 +101,7 @@ def _looks_like_a_hash(value: str) -> bool:
     return len(value) == 64 and all(c in "0123456789abcdef" for c in value.lower())
 
 
-def hash_of(app: App[Any], action: str) -> Optional[str]:
+def hash_of(app: App[Any], action: str) -> str | None:
     """The hash of the action ``app`` declares under ``action``, if it declares one.
 
     The hash is of the definition (name, ports, ...), so it is the same on the
@@ -127,7 +127,7 @@ def remote(
         ),
     ],
     target: Annotated[
-        Optional[str],
+        str | None,
         typer.Argument(
             envvar=TARGET_ENVVAR,
             help=(
@@ -146,7 +146,7 @@ def remote(
     skip_cache: SkipCacheOption = False,
     reauth: ReauthOption = False,
     args: Annotated[
-        List[str],
+        list[str],
         typer.Option(
             "--arg",
             "-a",
@@ -176,7 +176,7 @@ def remote(
 
     # The app only names the action. One that was asked for must load; the one
     # this folder happens to hold is used if it is there.
-    named: Optional[App[Any]] = None
+    named: App[Any] | None = None
     if target is not None:
         named = load_app_or_exit(ctx, target)
     elif has_app(get_work_dir(ctx)):

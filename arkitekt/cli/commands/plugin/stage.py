@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated
 import typer
 from arkitekt.cli.errors import cli_error
 import subprocess
@@ -8,7 +8,7 @@ from arkitekt.constants import DEFAULT_ARKITEKT_URL
 def stage(
     ctx: typer.Context,
     build: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--build", help="The build to use"),
     ] = None,
     flavour: Annotated[

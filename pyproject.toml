@@ -199,8 +199,8 @@ line-length = 100
 [tool.ruff.lint]
 # The top-level spellings of these two were deprecated and warned on every run.
 # ANN101 (missing type for `self`) was removed from ruff entirely.
-extend-select = ["ANN", "D1"]
-extend-ignore = ["ANN002", "ANN003"]
+extend-select = ["ANN", "D1", "UP"]
+extend-ignore = ["ANN002", "ANN003", "UP037", "UP038", "UP042"]
 
 [tool.pytest.ini_options]
 markers = [

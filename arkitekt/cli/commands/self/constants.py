@@ -8,9 +8,8 @@ platformdirs, py-machineid, ...) are intentionally excluded.
 Names are the PyPI/distribution names (hyphenated).
 """
 
-from typing import List
 
-ARKITEKT_PACKAGES: List[str] = [
+ARKITEKT_PACKAGES: list[str] = [
     "arkitekt",
     "arkitekt-spec",
     "arkitekt-runtime",

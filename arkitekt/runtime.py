@@ -19,20 +19,13 @@ from types import TracebackType
 from typing import (
     TYPE_CHECKING,
     Any,
-    AsyncIterator,
-    Dict,
     Generic,
-    List,
-    Mapping,
-    Optional,
     Self,
-    Sequence,
-    Type,
     TypeVar,
-    Union,
     cast,
     overload,
 )
+from collections.abc import AsyncIterator, Mapping, Sequence
 
 from arkitekt_spec.declare.agents.connection import ConnectionState
 from arkitekt_spec.declare.provider import Provider
@@ -83,9 +76,9 @@ class LocalRun(BaseModel):
         context: The app context the run is started with.
     """
 
-    clients: List[Any] = Field(default_factory=list)
+    clients: list[Any] = Field(default_factory=list)
     offline: bool = True
-    context: Optional[Any] = None
+    context: Any | None = None
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
@@ -126,18 +119,18 @@ class Runtime(KoiledModel, Generic[Ctx]):
 
     app: App[Ctx]
     options: ConnectionOptions = Field(default_factory=ConnectionOptions)
-    snapshot: Optional[RunSnapshot] = None
-    fakts: Optional[Fakts] = None
-    clients: Dict[str, Any] = Field(default_factory=dict)
+    snapshot: RunSnapshot | None = None
+    fakts: Fakts | None = None
+    clients: dict[str, Any] = Field(default_factory=dict)
     # ``Any``: an agent is an ``AgentLifecycle``, a Protocol with a data member,
     # which pydantic cannot validate against.
-    agent: Optional[Any] = None
-    provider: Optional[Any] = Field(default=None, exclude=True)
-    local: Optional[LocalRun] = Field(default=None, exclude=True)
+    agent: Any | None = None
+    provider: Any | None = Field(default=None, exclude=True)
+    local: LocalRun | None = Field(default=None, exclude=True)
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")
 
-    _entered: List[Any] = PrivateAttr(default_factory=list)
+    _entered: list[Any] = PrivateAttr(default_factory=list)
     _used: bool = PrivateAttr(default=False)
 
     # ------------------------------------------------------------------ #
@@ -154,7 +147,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
         """
         return self.snapshot.services if self.snapshot is not None else {}
 
-    def get(self, cls: Type[T]) -> Optional[T]:
+    def get(self, cls: type[T]) -> T | None:
         """Find this run's client of class ``cls``.
 
         Whatever a service's function returned is its client, so the match is
@@ -171,7 +164,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
                 return cast(T, client)
         return None
 
-    def require(self, cls: Type[T]) -> T:
+    def require(self, cls: type[T]) -> T:
         """Get this run's client of class ``cls``.
 
         Args:
@@ -257,7 +250,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
             if name in own
         )
 
-    def _replacement_for(self, service: "Service[Any]") -> Optional[Any]:
+    def _replacement_for(self, service: "Service[Any]") -> Any | None:
         """The client a local run was handed in place of the one ``service`` builds."""
         if self.local is None:
             return None
@@ -275,8 +268,8 @@ class Runtime(KoiledModel, Generic[Ctx]):
         )
 
     async def _build_clients(
-        self, snapshot: RunSnapshot, fakts: Optional[Fakts]
-    ) -> Dict[str, Any]:
+        self, snapshot: RunSnapshot, fakts: Fakts | None
+    ) -> dict[str, Any]:
         """Resolve each service's requirements and build its client.
 
         Runs after fakts is entered: a service is handed the *resolved* address of
@@ -284,7 +277,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
         required service therefore fails here, while the run is still connecting,
         rather than on the first call that happens to need it.
         """
-        clients: Dict[str, Any] = {}
+        clients: dict[str, Any] = {}
         for name, builder in snapshot.services.items():
             # Each service takes only what its signature asks for; there is no
             # bag of parameters every builder has to know about.
@@ -304,8 +297,8 @@ class Runtime(KoiledModel, Generic[Ctx]):
         return clients
 
     async def _build_agent(
-        self, snapshot: RunSnapshot, fakts: Optional[Fakts]
-    ) -> Optional[Any]:
+        self, snapshot: RunSnapshot, fakts: Fakts | None
+    ) -> Any | None:
         """Build the agent from this run's provider, after the clients, and make it this run's."""
         if self.local is not None:
             agent = _local_agent(snapshot)
@@ -392,9 +385,9 @@ class Runtime(KoiledModel, Generic[Ctx]):
 
     async def _exit_entered(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         while self._entered:
             part = self._entered.pop()
@@ -405,9 +398,9 @@ class Runtime(KoiledModel, Generic[Ctx]):
 
     async def __aexit__(
         self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """Close every client, then fakts, in reverse order of entering.
 
@@ -443,7 +436,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     @overload
     async def arun(self, context: Ctx) -> None: ...
 
-    async def arun(self, context: Optional[Ctx] = None) -> None:
+    async def arun(self, context: Ctx | None = None) -> None:
         """Run the app until stopped: provide its offerings. The runtime must be entered.
 
         Args:
@@ -458,7 +451,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
         self._require_context(context)
         await self._aprovide(context)
 
-    async def _aprovide(self, context: Optional[Ctx]) -> None:
+    async def _aprovide(self, context: Ctx | None) -> None:
         """Provide the app's offerings with ``context``, already checked by the caller."""
         await self._require_agent().aprovide(context=context)
 
@@ -467,7 +460,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     @overload
     def run(self, context: Ctx) -> None: ...
 
-    def run(self, context: Optional[Ctx] = None) -> None:
+    def run(self, context: Ctx | None = None) -> None:
         """Run the app until stopped: provide its offerings. The runtime must be entered.
 
         Raises:
@@ -482,7 +475,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     @overload
     def run_detached(self, context: Ctx) -> "KoilFuture[None]": ...
 
-    def run_detached(self, context: Optional[Ctx] = None) -> "KoilFuture[None]":
+    def run_detached(self, context: Ctx | None = None) -> "KoilFuture[None]":
         """Start running in the background.
 
         Returns:
@@ -548,7 +541,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
         async for result in aiterate_local(agent, interface, *args, **kwargs):
             yield result
 
-    async def aiterate_local_raw(self, action: Any, args: Dict[str, Any]) -> AsyncIterator[Any]:  # noqa: ANN401
+    async def aiterate_local_raw(self, action: Any, args: dict[str, Any]) -> AsyncIterator[Any]:  # noqa: ANN401
         """Call one of the app's own actions with arguments as they travel, and yield
         each result as it would travel back: what a server sends and receives.
 
@@ -606,7 +599,7 @@ def connect_local(
     app: App[Ctx],
     *,
     clients: Sequence[Any] = (),
-    context: Optional[Ctx] = None,
+    context: Ctx | None = None,
     offline: bool = True,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -614,8 +607,8 @@ def connect_local(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
-    task_listener: Optional["TaskListener"] = None,
+    device_code_hook: DeviceCodeHook | None = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
 ) -> Runtime[Ctx]:
@@ -674,7 +667,7 @@ class RuntimeNotInstalledError(ImportError):
     """``run()`` was asked to serve an app, and no runtime (rekuest) is installed."""
 
 
-def _provider_for(app: App[Any], *, required: bool = True) -> Optional[Provider[Any]]:
+def _provider_for(app: App[Any], *, required: bool = True) -> Provider[Any] | None:
     """The provider a run of ``app`` builds its agent from: the app's own, or rekuest's.
 
     An app offering anything without declaring how it is served is served by
@@ -714,10 +707,10 @@ def connect(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -819,10 +812,10 @@ def run(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -839,10 +832,10 @@ def run(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -860,10 +853,10 @@ def run(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -967,10 +960,10 @@ async def arun(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -987,10 +980,10 @@ async def arun(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -1008,10 +1001,10 @@ async def arun(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -1121,7 +1114,7 @@ async def alogin(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
 ) -> "ActiveFakts":
@@ -1194,17 +1187,17 @@ class DetachedRun(Generic[Ctx]):
     def __init__(
         self,
         app: App[Ctx],
-        context: Optional[Ctx],
+        context: Ctx | None,
         options: ConnectionOptions,
     ) -> None:
         self.app = app
         self._context = context
         self._options = options
         self._state = ConnectionState.STOPPED
-        self._error: Optional[BaseException] = None
-        self._thread: Optional[threading.Thread] = None
-        self._loop: Optional[asyncio.AbstractEventLoop] = None
-        self._task: Optional["asyncio.Task[None]"] = None
+        self._error: BaseException | None = None
+        self._thread: threading.Thread | None = None
+        self._loop: asyncio.AbstractEventLoop | None = None
+        self._task: "asyncio.Task[None]" | None = None
         self._guard = threading.Lock()
 
     @property
@@ -1213,7 +1206,7 @@ class DetachedRun(Generic[Ctx]):
         return self._state
 
     @property
-    def error(self) -> Optional[BaseException]:
+    def error(self) -> BaseException | None:
         """What ended the run, when its state is ``FAILED``."""
         return self._error
 
@@ -1262,7 +1255,7 @@ class DetachedRun(Generic[Ctx]):
             # So that a cancel right after start has a task to cancel.
             started.wait()
 
-    def cancel(self, timeout: Optional[float] = 10.0) -> None:
+    def cancel(self, timeout: float | None = 10.0) -> None:
         """End the run: a pending login, or the providing. From any thread.
 
         Returns once the run stopped, or after ``timeout`` seconds -- a task that
@@ -1342,10 +1335,10 @@ def run_detached(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -1362,10 +1355,10 @@ def run_detached(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -1383,10 +1376,10 @@ def run_detached(
     skip_cache: bool = False,
     reauth: bool | Source = DISCOVER,
     headless: bool = False,
-    device_code_hook: Optional[DeviceCodeHook] = None,
+    device_code_hook: DeviceCodeHook | None = None,
     force: bool = False,
-    connection_listener: Optional["ConnectionListener"] = None,
-    task_listener: Optional["TaskListener"] = None,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
@@ -1534,7 +1527,7 @@ def logout(
     auth = read_credentials(path)
     if auth is not None and auth.refresh_token:
         # On a thread of its own: this may be called from inside a running loop.
-        failure: List[BaseException] = []
+        failure: list[BaseException] = []
 
         def revoke() -> None:
             try:

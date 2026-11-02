@@ -1,6 +1,7 @@
 """Small extension to tqdm that reports progress to the task it is handed."""
 
-from typing import TYPE_CHECKING, Any, Generic, Iterable, Mapping, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from collections.abc import Iterable, Mapping
 
 from arkitekt_spec.declare.task import Task
 from tqdm import tqdm as _tqdm

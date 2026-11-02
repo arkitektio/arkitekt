@@ -1,6 +1,5 @@
 """ An example of an image app for Arkitekt: it makes a random image, and blurs one"""
 
-from typing import Optional
 
 import numpy as np
 import xarray as xr
@@ -23,7 +22,7 @@ app = App(__APP_ARGUMENTS__, services=[mikro_service])
 # so it is tested without one (see tests/).
 
 
-def random_pixels(width: int, height: int, seed: Optional[int] = None) -> np.ndarray:
+def random_pixels(width: int, height: int, seed: int | None = None) -> np.ndarray:
     """A (height, width) image of random values between 0 and 1."""
     if width < 1 or height < 1:
         raise ValueError("An image needs to be at least one pixel wide and high")

@@ -17,7 +17,7 @@ a single reference instead of an app *and* a registry that looks like the app's
 but is not (it is the frozen copy).
 """
 
-from typing import Any, Dict, Optional
+from typing import Any
 
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.provider import Provider
@@ -46,12 +46,12 @@ class RunSnapshot(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True, extra="forbid")
 
     @property
-    def services(self) -> Dict[str, Service[Any]]:
+    def services(self) -> dict[str, Service[Any]]:
         """The services the run may build clients for, by name: the registry's."""
         return self.registry.services
 
     @property
-    def provider(self) -> Optional["Provider[Any]"]:
+    def provider(self) -> "Provider[Any] | None":
         """The one provider the app declared, or ``None`` for an app offering nothing."""
         return self.registry.provider_declaration
 

@@ -13,7 +13,7 @@ import subprocess
 import urllib.error
 import urllib.request
 from importlib.metadata import version as installed_version, PackageNotFoundError
-from typing import Annotated, List, Optional, Tuple
+from typing import Annotated
 
 import typer
 import semver
@@ -36,7 +36,7 @@ class PackageManager(str, enum.Enum):
     uv = "uv"
 
 
-def _resolve_package_manager(ctx, package_manager: Optional[PackageManager]) -> str:
+def _resolve_package_manager(ctx, package_manager: PackageManager | None) -> str:
     """Resolve which package manager to use.
 
     Explicit ``--package-manager`` wins. Otherwise a uv project in the work dir
@@ -52,7 +52,7 @@ def _resolve_package_manager(ctx, package_manager: Optional[PackageManager]) -> 
     return get_default_package_manager()
 
 
-def _fetch_latest_version(name: str, pre: bool) -> Optional[str]:
+def _fetch_latest_version(name: str, pre: bool) -> str | None:
     """Return the latest version of ``name`` on PyPI, or ``None`` on failure.
 
     When ``pre`` is False the latest stable release is returned (PyPI's
@@ -71,7 +71,7 @@ def _fetch_latest_version(name: str, pre: bool) -> Optional[str]:
         return data.get("info", {}).get("version")
 
     releases = list(data.get("releases", {}).keys())
-    highest: Optional[str] = None
+    highest: str | None = None
     for candidate in releases:
         try:
             if highest is None or semver.Version.parse(candidate).compare(highest) > 0:
@@ -150,7 +150,7 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
 def upgrade(
     ctx: typer.Context,
     package_manager: Annotated[
-        Optional[PackageManager],
+        PackageManager | None,
         typer.Option(
             "--package-manager",
             "-pm",
@@ -198,7 +198,7 @@ def upgrade(
 
     console.print("Checking PyPI for the latest versions...", style="cyan")
 
-    outdated: List[Tuple[str, str, str]] = []  # (name, current, latest)
+    outdated: list[tuple[str, str, str]] = []  # (name, current, latest)
     for name in ARKITEKT_PACKAGES:
         try:
             current = installed_version(name)

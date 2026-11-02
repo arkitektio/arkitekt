@@ -4,7 +4,7 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from getpass import getuser
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 import typer
 import semver
@@ -50,7 +50,7 @@ class ProjectTemplate:
     #: Create the app in a folder of its own, rather than in the one it is run from.
     new_folder: bool
     #: The package manager; ``None`` takes uv when it is installed, else pip.
-    package_manager: Optional[str]
+    package_manager: str | None
     #: Write a flavour, so the app can be built into an image.
     flavour: bool
     #: The forge that releases the app on every push.
@@ -112,7 +112,7 @@ def validate_project_template(value: str) -> str:
     return value
 
 
-def validate_starter(value: Optional[str]) -> Optional[str]:
+def validate_starter(value: str | None) -> str | None:
     """Check ``--starter`` against the starters, when one is named."""
     return None if value is None else validate_template(value)
 
@@ -137,7 +137,7 @@ STARTER_NEEDS = {
 }
 
 
-def needs_extra(extra: str, asked_for: List[str]) -> bool:
+def needs_extra(extra: str, asked_for: list[str]) -> bool:
     """Whether a starter's extra has to be added to the ones asked for."""
     if extra in asked_for:
         return False
@@ -212,7 +212,7 @@ def write_pytest_options(work_dir: str) -> bool:
     return True
 
 
-def write_tests(work_dir: str, starter: str, entrypoint: str = "app") -> Optional[str]:
+def write_tests(work_dir: str, starter: str, entrypoint: str = "app") -> str | None:
     """Write a first test of the starter's actions, unless the project has tests already.
 
     Args:
@@ -242,7 +242,7 @@ def write_tests(work_dir: str, starter: str, entrypoint: str = "app") -> Optiona
     return relative
 
 
-def hub_tests(work_dir: str, entrypoint: str = "app") -> Optional[str]:
+def hub_tests(work_dir: str, entrypoint: str = "app") -> str | None:
     """The project's tests against a hub, relative to ``work_dir``, if it has any."""
     relative = os.path.join("tests", f"test_{entrypoint}{HUB_TESTS_SUFFIX}.py")
     return relative if os.path.exists(os.path.join(work_dir, relative)) else None
@@ -278,10 +278,10 @@ VERSION_VARIABLE = "__version__"
 def render_app_arguments(
     identifier: str,
     version: str,
-    author: Optional[str] = None,
-    scopes: Optional[List[str]] = None,
-    logo: Optional[str] = None,
-    version_variable: Optional[str] = None,
+    author: str | None = None,
+    scopes: list[str] | None = None,
+    logo: str | None = None,
+    version_variable: str | None = None,
 ) -> str:
     """The ``App(...)`` arguments that declare the app's identity, as Python source.
 
@@ -303,7 +303,7 @@ def render_app_arguments(
     return ", ".join(arguments)
 
 
-def render_template(template_source: str, app_arguments: str, version: Optional[str] = None) -> str:
+def render_template(template_source: str, app_arguments: str, version: str | None = None) -> str:
     """Fill a template's ``App(...)`` placeholder, and its version's if it has one.
 
     A plain replace, not ``str.format``: a template is Python source, and
@@ -326,9 +326,9 @@ def render_starter(
     starter: str,
     identifier: str,
     version: str,
-    author: Optional[str] = None,
-    scopes: Optional[List[str]] = None,
-    logo: Optional[str] = None,
+    author: str | None = None,
+    scopes: list[str] | None = None,
+    logo: str | None = None,
 ) -> str:
     """The app file a starter becomes for this app."""
     with open(build_relative_dir("templates", f"{starter}.py")) as file:
@@ -351,14 +351,14 @@ def render_starter(
 def create_command(
     ctx: typer.Context,
     path: Annotated[
-        Optional[str],
+        str | None,
         typer.Argument(
             help="The folder to create the app in. '.' is this folder. "
             "The default template asks for a name and makes a new folder of it."
         ),
     ] = None,
     identifier: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--identifier",
             "-i",
@@ -374,21 +374,21 @@ def create_command(
         ),
     ] = "0.0.1",
     author: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--author",
             help="The author of your app. This will be shown to users of your app",
         ),
     ] = None,
     logo: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--logo",
             help="Which logo to use for this app, needs to be a valid url",
         ),
     ] = None,
     scopes: Annotated[
-        List[str],
+        list[str],
         typer.Option(
             "--scopes",
             "-s",
@@ -407,7 +407,7 @@ def create_command(
         ),
     ] = DEFAULT_TEMPLATE,
     starter: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--starter",
             help="The code the app file starts with. Just a starting point, to be changed. Default: the template's ("
@@ -417,28 +417,28 @@ def create_command(
         ),
     ] = None,
     ci: Annotated[
-        Optional[Forge],
+        Forge | None,
         typer.Option(
             "--ci",
             help="Release the app from this forge on every push, or 'none'. Default: the template's.",
         ),
     ] = None,
     flavour: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--flavour/--no-flavour",
             help="Write a flavour (a Dockerfile), so the app can be built into an image. Default: the template's.",
         ),
     ] = None,
     tests: Annotated[
-        Optional[bool],
+        bool | None,
         typer.Option(
             "--tests/--no-tests",
             help="Write a first test of the app's actions (run with pytest). Default: the template's.",
         ),
     ] = None,
     entrypoint: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--entrypoint",
             "-e",
@@ -454,7 +454,7 @@ def create_command(
         ),
     ] = False,
     package_manager: Annotated[
-        Optional[PackageManager],
+        PackageManager | None,
         typer.Option(
             "--package-manager",
             "-pm",
@@ -470,7 +470,7 @@ def create_command(
         ),
     ] = False,
     with_extra: Annotated[
-        List[str],
+        list[str],
         typer.Option(
             "--with-extra",
             help="The extras to install with arkitekt. Defaults to all.",

@@ -9,7 +9,8 @@ from rich.console import Console
 from watchfiles.filters import PythonFilter
 import os
 import sys
-from typing import Annotated, Any, Iterable, List, Optional, Set
+from typing import Annotated, Any
+from collections.abc import Iterable
 import typer
 from arkitekt.app.fakts import resolve_url
 from arkitekt.cli.context import load_context
@@ -87,11 +88,11 @@ def _is_environment(path: str) -> bool:
     return bool(_ENVIRONMENT_DIRS & set(os.path.realpath(path).split(os.sep)))
 
 
-def _file_of(module: ModuleType) -> Optional[str]:
+def _file_of(module: ModuleType) -> str | None:
     return getattr(module, "__file__", None)
 
 
-def project_modules(work_dir: str, baseline: Iterable[str] = ()) -> List[str]:
+def project_modules(work_dir: str, baseline: Iterable[str] = ()) -> list[str]:
     """The loaded modules that are the project's own code.
 
     Under the work dir, outside any environment, and not loaded before the app
@@ -109,7 +110,7 @@ def project_modules(work_dir: str, baseline: Iterable[str] = ()) -> List[str]:
     return found
 
 
-def development_modules(work_dir: str, baseline: Iterable[str] = ()) -> List[str]:
+def development_modules(work_dir: str, baseline: Iterable[str] = ()) -> list[str]:
     """The loaded modules of packages installed for development, which ``--deep`` follows.
 
     A package installed the usual way is a copy in ``site-packages`` that nobody
@@ -131,9 +132,9 @@ def development_modules(work_dir: str, baseline: Iterable[str] = ()) -> List[str
     return found
 
 
-def development_roots(work_dir: str, baseline: Iterable[str] = ()) -> List[str]:
+def development_roots(work_dir: str, baseline: Iterable[str] = ()) -> list[str]:
     """The directories (or single files) the development packages live in, to watch."""
-    roots: Set[str] = set()
+    roots: set[str] = set()
     for name in development_modules(work_dir, baseline):
         if "." in name:
             continue
@@ -142,7 +143,7 @@ def development_roots(work_dir: str, baseline: Iterable[str] = ()) -> List[str]:
     return sorted(roots)
 
 
-def files_of(modules: Iterable[str]) -> Set[str]:
+def files_of(modules: Iterable[str]) -> set[str]:
     """The source files of loaded ``modules``, as real paths."""
     files = set()
     for name in modules:
@@ -153,7 +154,7 @@ def files_of(modules: Iterable[str]) -> Set[str]:
     return files
 
 
-def concerns(changes: Iterable[Any], files: Optional[Set[str]]) -> bool:
+def concerns(changes: Iterable[Any], files: set[str] | None) -> bool:
     """Whether a burst of changes touches the app.
 
     ``files`` is what the running app was loaded from; a change elsewhere in the
@@ -194,8 +195,8 @@ def import_fresh(target: Target, stale: Iterable[str]) -> ModuleType:
 def load_candidate(
     target: Target,
     stale: Iterable[str],
-    context: Optional[str] = None,
-    context_file: Optional[Path] = None,
+    context: str | None = None,
+    context_file: Path | None = None,
     work_dir: str = ".",
 ) -> Candidate:
     """Load the app from the files as they are now and check that a run would take it.
@@ -262,7 +263,7 @@ def _start(
     return run
 
 
-async def _stop(console: Console, run: Optional[asyncio.Task[None]]) -> None:
+async def _stop(console: Console, run: asyncio.Task[None] | None) -> None:
     if run is None or run.done():
         return
     run.cancel()
@@ -281,7 +282,7 @@ def _intro(console: Console, deep: bool) -> None:
     notice(console, "Dev mode", f"reloads on change, watching {watching}")
 
 
-def _running(run: Optional[asyncio.Task[None]]) -> bool:
+def _running(run: asyncio.Task[None] | None) -> bool:
     return run is not None and not run.done()
 
 
@@ -291,8 +292,8 @@ async def run_dev(
     work_dir: str,
     options: dict[str, Any] | None = None,
     deep: bool = False,
-    context: Optional[str] = None,
-    context_file: Optional[Path] = None,
+    context: str | None = None,
+    context_file: Path | None = None,
 ):
     """Run the target's app, and run it again whenever its code changes.
 
@@ -313,16 +314,16 @@ async def run_dev(
     # the app brings in after this is the app's to reload.
     baseline = frozenset(sys.modules)
 
-    def loaded() -> List[str]:
+    def loaded() -> list[str]:
         mine = project_modules(work_dir, baseline)
         return [*mine, *development_modules(work_dir, baseline)] if deep else mine
 
-    def tracked() -> Set[str]:
+    def tracked() -> set[str]:
         return files_of(loaded()) | {os.path.realpath(target.file)}
 
-    current_run: Optional[asyncio.Task[None]] = None
+    current_run: asyncio.Task[None] | None = None
     # The files the app that loaded last is made of; None while nothing loads.
-    files: Optional[Set[str]] = None
+    files: set[str] | None = None
     try:
         current_run = _start(
             console, load_candidate(target, [], context, context_file, work_dir), options

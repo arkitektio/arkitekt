@@ -19,7 +19,7 @@ import time
 import webbrowser
 from pathlib import Path
 from collections.abc import Sequence
-from typing import Annotated, Any, Dict, List, Optional, Tuple
+from typing import Annotated, Any
 
 import typer
 
@@ -51,7 +51,7 @@ TAILSCALED_FALLBACK_PATHS = (
 )
 
 
-async def _fetch_well_known(url: str) -> Dict[str, Any]:
+async def _fetch_well_known(url: str) -> dict[str, Any]:
     """Fetch and parse the ``/.well-known/fakts`` document for ``url``.
 
     Returns the raw JSON dict (not a pydantic model) so extra fields such as the
@@ -67,7 +67,7 @@ async def _fetch_well_known(url: str) -> Dict[str, Any]:
     else:
         candidates = [f"https://{url}", f"http://{url}"]
 
-    last_error: Optional[Exception] = None
+    last_error: Exception | None = None
     async with aiohttp.ClientSession(
         headers={"User-Agent": "Fakts/0.1", "Accept": "application/json"},
     ) as session:
@@ -100,7 +100,7 @@ async def _fetch_well_known(url: str) -> Dict[str, Any]:
     )
 
 
-def _extract_mesh_endpoints(data: Dict[str, Any], url: str) -> Dict[str, Optional[str]]:
+def _extract_mesh_endpoints(data: dict[str, Any], url: str) -> dict[str, str | None]:
     """Pull the mesh device-code endpoints out of a well-known document.
 
     Raises if the deployment does not advertise the required start/challenge
@@ -122,7 +122,7 @@ def _extract_mesh_endpoints(data: Dict[str, Any], url: str) -> Dict[str, Optiona
     }
 
 
-async def _mesh_start(start_url: str, payload: Dict[str, Any]) -> Tuple[str, str]:
+async def _mesh_start(start_url: str, payload: dict[str, Any]) -> tuple[str, str]:
     """Start a mesh device-code flow; returns ``(code, challenge)``.
 
     ``code`` identifies the request on the web authorization page; ``challenge``
@@ -150,7 +150,7 @@ async def _mesh_start(start_url: str, payload: Dict[str, Any]) -> Tuple[str, str
     return result["code"], result["challenge"]
 
 
-async def _mesh_poll(challenge_url: str, challenge: str, timeout: int) -> Dict[str, Any]:
+async def _mesh_poll(challenge_url: str, challenge: str, timeout: int) -> dict[str, Any]:
     """Poll the mesh challenge endpoint until it is granted, denied, or times out.
 
     Returns the granted payload (``ionscale_auth_key`` / ``ionscale_coord_url`` /
@@ -202,7 +202,7 @@ async def _mesh_poll(challenge_url: str, challenge: str, timeout: int) -> Dict[s
             cli_error(f"Unexpected mesh challenge status: {status!r}.")
 
 
-def _build_configure_url(base: Optional[str], code: str) -> Optional[str]:
+def _build_configure_url(base: str | None, code: str) -> str | None:
     """Build the web authorization URL for ``code`` from the advertised base."""
     if not base:
         return None
@@ -214,7 +214,7 @@ def _build_configure_url(base: Optional[str], code: str) -> Optional[str]:
 
 
 def _display_configure_prompt(
-    console, configure_url: Optional[str], code: str, open_browser: bool
+    console, configure_url: str | None, code: str, open_browser: bool
 ) -> None:
     """Show the user where to authorize the join (and open a browser if asked)."""
     if configure_url:
@@ -239,11 +239,11 @@ def _display_configure_prompt(
 
 def _run_mesh_device_code(
     console,
-    endpoints: Dict[str, Optional[str]],
-    payload: Dict[str, Any],
+    endpoints: dict[str, str | None],
+    payload: dict[str, Any],
     open_browser: bool,
     timeout: int,
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """Drive the full device-code flow: start -> show URL -> poll -> granted."""
     # start_url/challenge_url are guaranteed non-None by _extract_mesh_endpoints.
     start_url = str(endpoints["start_url"])
@@ -276,7 +276,7 @@ def _ensure_tailscale_installed(console) -> None:
     )
 
 
-def _redact(args: List[str]) -> List[str]:
+def _redact(args: list[str]) -> list[str]:
     """Redact secret-bearing args (e.g. ``--authkey=…``) for display."""
     redacted = []
     for arg in args:
@@ -287,7 +287,7 @@ def _redact(args: List[str]) -> List[str]:
     return redacted
 
 
-def _run_tailscale(console, args: List[str]) -> None:
+def _run_tailscale(console, args: list[str]) -> None:
     """Run ``tailscale <args>``, retrying with ``sudo`` if it exits non-zero.
 
     Output is streamed (not captured) so tailscale's progress stays visible. The
@@ -341,7 +341,7 @@ def _run_tailscale(console, args: List[str]) -> None:
         )
 
 
-def _find_tailscaled() -> Optional[str]:
+def _find_tailscaled() -> str | None:
     """Locate the ``tailscaled`` daemon binary (it is often off a non-root PATH)."""
     found = shutil.which("tailscaled")
     if found:
@@ -373,9 +373,9 @@ def _ensure_tailscaled_installed(console) -> str:
 def _userspace_daemon_command(
     tailscaled_path: str,
     http_listen: str,
-    socks5_listen: Optional[str],
+    socks5_listen: str | None,
     state_dir: Path,
-) -> List[str]:
+) -> list[str]:
     """Build the userspace-networking ``tailscaled`` command exposing an HTTP proxy."""
     command = [
         tailscaled_path,
@@ -392,7 +392,7 @@ def _userspace_daemon_command(
 def _bring_up_via_socket(
     console,
     socket_path: Path,
-    up_args: List[str],
+    up_args: list[str],
     attempts: int = 40,
     delay: float = 0.5,
 ) -> None:
@@ -403,7 +403,7 @@ def _bring_up_via_socket(
     """
     command = ["tailscale", f"--socket={socket_path}", *up_args]
     console.print(f"Running: {' '.join(_redact(command))}", style="cyan")
-    last: Optional[subprocess.CompletedProcess[str]] = None
+    last: subprocess.CompletedProcess[str] | None = None
     timed_out = False
     for _ in range(attempts):
         try:
@@ -452,13 +452,13 @@ mesh = typer.Typer(
 def _device_code_join(
     console,
     url: str,
-    machine_name: Optional[str],
-    description: Optional[str],
+    machine_name: str | None,
+    description: str | None,
     ephemeral: bool,
     tags: Sequence[str],
     expiration: int,
     open_browser: bool,
-) -> Tuple[str, str, str]:
+) -> tuple[str, str, str]:
     """Run the mesh device-code flow; returns ``(authkey, coord_url, hostname)``."""
     machine_name = machine_name or socket.gethostname()
 
@@ -494,7 +494,7 @@ def join(
     ctx: typer.Context,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
     machine_name: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--name",
             "-n",
@@ -503,7 +503,7 @@ def join(
         ),
     ] = None,
     description: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--description",
             help="Human-readable purpose, shown on the authorization page.",
@@ -517,7 +517,7 @@ def join(
         ),
     ] = False,
     tags: Annotated[
-        List[str],
+        list[str],
         typer.Option(
             "--tag",
             help="Requested ionscale ACL tag (repeatable; advisory).",
@@ -608,7 +608,7 @@ def proxy(
         ),
     ] = DEFAULT_ARKITEKT_URL,
     machine_name: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--name",
             "-n",
@@ -617,7 +617,7 @@ def proxy(
         ),
     ] = None,
     description: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--description",
             help="Human-readable purpose, shown on the authorization page.",
@@ -631,7 +631,7 @@ def proxy(
         ),
     ] = False,
     tags: Annotated[
-        List[str],
+        list[str],
         typer.Option(
             "--tag",
             help="Requested ionscale ACL tag (repeatable; advisory).",
@@ -659,7 +659,7 @@ def proxy(
         ),
     ] = DEFAULT_PROXY_LISTEN,
     socks5_listen: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--socks5-listen",
             help="Also expose a SOCKS5 proxy on this address (e.g. localhost:1080).",
@@ -734,7 +734,7 @@ def proxy(
 
 def cert(
     ctx: typer.Context,
-    domain: Annotated[Optional[str], typer.Argument()] = None,
+    domain: Annotated[str | None, typer.Argument()] = None,
 ) -> None:
     """Fetch a TLS certificate for this node via `tailscale cert`.
 

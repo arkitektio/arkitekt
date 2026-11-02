@@ -11,7 +11,8 @@ import sys
 import threading
 import time
 from contextlib import asynccontextmanager, contextmanager
-from typing import Any, AsyncIterator, Dict, Iterator, Optional
+from typing import Any
+from collections.abc import AsyncIterator, Iterator
 
 from rich.console import Console
 from rich.markup import escape
@@ -23,7 +24,7 @@ from arkitekt.app.sessions import read_session, session_path
 from arkitekt.app.terminal import done, fail, notice, step
 
 
-def ago(moment: float, now: Optional[float] = None) -> str:
+def ago(moment: float, now: float | None = None) -> str:
     """How long ago ``moment`` (a unix timestamp) was, in words."""
     seconds = max(0.0, (time.time() if now is None else now) - moment)
     for unit, length in (("day", 86400), ("hour", 3600), ("minute", 60)):
@@ -33,7 +34,7 @@ def ago(moment: float, now: Optional[float] = None) -> str:
     return "just now"
 
 
-def logged_in_at(app: App[Any], url: str) -> Optional[float]:
+def logged_in_at(app: App[Any], url: str) -> float | None:
     """When the session ``app`` has cached for ``url`` was logged in, if it has one."""
     session = read_session(session_path(app.identifier, app.version, url))
     return session.logged_in_at if session else None
@@ -75,7 +76,7 @@ class TaskReporter:
 
     def __init__(self, console: Console) -> None:
         self.console = console
-        self.started: Dict[str, float] = {}
+        self.started: dict[str, float] = {}
 
     async def __call__(self, event: Any) -> None:  # noqa: ANN401
         # By value: the kinds are arkitekt-spec's agent module, which only a run needs.
@@ -110,7 +111,7 @@ def _elapsed(seconds: float) -> str:
 
 
 def report_session(
-    console: Console, rt: Any, before: Optional[float], options: Dict[str, Any]
+    console: Console, rt: Any, before: float | None, options: dict[str, Any]
 ) -> None:  # noqa: ANN401
     """Say how the run got its session, unless the login prompt already did.
 
@@ -136,7 +137,7 @@ def report_session(
 async def connected(
     console: Console,
     app: App[Any],
-    options: Dict[str, Any],
+    options: dict[str, Any],
     provide: bool = False,
     tasks: bool = False,
 ) -> AsyncIterator[Any]:
@@ -155,7 +156,7 @@ async def connected(
     before = None if fresh else logged_in_at(app, url)
     # Only what a providing run needs is added: a script-like connection is made
     # with exactly what the user passed.
-    extra: Dict[str, Any] = (
+    extra: dict[str, Any] = (
         {"provide": True, "connection_listener": ConnectionReporter(console, app)}
         if provide
         else {}
@@ -172,7 +173,7 @@ async def connected(
 async def connected_local(
     console: Console,
     app: App[Any],
-    options: Dict[str, Any],
+    options: dict[str, Any],
     offline: bool = True,
     context: Any = None,  # noqa: ANN401
 ) -> AsyncIterator[Any]:
@@ -198,7 +199,7 @@ async def connected_local(
 async def arun_app(
     console: Console,
     app: App[Any],
-    options: Dict[str, Any],
+    options: dict[str, Any],
     context: Any = None,  # noqa: ANN401
     tasks: bool = False,
 ) -> None:

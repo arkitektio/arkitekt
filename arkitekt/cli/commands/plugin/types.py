@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, field_validator
 import datetime
-from typing import List, Optional, Sequence
+from collections.abc import Sequence
 
 
 from string import Formatter
@@ -50,15 +50,15 @@ LEGACY_BUILD_COMMANDS = (
 
 class Flavour(BaseModel):
     """ Flavour is a pydantic model that represents a flavour of an app image"""
-    selectors: List[Selector]
+    selectors: list[Selector]
     #: What the flavour must be granted where it runs: the container engine's socket, a
     #: device, a folder of the host. Copied into the build, the deployments file and the
     #: release, where an installer asks for them.
-    capabilities: List[Capability] = Field(default_factory=list)
+    capabilities: list[Capability] = Field(default_factory=list)
     description: str = Field(default="")
     dockerfile: str = Field(default="Dockerfile")
-    platforms: List[str] = Field(default_factory=lambda: list(DEFAULT_PLATFORMS))
-    build_command: List[str] = Field(default_factory=lambda: list(DEFAULT_BUILD_COMMAND))
+    platforms: list[str] = Field(default_factory=lambda: list(DEFAULT_PLATFORMS))
+    build_command: list[str] = Field(default_factory=lambda: list(DEFAULT_BUILD_COMMAND))
 
     @field_validator("build_command", mode="before")
     def check_valid_template_name(cls, value):
@@ -93,9 +93,9 @@ class Flavour(BaseModel):
         relative_dir: str,
         platform: str = "",
         output: str = "",
-        builder: Optional[str] = None,
+        builder: str | None = None,
         extra: Sequence[str] = (),
-    ) -> List[str]:
+    ) -> list[str]:
         """Generates the build command for this flavour.
 
         ``platform`` is a comma-joined docker platform list and ``output`` a
@@ -138,25 +138,25 @@ class Flavour(BaseModel):
 class Build(BaseModel):
     build_run: str
     build_id: str
-    inspection: Optional[Inspection] = None
+    inspection: Inspection | None = None
     description: str = Field(default="")
-    selectors: List[Selector] = Field(default_factory=list)
-    capabilities: List[Capability] = Field(default_factory=list)
+    selectors: list[Selector] = Field(default_factory=list)
+    capabilities: list[Capability] = Field(default_factory=list)
     flavour: str = Field(default="vanilla")
     #: The platforms this build compiled. Only the host one was loaded locally;
     #: publish pushes the whole list as a manifest list. Empty in a builds.yaml
     #: written before multi-arch existed, which is the single-arch record it was.
-    platforms: List[str] = Field(default_factory=list)
+    platforms: list[str] = Field(default_factory=list)
     manifest: AppManifest
     build_at: datetime.datetime = Field(default_factory=datetime.datetime.now)
-    base_docker_command: List[str] = Field(
+    base_docker_command: list[str] = Field(
         default_factory=lambda: ["docker", "run", "-it", "--net", "host"]
     )
-    base_arkitekt_command: List[str] = Field(
+    base_arkitekt_command: list[str] = Field(
         default_factory=lambda: ["arkitekt", "run", "prod", "--headless"]
     )
 
-    def build_docker_command(self) -> List[str]:
+    def build_docker_command(self) -> list[str]:
         """Builds the docker command for this build.
 
         Mirrors the deployer's selector mapping: a cuda selector requests the
@@ -193,5 +193,5 @@ class Build(BaseModel):
 class BuildsConfigFile(BaseModel):
     #: The arkitekt-spec that last wrote this file. Each build's inspection names its own.
     spec_version: str
-    builds: List[Build] = Field(default_factory=list)
-    latest_build_run: Optional[str] = None
+    builds: list[Build] = Field(default_factory=list)
+    latest_build_run: str | None = None

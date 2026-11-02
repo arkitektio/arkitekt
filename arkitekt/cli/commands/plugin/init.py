@@ -1,7 +1,7 @@
 """The ``arkitekt plugin init`` command: scaffold a plugin flavour."""
 
 from importlib.metadata import version
-from typing import Annotated, Optional
+from typing import Annotated
 from arkitekt.cli.validators import validate_dockerfile
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
@@ -105,9 +105,9 @@ def write_flavour(
     flavour: str = "vanilla",
     *,
     description: str = "This is a vanilla flavour",
-    platforms: Optional[list[str]] = None,
-    template: Optional[str] = None,
-    arkitekt_version: Optional[str] = None,
+    platforms: list[str] | None = None,
+    template: str | None = None,
+    arkitekt_version: str | None = None,
     overwrite: bool = False,
 ) -> str:
     """Write a flavour's ``config.yaml`` and Dockerfile; return the Dockerfile's path.
@@ -162,7 +162,7 @@ def write_flavour(
     with open(config_file, "w") as file:
         yaml.dump(fl.model_dump(), file)
 
-    with open(build_relative_dir("dockerfiles", f"{template}.dockerfile"), "r") as f:
+    with open(build_relative_dir("dockerfiles", f"{template}.dockerfile")) as f:
         dockerfile_content = f.read()
 
     with open(dockerfile, "w") as f:
@@ -193,7 +193,7 @@ def init(
         ),
     ] = False,
     template: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--template",
             "-t",
@@ -210,7 +210,7 @@ def init(
         ),
     ] = False,
     arkitekt_version: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--arkitekt-version",
             "-av",
@@ -218,7 +218,7 @@ def init(
         ),
     ] = None,
     platform: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option(
             "--platform",
             "-p",

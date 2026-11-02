@@ -1,7 +1,7 @@
 """ An example of a simple template for Arkitekt"""
 
 import time
-from typing import Generator
+from collections.abc import Generator
 
 from arkitekt import App, run
 

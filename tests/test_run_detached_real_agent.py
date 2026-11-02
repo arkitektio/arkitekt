@@ -10,7 +10,8 @@ import asyncio
 import threading
 import time
 from types import TracebackType
-from typing import Annotated, Any, AsyncIterator, List, Optional
+from typing import Annotated, Any
+from collections.abc import AsyncIterator
 
 import koil
 from arkitekt_runtime import messages
@@ -29,9 +30,9 @@ _CLOSED = object()
 class Loopback(AgentTransport):
     """A backend in a queue: acknowledges the agent, then delivers what the test feeds."""
 
-    sent: List[Any] = []
-    _queue: Optional["asyncio.Queue[object]"] = None
-    _loop: Optional[asyncio.AbstractEventLoop] = None
+    sent: list[Any] = []
+    _queue: "asyncio.Queue[object] | None" = None
+    _loop: asyncio.AbstractEventLoop | None = None
     _host: Any = None
     _connected: bool = False
 
@@ -111,12 +112,12 @@ class Pump:
 
     def __init__(self) -> None:
         self.running = False
-        self.thread: Optional[str] = None
+        self.thread: str | None = None
         self.steps = 0
 
 
 def test_a_sync_action_runs_reports_and_is_cancelled_where_it_asks() -> None:
-    transports: List[Loopback] = []
+    transports: list[Loopback] = []
     registry = AppRegistry()
 
     @registry.service()
@@ -146,8 +147,8 @@ def test_a_sync_action_runs_reports_and_is_cancelled_where_it_asks() -> None:
         finally:
             pump.running = False
 
-    states: List[ConnectionState] = []
-    events: List[TaskEvent] = []
+    states: list[ConnectionState] = []
+    events: list[TaskEvent] = []
 
     async def on_state(state: ConnectionState) -> None:
         states.append(state)

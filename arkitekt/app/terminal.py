@@ -5,7 +5,7 @@ The login prompt lives here, not in the CLI, so an app started with
 ``python app.py`` asks the same way as one started with ``arkitekt run``.
 """
 
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING
 
 from rich.console import Console
 from rich.markup import escape
@@ -24,10 +24,10 @@ FAIL = ("✕", "x")
 
 def _status(
     console: Console,
-    glyph: Tuple[str, str],
+    glyph: tuple[str, str],
     style: str,
     message: str,
-    detail: Optional[str],
+    detail: str | None,
 ) -> None:
     lead = glyph[console.options.ascii_only]
     line = f"[{style}]{lead}[/] {message}"
@@ -36,23 +36,23 @@ def _status(
     console.print(line, highlight=False)
 
 
-def step(console: Console, message: str, detail: Optional[str] = None) -> None:
+def step(console: Console, message: str, detail: str | None = None) -> None:
     """Say that something is starting. ``message`` and ``detail`` are rich markup:
     :func:`rich.markup.escape` anything that is not yours."""
     _status(console, STEP, "cyan", message, detail)
 
 
-def done(console: Console, message: str, detail: Optional[str] = None) -> None:
+def done(console: Console, message: str, detail: str | None = None) -> None:
     """Say that something succeeded."""
     _status(console, DONE, "green", message, detail)
 
 
-def notice(console: Console, message: str, detail: Optional[str] = None) -> None:
+def notice(console: Console, message: str, detail: str | None = None) -> None:
     """Say something that is neither a step nor an outcome."""
     _status(console, NOTICE, "yellow", message, detail)
 
 
-def fail(console: Console, message: str, detail: Optional[str] = None) -> None:
+def fail(console: Console, message: str, detail: str | None = None) -> None:
     """Say that something failed. It only prints: exiting is the caller's."""
     _status(console, FAIL, "red", message, detail)
 

@@ -1,5 +1,5 @@
 import os
-from typing import Annotated, Any, List, Optional
+from typing import Annotated, Any
 
 import typer
 import yaml
@@ -12,7 +12,7 @@ from arkitekt.cli.vars import get_console, get_work_dir
 GEN_HINT = "Generate the code with [b]uvx --with <service packages> turms gen[/b] (or [b]turms watch[/b])."
 
 
-def gen_hint(packages: List[str]) -> str:
+def gen_hint(packages: list[str]) -> str:
     """How to run turms for these services' projects.
 
     turms imports each service's client while it generates (the client plugin),
@@ -54,7 +54,7 @@ def init(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
     services: Annotated[
-        Optional[List[str]],
+        list[str] | None,
         typer.Option(
             "--service",
             "-s",
@@ -101,7 +101,7 @@ def init(
         with open(config_path) as f:
             projects = (yaml.safe_load(f) or {}).get("projects", {}) or {}
 
-    written: List[str] = []
+    written: list[str] = []
     for name, service in declared.items():
         schema, project = service.get_graphql_schema(), service.get_turms_project()
         if not schema or not project:

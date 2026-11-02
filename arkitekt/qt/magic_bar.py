@@ -6,7 +6,8 @@ from koil.qt import async_to_qt
 from arkitekt.app.app import App
 from arkitekt.runtime import Runtime
 from .utils import get_image_path
-from typing import Any, Optional, Callable
+from typing import Any
+from collections.abc import Callable
 import logging
 import aiohttp
 from fakts import Fakts
@@ -46,7 +47,7 @@ class Logo(QtWidgets.QWidget):
         self.getter.returned.connect(self.on_image)
         self.getter.run()
 
-    def on_image(self, data: Optional[bytes]) -> None:
+    def on_image(self, data: bytes | None) -> None:
         """Callback for when the image is downloaded."""
         if not data:
             return
@@ -59,7 +60,7 @@ class Logo(QtWidgets.QWidget):
 
         self.mylayout.addWidget(self.logo)
 
-    async def aget_image(self) -> Optional[bytes]:
+    async def aget_image(self) -> bytes | None:
         """Async function to download the image."""
         async with aiohttp.ClientSession() as session:
             async with session.get(self.logo_url) as resp:
@@ -280,7 +281,7 @@ class StatusDot(QtWidgets.QWidget):
 
     SIZE = 14
 
-    def __init__(self, parent: Optional[QtWidgets.QWidget] = None) -> None:
+    def __init__(self, parent: QtWidgets.QWidget | None = None) -> None:
         """A grey dot that stands still, until it is told a status."""
         super().__init__(parent)
         self.setFixedSize(self.SIZE, self.SIZE)
@@ -415,8 +416,8 @@ class MagicBar(QtWidgets.QWidget):
         self,
         runtime: Runtime[Any],
         dark_mode: bool = False,
-        on_error: Optional[Callable[[Exception], None]] = None,
-        context: Optional[Any] = None,
+        on_error: Callable[[Exception], None] | None = None,
+        context: Any | None = None,
     ) -> None:
         """Magic bar Widget
 
@@ -573,7 +574,7 @@ class MagicBar(QtWidgets.QWidget):
     def gear_button_clicked(self) -> None:
         self.profile.show()
 
-    def server_name(self) -> Optional[str]:
+    def server_name(self) -> str | None:
         """The server this run is configured for, without its scheme; None before it has one."""
         discovery = self._well_known()
         url = discovery.url if discovery is not None else None

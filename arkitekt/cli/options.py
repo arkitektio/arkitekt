@@ -12,7 +12,7 @@ site (e.g. `url: UrlOption = DEFAULT_ARKITEKT_URL`).
 
 from enum import Enum
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Annotated
 
 import typer
 
@@ -50,7 +50,7 @@ UrlOption = Annotated[
 #: A pre-issued fakts credential, as ``client_id:refresh_token``.
 #: Callers default this to ``None``.
 TokenOption = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--token",
         "-t",
@@ -67,7 +67,7 @@ TokenOption = Annotated[
 
 #: A mandate key used to authenticate. Callers default this to ``None``.
 MandateKeyOption = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--mandate-key",
         "-r",
@@ -139,7 +139,7 @@ ReauthOption = Annotated[
 #: The app that controls this process's lifecycle. Callers default this to ``None``
 #: (not passed: the runner looks at ``$ARKITEKT_SUPERVISOR``).
 SupervisorOption = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--supervisor",
         help=(
@@ -153,7 +153,7 @@ SupervisorOption = Annotated[
 #: This device's identity. Callers default this to ``None`` (not passed: the runner
 #: looks at ``$ARKITEKT_DEVICE_ID``, then the machine's id).
 DeviceIdOption = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--device-id",
         help="This device's identity. Default: $ARKITEKT_DEVICE_ID, then the machine's id.",
@@ -177,7 +177,7 @@ ForceMeshOption = Annotated[
 #: The app context, as ``module:attr``: an instance of the class the App declared
 #: (``App(..., app_context=Config)``), or a zero-argument factory of one.
 ContextOption = Annotated[
-    Optional[str],
+    str | None,
     typer.Option(
         "--context",
         help=(
@@ -189,7 +189,7 @@ ContextOption = Annotated[
 
 #: A YAML or JSON file holding the app context, validated by the declared class.
 ContextFileOption = Annotated[
-    Optional[Path],
+    Path | None,
     typer.Option(
         "--context-file",
         help=(

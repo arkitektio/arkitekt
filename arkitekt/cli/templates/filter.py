@@ -1,6 +1,5 @@
 """ An example of a signal filter template for Arkitekt"""
 
-from typing import List
 
 from arkitekt import App, run
 
@@ -13,7 +12,7 @@ app = App(__APP_ARGUMENTS__)
 
 
 @app.action
-def moving_average(values: List[float], window: int = 3) -> List[float]:
+def moving_average(values: list[float], window: int = 3) -> list[float]:
     """Moving Average
 
     Smooths a signal with a moving average over a window of samples
@@ -40,7 +39,7 @@ def moving_average(values: List[float], window: int = 3) -> List[float]:
 
 
 @app.action
-def threshold(values: List[float], cutoff: float = 0.5) -> List[float]:
+def threshold(values: list[float], cutoff: float = 0.5) -> list[float]:
     """Threshold
 
     Sets every value of a signal below the cutoff to zero

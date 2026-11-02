@@ -23,7 +23,7 @@ import traceback
 from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 import typer
 
@@ -77,14 +77,14 @@ class Target:
     """
 
     module: str
-    attribute: Optional[str]
+    attribute: str | None
     file: str
 
     def __str__(self) -> str:
         return f"{self.module}:{self.attribute}" if self.attribute else self.module
 
 
-def _split_attribute(target: str) -> tuple[str, Optional[str]]:
+def _split_attribute(target: str) -> tuple[str, str | None]:
     """Split off ``:attr`` -- but not the ``:`` of a Windows drive (``C:\\app.py``)."""
     module, sep, attribute = target.rpartition(":")
     if sep and module and attribute.isidentifier():
@@ -155,7 +155,7 @@ def default_target() -> str:
     return os.environ.get(TARGET_ENVVAR) or DEFAULT_TARGET
 
 
-def has_app(work_dir: str) -> Optional[str]:
+def has_app(work_dir: str) -> str | None:
     """The file of the app in ``work_dir``, or None when there is no app there.
 
     An app is there when the default target's file exists and mentions
@@ -202,7 +202,7 @@ def import_target(target: Target) -> ModuleType:
     return importlib.import_module(target.module)
 
 
-def find_app(module: Optional[ModuleType], attribute: Optional[str] = None) -> Optional[App[Any]]:
+def find_app(module: ModuleType | None, attribute: str | None = None) -> App[Any] | None:
     """Find the App a module declares, or ``None`` if it declares none.
 
     With ``attribute`` that object is taken, and must be an App. Without it, the
@@ -250,7 +250,7 @@ def find_app(module: Optional[ModuleType], attribute: Optional[str] = None) -> O
     )
 
 
-def require_app(module: ModuleType, attribute: Optional[str] = None) -> App[Any]:
+def require_app(module: ModuleType, attribute: str | None = None) -> App[Any]:
     """:func:`find_app`, where a module without an App is an error that shows the API.
 
     Args:
@@ -329,7 +329,7 @@ def import_target_or_exit(ctx: typer.Context, target: str) -> tuple[ModuleType, 
             cli_error(describe_import_failure(e, parsed.module, get_work_dir(ctx)))
 
 
-def project_frame(error: BaseException, work_dir: str) -> Optional[traceback.FrameSummary]:
+def project_frame(error: BaseException, work_dir: str) -> traceback.FrameSummary | None:
     """The deepest frame of ``error`` that is the user's own code, if any is.
 
     The user's code is what lives under the work dir and outside an environment

@@ -1,4 +1,5 @@
-from typing import Any, Dict, Iterable
+from typing import Any
+from collections.abc import Iterable
 
 import typer
 
@@ -34,14 +35,14 @@ CONNECTION_OPTIONS = (
 _NOT_PASSED = {"DEFAULT", "DEFAULT_MAP"}
 
 
-def explicit_options(ctx: typer.Context, names: Iterable[str]) -> Dict[str, Any]:
+def explicit_options(ctx: typer.Context, names: Iterable[str]) -> dict[str, Any]:
     """The values of the options the user actually passed, leaving defaults out.
 
     A flag's default must not override the runner's own resolution: an unpassed
     ``--url`` leaves the url to ``FAKTS_URL`` and the runtime's default, instead
     of pinning it to whatever default this command happens to show.
     """
-    explicit: Dict[str, Any] = {}
+    explicit: dict[str, Any] = {}
     for name in names:
         source = ctx.get_parameter_source(name)
         if source is not None and source.name not in _NOT_PASSED:
@@ -49,7 +50,7 @@ def explicit_options(ctx: typer.Context, names: Iterable[str]) -> Dict[str, Any]
     return explicit
 
 
-def runner_options(ctx: typer.Context) -> Dict[str, Any]:
+def runner_options(ctx: typer.Context) -> dict[str, Any]:
     """The keyword arguments a run command hands to :func:`arkitekt.arun`: the
     explicitly passed connection flags. ``--force-mesh`` goes as the ``mesh``
     it stands for."""

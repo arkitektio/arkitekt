@@ -10,7 +10,8 @@ shared with a run started outside the CLI, and re-exported here.
 import os
 from importlib.metadata import PackageNotFoundError, version
 from itertools import zip_longest
-from typing import Any, Callable, Dict, MutableSet, Optional, Tuple
+from typing import Any
+from collections.abc import Callable, MutableSet
 
 from rich.console import Console, ConsoleOptions, Group, RenderableType, RenderResult
 from rich.markup import escape
@@ -30,7 +31,7 @@ SEPARATOR = ("·", "-")
 GUTTER = 3
 
 
-def arkitekt_version() -> Optional[str]:
+def arkitekt_version() -> str | None:
     """The installed arkitekt version, or None when it runs from a source tree."""
     try:
         return version("arkitekt")
@@ -77,7 +78,7 @@ def construct_banner(*lines: RenderableType) -> Banner:
     return Banner(title, *lines)
 
 
-def _details(rows: Dict[str, str]) -> Table:
+def _details(rows: dict[str, str]) -> Table:
     grid = Table.grid(padding=(0, GUTTER, 0, 0))
     grid.add_column(style="dim", no_wrap=True)
     grid.add_column()
@@ -114,7 +115,7 @@ def construct_app_banner(
 
     # Rendered from the declaration, not a snapshot: a declaration the run will
     # reject is the run's error to report, not the banner's.
-    rows: Dict[str, str] = {}
+    rows: dict[str, str] = {}
     if app.services:
         rows["services"] = ", ".join(app.services)
 
@@ -144,7 +145,7 @@ def construct_section(title: str, body: RenderableType) -> Group:
     return Group(Text(title, style="bold"), Padding(body, (0, 0, 0, 2)))
 
 
-def construct_changes_group(changes: MutableSet[Tuple[Any, str]]) -> Adaptive:
+def construct_changes_group(changes: MutableSet[tuple[Any, str]]) -> Adaptive:
     """Construct the status lines for the detected changes
 
     They are displayed if the app has detected changes before
@@ -159,7 +160,7 @@ def construct_changes_group(changes: MutableSet[Tuple[Any, str]]) -> Adaptive:
     )
 
 
-def construct_leaking_group(variables: Dict[str, Any]) -> Adaptive:
+def construct_leaking_group(variables: dict[str, Any]) -> Adaptive:
     """Construct the report for the leaking variables
 
     It is displayed if the app has leaking variables

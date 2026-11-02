@@ -5,7 +5,6 @@ This checks what the app itself decides: which services it uses, what its
 manifest says, and that declaring never connects anything.
 """
 
-from typing import Optional
 
 import pytest
 from arkitekt_spec.declare.definition.errors import DefinitionError
@@ -88,7 +87,7 @@ def test_a_registered_services_client_is_injected_not_a_port() -> None:
     app = App("inject", services=[PictureService(), OtherService()])
 
     @app.action
-    def show(picture: Picture, pictures: PictureClient, other: Optional[OtherClient]) -> str:
+    def show(picture: Picture, pictures: PictureClient, other: OtherClient | None) -> str:
         """Shows it."""
         return picture.id
 

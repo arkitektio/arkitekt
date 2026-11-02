@@ -10,7 +10,6 @@ import os
 import time
 from dataclasses import dataclass
 from hashlib import sha256
-from typing import List, Optional
 
 from fakts.cache.file import CacheFile
 from fakts.models import AuthFakt
@@ -57,13 +56,13 @@ class Session:
     name: str
     """The app and its version, as the file is named: ``{identifier}-{version}``.
     The two are not stored apart, and either may hold a hyphen."""
-    url: Optional[str]
+    url: str | None
     """The server it was logged in at, or None for a file that does not say."""
     deployment: str
-    logged_in_at: Optional[float]
+    logged_in_at: float | None
     """When the login happened (unix ts): the start of the refresh chain, which
     survives every token rotation."""
-    refreshed_at: Optional[float]
+    refreshed_at: float | None
     manifest_hash: str = ""
     """The hash of the manifest it was approved for. A run whose manifest hashes
     differently does not use this session: it logs in again."""
@@ -72,7 +71,7 @@ class Session:
         """Whether a run sending the manifest of that hash would use this session."""
         return self.manifest_hash == manifest_hash
 
-    def state(self, now: Optional[float] = None) -> str:
+    def state(self, now: float | None = None) -> str:
         """Whether the session can still be used, as far as this machine can tell.
 
         ``active``, ``idle`` (unused for longer than a refresh token lives) or
@@ -86,7 +85,7 @@ class Session:
         return "active"
 
 
-def read_session(path: str) -> Optional[Session]:
+def read_session(path: str) -> Session | None:
     """Read the session at ``path``, or None if there is none that can be read.
 
     Read as plain data: loading it through the cache would narrow its
@@ -112,7 +111,7 @@ def read_session(path: str) -> Optional[Session]:
     )
 
 
-def read_credentials(path: str) -> Optional[AuthFakt]:
+def read_credentials(path: str) -> AuthFakt | None:
     """The credentials of the session at ``path``, for the one thing that needs
     them without a run: revoking them on logout. ``None`` if there is no session."""
     try:
@@ -122,7 +121,7 @@ def read_credentials(path: str) -> Optional[AuthFakt]:
         return None
 
 
-def list_sessions() -> List[Session]:
+def list_sessions() -> list[Session]:
     """Every session cached on this machine, by name."""
     try:
         names = os.listdir(cache_dir())

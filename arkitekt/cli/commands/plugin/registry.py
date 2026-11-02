@@ -18,7 +18,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Optional
+from typing import Any
+from collections.abc import Mapping
 
 from arkitekt_spec.release import (
     OCI_MANIFEST_MEDIA_TYPE,
@@ -52,7 +53,7 @@ _TIMEOUT_SECONDS = 60
 class RegistryError(Exception):
     """A registry refused a request, or could not be reached."""
 
-    def __init__(self, message: str, status: Optional[int] = None) -> None:
+    def __init__(self, message: str, status: int | None = None) -> None:
         super().__init__(message)
         #: The status the registry answered with, when it answered.
         self.status = status
@@ -79,7 +80,7 @@ class _KeepAuthorizationHome(urllib.request.HTTPRedirectHandler):
         return new
 
 
-def docker_credentials(registry: str) -> Optional[tuple[str, str]]:
+def docker_credentials(registry: str) -> tuple[str, str] | None:
     """The username and secret ``docker login`` stored for a registry, if any."""
     config_dir = os.environ.get("DOCKER_CONFIG") or os.path.join(
         os.path.expanduser("~"), ".docker"
@@ -107,7 +108,7 @@ def docker_credentials(registry: str) -> Optional[tuple[str, str]]:
     return None
 
 
-def _ask_credential_helper(helper: str, name: str) -> Optional[tuple[str, str]]:
+def _ask_credential_helper(helper: str, name: str) -> tuple[str, str] | None:
     try:
         result = subprocess.run(
             [f"docker-credential-{helper}", "get"],
@@ -132,8 +133,8 @@ class Repository:
 
     registry: str
     repository: str
-    credentials: Optional[tuple[str, str]] = None
-    _authorization: Optional[str] = field(default=None, repr=False)
+    credentials: tuple[str, str] | None = None
+    _authorization: str | None = field(default=None, repr=False)
 
     @classmethod
     def of(cls, reference: str) -> "Repository":
@@ -156,21 +157,21 @@ class Repository:
         """Whether a tag or digest exists here."""
         return self._manifest_request("HEAD", reference).status == 200
 
-    def manifest_digest(self, reference: str) -> Optional[str]:
+    def manifest_digest(self, reference: str) -> str | None:
         """The digest of the manifest a tag names, or None if there is none."""
         response = self._manifest_request("GET", reference)
         if response.status == 404:
             return None
         return response.headers.get("docker-content-digest") or digest_of(response.body)
 
-    def manifest(self, reference: str) -> Optional[dict[str, Any]]:
+    def manifest(self, reference: str) -> dict[str, Any] | None:
         """The manifest a tag or digest names, or None if there is none."""
         response = self._manifest_request("GET", reference)
         if response.status == 404:
             return None
         return json.loads(response.body)
 
-    def release(self, tag: str) -> Optional[ReleaseDescriptor]:
+    def release(self, tag: str) -> ReleaseDescriptor | None:
         """The release a tag names, or None if the tag is missing or names an image."""
         digest = descriptor_digest(self.manifest(tag))
         if digest is None:
@@ -254,8 +255,8 @@ class Repository:
         method: str,
         path: str,
         *,
-        body: Optional[bytes] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        body: bytes | None = None,
+        headers: Mapping[str, str] | None = None,
     ) -> Response:
         url = path if "://" in path else self._url(path)
         response = self._send(method, url, body, headers)
@@ -264,7 +265,7 @@ class Repository:
         return response
 
     def _send(
-        self, method: str, url: str, body: Optional[bytes], headers: Optional[Mapping[str, str]]
+        self, method: str, url: str, body: bytes | None, headers: Mapping[str, str] | None
     ) -> Response:
         request = urllib.request.Request(url, data=body, method=method, headers=dict(headers or {}))
         if self._authorization:

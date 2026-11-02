@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Annotated, Optional
+from typing import TYPE_CHECKING, Annotated
 import typer
 import subprocess
 from arkitekt.cli.errors import cli_error
@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from .types import Build
 
 
-def check_if_build_already_deployed(build: "Build", work_dir: Optional[str] = None) -> None:
+def check_if_build_already_deployed(build: "Build", work_dir: str | None = None) -> None:
     """Checks if a build has already been deployed; aborts via cli_error if so."""
     from .io import get_deployments
 
@@ -71,11 +71,11 @@ def push_multi_arch(build_model: "Build", tag: str, work_dir: str, console) -> N
 def publish(
     ctx: typer.Context,
     build: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--build", help="The build run to use"),
     ] = None,
     tag: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--tag", help="The tag to use"),
     ] = None,
 ) -> None:

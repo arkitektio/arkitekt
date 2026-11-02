@@ -1,4 +1,4 @@
-from typing import Annotated, Optional
+from typing import Annotated
 import typer
 from arkitekt.cli.vars import get_console, get_work_dir
 
@@ -6,7 +6,7 @@ from arkitekt.cli.vars import get_console, get_work_dir
 def validate(
     ctx: typer.Context,
     flavour: Annotated[
-        Optional[str],
+        str | None,
         typer.Option("--flavour", "-f", help="Validate only this flavour."),
     ] = None,
 ) -> None:

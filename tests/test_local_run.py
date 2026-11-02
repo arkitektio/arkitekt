@@ -5,7 +5,7 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, List
+from typing import Any
 
 import pytest
 
@@ -16,7 +16,7 @@ from arkitekt.testing import LocalCallError, local_app
 from .fakes import Picture, PictureClient, PictureService
 
 
-def build_app(log: List[str], built: List[Any]) -> App[None]:
+def build_app(log: list[str], built: list[Any]) -> App[None]:
     app = App("local-run", "0.1.0", services=[PictureService(built=built)])
 
     @app.action
@@ -51,17 +51,17 @@ def build_app(log: List[str], built: List[Any]) -> App[None]:
 
 
 @pytest.fixture()
-def log() -> List[str]:
+def log() -> list[str]:
     return []
 
 
 @pytest.fixture()
-def built() -> List[Any]:
+def built() -> list[Any]:
     return []
 
 
 @pytest.fixture()
-def app(log: List[str], built: List[Any]) -> App[None]:
+def app(log: list[str], built: list[Any]) -> App[None]:
     return build_app(log, built)
 
 
@@ -78,14 +78,14 @@ async def test_it_is_called_from_async_code_too(app: App[None]) -> None:
         assert [value async for value in rt.aiterate_local("add", 1)] == [3]
 
 
-def test_the_app_is_started_and_stopped_around_the_run(app: App[None], log: List[str]) -> None:
+def test_the_app_is_started_and_stopped_around_the_run(app: App[None], log: list[str]) -> None:
     with local_app(app) as rt:
         assert log == ["startup"]
         rt.call_local("add", 1)
     assert log == ["startup", "shutdown"]
 
 
-def test_a_replaced_client_is_what_actions_and_expanders_get(app: App[None], built: List[Any]) -> None:
+def test_a_replaced_client_is_what_actions_and_expanders_get(app: App[None], built: list[Any]) -> None:
     fake = PictureClient("fake")
     with local_app(app, clients=[fake]) as rt:
         assert rt.require(PictureClient) is fake
@@ -129,7 +129,7 @@ def test_only_a_local_run_calls_in_process(app: App[None]) -> None:
 
 
 def test_a_local_run_that_is_not_offline_builds_the_deployments_fakts(
-    app: App[None], built: List[Any]
+    app: App[None], built: list[Any]
 ) -> None:
     """The conftest's stand-in for the deployment's fakts is what it gets."""
     with connect_local(app, offline=False) as rt:

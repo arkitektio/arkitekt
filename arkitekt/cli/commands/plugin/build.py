@@ -11,7 +11,7 @@ import uuid
 
 import typer
 import json
-from typing import TYPE_CHECKING, Any, Dict, Optional
+from typing import TYPE_CHECKING, Any
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 if TYPE_CHECKING:
@@ -58,7 +58,7 @@ def build_flavour(
     flavour_name: str,
     flavour: "Flavour",
     work_dir: str,
-    platforms: Optional[list[str]] = None,
+    platforms: list[str] | None = None,
     console: Any = None,
 ) -> str:
     """Build a flavour for every platform it targets; return the build_id (tag).
@@ -196,7 +196,7 @@ def inspect_docker_container(build_id: str) -> tuple[int, int]:
 
 def inspect_all(
     build_id: str, url: str, target: str = DEFAULT_TARGET
-) -> tuple[Dict[str, Any], Dict[str, Any]]:
+) -> tuple[dict[str, Any], dict[str, Any]]:
     """Run ``arkitekt inspect all`` on ``target`` inside the built image.
 
     Returns what the image declares (its ``AGENT``) and who it says it is (its
@@ -268,7 +268,7 @@ def inspect_all(
         raise InspectionError(f"An error occurred: {combined}") from e
 
 
-def machine_readable(output: str, kind: str) -> Optional[Dict[str, Any]]:
+def machine_readable(output: str, kind: str) -> dict[str, Any] | None:
     """The ``--START_<KIND>--``/``--END_<KIND>--`` payload in a command's output, if any."""
     _, start, rest = output.partition(f"--START_{kind}--")
     payload, end, _ = rest.partition(f"--END_{kind}--")
@@ -296,7 +296,7 @@ def build(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
     flavour: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--flavour",
             "-f",
@@ -313,7 +313,7 @@ def build(
         ),
     ] = False,
     tag: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--tag",
             "-t",
@@ -322,7 +322,7 @@ def build(
         ),
     ] = None,
     platform: Annotated[
-        Optional[list[str]],
+        list[str] | None,
         typer.Option(
             "--platform",
             "-p",

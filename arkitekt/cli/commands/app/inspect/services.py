@@ -1,5 +1,5 @@
 import json
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 import typer
 from rich.console import Group
@@ -45,7 +45,7 @@ def services(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
     schema: Annotated[
-        Optional[str],
+        str | None,
         typer.Option(
             "--schema",
             help="Print the raw GraphQL SDL of this one service and exit.",

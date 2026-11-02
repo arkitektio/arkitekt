@@ -1,7 +1,7 @@
 """ An example of a blok agent for Arkitekt: it analyses images, and shows what it finds in a panel of its own"""
 
 from dataclasses import field
-from typing import Annotated, List, Optional
+from typing import Annotated
 
 import numpy as np
 import xarray as xr
@@ -39,7 +39,7 @@ def intensity_statistics(pixels: np.ndarray) -> dict:
     }
 
 
-def intensity_histogram(pixels: np.ndarray, bins: int = 12) -> List[int]:
+def intensity_histogram(pixels: np.ndarray, bins: int = 12) -> list[int]:
     """How the values of an image are distributed: per bin, a share (0-100) of the fullest bin."""
     if bins < 1:
         raise ValueError("A histogram needs at least one bin")
@@ -91,7 +91,7 @@ def count_objects(pixels: np.ndarray, threshold: float) -> int:
     return int(label_objects(pixels > threshold).max())
 
 
-def blobs_on_noise(width: int, height: int, objects: int, seed: Optional[int] = None) -> np.ndarray:
+def blobs_on_noise(width: int, height: int, objects: int, seed: int | None = None) -> np.ndarray:
     """A (height, width) test image: bright round blobs on a dim, noisy background."""
     if width < 1 or height < 1:
         raise ValueError("An image needs to be at least one pixel wide and high")
@@ -133,8 +133,8 @@ class Analysis:
     spread: float = 0.0
     threshold: float = 0.0
     objects: int = 0
-    histogram: List[int] = field(default_factory=list)
-    history: List[str] = field(default_factory=list)
+    histogram: list[int] = field(default_factory=list)
+    history: list[str] = field(default_factory=list)
     analysed: int = 0
 
 

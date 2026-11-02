@@ -12,7 +12,8 @@ granted and these must not: that fakts is offline.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Iterator
+from typing import TYPE_CHECKING
+from collections.abc import Iterator
 
 import pytest
 

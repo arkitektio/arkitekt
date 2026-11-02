@@ -31,24 +31,16 @@ import os
 from pathlib import Path
 from typing import (
     Any,
-    Callable,
-    Dict,
     Generic,
-    Iterable,
-    List,
     Literal,
-    Mapping,
-    Optional,
     ParamSpec,
     Self,
-    Sequence,
-    Tuple,
     TypeVar,
-    Union,
     cast,
     dataclass_transform,
     overload,
 )
+from collections.abc import Callable, Iterable, Mapping, Sequence
 
 from arkitekt_spec.actions import (
     AssetKind,
@@ -92,7 +84,7 @@ Ctx = TypeVar("Ctx")
 F = TypeVar("F", bound=Callable[..., Any])
 
 
-def _merge_requirements(*groups: Iterable[Requirement]) -> List[Requirement]:
+def _merge_requirements(*groups: Iterable[Requirement]) -> list[Requirement]:
     """Merge requirement lists, the first of each key winning.
 
     Args:
@@ -101,14 +93,14 @@ def _merge_requirements(*groups: Iterable[Requirement]) -> List[Requirement]:
     Returns:
         One requirement per key, sorted by key.
     """
-    merged: Dict[str, Requirement] = {}
+    merged: dict[str, Requirement] = {}
     for group in groups:
         for requirement in group:
             merged.setdefault(requirement.key, requirement)
     return sorted(merged.values(), key=lambda requirement: requirement.key)
 
 
-def _requirements_of(registry: AppRegistry) -> List[Requirement]:
+def _requirements_of(registry: AppRegistry) -> list[Requirement]:
     """What a registry's services and providers require, merged."""
     return _merge_requirements(
         *(builder.get_requirements() for builder in registry.services.values()),
@@ -120,7 +112,7 @@ def _requirements_of(registry: AppRegistry) -> List[Requirement]:
 BASE_SCOPES = ("openid",)
 
 
-def _scopes_of(registry: AppRegistry, asked: Iterable[str] = ()) -> List[str]:
+def _scopes_of(registry: AppRegistry, asked: Iterable[str] = ()) -> list[str]:
     """The scopes an app with ``registry`` asks for: its own, what each service's client needs,
     and what its actions' dynamic asks and calls need."""
     return sorted(
@@ -133,7 +125,7 @@ def _scopes_of(registry: AppRegistry, asked: Iterable[str] = ()) -> List[str]:
     )
 
 
-def _caller(depth: int = 2) -> Tuple[Path, Optional[str]]:
+def _caller(depth: int = 2) -> tuple[Path, str | None]:
     """The file and module some caller up the stack is defined in.
 
     Args:
@@ -151,7 +143,7 @@ def _caller(depth: int = 2) -> Tuple[Path, Optional[str]]:
     return Path(frame.f_code.co_filename), name if isinstance(name, str) else None
 
 
-def _app_namespace(identifier: str, caller: Tuple[Path, Optional[str]]) -> AppNamespace:
+def _app_namespace(identifier: str, caller: tuple[Path, str | None]) -> AppNamespace:
     """The namespace of an app named ``identifier`` constructed by ``caller`` (from
     :func:`_caller`): what counts as the app's own source."""
     constructed_in, module = caller
@@ -166,12 +158,12 @@ def _app_root(constructed_in: Path) -> Path:
     return constructed_in.resolve().parent if constructed_in.is_file() else Path.cwd()
 
 
-def _registry_of(app: Union["App[Any]", AppRegistry]) -> AppRegistry:
+def _registry_of(app: "App[Any] | AppRegistry") -> AppRegistry:
     return app.registry if isinstance(app, App) else app
 
 
 def merge(
-    first: Union["App[Any]", AppRegistry], /, *others: Union["App[Any]", AppRegistry]
+    first: "App[Any] | AppRegistry", /, *others: "App[Any] | AppRegistry"
 ) -> AppRegistry:
     """One new registry holding what the given apps and registries declare.
 
@@ -245,57 +237,57 @@ class App(Generic[Ctx]):
     @overload
     def __init__(
         self: "App[None]",
-        identifier: Optional[str] = None,
+        identifier: str | None = None,
         version: str = "0.0.1",
         *,
-        description: Optional[str] = None,
-        logo: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
-        author: Optional[str] = None,
-        public_sources: Optional[List[PublicSource]] = None,
+        description: str | None = None,
+        logo: str | None = None,
+        scopes: list[str] | None = None,
+        author: str | None = None,
+        public_sources: list[PublicSource] | None = None,
         services: Sequence["Service[Any]"] = (),
         providers: Sequence["Provider[Any]"] = (),
-        registry: Optional[AppRegistry] = None,
-        root: Optional[Union[str, Path]] = None,
+        registry: AppRegistry | None = None,
+        root: str | Path | None = None,
         app_context: None = None,
-        effects: Optional[Effects] = None,
+        effects: Effects | None = None,
     ) -> None: ...
 
     @overload
     def __init__(
         self,
-        identifier: Optional[str] = None,
+        identifier: str | None = None,
         version: str = "0.0.1",
         *,
-        description: Optional[str] = None,
-        logo: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
-        author: Optional[str] = None,
-        public_sources: Optional[List[PublicSource]] = None,
+        description: str | None = None,
+        logo: str | None = None,
+        scopes: list[str] | None = None,
+        author: str | None = None,
+        public_sources: list[PublicSource] | None = None,
         services: Sequence["Service[Any]"] = (),
         providers: Sequence["Provider[Any]"] = (),
-        registry: Optional[AppRegistry] = None,
-        root: Optional[Union[str, Path]] = None,
+        registry: AppRegistry | None = None,
+        root: str | Path | None = None,
         app_context: type[Ctx],
-        effects: Optional[Effects] = None,
+        effects: Effects | None = None,
     ) -> None: ...
 
     def __init__(
         self,
-        identifier: Optional[str] = None,
+        identifier: str | None = None,
         version: str = "0.0.1",
         *,
-        description: Optional[str] = None,
-        logo: Optional[str] = None,
-        scopes: Optional[List[str]] = None,
-        author: Optional[str] = None,
-        public_sources: Optional[List[PublicSource]] = None,
+        description: str | None = None,
+        logo: str | None = None,
+        scopes: list[str] | None = None,
+        author: str | None = None,
+        public_sources: list[PublicSource] | None = None,
         services: Sequence["Service[Any]"] = (),
         providers: Sequence["Provider[Any]"] = (),
-        registry: Optional[AppRegistry] = None,
-        root: Optional[Union[str, Path]] = None,
-        app_context: Optional[type[Ctx]] = None,
-        effects: Optional[Effects] = None,
+        registry: AppRegistry | None = None,
+        root: str | Path | None = None,
+        app_context: type[Ctx] | None = None,
+        effects: Effects | None = None,
     ) -> None:
         caller = _caller()
         constructed_in = caller[0]
@@ -304,9 +296,9 @@ class App(Generic[Ctx]):
         self.description = description
         self.logo = logo
         # What the app asks for beyond what its services' clients need (see `scopes`).
-        self.asked_scopes: List[str] = list(scopes or [])
+        self.asked_scopes: list[str] = list(scopes or [])
         self.author = author
-        self.public_sources: List[PublicSource] = list(public_sources or [])
+        self.public_sources: list[PublicSource] = list(public_sources or [])
         self.registry: AppRegistry = registry if registry is not None else AppRegistry()
         # What a derived identifier (an enum's, a memory structure's, a model's) is
         # namespaced by: the app for a class it defines itself, never the module
@@ -328,13 +320,13 @@ class App(Generic[Ctx]):
         self.provider(*providers)
 
     @property
-    def app_context(self) -> Optional[type[Ctx]]:
+    def app_context(self) -> type[Ctx] | None:
         """The class a run's ``context=`` must be an instance of, or ``None``.
 
         Read off the registry, which is where the declaration lives: an app made
         over a registry that already declares one reports it too.
         """
-        return cast(Optional[type[Ctx]], self.registry.app_context_class)
+        return cast(type[Ctx] | None, self.registry.app_context_class)
 
     def __repr__(self) -> str:
         return f"App({self.identifier!r}, version={self.version!r}, services={self.services!r})"
@@ -399,12 +391,12 @@ class App(Generic[Ctx]):
         return self
 
     @property
-    def services(self) -> List[str]:
+    def services(self) -> list[str]:
         """The names of the services this app uses, in the order they were registered."""
         return list(self.registry.services)
 
     @property
-    def service_builders(self) -> Dict[str, "Service[Any]"]:
+    def service_builders(self) -> dict[str, "Service[Any]"]:
         """The services this app uses, by name: what a runtime builds clients from."""
         return dict(self.registry.services)
 
@@ -413,7 +405,7 @@ class App(Generic[Ctx]):
     # ------------------------------------------------------------------ #
 
     @property
-    def scopes(self) -> List[str]:
+    def scopes(self) -> list[str]:
         """What this app asks to be allowed to do: what its services' clients need, and its own.
 
         Each service says what its client's operations need at the server (its
@@ -425,7 +417,7 @@ class App(Generic[Ctx]):
         return _scopes_of(self.registry, self.asked_scopes)
 
     @property
-    def requirements(self) -> List[Requirement]:
+    def requirements(self) -> list[Requirement]:
         """What this app requires of a deployment: exactly what its services need.
 
         An app cannot require anything on its own. Everything it needs from a
@@ -454,7 +446,7 @@ class App(Generic[Ctx]):
         )
 
     def snapshot(
-        self, device_id: Optional[str] = None, provider: Optional["Provider[Any]"] = None
+        self, device_id: str | None = None, provider: "Provider[Any] | None" = None
     ) -> "RunSnapshot":
         """Take what a run of this app would serve, without connecting.
 
@@ -503,66 +495,66 @@ class App(Generic[Ctx]):
         self,
         /,
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
         actifier: Actifier | None = None,
-        interface: Optional[str] = None,
+        interface: str | None = None,
         stateful: bool = False,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        port_groups: Optional[List[PortGroupInput]] = None,
-        is_test_for: Optional[List[TestTargetInput]] = None,
-        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
-        optimistics: Optional[List[OptimisticCoercible]] = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        port_groups: list[PortGroupInput] | None = None,
+        is_test_for: list[TestTargetInput] | None = None,
+        validators: dict[str, list[ValidatorInput]] | None = None,
+        optimistics: list[OptimisticCoercible] | None = None,
         in_process: bool = False,
-        locks: Optional[List[str]] = None,
+        locks: list[str] | None = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
-        version: Optional[str] = None,
-        catalogs: Optional[List[str]] = None,
-        protocols: Optional[List[str]] = None,
-        effects: Optional[Effects] = None,
-        logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[ActionBloks] = None,
+        version: str | None = None,
+        catalogs: list[str] | None = None,
+        protocols: list[str] | None = None,
+        effects: Effects | None = None,
+        logo: str | ComponentNodeInput | None = None,
+        bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
-        estimated_runtime: Optional[str] = None,
-        estimated_runtime_ui: Optional[str] = None,
+        estimated_runtime: str | None = None,
+        estimated_runtime_ui: str | None = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def action(
         self,
-        function: Optional[Callable[P, R]] = None,
+        function: Callable[P, R] | None = None,
         /,
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
         actifier: Actifier | None = None,
-        interface: Optional[str] = None,
+        interface: str | None = None,
         stateful: bool = False,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        port_groups: Optional[List[PortGroupInput]] = None,
-        is_test_for: Optional[List[TestTargetInput]] = None,
-        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
-        optimistics: Optional[List[OptimisticCoercible]] = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        port_groups: list[PortGroupInput] | None = None,
+        is_test_for: list[TestTargetInput] | None = None,
+        validators: dict[str, list[ValidatorInput]] | None = None,
+        optimistics: list[OptimisticCoercible] | None = None,
         in_process: bool = False,
-        locks: Optional[List[str]] = None,
+        locks: list[str] | None = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
-        version: Optional[str] = None,
-        catalogs: Optional[List[str]] = None,
-        protocols: Optional[List[str]] = None,
-        effects: Optional[Effects] = None,
-        logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[ActionBloks] = None,
+        version: str | None = None,
+        catalogs: list[str] | None = None,
+        protocols: list[str] | None = None,
+        effects: Effects | None = None,
+        logo: str | ComponentNodeInput | None = None,
+        bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
-        estimated_runtime: Optional[str] = None,
-        estimated_runtime_ui: Optional[str] = None,
-    ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
+        estimated_runtime: str | None = None,
+        estimated_runtime_ui: str | None = None,
+    ) -> WrappedFunction[P, R] | Callable[[Callable[P, R]], WrappedFunction[P, R]]:
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
         Parameters annotated with a client class (``mikro: Mikro``) or with
@@ -678,32 +670,32 @@ class App(Generic[Ctx]):
         function: Callable[P, R],
         /,
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
         actifier: Actifier | None = None,
-        interface: Optional[str] = None,
+        interface: str | None = None,
         stateful: bool = False,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        port_groups: Optional[List[PortGroupInput]] = None,
-        is_test_for: Optional[List[TestTargetInput]] = None,
-        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
-        optimistics: Optional[List[OptimisticCoercible]] = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        port_groups: list[PortGroupInput] | None = None,
+        is_test_for: list[TestTargetInput] | None = None,
+        validators: dict[str, list[ValidatorInput]] | None = None,
+        optimistics: list[OptimisticCoercible] | None = None,
         in_process: bool = False,
-        locks: Optional[List[str]] = None,
+        locks: list[str] | None = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
-        version: Optional[str] = None,
-        catalogs: Optional[List[str]] = None,
-        protocols: Optional[List[str]] = None,
-        effects: Optional[Effects] = None,
-        logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[ActionBloks] = None,
+        version: str | None = None,
+        catalogs: list[str] | None = None,
+        protocols: list[str] | None = None,
+        effects: Effects | None = None,
+        logo: str | ComponentNodeInput | None = None,
+        bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
-        estimated_runtime: Optional[str] = None,
-        estimated_runtime_ui: Optional[str] = None,
+        estimated_runtime: str | None = None,
+        estimated_runtime_ui: str | None = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as an action, as a plain call: ``app.register_action(function, name=...)``.
 
@@ -762,66 +754,66 @@ class App(Generic[Ctx]):
         self,
         /,
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
         actifier: Actifier | None = None,
-        interface: Optional[str] = None,
+        interface: str | None = None,
         stateful: bool = False,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        port_groups: Optional[List[PortGroupInput]] = None,
-        is_test_for: Optional[List[TestTargetInput]] = None,
-        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
-        optimistics: Optional[List[OptimisticCoercible]] = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        port_groups: list[PortGroupInput] | None = None,
+        is_test_for: list[TestTargetInput] | None = None,
+        validators: dict[str, list[ValidatorInput]] | None = None,
+        optimistics: list[OptimisticCoercible] | None = None,
         in_process: bool = False,
-        locks: Optional[List[str]] = None,
+        locks: list[str] | None = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
-        version: Optional[str] = None,
-        catalogs: Optional[List[str]] = None,
-        protocols: Optional[List[str]] = None,
-        effects: Optional[Effects] = None,
-        logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[ActionBloks] = None,
+        version: str | None = None,
+        catalogs: list[str] | None = None,
+        protocols: list[str] | None = None,
+        effects: Effects | None = None,
+        logo: str | ComponentNodeInput | None = None,
+        bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
-        estimated_runtime: Optional[str] = None,
-        estimated_runtime_ui: Optional[str] = None,
+        estimated_runtime: str | None = None,
+        estimated_runtime_ui: str | None = None,
     ) -> Callable[[Callable[P, R]], WrappedFunction[P, R]]: ...
 
     def workflow(
         self,
-        function: Optional[Callable[P, R]] = None,
+        function: Callable[P, R] | None = None,
         /,
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
         actifier: Actifier | None = None,
-        interface: Optional[str] = None,
+        interface: str | None = None,
         stateful: bool = False,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        port_groups: Optional[List[PortGroupInput]] = None,
-        is_test_for: Optional[List[TestTargetInput]] = None,
-        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
-        optimistics: Optional[List[OptimisticCoercible]] = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        port_groups: list[PortGroupInput] | None = None,
+        is_test_for: list[TestTargetInput] | None = None,
+        validators: dict[str, list[ValidatorInput]] | None = None,
+        optimistics: list[OptimisticCoercible] | None = None,
         in_process: bool = False,
-        locks: Optional[List[str]] = None,
+        locks: list[str] | None = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
-        version: Optional[str] = None,
-        catalogs: Optional[List[str]] = None,
-        protocols: Optional[List[str]] = None,
-        effects: Optional[Effects] = None,
-        logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[ActionBloks] = None,
+        version: str | None = None,
+        catalogs: list[str] | None = None,
+        protocols: list[str] | None = None,
+        effects: Effects | None = None,
+        logo: str | ComponentNodeInput | None = None,
+        bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
-        estimated_runtime: Optional[str] = None,
-        estimated_runtime_ui: Optional[str] = None,
-    ) -> Union[WrappedFunction[P, R], Callable[[Callable[P, R]], WrappedFunction[P, R]]]:
+        estimated_runtime: str | None = None,
+        estimated_runtime_ui: str | None = None,
+    ) -> WrappedFunction[P, R] | Callable[[Callable[P, R]], WrappedFunction[P, R]]:
         """Offer a workflow: an action that may call other actions. ``@app.workflow``.
 
         It is called exactly like an action. What differs is what happens when its
@@ -946,32 +938,32 @@ class App(Generic[Ctx]):
         function: Callable[P, R],
         /,
         *,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
+        name: str | None = None,
+        description: str | None = None,
         actifier: Actifier | None = None,
-        interface: Optional[str] = None,
+        interface: str | None = None,
         stateful: bool = False,
-        widgets: Optional[Dict[str, AssignWidgetInput]] = None,
-        collections: Optional[List[str]] = None,
-        port_groups: Optional[List[PortGroupInput]] = None,
-        is_test_for: Optional[List[TestTargetInput]] = None,
-        validators: Optional[Dict[str, List[ValidatorInput]]] = None,
-        optimistics: Optional[List[OptimisticCoercible]] = None,
+        widgets: dict[str, AssignWidgetInput] | None = None,
+        collections: list[str] | None = None,
+        port_groups: list[PortGroupInput] | None = None,
+        is_test_for: list[TestTargetInput] | None = None,
+        validators: dict[str, list[ValidatorInput]] | None = None,
+        optimistics: list[OptimisticCoercible] | None = None,
         in_process: bool = False,
-        locks: Optional[List[str]] = None,
+        locks: list[str] | None = None,
         concurrency: Literal["parallel", "serial"] = "serial",
         policy: DisconnectPolicy = KEEP,
-        version: Optional[str] = None,
-        catalogs: Optional[List[str]] = None,
-        protocols: Optional[List[str]] = None,
-        effects: Optional[Effects] = None,
-        logo: Optional[Union[str, ComponentNodeInput]] = None,
-        bloks: Optional[ActionBloks] = None,
+        version: str | None = None,
+        catalogs: list[str] | None = None,
+        protocols: list[str] | None = None,
+        effects: Effects | None = None,
+        logo: str | ComponentNodeInput | None = None,
+        bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
-        estimated_runtime: Optional[str] = None,
-        estimated_runtime_ui: Optional[str] = None,
+        estimated_runtime: str | None = None,
+        estimated_runtime_ui: str | None = None,
     ) -> WrappedFunction[P, R]:
         """Offer a function as a workflow, as a plain call: ``app.register_workflow(function, name=...)``.
 
@@ -1029,9 +1021,9 @@ class App(Generic[Ctx]):
         cls: C,
         /,
         *,
-        name: Optional[str] = None,
-        required_locks: Optional[List[str]] = None,
-        persist: Union[Literal["synchronous"], float, None] = None,
+        name: str | None = None,
+        required_locks: list[str] | None = None,
+        persist: Literal["synchronous"] | float | None = None,
     ) -> C: ...
 
     @overload
@@ -1039,21 +1031,21 @@ class App(Generic[Ctx]):
         self,
         /,
         *,
-        name: Optional[str] = None,
-        required_locks: Optional[List[str]] = None,
-        persist: Union[Literal["synchronous"], float, None] = None,
+        name: str | None = None,
+        required_locks: list[str] | None = None,
+        persist: Literal["synchronous"] | float | None = None,
     ) -> Callable[[C], C]: ...
 
     @dataclass_transform(field_specifiers=(model_field,))
     def state(
         self,
-        cls: Optional[C] = None,
+        cls: C | None = None,
         /,
         *,
-        name: Optional[str] = None,
-        required_locks: Optional[List[str]] = None,
-        persist: Union[Literal["synchronous"], float, None] = None,
-    ) -> Union[C, Callable[[C], C]]:
+        name: str | None = None,
+        required_locks: list[str] | None = None,
+        persist: Literal["synchronous"] | float | None = None,
+    ) -> C | Callable[[C], C]:
         """Declare a class as a state other apps can observe: ``@app.state``.
 
         Args:
@@ -1085,9 +1077,9 @@ class App(Generic[Ctx]):
         cls: C,
         /,
         *,
-        name: Optional[str] = None,
-        required_locks: Optional[List[str]] = None,
-        persist: Union[Literal["synchronous"], float, None] = None,
+        name: str | None = None,
+        required_locks: list[str] | None = None,
+        persist: Literal["synchronous"] | float | None = None,
     ) -> C:
         """Declare a class as a state, as a plain call: the twin of :meth:`state`.
 
@@ -1102,17 +1094,17 @@ class App(Generic[Ctx]):
 
     @overload
     def context(
-        self, /, *, name: Optional[str] = None, locks: Optional[List[str]] = None
+        self, /, *, name: str | None = None, locks: list[str] | None = None
     ) -> Callable[[C], C]: ...
 
     def context(
         self,
-        cls: Optional[C] = None,
+        cls: C | None = None,
         /,
         *,
-        name: Optional[str] = None,
-        locks: Optional[List[str]] = None,
-    ) -> Union[C, Callable[[C], C]]:
+        name: str | None = None,
+        locks: list[str] | None = None,
+    ) -> C | Callable[[C], C]:
         """Declare a context class: shared by actions, built by a startup hook. ``@app.context``.
 
         Nothing is written on the class; what this app knows about it lives on
@@ -1136,7 +1128,7 @@ class App(Generic[Ctx]):
         return declare
 
     def register_context(
-        self, cls: C, /, *, name: Optional[str] = None, locks: Optional[List[str]] = None
+        self, cls: C, /, *, name: str | None = None, locks: list[str] | None = None
     ) -> C:
         """Declare a context class, as a plain call: the twin of :meth:`context`.
 
@@ -1148,23 +1140,23 @@ class App(Generic[Ctx]):
 
     @overload
     def model(
-        self, cls: C, /, *, identifier: Optional[str] = None, description: Optional[str] = None
+        self, cls: C, /, *, identifier: str | None = None, description: str | None = None
     ) -> C: ...
 
     @overload
     def model(
-        self, /, *, identifier: Optional[str] = None, description: Optional[str] = None
+        self, /, *, identifier: str | None = None, description: str | None = None
     ) -> Callable[[C], C]: ...
 
     @dataclass_transform(field_specifiers=(model_field,))
     def model(
         self,
-        cls: Optional[C] = None,
+        cls: C | None = None,
         /,
         *,
-        identifier: Optional[str] = None,
-        description: Optional[str] = None,
-    ) -> Union[C, Callable[[C], C]]:
+        identifier: str | None = None,
+        description: str | None = None,
+    ) -> C | Callable[[C], C]:
         """Declare a model: a class whose instances travel by value, field by field. ``@app.model``.
 
         The class is made a dataclass if it is not one. A port annotated with it
@@ -1197,8 +1189,8 @@ class App(Generic[Ctx]):
         cls: C,
         /,
         *,
-        identifier: Optional[str] = None,
-        description: Optional[str] = None,
+        identifier: str | None = None,
+        description: str | None = None,
     ) -> C:
         """Declare a model, as a plain call: the twin of :meth:`model`.
 
@@ -1218,8 +1210,8 @@ class App(Generic[Ctx]):
         )
 
     def _hook(
-        self, kind: str, function: Optional[F], name: Optional[str]
-    ) -> Union[F, Callable[[F], F]]:
+        self, kind: str, function: F | None, name: str | None
+    ) -> F | Callable[[F], F]:
         def hook(function: F) -> F:
             return self._register_hook(kind, function, name)
 
@@ -1227,7 +1219,7 @@ class App(Generic[Ctx]):
             return hook(function)
         return hook
 
-    def _register_hook(self, kind: str, function: F, name: Optional[str]) -> F:
+    def _register_hook(self, kind: str, function: F, name: str | None) -> F:
         getattr(self.registry, kind)(function, name=name)
         return function
 
@@ -1235,11 +1227,11 @@ class App(Generic[Ctx]):
     def startup(self, function: F, /) -> F: ...
 
     @overload
-    def startup(self, /, *, name: Optional[str] = None) -> Callable[[F], F]: ...
+    def startup(self, /, *, name: str | None = None) -> Callable[[F], F]: ...
 
     def startup(
-        self, function: Optional[F] = None, /, *, name: Optional[str] = None
-    ) -> Union[F, Callable[[F], F]]:
+        self, function: F | None = None, /, *, name: str | None = None
+    ) -> F | Callable[[F], F]:
         """Run a function when the app starts providing: ``@app.startup``.
 
         What it returns sets up the app's states and contexts.
@@ -1253,7 +1245,7 @@ class App(Generic[Ctx]):
         """
         return self._hook("startup", function, name)
 
-    def register_startup(self, function: F, /, *, name: Optional[str] = None) -> F:
+    def register_startup(self, function: F, /, *, name: str | None = None) -> F:
         """Run a function when the app starts providing, as a plain call: the twin of :meth:`startup`.
 
         Returns:
@@ -1261,7 +1253,7 @@ class App(Generic[Ctx]):
         """
         return self._register_hook("startup", function, name)
 
-    def merge(self, *others: Union["App[Any]", AppRegistry]) -> "App[Ctx]":
+    def merge(self, *others: "App[Any] | AppRegistry") -> "App[Ctx]":
         """Take what other apps or registries declare into this app, in place.
 
         Declare parts of an app apart from each other, and bring them together here::
@@ -1286,11 +1278,11 @@ class App(Generic[Ctx]):
     def lifecycle(self, function: F, /) -> F: ...
 
     @overload
-    def lifecycle(self, /, *, name: Optional[str] = None) -> Callable[[F], F]: ...
+    def lifecycle(self, /, *, name: str | None = None) -> Callable[[F], F]: ...
 
     def lifecycle(
-        self, function: Optional[F] = None, /, *, name: Optional[str] = None
-    ) -> Union[F, Callable[[F], F]]:
+        self, function: F | None = None, /, *, name: str | None = None
+    ) -> F | Callable[[F], F]:
         """Set something up and tear it down in one async generator: ``@app.lifecycle``.
 
         What it yields sets up the app's states and contexts, as a startup hook's return
@@ -1313,7 +1305,7 @@ class App(Generic[Ctx]):
         """
         return self._hook("lifecycle", function, name)
 
-    def register_lifecycle(self, function: F, /, *, name: Optional[str] = None) -> F:
+    def register_lifecycle(self, function: F, /, *, name: str | None = None) -> F:
         """Set up and tear down in one async generator, as a plain call: the twin of :meth:`lifecycle`.
 
         Returns:
@@ -1325,11 +1317,11 @@ class App(Generic[Ctx]):
     def shutdown(self, function: F, /) -> F: ...
 
     @overload
-    def shutdown(self, /, *, name: Optional[str] = None) -> Callable[[F], F]: ...
+    def shutdown(self, /, *, name: str | None = None) -> Callable[[F], F]: ...
 
     def shutdown(
-        self, function: Optional[F] = None, /, *, name: Optional[str] = None
-    ) -> Union[F, Callable[[F], F]]:
+        self, function: F | None = None, /, *, name: str | None = None
+    ) -> F | Callable[[F], F]:
         """Run a function when the app stops providing: ``@app.shutdown``.
 
         Args:
@@ -1341,7 +1333,7 @@ class App(Generic[Ctx]):
         """
         return self._hook("shutdown", function, name)
 
-    def register_shutdown(self, function: F, /, *, name: Optional[str] = None) -> F:
+    def register_shutdown(self, function: F, /, *, name: str | None = None) -> F:
         """Run a function when the app stops providing, as a plain call: the twin of :meth:`shutdown`.
 
         Returns:
@@ -1353,11 +1345,11 @@ class App(Generic[Ctx]):
     def background(self, function: F, /) -> F: ...
 
     @overload
-    def background(self, /, *, name: Optional[str] = None) -> Callable[[F], F]: ...
+    def background(self, /, *, name: str | None = None) -> Callable[[F], F]: ...
 
     def background(
-        self, function: Optional[F] = None, /, *, name: Optional[str] = None
-    ) -> Union[F, Callable[[F], F]]:
+        self, function: F | None = None, /, *, name: str | None = None
+    ) -> F | Callable[[F], F]:
         """Run a function in the background while the app provides: ``@app.background``.
 
         Args:
@@ -1369,7 +1361,7 @@ class App(Generic[Ctx]):
         """
         return self._hook("background", function, name)
 
-    def register_background(self, function: F, /, *, name: Optional[str] = None) -> F:
+    def register_background(self, function: F, /, *, name: str | None = None) -> F:
         """Run a function in the background while the app provides, as a plain call: the twin of :meth:`background`.
 
         Returns:
@@ -1380,19 +1372,19 @@ class App(Generic[Ctx]):
     def blok(
         self,
         name: str,
-        component: Union[str, ComponentNodeInput],
-        description: Optional[str] = None,
+        component: str | ComponentNodeInput,
+        description: str | None = None,
         *,
-        locals: Optional[Mapping[str, Union[Local[object], JSONSerializable]]] = None,
-        demo: Optional[Union[BlokDemoInput, Mapping[str, JSONSerializable]]] = None,
-        queries: Optional[Mapping[str, Query]] = None,
-        subscriptions: Optional[Mapping[str, Subscription]] = None,
-        catalogs: Optional[Sequence[str]] = None,
-        module: Optional[str] = None,
+        locals: Mapping[str, Local[object] | JSONSerializable] | None = None,
+        demo: BlokDemoInput | Mapping[str, JSONSerializable] | None = None,
+        queries: Mapping[str, Query] | None = None,
+        subscriptions: Mapping[str, Subscription] | None = None,
+        catalogs: Sequence[str] | None = None,
+        module: str | None = None,
         default: bool = False,
-        for_model: Optional[str] = None,
-        for_node: Optional[str] = None,
-        args: Optional[Mapping[str, object]] = None,
+        for_model: str | None = None,
+        for_node: str | None = None,
+        args: Mapping[str, object] | None = None,
         mode: BlokCheckMode = "warning",
     ) -> None:
         r"""Declare a blok of this app's agent (blok language v2): ``app.blok("monitor", "<Html><Card/></Html>")``.
@@ -1469,11 +1461,11 @@ class App(Generic[Ctx]):
     def register_asset(
         self,
         name: str,
-        path: Optional[Union[str, Path]] = None,
-        kind: Optional[AssetKind] = None,
+        path: str | Path | None = None,
+        kind: AssetKind | None = None,
         *,
-        source: Optional[str] = None,
-        ref: Optional[str] = None,
+        source: str | None = None,
+        ref: str | None = None,
     ) -> None:
         """Register a file the app uses, under the name its bloks call it by.
 
@@ -1522,9 +1514,9 @@ class App(Generic[Ctx]):
     def ui_catalog(
         self,
         name: str,
-        components: Optional[Sequence[ComponentSpec]] = None,
-        operations: Optional[Sequence[OperationSpec]] = None,
-        description: Optional[str] = None,
+        components: Sequence[ComponentSpec] | None = None,
+        operations: Sequence[OperationSpec] | None = None,
+        description: str | None = None,
     ) -> None:
         """Declare a module: what a renderer draws and evaluates beyond the spec's catalogs.
 
@@ -1555,12 +1547,12 @@ class App(Generic[Ctx]):
 
     def declare(
         self,
-        app: Optional[str] = None,
+        app: str | None = None,
         *,
         auto_resolvable: bool = False,
-        min: Optional[int] = None,
-        max: Optional[int] = None,
-        version: Optional[str] = None,
+        min: int | None = None,
+        max: int | None = None,
+        version: str | None = None,
     ) -> Callable[[C], C]:
         """Declare a protocol: what this app demands of another app. ``@app.declare(app="lab")``.
 
@@ -1644,12 +1636,12 @@ class App(Generic[Ctx]):
         self,
         cls: C,
         /,
-        app: Optional[str] = None,
+        app: str | None = None,
         *,
         auto_resolvable: bool = False,
-        min: Optional[int] = None,
-        max: Optional[int] = None,
-        version: Optional[str] = None,
+        min: int | None = None,
+        max: int | None = None,
+        version: str | None = None,
     ) -> C:
         """Declare a protocol, as a plain call: the twin of :meth:`declare`.
 
@@ -1670,10 +1662,10 @@ class App(Generic[Ctx]):
         identifier: str,
         *,
         expand: Callable[..., Any],
-        shrink: Optional[Callable[..., Any]] = None,
-        description: Optional[str] = None,
-        default_widget: Optional[AssignWidgetInput] = None,
-        describe: Optional[Callable[[Any], Mapping[str, Any]]] = None,
+        shrink: Callable[..., Any] | None = None,
+        description: str | None = None,
+        default_widget: AssignWidgetInput | None = None,
+        describe: Callable[[Any], Mapping[str, Any]] | None = None,
     ) -> None:
         """Declare a type that travels by id, with your own way of fetching it back.
 
@@ -1726,7 +1718,7 @@ class App(Generic[Ctx]):
         )
 
     def memory_structure(
-        self, cls: type, identifier: Optional[str] = None, description: Optional[str] = None
+        self, cls: type, identifier: str | None = None, description: str | None = None
     ) -> None:
         """Declare a class whose instances stay on the agent: ``app.memory_structure(np.ndarray)``.
 

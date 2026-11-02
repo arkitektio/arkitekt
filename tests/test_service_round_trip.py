@@ -15,7 +15,7 @@ published ones) as well as in a fully local checkout.
 """
 
 import importlib
-from typing import Any, Dict, List
+from typing import Any
 
 import pytest
 from arkitekt_spec.declare.app import AppRegistry
@@ -54,9 +54,9 @@ ADDRESSES = {
 }
 
 
-def _declared_services() -> List[Service[Any]]:
+def _declared_services() -> list[Service[Any]]:
     """The services of every candidate package that is installed and converted."""
-    found: List[Service[Any]] = []
+    found: list[Service[Any]] = []
     for name in CANDIDATES:
         try:
             module = importlib.import_module(f"{name}.arkitekt")
@@ -90,7 +90,7 @@ async def test_a_declared_service_builds_its_client(declared: Service[Any]) -> N
         "address for. Add one to ADDRESSES."
     )
 
-    aliases: Dict[str, Any] = {
+    aliases: dict[str, Any] = {
         r.key: ADDRESSES[r.key] for r in declared.get_requirements()
     }
     async with build_testing_fakts(aliases=aliases) as fakts:

@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 import stat
 from pathlib import Path
-from typing import Iterator
+from collections.abc import Iterator
 
 import pytest
 from arkitekt.app.fakts import _cache_path
