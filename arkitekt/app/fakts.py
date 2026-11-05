@@ -158,6 +158,8 @@ def build_mandate_key_fakts(
                 key=SecretStr(mandate_key),
                 manifest=manifest,
                 allow_insecure_transport=allow_insecure_transport,
+                # As a device-code login does: only a node of our own needs a key to join with.
+                request_auth_key=isinstance(mesh, MeshOptions) and mesh.requests_key(),
             ),
             discovery=WellKnownDiscovery(url=url, auto_protocols=["https", "http"]),
         ),

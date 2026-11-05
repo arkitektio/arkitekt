@@ -11,6 +11,7 @@ import pytest
 from fakts import Fakts
 from fakts.grants.remote import RemoteGrant
 from fakts.grants.remote.authorizers.device_code import DeviceCodeAuthorizer
+from fakts.grants.remote.authorizers.mandate_key import MandateKeyAuthorizer
 from fakts.mesh import MeshOptions, MeshProxy
 from fakts.models import Manifest
 
@@ -94,6 +95,21 @@ def test_the_device_code_run_asks_for_a_key_only_for_its_own_node(
     fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mesh=proxy))
     assert fakts.mesh == proxy, "what is passed wins over the environment"
     assert asks_for_mesh_key(fakts) is False
+
+
+def test_a_mandate_key_login_asks_for_a_key_for_its_own_node(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A headless app (a container, CI, an app a hub runs) joins the mesh the same way.
+
+    It never asked: the mandate key login left `request_auth_key` off, so every
+    such app was refused the mesh however its key allowed it.
+    """
+    monkeypatch.setenv("ARKITEKT_MESH", "1")
+    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mandate_key="key-me"))
+    assert isinstance(fakts.grant, RemoteGrant)
+    assert isinstance(fakts.grant.authorizer, MandateKeyAuthorizer)
+    assert fakts.grant.authorizer.request_auth_key is True
 
 
 @pytest.mark.parametrize(
