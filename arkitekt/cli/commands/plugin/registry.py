@@ -197,6 +197,22 @@ class Repository:
         )
         return response.headers.get("docker-content-digest") or digest_of(manifest)
 
+    def tag(self, reference: str, tag: str) -> str:
+        """Point ``tag`` at the manifest ``reference`` names, byte for byte: the same digest
+        under a second name, nothing pushed but the manifest. Returns that digest."""
+        found = self._manifest_request("GET", reference)
+        if found.status == 404:
+            raise RegistryError(f"{self.name}:{reference} does not exist, so it cannot be tagged {tag}.")
+        media_type = found.headers.get("content-type") or json.loads(found.body).get("mediaType")
+        response = self._checked(
+            "PUT",
+            f"manifests/{tag}",
+            body=found.body,
+            headers={"Content-Type": media_type or OCI_MANIFEST_MEDIA_TYPE},
+            expect=(201,),
+        )
+        return response.headers.get("docker-content-digest") or digest_of(found.body)
+
     def _push_blob(self, blob: bytes) -> None:
         digest = digest_of(blob)
         if self._request("HEAD", f"blobs/{digest}").status == 200:

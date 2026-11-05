@@ -166,6 +166,21 @@ def resolve(
     return Resolved(channel_version(declared_version, revision), channel, revision, source)
 
 
+def major_tag(version: str, flavour: str) -> str | None:
+    """The tag of a release's major channel for one flavour: ``4-vanilla`` for 4.0.5, and
+    ``0.3-vanilla`` for 0.3.2, since before 1.0 a minor may break.
+
+    Whoever runs the app can follow it, and pin the build it resolves to: a fix reaches them
+    without a release of their own, a breaking change never does. ``None`` for a
+    pre-release or a build, which no channel follows.
+    """
+    parts = version.split(".")
+    if len(parts) != 3 or not all(part.isdigit() for part in parts):
+        return None
+    major = parts[0] if parts[0] != "0" else f"0.{parts[1]}"
+    return image_tag(major, flavour)
+
+
 def default_test_command(work_dir: str) -> list[str] | None:
     """The tests a repository has, when it does not say how to run them."""
     if not os.path.isdir(os.path.join(work_dir, "tests")):
@@ -446,6 +461,7 @@ def release(
                 cli_error("The tests failed, so nothing was built or published.")
 
     released: list[ReleaseFlavour] = []
+    digests: dict[str, str] = {}
     for name, flavour in flavours.items():
         reference = f"{registry.name}:{tags[name]}"
 
@@ -458,6 +474,7 @@ def release(
             cli_error(str(error))
         if pushed is None:
             cli_error(f"{reference} was pushed, but the registry does not have it.")
+        digests[name] = pushed
         image = registry.pinned(pushed)
 
         step(console, f"Inspecting flavour [bold]{escape(name)}[/bold]", escape(image))
@@ -501,6 +518,18 @@ def release(
         registry.push_release(descriptor_tag, descriptor)
     except RegistryError as error:
         cli_error(str(error))
+
+    # Only once it is released: a release that failed half way moves no channel.
+    if resolved.channel is None:
+        for name, digest in digests.items():
+            moving = major_tag(resolved.version, name)
+            if moving is None:
+                continue
+            try:
+                registry.tag(digest, moving)
+            except RegistryError as error:
+                cli_error(str(error))
+            step(console, f"Moved [bold]{escape(moving)}[/bold]", escape(f"to {tags[name]}"))
 
     done(
         console,

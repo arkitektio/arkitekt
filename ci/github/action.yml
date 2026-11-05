@@ -61,26 +61,3 @@ runs:
         # the tag's own push is what releases it. Unless the job itself made the tag.
         if [ "$GITHUB_REF_TYPE" = "branch" ] && [ "$RELEASE" != "true" ]; then export ARKITEKT_CHANNEL="$GITHUB_REF_NAME"; fi
         $ARKITEKT plugin release "$TARGET" $ARGUMENTS
-    # A release also moves its major's channel: `<major>-<flavour>` (`0.<minor>-<flavour>`
-    # before 1.0) names the same image as `<version>-<flavour>`. Whoever runs the app follows
-    # that tag and pins the build it resolved to, so a fix reaches them without a release of
-    # their own, and a breaking one never does. A build of a branch, or a pre-release, moves
-    # nothing.
-    - shell: bash
-      if: inputs.release == 'true' || github.ref_type == 'tag'
-      env:
-        REPOSITORY: ${{ inputs.repository }}
-      run: |
-        repository="${REPOSITORY,,}"
-        version="$(git describe --tags --exact-match HEAD 2>/dev/null || true)"
-        version="${version#v}"
-        case "$version" in
-          "" | *-* | *+*) echo "No release version on this commit: no channel moves."; exit 0 ;;
-        esac
-        major="${version%%.*}"
-        if [ "$major" = "0" ]; then minor="${version#0.}"; major="0.${minor%%.*}"; fi
-        for folder in .arkitekt/flavours/*/; do
-          flavour="$(basename "$folder")"
-          docker buildx imagetools create --tag "$repository:$major-$flavour" "$repository:$version-$flavour"
-          echo "$repository:$major-$flavour -> $version-$flavour"
-        done

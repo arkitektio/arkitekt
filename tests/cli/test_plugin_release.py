@@ -324,6 +324,20 @@ def test_a_channel_tag_moves_to_the_next_build(repository: Repository):
     assert release is not None and release.revision == "two"
 
 
+def test_a_release_moves_its_majors_channel_to_the_same_image(repository: Repository):
+    """`4-vanilla` names the manifest `4.0.5-vanilla` does, byte for byte."""
+    from arkitekt.cli.commands.plugin.release import major_tag
+
+    assert major_tag("4.0.5", "vanilla") == "4-vanilla"
+    assert major_tag("0.3.2", "gpu") == "0.3-gpu"
+    assert major_tag("4.1.0-rc.1", "vanilla") is None
+    assert major_tag("4.1.0-dev.abc1234", "vanilla") is None
+
+    _Registry.manifests["4.0.5-vanilla"] = json.dumps({"manifests": []}).encode()
+    digest = repository.tag("4.0.5-vanilla", "4-vanilla")
+    assert repository.manifest_digest("4-vanilla") == repository.manifest_digest("4.0.5-vanilla") == digest
+
+
 # -- the command, against a real registry -----------------------------------------
 
 
@@ -391,7 +405,10 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
         (flavour,) = published.flavours
         assert flavour.name == "vanilla"
         # The descriptor names the very manifest the image tag points at.
-        assert flavour.image == repository.pinned(repository.manifest_digest("0.0.1-vanilla") or "")
+        released = repository.manifest_digest("0.0.1-vanilla")
+        assert flavour.image == repository.pinned(released or "")
+        # And the major's channel (0.0, before 1.0) names it too.
+        assert repository.manifest_digest("0.0-vanilla") == released
 
         # A release never changes.
         result = release()
@@ -410,6 +427,8 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
         assert (channel.channel, channel.manifest.version) == ("main", version)
         assert repository.has(f"{version}-vanilla")
         assert repository.release("0.0.1") == published
+        # A build of a branch moves no channel.
+        assert repository.manifest_digest("0.0-vanilla") == released
 
 
 # -- the forge's part -----------------------------------------------------------
