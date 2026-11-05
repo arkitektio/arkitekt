@@ -2,15 +2,21 @@ version = 1
 revision = 5
 requires-python = ">=3.11, <4"
 resolution-markers = [
-    "python_full_version >= '3.14' and sys_platform == 'win32'",
+    "(python_full_version >= '3.14' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version >= '3.14' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
+    "(python_full_version >= '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version >= '3.14' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version >= '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version < '3.12' and sys_platform == 'win32'",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
+    "(python_full_version < '3.12' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version < '3.12' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version < '3.12' and sys_platform == 'emscripten'",
-    "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "(python_full_version < '3.12' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version < '3.12' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
 ]
 
 [[package]]
@@ -269,6 +275,7 @@ dependencies = [
     { name = "arkitekt-spec" },
     { name = "click" },
     { name = "fakts", extra = ["crypto"] },
+    { name = "fakts", extra = ["mesh"], marker = "(platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (platform_python_implementation == 'CPython' and sys_platform == 'darwin')" },
     { name = "koil" },
     { name = "platformdirs" },
     { name = "py-machineid" },
@@ -310,9 +317,6 @@ kraph = [
 ]
 lovekit = [
     { name = "lovekit" },
-]
-mesh = [
-    { name = "fakts", extra = ["mesh"] },
 ]
 mikro = [
     { name = "mikro" },
@@ -378,7 +382,7 @@ requires-dist = [
     { name = "elektro", marker = "extra == 'all'", specifier = ">=5" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=5" },
     { name = "fakts", extras = ["crypto"], specifier = ">=6.1" },
-    { name = "fakts", extras = ["mesh"], marker = "extra == 'mesh'", specifier = ">=6.1" },
+    { name = "fakts", extras = ["mesh"], marker = "(platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (platform_python_implementation == 'CPython' and sys_platform == 'darwin')", specifier = ">=6.1" },
     { name = "fluss", marker = "extra == 'all'", specifier = ">=4.3.2" },
     { name = "fluss", marker = "extra == 'fluss'", specifier = ">=4.3.2" },
     { name = "kabinet", marker = "extra == 'all'", specifier = ">=7" },
@@ -405,7 +409,7 @@ requires-dist = [
     { name = "unlok", marker = "extra == 'unlok'", specifier = ">=5.0" },
     { name = "watchfiles", specifier = ">=1.0.5" },
 ]
-provides-extras = ["all", "alpaka", "elektro", "fluss", "kabinet", "kraph", "lovekit", "mesh", "mikro", "qt", "rekuest", "serve", "tqdm", "unlok"]
+provides-extras = ["all", "alpaka", "elektro", "fluss", "kabinet", "kraph", "lovekit", "mikro", "qt", "rekuest", "serve", "tqdm", "unlok"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -454,17 +458,17 @@ wheels = [
 
 [[package]]
 name = "arkitekt-mesh"
-version = "0.3.0"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/db/8c/d0c66a2a393c22f3588dfe03ecebaae18f7ba67697a853304054c89b2340/arkitekt_mesh-0.3.0.tar.gz", hash = "sha256:eb8a002bf40a0f679466da54865a81a878c2e70ca0739a4aab066d057516b1ec", size = 222255, upload-time = "2026-10-07T14:04:04.86Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d9/f8/1935bdaeab33314cf59b5384d6de3e3196162e88b3d5a9f564e1a462ccd3/arkitekt_mesh-0.11.0.tar.gz", hash = "sha256:ddcc415914d75487344907326e818661c14296bc15bc4e08a6665e03785207ab", size = 609440, upload-time = "2026-10-30T09:37:27.186Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7d/5c/4e4749edf295d8796337f22702f37eaabb25e88115945889b2aeb70c1747/arkitekt_mesh-0.3.0-cp39-abi3-macosx_10_12_x86_64.macosx_11_0_arm64.macosx_10_12_universal2.whl", hash = "sha256:157dc378f18d6d33ef49e32bf0f19e95fada250752c3ac494bb0ac4aea704d22", size = 6222322, upload-time = "2026-10-07T14:03:53.649Z" },
-    { url = "https://files.pythonhosted.org/packages/47/16/b6f4d2da3b71e3ba2331b90c46d5e15b6aef528f24d4337910c260b6b64b/arkitekt_mesh-0.3.0-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:92ac2df33131c49f9c32bd2012045acdb6e84a59a2484ad6e33498c5a9df47a6", size = 3491349, upload-time = "2026-10-07T14:03:55.413Z" },
-    { url = "https://files.pythonhosted.org/packages/d1/ab/83aa27b0adb13e62589dc836fc33d43ec54c3e575a825164961508e21ccf/arkitekt_mesh-0.3.0-cp39-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:5fe2b26016be79a1754910e757ec94e5fbdc02ef88c4a50e5fff7f2bf3621bf0", size = 3451082, upload-time = "2026-10-07T14:03:56.953Z" },
-    { url = "https://files.pythonhosted.org/packages/6d/e9/8e0aacf03146a1ba38d3f995f7e163aed13cee7ef46e745abc5f8cd15a71/arkitekt_mesh-0.3.0-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:7742ae99fa72b812d7e03b97a3170f50d5211ddfaeaf216add76315cdd12dcec", size = 3659008, upload-time = "2026-10-07T14:03:58.7Z" },
-    { url = "https://files.pythonhosted.org/packages/43/b2/69b47426c6341158e3d8628948851332384fe5fd2e9fb4df0c063e43cdee/arkitekt_mesh-0.3.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:20197fe6ab0c97b75e75f16138af724e5315fdc9d4c97661e515a92ea1ed66dc", size = 3750442, upload-time = "2026-10-07T14:04:00.513Z" },
-    { url = "https://files.pythonhosted.org/packages/b6/9c/8be64f7c37e503e13e3747c54d38b11b006486722c32883dae9acc74960f/arkitekt_mesh-0.3.0-cp39-abi3-win_amd64.whl", hash = "sha256:c46c9ac3d215ad0dbdeb1db822fed478fe08004dd1e56233eb9808f31cfcca19", size = 2941068, upload-time = "2026-10-07T14:04:02.033Z" },
-    { url = "https://files.pythonhosted.org/packages/95/da/eb7b2634a542896de17c70bcbb13ae0c8aca3536de855babd4285df27329/arkitekt_mesh-0.3.0-cp39-abi3-win_arm64.whl", hash = "sha256:8e457bfabda4a30e39310c07ec5360cd5eceaf653e676e7053dca6acd6e92a1b", size = 2738405, upload-time = "2026-10-07T14:04:03.526Z" },
+    { url = "https://files.pythonhosted.org/packages/1f/39/16a1675f17cc0815359a3e3c0b56994f56e7ea74598d018807ebe7737794/arkitekt_mesh-0.11.0-cp39-abi3-macosx_10_12_universal2.macosx_10_12_x86_64.macosx_11_0_arm64.whl", hash = "sha256:2d71005979b76d30941612d785281f58da4e56ac3583d1dfec1e9a849f3e555b", size = 6338845, upload-time = "2026-10-30T09:37:16.25Z" },
+    { url = "https://files.pythonhosted.org/packages/9d/b8/9f57f0b003787172514e4f86a8641236e21a77af0b526714871b951bd0a2/arkitekt_mesh-0.11.0-cp39-abi3-manylinux2014_aarch64.manylinux_2_17_aarch64.whl", hash = "sha256:1e7ca5ea6a64021245830696965c69f81545137f1d07e4b1dace7e6ffd6a8c0c", size = 3582127, upload-time = "2026-10-30T09:37:17.891Z" },
+    { url = "https://files.pythonhosted.org/packages/94/91/0dd977b6a3e16dbc85fb8436d6ba678069edd8b0763808d2a6c2b6d16b5d/arkitekt_mesh-0.11.0-cp39-abi3-manylinux2014_x86_64.manylinux_2_17_x86_64.whl", hash = "sha256:07b42ccd1b5f42dee0943a832f95438bbbaee58c1b79b97ed4e99c7a131e4e9e", size = 3520184, upload-time = "2026-10-30T09:37:19.589Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/cf/834c475046728081591803744662a8d8dd7c230ff1cb3c97a721947739e4/arkitekt_mesh-0.11.0-cp39-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:08ea48ab53d1b7bcc457ca8354768480efcda6308c934cd1fd6439ea94ad5208", size = 3749770, upload-time = "2026-10-30T09:37:21.231Z" },
+    { url = "https://files.pythonhosted.org/packages/e6/ef/d7a29e3c3ee378e9e478b9b90c2a02d39b8fcb7f9c0dec05e63910df560f/arkitekt_mesh-0.11.0-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:3eb89d76243071a45ae98f5b941e6ec727273409f8ab5afad78fc8ffcb9f2325", size = 3832910, upload-time = "2026-10-30T09:37:22.727Z" },
+    { url = "https://files.pythonhosted.org/packages/34/e7/b45794b5fe530a511a4ce100b9c323efa0a90b9af7b723c3575037e9e33c/arkitekt_mesh-0.11.0-cp39-abi3-win_amd64.whl", hash = "sha256:6e4f0cba6fda9a69e39f8d4b70affc7c026df828948aaee4ad7726055cd9bc91", size = 2983410, upload-time = "2026-10-30T09:37:24.253Z" },
+    { url = "https://files.pythonhosted.org/packages/67/86/32c34bc15a131b7865e01cd77309b8296335fe55230e0e9e7d2117a85834/arkitekt_mesh-0.11.0-cp39-abi3-win_arm64.whl", hash = "sha256:3c0666046ace1018fe77bedcd3f0fd7882caa2bafd5c4967de1cb0def836ee9b", size = 2802300, upload-time = "2026-10-30T09:37:25.729Z" },
 ]
 
 [[package]]
@@ -1872,9 +1876,11 @@ name = "numpy"
 version = "2.4.6"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version < '3.12' and sys_platform == 'win32'",
+    "(python_full_version < '3.12' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version < '3.12' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version < '3.12' and sys_platform == 'emscripten'",
-    "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "(python_full_version < '3.12' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version < '3.12' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d0/ad/fed0499ce6a338d2a03ebae59cd15093910c8875328855781952abf6c2fe/numpy-2.4.6.tar.gz", hash = "sha256:f3a3570c4a2a16746ac2c31a7c7c7b0c186b95ce902e33db6f28094ed7387dda", size = 20735807, upload-time = "2026-05-18T23:37:14.07Z" }
 wheels = [
@@ -1956,12 +1962,16 @@ name = "numpy"
 version = "2.5.3"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.14' and sys_platform == 'win32'",
+    "(python_full_version >= '3.14' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version >= '3.14' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
+    "(python_full_version >= '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version >= '3.14' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version >= '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/13/01/11703282db468b85f6f7b8c7f22d058de5970d5c7e60a3a8aaa313c3de36/numpy-2.5.3.tar.gz", hash = "sha256:df2d5874ff183595a4ba404edd04f6bd9b5505c1d7708573f6a6c17489a67563", size = 20791231, upload-time = "2026-09-06T16:27:47.073Z" }
 wheels = [
@@ -2095,9 +2105,11 @@ name = "pandas"
 version = "2.3.3"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.14' and sys_platform == 'win32'",
+    "(python_full_version >= '3.14' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version >= '3.14' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.14' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version >= '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "(python_full_version >= '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version >= '3.14' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.14' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version >= '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
 ]
 dependencies = [
     { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" } },
@@ -2154,12 +2166,16 @@ name = "pandas"
 version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'win32'",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten'",
-    "python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'emscripten' and sys_platform != 'win32'",
-    "python_full_version < '3.12' and sys_platform == 'win32'",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version >= '3.12' and python_full_version < '3.14' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
+    "(python_full_version < '3.12' and platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32')",
+    "(python_full_version < '3.12' and platform_machine != 'AMD64' and platform_machine != 'ARM64' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'AMD64' and platform_python_implementation != 'CPython' and sys_platform == 'win32') or (python_full_version < '3.12' and platform_machine == 'ARM64' and platform_python_implementation != 'CPython' and sys_platform == 'win32')",
     "python_full_version < '3.12' and sys_platform == 'emscripten'",
-    "python_full_version < '3.12' and sys_platform != 'emscripten' and sys_platform != 'win32'",
+    "(python_full_version < '3.12' and platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_python_implementation == 'CPython' and sys_platform == 'darwin')",
+    "(python_full_version < '3.12' and platform_machine != 'aarch64' and platform_machine != 'x86_64' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'aarch64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_machine == 'x86_64' and platform_python_implementation != 'CPython' and sys_platform == 'linux') or (python_full_version < '3.12' and platform_python_implementation != 'CPython' and sys_platform == 'darwin') or (python_full_version < '3.12' and sys_platform != 'darwin' and sys_platform != 'emscripten' and sys_platform != 'linux' and sys_platform != 'win32')",
 ]
 dependencies = [
     { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12' or python_full_version >= '3.14'" },

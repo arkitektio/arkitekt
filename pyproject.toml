@@ -26,6 +26,11 @@ dependencies = [
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
     # 6.0: CatalogWarning.finding/.blok, BlokError.node and action_blok_id (check --json-out).
     "arkitekt-spec>=8",
+    # The mesh node, so services a deployment serves only on its mesh resolve
+    # without an extra. Native code: only where arkitekt-mesh ships a wheel (abi3,
+    # CPython) -- anywhere else pip would build it from source with a Rust toolchain.
+    # The node is imported and started only when a service needs it.
+    "fakts[mesh]>=6.1; platform_python_implementation == 'CPython' and (sys_platform == 'darwin' or (sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')) or (sys_platform == 'win32' and (platform_machine == 'AMD64' or platform_machine == 'ARM64')))",
 ]
 
 [project.optional-dependencies]
@@ -79,10 +84,6 @@ qt = [
 # The module shipped for a long time without this, so importing it raised.
 tqdm = [
     "tqdm>=4.66",
-]
-# Reach services over the hub's private mesh (a native mesh node, via fakts).
-mesh = [
-    "fakts[mesh]>=6.1",
 ]
 all = [
     # Self-referential extras keep `all` complete without duplicating (and drifting)
@@ -208,6 +209,7 @@ markers = [
     "cli: marks tests that require a running cli",
     "needs_docker: marks tests that require a running docker daemon",
     "integration: marks tests that run an app against a real deployment (needs docker and konstruktor)",
+    "mesh: marks the test that installs arkitekt into a container of its own and reaches a hub's services over its mesh (needs docker and konstruktor; .github/workflows/mesh.yaml)",
     "revokes: marks tests that serve their own revocation endpoint, so a logout may reach it",
 ]
 

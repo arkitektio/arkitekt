@@ -124,7 +124,7 @@ def serve(
             ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
             ``None`` states none.
         mesh: How to reach services only on the deployment's mesh:
-            ``MeshOptions()`` or ``True`` runs a node in this process (``arkitekt[mesh]``),
+            ``MeshOptions()`` or ``True`` runs a node in this process,
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
             ``None`` too. Defaults to ``"discover"``: ``--mesh``, then
             ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, else the mesh when it is

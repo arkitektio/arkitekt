@@ -237,11 +237,15 @@ flavour (`mikro.create_folder(...)`, `await mikro.acreate_folder(...)`).
 
 ### Services on the deployment's mesh
 
-Some deployments serve services only over their private mesh. With `pip install "arkitekt[mesh]"`
+Some deployments serve services only over their private mesh. arkitekt brings the mesh node
+(`arkitekt-mesh`) on Linux (x86_64, aarch64), macOS and Windows (x64, ARM64) with CPython, so
 those services resolve like any other: the login asks the server for a key to join the mesh with,
 and a mesh node starts only when a service is reachable no other way. Whether a key comes is up to
 the server — you can opt out of the mesh there, and an organization without one grants none;
-mesh-only services are then simply not reachable.
+mesh-only services are then simply not reachable. On other platforms `pip install arkitekt-mesh`
+builds the node from source (it needs a Rust toolchain), or go through a running proxy with
+`ARKITEKT_MESH_PROXY`. A session saved before the node was installed holds no mesh key: log in
+again (`--reauth`) to get one.
 
 ```bash
 ARKITEKT_MESH=0 python my_app.py                                 # never use the mesh
