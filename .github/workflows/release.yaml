@@ -35,7 +35,8 @@ jobs:
         run: uv sync --all-extras --dev
 
       - name: Run tests
-        run: uv run pytest 
+        # The mesh test has a workflow of its own (mesh.yaml).
+        run: uv run pytest -m "not mesh"
 
       - name: Python Semantic Release
         id: release
