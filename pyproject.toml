@@ -115,9 +115,9 @@ dev-dependencies = [
     "pytest-aiohttp>=1.0.4,<2",
     "mikro>=12.2.0",
     "python-semantic-release>=9.21.1",
-    # Builds the hub tests/integration runs against; 0.17 is where a hub is a dokker
-    # deployment a test can look into.
-    "konstruktor>=0.34.1",
+    # Builds the hubs tests/integration and tests/mesh run against; 0.37 is where a hub
+    # runs a mesh of its own (`testing_hub(mesh=True)`).
+    "konstruktor>=0.37.0",
     "qtpy>=2.4.3",
     "numpy>=2",
     "rekuest>=13.1",
