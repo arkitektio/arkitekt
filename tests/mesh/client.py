@@ -21,6 +21,7 @@ def main() -> None:
         mikro = setup.resolve(runtime)
         folder = mikro.create_folder(name="over the mesh")
         # The alias the call went through: a mesh alias, carrying the node's proxy.
+        assert runtime.fakts is not None, "a run with a service builds its fakts"
         alias = runtime.fakts.get_alias("mikro")
     print(json.dumps({"folder": str(folder.id), "kind": alias.kind, "proxy": alias.proxy}))
 

@@ -24,6 +24,7 @@ import shutil
 import subprocess
 from collections.abc import Iterator
 from pathlib import Path
+from typing import TYPE_CHECKING
 from urllib.parse import urlparse
 
 import pytest
@@ -32,6 +33,9 @@ pytestmark = [pytest.mark.mesh, pytest.mark.needs_docker]
 
 konstruktor = pytest.importorskip("konstruktor", reason="builds the hub the app logs in to")
 pytest.importorskip("mikro", reason="the service the app calls")
+
+if TYPE_CHECKING:
+    from konstruktor import Hub
 
 ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).parent
@@ -44,7 +48,7 @@ def docker(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
 
 
 @pytest.fixture(scope="module")
-def hub() -> Iterator[konstruktor.Hub]:
+def hub() -> Iterator[Hub]:
     """mikro, on a hub with a mesh of its own."""
     from mikro import mikro_service
 
@@ -88,7 +92,7 @@ def own_network() -> Iterator[str]:
 
 
 def test_an_app_installed_without_extras_reaches_a_service_only_over_the_mesh(
-    hub: konstruktor.Hub, client_image: str, own_network: str
+    hub: Hub, client_image: str, own_network: str
 ) -> None:
     """Logged in at the gateway, the app calls mikro through the one route it has: the mesh."""
     mesh = hub.mesh
