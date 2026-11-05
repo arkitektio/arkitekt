@@ -1,0 +1,47 @@
+name: Mesh
+
+# arkitekt installed into a container of its own reaches a hub's services over the hub's
+# mesh: tests/mesh. The hub is konstruktor's, with a mesh of its own; the app is this
+# checkout's wheel, installed with no extras, so the mesh node is arkitekt's own dependency.
+#
+# A workflow of its own: it builds an image and a hub with a mesh control server, which the
+# test matrix should not wait on, and it is run on both Linux architectures arkitekt-mesh
+# has wheels for.
+on:
+  push:
+    branches: [main, next]
+  pull_request:
+    branches: [main, next]
+  workflow_dispatch:
+
+jobs:
+  test_mesh:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      # Which builds of the services to run against, when it should not be `latest`:
+      # e.g. a Lok that writes the hub's mesh key (`lok=jhnnsrs/lok:…`) before it is
+      # released. konstruktor reads it.
+      KONSTRUKTOR_IMAGES: ${{ vars.KONSTRUKTOR_IMAGES }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv and set the python version
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          python-version: "3.13"
+
+      - name: Install the project
+        run: uv sync --all-extras --dev
+
+      - name: Run the mesh test
+        run: uv run pytest tests/mesh -m mesh -rs
+
+      - name: Containers at failure
+        if: failure()
+        run: docker ps -a
