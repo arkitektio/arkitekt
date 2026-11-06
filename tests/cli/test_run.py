@@ -294,6 +294,53 @@ def test_a_run_says_when_its_agent_is_registered_lost_and_back(app_dir, monkeypa
     ) in output
 
 
+def test_a_run_says_its_hub_and_when_a_mesh_path_turns_direct(app_dir, monkeypatch):
+    """Services on one mesh host share a line; a relayed path is yellow, then direct."""
+    import asyncio
+
+    monkeypatch.setattr("arkitekt.cli.running.PATH_POLL", 0.01)
+    paths = iter(["relay", "idle", "direct"])
+    path = {"kind": "relay"}
+
+    def mesh_path(key):
+        via = {"relay": "waw", "direct": "172.21.0.23:41641", "idle": None}[path["kind"]]
+        return SimpleNamespace(kind=path["kind"], via=via)
+
+    proxy = "http://127.0.0.1:41234"
+    fakts = _session(time.time())
+    fakts.loaded_fakts.self.hub = "lab-hub"
+    fakts.alias_map = {
+        # One peer, two ports: still one line.
+        "mikro": SimpleNamespace(host="lab.mesh.internal", port=8080, proxy=proxy),
+        "rekuest": SimpleNamespace(host="lab.mesh.internal", port=80, proxy=proxy),
+        "kabinet": SimpleNamespace(host="localhost", port=8000, proxy=None),
+        # Over a proxy that cannot tell its path: never green.
+        "kraph": SimpleNamespace(host="other.mesh.internal", port=None, proxy=proxy),
+    }
+    fakts.mesh_path = lambda key: mesh_path(key) if key in ("mikro", "rekuest") else None
+
+    async def during(run):
+        for kind in paths:
+            path["kind"] = kind
+            await asyncio.sleep(0.05)
+
+    monkeypatch.setattr(
+        "arkitekt.runtime.connect", recording_connect([], fakts=fakts, during=during)
+    )
+
+    result = _invoke(app_dir, "run", "prod")
+
+    assert result.exit_code == 0, result.output
+    output = " ".join(result.output.split())
+    assert "◆ Connected to Lab hub lab-hub" in output
+    assert "◆ kabinet localhost:8000" in output
+    assert "■ kraph other.mesh.internal · over the mesh, path unknown" in output
+    # Relayed once, idle is no news, then direct once.
+    assert output.count("mikro, rekuest") == 2
+    assert "□ mikro, rekuest relayed lab.mesh.internal:80, 8080 · via DERP waw" in output
+    assert "◆ mikro, rekuest direct lab.mesh.internal:80, 8080 · 172.21.0.23:41641" in output
+
+
 def _raising(error):
     async def during(run):
         raise error

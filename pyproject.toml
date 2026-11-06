@@ -7,7 +7,7 @@ requires-python = ">=3.11,<4"
 readme = "README.md"
 license = "MIT"
 dependencies = [
-    "fakts[crypto]>=6.1",
+    "fakts[crypto]>=6.2",
     "koil>=3.3.6",
     "rath>=4",
     "click>=8.2.0",
@@ -30,7 +30,7 @@ dependencies = [
     # without an extra. Native code: only where arkitekt-mesh ships a wheel (abi3,
     # CPython) -- anywhere else pip would build it from source with a Rust toolchain.
     # The node is imported and started only when a service needs it.
-    "fakts[mesh]>=6.1; platform_python_implementation == 'CPython' and (sys_platform == 'darwin' or (sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')) or (sys_platform == 'win32' and (platform_machine == 'AMD64' or platform_machine == 'ARM64')))",
+    "fakts[mesh]>=6.2; platform_python_implementation == 'CPython' and (sys_platform == 'darwin' or (sys_platform == 'linux' and (platform_machine == 'x86_64' or platform_machine == 'aarch64')) or (sys_platform == 'win32' and (platform_machine == 'AMD64' or platform_machine == 'ARM64')))",
 ]
 
 [project.optional-dependencies]

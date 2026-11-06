@@ -6,11 +6,14 @@ it drops and returns. The commands connect through here instead of handing the
 whole run to :func:`arkitekt.arun`, which says nothing.
 """
 
+import asyncio
+import logging
 import os
 import sys
 import threading
 import time
-from contextlib import asynccontextmanager, contextmanager
+from contextlib import asynccontextmanager, contextmanager, suppress
+from dataclasses import dataclass, field
 from typing import Any
 from collections.abc import AsyncIterator, Iterator
 
@@ -22,6 +25,8 @@ from arkitekt.app import App
 from arkitekt.app.fakts import resolve_url
 from arkitekt.app.sessions import read_session, session_path
 from arkitekt.app.terminal import done, fail, notice, step
+
+logger = logging.getLogger(__name__)
 
 
 def ago(moment: float, now: float | None = None) -> str:
@@ -133,6 +138,127 @@ def report_session(
         done(console, f"Logged in to {escape(loaded.self.deployment_name)}", "with a token")
 
 
+#: How often a providing run looks again at how its mesh hosts are reached.
+PATH_POLL = 2.0
+
+
+@dataclass
+class _Host:
+    """The resolved services whose aliases reach one host."""
+
+    keys: list[str] = field(default_factory=list)
+    ports: list[int] = field(default_factory=list)
+    proxied: bool = False
+    """Reached through a proxy (the mesh node's, or an external one)."""
+
+    def label(self, host: str) -> str:
+        ports = ", ".join(str(port) for port in sorted(set(self.ports)))
+        return escape(f"{host}:{ports}" if ports else host)
+
+
+def _hosts(fakts: Any) -> dict[str, _Host]:  # noqa: ANN401
+    """The resolved services, grouped by the host their alias reaches.
+
+    By host alone, not port: a path is the peer's, so services behind one host
+    share it: one line, and one change, each.
+    """
+    hosts: dict[str, _Host] = {}
+    for key, alias in getattr(fakts, "alias_map", {}).items():
+        group = hosts.setdefault(alias.host, _Host())
+        group.keys.append(key)
+        if alias.port is not None:
+            group.ports.append(alias.port)
+        group.proxied = group.proxied or getattr(alias, "proxy", None) is not None
+    return hosts
+
+
+def _path(fakts: Any, group: _Host) -> Any:  # noqa: ANN401
+    """How the host of ``group`` is reached over this process's mesh node, if it is.
+
+    ``None`` for a host not reached through the node, or with a fakts or
+    bindings too old to tell, or one the node does not know.
+    """
+    from fakts import MeshError
+
+    probe = getattr(fakts, "mesh_path", None)
+    if probe is None:
+        return None
+    try:
+        return probe(group.keys[0])
+    except MeshError:
+        return None
+
+
+def _report_path(console: Console, host: str, group: _Host, path: Any) -> None:  # noqa: ANN401
+    """One host's line: green when direct (or off the mesh), yellow when relayed.
+
+    A host reached through a proxy whose path cannot be told is not green: that
+    would claim a direct path nobody saw.
+    """
+    names = escape(", ".join(sorted(group.keys)))
+    where = group.label(host)
+    if path is None:
+        if group.proxied:
+            step(console, names, f"{where} · over the mesh, path unknown")
+        else:
+            done(console, names, where)
+    elif path.kind == "direct":
+        done(console, f"{names} [green]direct[/]", f"{where} · {escape(path.via or '')}")
+    elif path.kind == "relay":
+        relay = escape(path.via or "?")
+        notice(console, f"{names} [yellow]relayed[/]", f"{where} · via DERP {relay}")
+    else:
+        step(console, names, f"{where} · over the mesh, path not known yet")
+
+
+def report_connection(console: Console, rt: Any) -> dict[str, str | None]:  # noqa: ANN401
+    """Say which hub the run is connected to, and how each of its services is reached.
+
+    Returns the path kind each mesh host was reported with (``None`` for an idle
+    one), for :func:`watch_paths` to report only what changes from there.
+    """
+    fakts = getattr(rt, "fakts", None)
+    loaded = getattr(fakts, "loaded_fakts", None)
+    if loaded is None:
+        return {}
+    hub = getattr(loaded.self, "hub", None)
+    done(
+        console,
+        f"Connected to {escape(loaded.self.deployment_name)}",
+        f"hub {escape(hub)}" if hub else None,
+    )
+    reported: dict[str, str | None] = {}
+    for host, group in _hosts(fakts).items():
+        path = _path(fakts, group)
+        _report_path(console, host, group, path)
+        if path is not None:
+            reported[host] = None if path.kind == "idle" else path.kind
+    return reported
+
+
+async def watch_paths(console: Console, rt: Any, reported: dict[str, str | None]) -> None:  # noqa: ANN401
+    """Say whenever a mesh host's path turns direct or falls back to the relay.
+
+    A path starts out relayed and usually turns direct seconds later. Going idle
+    (no traffic lately) is not news: the host keeps its last reported path. An
+    indicator never ends a run: whatever goes wrong looking stops the looking.
+    """
+    if not reported:
+        return
+    fakts = rt.fakts
+    try:
+        while True:
+            await asyncio.sleep(PATH_POLL)
+            for host, group in _hosts(fakts).items():
+                path = _path(fakts, group)
+                if path is None or path.kind == "idle" or reported.get(host) == path.kind:
+                    continue
+                reported[host] = path.kind
+                _report_path(console, host, group, path)
+    except Exception:
+        logger.debug("Stopped watching the mesh paths", exc_info=True)
+
+
 @asynccontextmanager
 async def connected(
     console: Console,
@@ -166,7 +292,16 @@ async def connected(
     # Through the module, so the connection stays replaceable (tests patch it).
     async with runtime.connect(app, **options, **extra) as rt:
         report_session(console, rt, before, options)
-        yield rt
+        reported = report_connection(console, rt)
+        # A providing run lasts: follow its paths. A call is over before they settle.
+        watcher = asyncio.create_task(watch_paths(console, rt, reported)) if provide else None
+        try:
+            yield rt
+        finally:
+            if watcher is not None:
+                watcher.cancel()
+                with suppress(asyncio.CancelledError):
+                    await watcher
 
 
 @asynccontextmanager
@@ -251,5 +386,7 @@ __all__ = [
     "connected",
     "connected_local",
     "logged_in_at",
+    "report_connection",
     "report_session",
+    "watch_paths",
 ]
