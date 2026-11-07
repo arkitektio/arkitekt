@@ -5,10 +5,14 @@ The login prompt lives here, not in the CLI, so an app started with
 ``python app.py`` asks the same way as one started with ``arkitekt run``.
 """
 
+import ipaddress
+import os
 from typing import TYPE_CHECKING
+from urllib.parse import urlparse
 
 from rich.console import Console
 from rich.markup import escape
+from rich.text import Text
 
 if TYPE_CHECKING:
     from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge, DeviceCodeHook
@@ -57,6 +61,58 @@ def fail(console: Console, message: str, detail: str | None = None) -> None:
     _status(console, FAIL, "red", message, detail)
 
 
+#: ``0`` never shows the approval link as a QR code, ``1`` always does. The name
+#: fakts' own prompt reads too.
+QR_ENV = "FAKTS_QR"
+
+_HALF_BLOCKS = {(False, False): " ", (True, False): "▀", (False, True): "▄", (True, True): "█"}
+
+
+def _wants_qr(link: str, opened_browser: bool) -> bool:
+    """A QR code is for approving on another device -- a phone, when the app runs
+    over SSH, in a container or on a shared instrument PC. So not when the page
+    already opened here, and not for a loopback address no phone can reach."""
+    setting = os.environ.get(QR_ENV, "").strip()
+    if setting in ("0", "1"):
+        return setting == "1"
+    if opened_browser:
+        return False
+    host = (urlparse(link).hostname or "").lower()
+    if not host or host == "localhost" or host.endswith(".localhost"):
+        return False
+    try:
+        return not ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return True
+
+
+def _qr(console: Console, link: str) -> None:
+    """Print ``link`` as a QR code, in half blocks: black on white whatever the
+    theme (a code a dark theme inverts is one some scanners refuse), or, without
+    colours, the light modules drawn on the dark background most terminals have."""
+    if console.options.ascii_only:
+        return
+    import segno  # only a login that is approved elsewhere draws one
+
+    plain = console.color_system is None
+    # make_qr, not make: a short link would otherwise become a Micro QR code,
+    # which phone cameras do not read.
+    rows = [
+        [bool(module) != plain for module in row]
+        for row in segno.make_qr(link, error="l").matrix_iter(border=2)
+    ]
+    if len(rows) % 2:
+        rows.append([plain] * len(rows[0]))
+    for top, bottom in zip(rows[::2], rows[1::2], strict=True):
+        line = "".join(_HALF_BLOCKS[pair] for pair in zip(top, bottom, strict=True))
+        console.print(
+            Text.assemble("  ", (line, "" if plain else "black on white")),
+            no_wrap=True,
+            crop=False,
+            highlight=False,
+        )
+
+
 def login_prompt(opened_browser: bool = True) -> "DeviceCodeHook":
     """The device-code hook that asks the user to approve the app.
 
@@ -79,6 +135,8 @@ def login_prompt(opened_browser: bool = True) -> "DeviceCodeHook":
         )
         console.print(f"  [link={link}]{escape(link)}[/link]", highlight=False, soft_wrap=True)
         console.print(f"  code [bold]{escape(code)}[/bold]", highlight=False)
+        if _wants_qr(link, opened_browser):
+            _qr(console, link)
 
     return prompt
 

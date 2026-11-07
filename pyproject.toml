@@ -22,6 +22,9 @@ dependencies = [
     "pyyaml>=6.0.2",
     # The mesh commands drive the well-known/device-code flow over aiohttp.
     "aiohttp>=3.9",
+    # The login prompt shows the approval link as a QR code when no browser
+    # opened here, for approving on a phone (pure Python, no dependencies).
+    "segno>=1.6",
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
     # 6.0: CatalogWarning.finding/.blok, BlokError.node and action_blok_id (check --json-out).

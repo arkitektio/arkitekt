@@ -6,7 +6,7 @@ from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.grants.remote.models import FaktsEndpoint
 
 from arkitekt.app.fakts import build_device_code_fakts
-from arkitekt.app.terminal import logged_in, login_prompt
+from arkitekt.app.terminal import QR_ENV, logged_in, login_prompt
 
 from .test_cache_paths import make_manifest
 
@@ -30,7 +30,8 @@ def _flat(output: str) -> str:
     return " ".join(output.split())
 
 
-def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(capsys) -> None:
+def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(capsys, monkeypatch) -> None:
+    monkeypatch.delenv(QR_ENV, raising=False)
     asyncio.run(login_prompt(opened_browser=True)(APPROVE))  # pyright: ignore[reportArgumentType]
 
     out = capsys.readouterr().out
@@ -39,12 +40,16 @@ def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(capsys) -
     assert "https://lab.example/f/device/?code=ABCD-EFGH" in out
     assert "code ABCD-EFGH" in out
     assert "│" not in out and "╭" not in out
+    assert "█" not in out, "the page opened here: no QR code to scan"
 
 
-def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys) -> None:
+def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys, monkeypatch) -> None:
+    monkeypatch.delenv(QR_ENV, raising=False)
     asyncio.run(login_prompt(opened_browser=False)(APPROVE))  # pyright: ignore[reportArgumentType]
 
-    assert "open this link to approve the app" in _flat(capsys.readouterr().out)
+    out = capsys.readouterr().out
+    assert "open this link to approve the app" in _flat(out)
+    assert "█" in out, "approved on another device: the link is a QR code too"
 
 
 def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(capsys) -> None:
