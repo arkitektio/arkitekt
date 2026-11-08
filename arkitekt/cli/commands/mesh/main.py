@@ -457,7 +457,7 @@ def _device_code_join(
     """Run the mesh device-code flow; returns ``(authkey, coord_url, hostname)``."""
     machine_name = machine_name or socket.gethostname()
 
-    console.print(f"Inspecting well-known Fakts at [cyan]{url}[/cyan]...")
+    step(console, "Asking the server how to join its mesh", escape(url))
     data = asyncio.run(_fetch_well_known(url))
     endpoints = _extract_mesh_endpoints(data, url)
 
