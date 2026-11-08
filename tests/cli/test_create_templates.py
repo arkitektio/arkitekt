@@ -445,9 +445,9 @@ def test_the_blok_template_is_a_whole_project_around_a_blok_agent(tmp_path: Path
 def test_a_blok_agent_declares_its_panel_its_state_and_its_actions(tmp_path: Path, fake_uv):
     """What a deployment is told of the app: read off the declaration, as `inspect all` prints it."""
     pytest.importorskip("mikro")
-    assert create(tmp_path, "analyst", "-t", "blok", *IDENTITY).exit_code == 0
+    assert create(tmp_path, "analyst", "--template", "blok", *IDENTITY).exit_code == 0
 
-    result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path / "analyst"), "inspect", "all", "-mr"])
+    result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path / "analyst"), "inspect", "all", "--machine-readable"])
     assert result.exit_code == 0, result.output
     declared = json.loads(result.output.split("--START_AGENT--")[1].split("--END_AGENT--")[0])
 
@@ -461,7 +461,7 @@ def test_a_blok_agent_declares_its_panel_its_state_and_its_actions(tmp_path: Pat
 def test_a_panel_that_names_what_the_app_does_not_have_fails_its_tests(tmp_path: Path, fake_uv):
     """The project's own tests are what catches a typo in the panel, before a deployment does."""
     pytest.importorskip("mikro")
-    assert create(tmp_path, "analyst", "-t", "blok", *IDENTITY).exit_code == 0
+    assert create(tmp_path, "analyst", "--template", "blok", *IDENTITY).exit_code == 0
     project = tmp_path / "analyst"
     app_file = project / "app.py"
     app_file.write_text(app_file.read_text().replace("{self.Analysis.status}", "{self.Analysis.statuz}"))
@@ -505,7 +505,7 @@ def test_the_qt_template_is_a_project_without_an_image(tmp_path: Path, fake_uv):
 
 
 def test_the_qt_template_says_what_is_left_to_do(tmp_path: Path, fake_uv):
-    output = " ".join(create(tmp_path, "viewer", "-t", "qt", *IDENTITY).output.split())
+    output = " ".join(create(tmp_path, "viewer", "--template", "qt", *IDENTITY).output.split())
     assert "A Qt app needs a Qt binding" in output and "uv add pyqt6" in output
     assert "cd viewer && uv run python app.py" in output
     assert "arkitekt run dev" not in output
@@ -514,18 +514,18 @@ def test_the_qt_template_says_what_is_left_to_do(tmp_path: Path, fake_uv):
 
 def test_a_qt_app_on_pip_is_started_and_completed_with_pip(tmp_path: Path):
     output = " ".join(
-        create(tmp_path, "viewer", "-t", "qt", "--package-manager", "pip", "--entrypoint", "main", "--identifier", "x", "--author", "me").output.split()
+        create(tmp_path, "viewer", "--template", "qt", "--package-manager", "pip", "--entrypoint", "main", "--identifier", "x", "--author", "me").output.split()
     )
     assert "pip install pyqt6" in output
     assert "cd viewer && python main.py" in output
 
 
 def test_a_qt_project_can_still_be_given_an_image_and_a_workflow(tmp_path: Path, fake_uv):
-    refused = create(tmp_path, "one", "-t", "qt", "--ci", "github", *IDENTITY)
+    refused = create(tmp_path, "one", "--template", "qt", "--ci", "github", *IDENTITY)
     assert refused.exit_code != 0 and "nothing to release" in refused.output
     assert not (tmp_path / "one").exists()
 
-    result = create(tmp_path, "two", "-t", "qt", "--flavour", "--ci", "github", *IDENTITY)
+    result = create(tmp_path, "two", "--template", "qt", "--flavour", "--ci", "github", *IDENTITY)
     assert result.exit_code == 0, result.output
     assert (tmp_path / "two" / ".arkitekt" / "flavours" / "vanilla").exists()
     assert (tmp_path / "two" / ".github" / "workflows" / "release.yaml").exists()
@@ -539,7 +539,7 @@ def test_the_templates_are_all_in_the_help():
 
 @pytest.mark.skipif(_has_qt_binding(), reason="a Qt binding is installed")
 def test_without_a_binding_the_qt_tests_are_skipped_and_say_why(tmp_path: Path, fake_uv):
-    assert create(tmp_path, "viewer", "-t", "qt", *IDENTITY).exit_code == 0
+    assert create(tmp_path, "viewer", "--template", "qt", *IDENTITY).exit_code == 0
 
     ran = _pytest_in(tmp_path / "viewer", "-q", "-rs")
 
@@ -551,7 +551,7 @@ def test_without_a_binding_the_qt_tests_are_skipped_and_say_why(tmp_path: Path, 
 @pytest.mark.skipif(not _has_qt_binding(), reason="no Qt binding is installed")
 @pytest.mark.parametrize("entrypoint", ["app", "main"])
 def test_with_a_binding_the_qt_tests_pass_without_a_screen(tmp_path: Path, fake_uv, entrypoint: str):
-    result = create(tmp_path, "viewer", "-t", "qt", "--identifier", "com.test.app", "--author", "me", "--entrypoint", entrypoint)
+    result = create(tmp_path, "viewer", "--template", "qt", "--identifier", "com.test.app", "--author", "me", "--entrypoint", entrypoint)
     assert result.exit_code == 0, result.output
 
     ran = _pytest_in(tmp_path / "viewer", "-q")

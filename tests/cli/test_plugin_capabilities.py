@@ -18,7 +18,7 @@ from arkitekt.cli.main import cli_app
 def _init(tmp_path):
     return CliRunner().invoke(
         cli_app,
-        ["--work-dir", str(tmp_path), "plugin", "init", "--arkitekt-version", "0.0.1"],
+        ["--work-dir", str(tmp_path), "plugin", "flavour", "add", "--arkitekt-version", "0.0.1"],
         input="n\n",
     )
 

@@ -76,14 +76,14 @@ def test_the_image_is_inspected_on_the_built_target():
         inspect_all("image", "http://fakts", "main:api")
 
     command = popen.call_args[0][0]
-    assert "arkitekt inspect all main:api -mr" in command
+    assert "arkitekt inspect all main:api --machine-readable" in command
     assert "--rm" in command  # the inspection's container is not left behind
 
 
 def _flavour_without_an_app(tmp_path):
     """A flavour, and no app module at all: the image is the only place the app is."""
     result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "plugin", "init", "--no-multi-arch", "--arkitekt-version", "0.0.1",
+        "--work-dir", str(tmp_path), "plugin", "flavour", "add", "--no-multi-arch", "--arkitekt-version", "0.0.1",
     ], input="n\n")
     assert result.exit_code == 0, result.output
 
@@ -144,7 +144,7 @@ def test_plugin_init_picks_the_uv_image_for_a_uv_project_without_loading_the_app
     (tmp_path / "uv.lock").write_text("")
 
     result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "plugin", "init", "--arkitekt-version", "0.0.1",
+        "--work-dir", str(tmp_path), "plugin", "flavour", "add", "--arkitekt-version", "0.0.1",
     ], input="n\n")
 
     assert result.exit_code == 0, result.output
@@ -156,7 +156,7 @@ def test_plugin_init_names_the_devcontainer_after_the_app(app_dir, monkeypatch):
     monkeypatch.chdir(app_dir)  # the devcontainer is written relative to the cwd
 
     result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(app_dir), "plugin", "init", "--devcontainer", "--arkitekt-version", "0.0.1",
+        "--work-dir", str(app_dir), "plugin", "flavour", "add", "--devcontainer", "--arkitekt-version", "0.0.1",
     ])
 
     assert result.exit_code == 0, result.output
@@ -168,7 +168,7 @@ def test_plugin_init_devcontainer_without_an_app_is_a_clean_error(tmp_path, monk
     monkeypatch.chdir(tmp_path)
 
     result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "plugin", "init", "--devcontainer", "--arkitekt-version", "0.0.1",
+        "--work-dir", str(tmp_path), "plugin", "flavour", "add", "--devcontainer", "--arkitekt-version", "0.0.1",
     ])
 
     assert result.exit_code != 0

@@ -167,19 +167,19 @@ Key options:
 | Option | Description |
 | :--- | :--- |
 | `PATH` | The folder to create the app in; `.` is the working directory. The `project` template asks for it, the `bare` one defaults to `.`. |
-| `--template`, `-t` | `project` (default: new folder, uv, flavour, GitHub workflow), `blok` (the same, around a blok agent), `qt` (new folder, uv, a Qt desktop app, no flavour or workflow) or `bare` (the app file only). |
+| `--template` | `project` (default: new folder, uv, flavour, GitHub workflow), `blok` (the same, around a blok agent), `qt` (new folder, uv, a Qt desktop app, no flavour or workflow) or `bare` (the app file only). |
 | `--starter` | The code the app file starts with: `image` (random image and blur, stored in mikro), `simple` or `filter` (no service). `blok` is an image-analysis agent with a state and a blok; `qt` is a window with a `MagicBar`. Default: the template's (`project`: `image`; `blok`: `blok`; `qt`: `qt`; `bare`: `simple`). |
-| `--package-manager`, `-pm` | `pip` or `uv`. Default: the template's (`project`: uv; `bare`: uv if installed, else pip). |
+| `--package-manager` | `pip` or `uv`. Default: the template's (`project`: uv; `bare`: uv if installed, else pip). |
 | `--flavour` / `--no-flavour` | Write a flavour. Default: the template's. |
 | `--ci` | `github`, `gitlab` or `none`: release the app from that forge on every push. Needs uv and a flavour. Default: the template's. |
 | `--identifier`, `-i` | Unique app identifier in [reverse domain notation](https://en.wikipedia.org/wiki/Reverse_domain_name_notation) (e.g. `com.example.myapp`). |
-| `--version`, `-v` | App version. Must follow [semver](https://semver.org/). Defaults to `0.0.1`. |
+| `--version` | App version. Must follow [semver](https://semver.org/). Defaults to `0.0.1`. |
 | `--author` | Shown to users of your app. Defaults to the current OS user. |
 | `--entrypoint`, `-e` | Name of the Python entrypoint file (without `.py`). Defaults to `app`. |
-| `--scopes`, `-s` | One or more requested scopes (`read`, `write`). Repeatable. |
+| `--scopes` | One or more requested scopes (`read`, `write`). Repeatable. |
 | `--with-extra` | Extras to install with `arkitekt` when using `uv`. Defaults to `all`. |
 | `--yes`, `-y` | Accept all defaults without prompting. |
-| `--overwrite-app`, `-oa` | Overwrite an existing entrypoint file. |
+| `--overwrite` | Replace an existing entrypoint file without asking. |
 
 When `--package-manager uv` is chosen, `uv` must be installed; the CLI runs
 `uv init` and `uv add arkitekt[all]` for you.
@@ -221,9 +221,9 @@ grouped in `--help` the same way, and only what you pass is overridden:
 | Session | `--skip-cache` | Ignore the saved session and save none: log in, for this run only. |
 | Session | `--force-mesh` | Reach every service over the deployment's mesh and nothing else; addresses that are not on it are not tried. Same as `ARKITEKT_MESH=force`. |
 | Session | `--device-id` | This device's identity (default: `$ARKITEKT_DEVICE_ID`, then the machine's id). |
-| Agent | `--force`, `-f` | Take over when another instance of this app is already connected. |
+| Agent | `--force` | Take over when another instance of this app is already connected. |
 | Agent | `--supervisor` | The app that controls this process's lifecycle, stated on registration (default: `$ARKITEKT_SUPERVISOR`). |
-| | `--log-level`, `-l` | The log level (e.g. `INFO`, `DEBUG`). |
+| Logging | `--log-level`, `-l` | The log level (e.g. `INFO`, `DEBUG`). |
 
 `run dev` reloads when the app changes, or a module of this folder that it
 imports: those modules are imported anew, so a change in a helper reaches the
@@ -321,10 +321,10 @@ arkitekt inspect implementations
 arkitekt inspect variables
 
 # Emit the app's requirements as JSON
-arkitekt inspect requirements --pretty
+arkitekt inspect requirements --json
 
 # Emit the full agent manifest (implementations, states, requirements) as JSON
-arkitekt inspect all --pretty
+arkitekt inspect all --json
 ```
 
 | Sub-command | Description |
@@ -336,8 +336,11 @@ arkitekt inspect all --pretty
 | `lifecycle` | Lists the agent's startup, shutdown and background hooks. |
 | `all` | Prints the complete agent manifest (implementations, states, locks, requirements, bloks), validated the way the server would validate it. |
 
-The JSON-emitting commands accept `--pretty`/`-p` for indented output and
-`--machine-readable`/`-mr` for delimiter-wrapped output consumed by the server.
+Every `inspect` command takes `--json`, which prints indented JSON on stdout and
+nothing else (what the app prints while it is imported goes to stderr), and
+`--machine-readable`, which wraps the JSON in `--START_<KIND>--`/`--END_<KIND>--`
+markers for a program reading it out of noisy output (what `plugin build` does
+inside the image).
 
 📖 <https://arkitekt.live/docs/cli/inspect>
 
@@ -429,7 +432,7 @@ different hardware — see [Flavours](flavours.md).
 
 ```bash
 # Scaffold a default (vanilla) flavour, plus a devcontainer
-arkitekt plugin init --flavour vanilla --devcontainer
+arkitekt plugin flavour add --flavour vanilla --devcontainer
 
 # Add a GPU flavour
 arkitekt plugin flavour add --flavour gpu --description "CUDA enabled build"
@@ -456,16 +459,16 @@ arkitekt plugin publish
 | `stage` | Prepares a build for publishing. |
 | `publish` | Publishes the built image(s) to a registry and registers them. |
 
-`plugin init` options:
+`plugin flavour add` options:
 
 | Option | Description |
 | :--- | :--- |
 | `--flavour`, `-f` | Name of the flavour to scaffold (e.g. `vanilla`, `gpu`). |
-| `--template`, `-t` | Dockerfile template: `vanilla` or `uv`. |
+| `--template` | Dockerfile template: `vanilla` or `uv`. |
 | `--description`, `-d` | Human-readable description stored in the flavour's `config.yaml`. |
-| `--arkitekt-version`, `-av` | The `arkitekt` version to pin in the generated Dockerfile. |
-| `--devcontainer`, `-dc` | Also generate a `.devcontainer/<flavour>/devcontainer.json`. |
-| `--overwrite`, `-o` | Overwrite an existing flavour of the same name. |
+| `--arkitekt-version` | The `arkitekt` version to pin in the generated Dockerfile. |
+| `--devcontainer` / `--no-devcontainer` | Also generate a `.devcontainer/<flavour>/devcontainer.json`. Default: asked in a terminal, not written elsewhere. |
+| `--overwrite` | Overwrite an existing flavour of the same name. |
 | `--platform`, `-p` | Platforms this flavour builds for (repeatable). Default: `linux/amd64` and `linux/arm64`. |
 | `--no-multi-arch` | Build only for this machine's architecture. |
 
@@ -474,9 +477,9 @@ arkitekt plugin publish
 | Option | Description |
 | :--- | :--- |
 | `--flavour`, `-f` | The flavour to build. By default **all** flavours are built. |
-| `--tag`, `-t` | Tag the resulting image with a specific tag. |
-| `--no-inspect`, `-n` | Only build: do not run the image. Nothing then says which app it holds, so the build is not recorded for `stage` or `publish`. |
-| `--url`, `-u` | The `fakts` server to use during inspection. |
+| `--tag` | Tag the resulting image with a specific tag. |
+| `--no-inspect` | Only build: do not run the image. Nothing then says which app it holds, so the build is not recorded for `stage` or `publish`. |
+| `--url`, `-u` | The `fakts` server to use during inspection (`$FAKTS_URL`). |
 | `--platform`, `-p` | Build these platforms instead of the flavour's (repeatable). |
 
 ### Multi-architecture builds
@@ -486,8 +489,8 @@ both on an x86 server and on an ARM node. The platforms live in the flavour's `c
 chosen when it is scaffolded:
 
 ```bash
-arkitekt plugin init --no-multi-arch            # this machine only
-arkitekt plugin init -p linux/amd64 -p linux/arm64
+arkitekt plugin flavour add --no-multi-arch     # this machine only
+arkitekt plugin flavour add -p linux/amd64 -p linux/arm64
 ```
 
 Because a multi-platform image cannot be loaded into the local docker daemon, the work is split:
@@ -510,12 +513,11 @@ multi-architecture one.
 
 `plugin selector add <flavour>` attaches a hardware requirement to a flavour.
 `--kind`/`-k` picks one of `cpu`, `ram`, `cuda`, `rocm`, `oneapi`, `label`;
-`--required/--optional` and `--weight`/`-w` set the hard/soft split. Kind
-flags: `--min-count`, `--frequency`/`-fr`, `--arch` (cpu); `--memory`/`-m`
-(ram, MB); `--compute-capability`, `--cuda-version`, `--vram`, `--count`,
-`--cuda-cores`/`-cc` (cuda, the last deprecated); `--api-version`/`-av`,
-`--api-thing`/`-at` (rocm); `--one-api-version`/`-oav` (oneapi); `--key`,
-`--value` (label). Services are requirements, never selectors.
+`--required/--optional` and `--weight` set the hard/soft split. Kind
+flags: `--min-count`, `--frequency`, `--arch` (cpu); `--memory`/`-m`
+(ram, MB); `--compute-capability`, `--cuda-version`, `--vram`, `--count`
+(cuda); `--api-version`, `--api-thing` (rocm); `--one-api-version` (oneapi);
+`--key`, `--value` (label). Services are requirements, never selectors.
 
 📖 <https://arkitekt.live/docs/cli/plugin> · [Flavours guide](flavours.md)
 
@@ -558,8 +560,9 @@ arkitekt mesh leave
 
 Shared `join`/`proxy` options include `--url`/`-u` (the Fakts server), `--name`/`-n`
 (requested machine name), `--description`, `--ephemeral`, `--tag` (repeatable),
-`--expiration` (how long the join code stays valid, default 600s) and
-`--open-browser/--no-open-browser`. `proxy` additionally takes `--listen` (HTTP
+`--expiration` (how long the join code stays valid, default 600s), `--headless`
+(print the link instead of opening a browser) and `--qr` (always draw it as a QR
+code, to approve from a phone). `proxy` additionally takes `--listen` (HTTP
 proxy address) and `--socks5-listen`.
 
 📖 <https://arkitekt.live/docs/cli/mesh>

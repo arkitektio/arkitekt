@@ -418,7 +418,6 @@ def create_command(
         str,
         typer.Option(
             "--version",
-            "-v",
             help="The version of your app. Needs to follow [link=https://semver.org/]semantic versioning[/link].",
         ),
     ] = "0.0.1",
@@ -440,7 +439,6 @@ def create_command(
         list[str],
         typer.Option(
             "--scopes",
-            "-s",
             help="Scopes the app asks for beyond what its services' clients need (those are asked for anyway): rarely needed.",
         ),
     ] = [],
@@ -448,7 +446,6 @@ def create_command(
         str,
         typer.Option(
             "--template",
-            "-t",
             help="What to set up. "
             + " ".join(f"'{name}': {t.summary}." for name, t in TEMPLATES.items())
             + " Each part can be changed with its own option.",
@@ -494,11 +491,10 @@ def create_command(
             help="The name of the python file to create, without the .py ending. Commands find the app in it through their 'module[:attr]' target, which defaults to 'app'.",
         ),
     ] = None,
-    overwrite_app: Annotated[
+    overwrite: Annotated[
         bool,
         typer.Option(
-            "--overwrite-app",
-            "-oa",
+            "--overwrite",
             help="Replace the app file if it exists, without asking",
         ),
     ] = False,
@@ -506,7 +502,6 @@ def create_command(
         PackageManager | None,
         typer.Option(
             "--package-manager",
-            "-pm",
             help="The package manager to use. If uv is selected, it will initialize a project with uv. Default: the template's.",
         ),
     ] = None,
@@ -655,7 +650,7 @@ def create_command(
 
     entrypoint_file = os.path.join(work_dir, f"{entrypoint}.py")
     should_write_app = True
-    if os.path.exists(entrypoint_file) and not overwrite_app and not yes:
+    if os.path.exists(entrypoint_file) and not overwrite and not yes:
         require_tty("`create`", hint=_CREATE_HINT)
         should_write_app = typer.confirm(
             "Entrypoint File already exists. Do you want to overwrite?"

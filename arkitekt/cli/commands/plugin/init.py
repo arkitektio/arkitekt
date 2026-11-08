@@ -1,12 +1,13 @@
-"""The ``arkitekt plugin init`` command: scaffold a plugin flavour."""
+"""The ``arkitekt plugin flavour add`` command: scaffold a plugin flavour."""
 
 from importlib.metadata import version
 from typing import Annotated
 from arkitekt.cli.validators import validate_dockerfile
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli import tty
-from arkitekt.cli.utils import build_relative_dir
+from arkitekt.cli.utils import build_relative_dir, configure_logging
 import typer
+from arkitekt.cli.options import LogLevel, LogLevelOption
 from arkitekt.cli.target import (
     DEFAULT_TARGET,
     TargetArgument,
@@ -112,7 +113,7 @@ def write_flavour(
 ) -> str:
     """Write a flavour's ``config.yaml`` and Dockerfile; return the Dockerfile's path.
 
-    What ``plugin init`` does to the project, without its questions: ``create``
+    What ``plugin flavour add`` does to the project, without its questions: ``create``
     writes a new project's first flavour through this too.
 
     Args:
@@ -189,14 +190,13 @@ def init(
     overwrite: Annotated[
         bool,
         typer.Option(
-            "--overwrite", "-o", help="Replace the flavour's Dockerfile and config if they exist"
+            "--overwrite", help="Replace the flavour's Dockerfile and config if they exist"
         ),
     ] = False,
     template: Annotated[
         str | None,
         typer.Option(
             "--template",
-            "-t",
             help="The dockerfile template to use",
             callback=validate_dockerfile,
         ),
@@ -205,7 +205,6 @@ def init(
         bool | None,
         typer.Option(
             "--devcontainer/--no-devcontainer",
-            "-dc",
             help="Also write a devcontainer.json, to develop the app inside the flavour's image. "
             "Default: asked in a terminal, not written elsewhere",
         ),
@@ -214,7 +213,6 @@ def init(
         str | None,
         typer.Option(
             "--arkitekt-version",
-            "-av",
             help="The arkitekt version to install in the image. Default: the one installed here",
         ),
     ] = None,
@@ -235,6 +233,7 @@ def init(
             "Cross-building the other one needs emulation on the build host.",
         ),
     ] = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
     """Add a flavour (a Dockerfile and its config) to this app
 
@@ -242,6 +241,7 @@ def init(
     ``.arkitekt/flavours/<flavour>`` so the app can be built and deployed as
     an Arkitekt plugin. Must be run inside an initialized app directory.
     """
+    configure_logging(log_level.value)
     from arkitekt.cli.commands.plugin.buildx import host_platform
     from arkitekt.cli.commands.plugin.types import DEFAULT_PLATFORMS
 

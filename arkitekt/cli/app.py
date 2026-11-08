@@ -138,7 +138,7 @@ def main(
         is_eager=True,
         help="Working directory for the app. Defaults to the current directory.",
     ),
-    # Long flag only: `init` uses `-v` for the version it scaffolds.
+    # Long flag only: a short one would read as an app's version in `create`.
     version: bool = typer.Option(
         False,
         "--version",

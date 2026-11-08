@@ -6,7 +6,8 @@ from rich.table import Table
 
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE, snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.utils import emit_machine_readable
+from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
+from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
 
 
@@ -39,16 +40,9 @@ def implementations_table(implementations: Any) -> Table:  # noqa: ANN401
 def implementations(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
-    as_json: Annotated[
-        bool,
-        typer.Option("--json", "-j", help="Print the full implementations as JSON."),
-    ] = False,
-    machine_readable: Annotated[
-        bool,
-        typer.Option(
-            "--machine-readable", "-mr", help="Print the JSON between markers, for a program to read."
-        ),
-    ] = False,
+    as_json: JsonOption = False,
+    machine_readable: MachineReadableOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ):
     """Inspect the actions this app offers
 
@@ -57,9 +51,11 @@ def implementations(
     results and the start of the hash it is found by on a server. Pass --json for
     everything.
     """
+    configure_logging(log_level.value)
 
     console = get_console(ctx)
-    app = load_app_or_exit(ctx, target)
+    with json_stdout(as_json):
+        app = load_app_or_exit(ctx, target)
 
     if app.registry.is_empty():
         console.print(NOTHING_TO_PROVIDE)

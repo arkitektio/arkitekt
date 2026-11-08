@@ -23,6 +23,7 @@ SERVER_PANEL = "Server"
 LOGIN_PANEL = "Login"
 SESSION_PANEL = "Session"
 AGENT_PANEL = "Agent"
+LOGGING_PANEL = "Logging"
 
 
 class LogLevel(str, Enum):
@@ -82,7 +83,6 @@ ForceOption = Annotated[
     bool,
     typer.Option(
         "--force",
-        "-f",
         help="Take over when another instance of this app is already connected (it is disconnected)",
         envvar="ARKITEKT_FORCE",
         rich_help_panel=AGENT_PANEL,
@@ -119,6 +119,7 @@ LogLevelOption = Annotated[
         "-l",
         help="The logging level to use",
         envvar="ARKITEKT_LOG_LEVEL",
+        rich_help_panel=LOGGING_PANEL,
     ),
 ]
 
@@ -220,5 +221,15 @@ JsonOption = Annotated[
         "--json",
         help="Print the result as JSON on stdout; what is said along the way, and what "
         "the app prints, goes to stderr",
+    ),
+]
+
+#: Print JSON between markers, for a program to read out of noisy output.
+MachineReadableOption = Annotated[
+    bool,
+    typer.Option(
+        "--machine-readable",
+        help="Print the JSON between --START_<KIND>-- and --END_<KIND>-- markers, "
+        "for a program to read out of output that may hold other prints",
     ),
 ]

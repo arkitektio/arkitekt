@@ -154,7 +154,6 @@ def upgrade(
         PackageManager | None,
         typer.Option(
             "--package-manager",
-            "-pm",
             help="The package manager to use for the upgrade. Defaults to uv for a uv project (a uv.lock in the work dir), otherwise auto-detected (uv if available, else pip).",
         ),
     ] = None,
@@ -162,7 +161,6 @@ def upgrade(
         bool,
         typer.Option(
             "--all",
-            "-a",
             help="Upgrade ALL dependencies of the current project, not just the Arkitekt ecosystem packages.",
         ),
     ] = False,

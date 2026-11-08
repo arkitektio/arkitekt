@@ -151,6 +151,16 @@ def _qr_line(console: Console, line: Text) -> None:
     console.print(Text.assemble(_QR_INDENT, line), no_wrap=True, crop=False, highlight=False)
 
 
+def show_qr(console: Console, link: str, opened_browser: bool) -> None:
+    """Draw ``link`` as a QR code when it is to be approved on another device.
+
+    Not when the page opened here, nor for a loopback address no phone can reach,
+    unless ``FAKTS_QR=1`` (``--qr``) asks for it whatever the link.
+    """
+    if _wants_qr(link, opened_browser):
+        _qr(console, link)
+
+
 def login_prompt(opened_browser: bool = True) -> "DeviceCodeHook":
     """The device-code hook that asks the user to approve the app.
 
@@ -173,8 +183,7 @@ def login_prompt(opened_browser: bool = True) -> "DeviceCodeHook":
         )
         console.print(f"  [link={link}]{escape(link)}[/link]", highlight=False, soft_wrap=True)
         console.print(f"  code [bold]{escape(code)}[/bold]", highlight=False)
-        if _wants_qr(link, opened_browser):
-            _qr(console, link)
+        show_qr(console, link, opened_browser)
 
     return prompt
 
@@ -196,5 +205,6 @@ __all__ = [
     "logged_in",
     "login_prompt",
     "notice",
+    "show_qr",
     "step",
 ]

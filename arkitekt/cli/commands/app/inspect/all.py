@@ -4,7 +4,8 @@ import typer
 from arkitekt.app.spec import app_declaration
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE, run_snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.utils import emit_machine_readable
+from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
+from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
 import json
 
@@ -12,23 +13,21 @@ import json
 def all(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
-    pretty: Annotated[
-        bool,
-        typer.Option("--pretty", "-p", help="Should we just output json?"),
-    ] = False,
-    machine_readable: Annotated[
-        bool,
-        typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
-    ] = False,
+    as_json: JsonOption = False,
+    machine_readable: MachineReadableOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ):
     """Inspect everything this app exposes
 
     Loads the app without connecting it and reports its implementations, states,
-    requirements, bloks and assets (each with its path in the app and its hash). Pass --machine-readable to get JSON instead of a table.
+    requirements, bloks and assets (each with its path in the app and its hash), as
+    JSON: --json indents it, --machine-readable wraps it in markers for a program.
     """
+    configure_logging(log_level.value)
 
     console = get_console(ctx)
-    app = load_app_or_exit(ctx, target)
+    with json_stdout(as_json):
+        app = load_app_or_exit(ctx, target)
 
     if app.registry.is_empty():
         console.print(NOTHING_TO_PROVIDE)
@@ -53,7 +52,7 @@ def all(
         emit_machine_readable("MANIFEST", declaration.manifest.model_dump(mode="json"))
 
     else:
-        if pretty:
-            console.print(json.dumps(agent, indent=2))
+        if as_json:
+            print(json.dumps(agent, indent=2))
         else:
             print(json.dumps(agent))

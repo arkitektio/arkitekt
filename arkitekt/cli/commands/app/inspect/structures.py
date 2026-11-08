@@ -6,7 +6,8 @@ from rich.table import Table
 
 from arkitekt.cli.commands.app.inspect.utils import snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.utils import emit_machine_readable
+from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
+from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
 
 
@@ -51,14 +52,9 @@ def _interfaces_by_identifier(registry: Any) -> dict[str, set[str]]:
 def structures(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
-    pretty: Annotated[
-        bool,
-        typer.Option("--pretty", "-p", help="Should we just output json?"),
-    ] = False,
-    machine_readable: Annotated[
-        bool,
-        typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
-    ] = False,
+    as_json: JsonOption = False,
+    machine_readable: MachineReadableOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ):
     """List the structures this app can send and receive by id
 
@@ -68,9 +64,11 @@ def structures(
     repeats the identifier. Loads the app without connecting it, and touches no
     server.
     """
+    configure_logging(log_level.value)
 
     console = get_console(ctx)
-    app = load_app_or_exit(ctx, target)
+    with json_stdout(as_json):
+        app = load_app_or_exit(ctx, target)
 
     # What a run would serve: the app's structures and its provider's.
     registry = snapshot_or_exit(app)
@@ -83,8 +81,8 @@ def structures(
     if machine_readable:
         emit_machine_readable("STRUCTURES", records)
         return
-    if pretty:
-        console.print(json.dumps(records, indent=2))
+    if as_json:
+        print(json.dumps(records, indent=2))
         return
 
     table = Table(title=f"Structures ({len(records)})", border_style="green")

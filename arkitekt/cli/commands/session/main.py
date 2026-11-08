@@ -112,6 +112,7 @@ def logout(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
     """Revoke and forget the saved session of this folder's app
 
@@ -119,6 +120,7 @@ def logout(
     that, and forgotten on this machine either way. Stop an instance of the app
     that is still running first: it saves its session back.
     """
+    configure_logging(log_level.value)
     console = get_console(ctx)
     app = load_app_or_exit(ctx, target)
     server = resolve_url(explicit_options(ctx, ("url",)).get("url"))
@@ -143,8 +145,10 @@ def status(
     target: TargetArgument = DEFAULT_TARGET,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
     as_json: JsonOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
     """Show this folder's app and whether it is logged in"""
+    configure_logging(log_level.value)
     console = human_console(get_console(ctx), as_json)
     with json_stdout(as_json) as emit:
         app = load_app_or_exit(ctx, target)

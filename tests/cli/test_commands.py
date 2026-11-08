@@ -175,7 +175,7 @@ def test_kabinet_init():
     with isolated_filesystem():
         runner.invoke(cli_app, ["create", "--template", "bare", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
 
-        result = runner.invoke(cli_app, ["plugin", "init", "--flavour", "vanilla", "--devcontainer", "--arkitekt-version", "0.0.1"])
+        result = runner.invoke(cli_app, ["plugin", "flavour", "add", "--flavour", "vanilla", "--devcontainer", "--arkitekt-version", "0.0.1"])
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -193,7 +193,7 @@ def test_kabinet_init_uv():
     with isolated_filesystem():
         runner.invoke(cli_app, ["create", "--template", "bare", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
 
-        result = runner.invoke(cli_app, ["plugin", "init", "--flavour", "uv_flavour", "--devcontainer", "--arkitekt-version", "0.0.1"])
+        result = runner.invoke(cli_app, ["plugin", "flavour", "add", "--flavour", "uv_flavour", "--devcontainer", "--arkitekt-version", "0.0.1"])
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -217,7 +217,7 @@ def test_kabinet_flavour_commands():
         assert result.exit_code == 0
         assert os.path.exists(".arkitekt/flavours/gpu/config.yaml")
 
-        result = runner.invoke(cli_app, ["plugin", "selector", "add", "gpu", "--kind", "cuda", "--cuda-cores", "100"])
+        result = runner.invoke(cli_app, ["plugin", "selector", "add", "gpu", "--kind", "cuda", "--vram", "8000"])
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -226,7 +226,7 @@ def test_kabinet_flavour_commands():
         with open(".arkitekt/flavours/gpu/config.yaml") as f:
             content = f.read()
             assert "kind: cuda" in content
-            assert "cuda_cores: 100" in content
+            assert "memory: 8000" in content
 
 
 # ---------------------------------------------------------------------------
@@ -250,7 +250,7 @@ def test_kabinet_init_work_dir(tmp_path):
 
     result = runner.invoke(cli_app, [
         "--work-dir", str(tmp_path),
-        "plugin", "init",
+        "plugin", "flavour", "add",
         "--flavour", "vanilla",
         "--devcontainer",
         "--arkitekt-version", "0.0.1",
@@ -323,7 +323,7 @@ def test_the_scaffolded_app_is_what_the_commands_find(tmp_path):
     ])
     assert result.exit_code == 0, result.output
 
-    result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "inspect", "implementations", "-mr"])
+    result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "inspect", "implementations", "--machine-readable"])
     assert result.exit_code == 0, result.output
     assert "generate_n_string" in result.output
 
@@ -367,3 +367,60 @@ def test_init_has_no_manifest_options():
     result = CliRunner().invoke(cli_app, ["create", "--help"])
 
     assert "--overwrite-manifest" not in result.output
+
+
+# --------------------------------------------------------------------------- #
+# The command line keeps one vocabulary
+# --------------------------------------------------------------------------- #
+
+
+def _every_command():
+    """Each command of the tree, with its path, as Typer builds it."""
+    import typer
+
+    def walk(command, path):
+        yield path, command
+        for name, sub in sorted(getattr(command, "commands", {}).items()):
+            yield from walk(sub, [*path, name])
+
+    yield from walk(typer.main.get_command(cli_app), ["arkitekt"])
+
+
+def _options():
+    for path, command in _every_command():
+        for param in command.params:
+            if param.name == "help" or type(param).__name__.endswith("Argument"):
+                continue
+            yield " ".join(path), param
+
+
+def test_a_short_flag_means_one_thing_everywhere():
+    meanings: dict[str, set[str]] = {}
+    for _, param in _options():
+        longs = [o for o in param.opts if o.startswith("--")]
+        for short in (o for o in param.opts if not o.startswith("--")):
+            meanings.setdefault(short, set()).update(longs)
+    clashes = {short: sorted(longs) for short, longs in meanings.items() if len(longs) > 1}
+    assert not clashes, f"a short flag names different options: {clashes}"
+
+
+def test_short_flags_are_one_letter():
+    long_shorts = sorted(
+        {f"{where}: {o}" for where, param in _options() for o in param.opts if not o.startswith("--") and len(o) > 2}
+    )
+    assert not long_shorts, f"multi-letter short flags: {long_shorts}"
+
+
+def test_every_argument_says_what_it_is():
+    unexplained = [
+        f"{' '.join(path)} {param.name}"
+        for path, command in _every_command()
+        for param in command.params
+        if type(param).__name__.endswith("Argument") and not getattr(param, "help", None)
+    ]
+    assert not unexplained, f"arguments without help: {unexplained}"
+
+
+def test_every_url_option_reads_fakts_url():
+    off = [where for where, param in _options() if "--url" in param.opts and param.envvar != "FAKTS_URL"]
+    assert not off, f"--url without FAKTS_URL: {off}"

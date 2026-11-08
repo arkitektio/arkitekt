@@ -383,7 +383,7 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
             "arkitekt.cli.commands.plugin.release.inspect_all", side_effect=identity
         ):
             return runner.invoke(
-                cli_app, ["plugin", "release", "-r", docker_registry, "--no-test", *extra]
+                cli_app, ["plugin", "release", "--repository", docker_registry, "--no-test", *extra]
             )
 
     with isolated_filesystem() as directory:

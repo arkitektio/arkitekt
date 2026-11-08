@@ -86,7 +86,7 @@ def test_join_help_has_device_code_options_and_no_force_reauth():
     help_text = _plain(result.output)
     for opt in ("--name", "--description", "--ephemeral", "--tag", "--expiration"):
         assert opt in help_text
-    assert "--open-browser" in help_text
+    assert "--headless" in help_text and "--qr" in help_text
     # The old force-reauth *option* (and its disconnect warning) is gone.
     assert "disconnect" not in help_text
 
@@ -99,7 +99,7 @@ def test_join_runs_full_device_code_flow():
     ) as mock_run:
         result = runner.invoke(
             cli_app,
-            ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser", "-n", "req-name"],
+            ["mesh", "join", "-u", "http://fakts.example", "--headless", "-n", "req-name"],
         )
 
     assert result.exit_code == 0, result.output
@@ -128,7 +128,7 @@ def test_join_defaults_name_to_hostname():
         f"{MESH}.socket.gethostname", return_value="host42"
     ), patch(f"{MESH}.subprocess.run", return_value=_ok()):
         result = runner.invoke(
-            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--headless"]
         )
 
     assert result.exit_code == 0, result.output
@@ -140,7 +140,7 @@ def test_join_redacts_authkey_in_output():
     p_fetch, p_start, p_poll = _patch_flow()
     with p_fetch, p_start, p_poll, patch(f"{MESH}.subprocess.run", return_value=_ok()):
         result = runner.invoke(
-            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--headless"]
         )
 
     assert result.exit_code == 0, result.output
@@ -157,7 +157,7 @@ def test_join_uses_hint_options_in_payload():
         result = runner.invoke(
             cli_app,
             [
-                "mesh", "join", "-u", "http://fakts.example", "--no-open-browser",
+                "mesh", "join", "-u", "http://fakts.example", "--headless",
                 "--description", "gpu box", "--ephemeral",
                 "--tag", "tag:a", "--tag", "tag:b", "--expiration", "120",
             ],
@@ -179,7 +179,7 @@ def test_join_falls_back_to_wellknown_coord_when_poll_omits_it():
         f"{MESH}.subprocess.run", return_value=_ok()
     ) as mock_run:
         result = runner.invoke(
-            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "join", "-u", "http://fakts.example", "--headless"]
         )
 
     assert result.exit_code == 0, result.output
@@ -339,7 +339,7 @@ def test_proxy_starts_daemon_and_brings_up(_tailscaled_found):
         f"{MESH}.subprocess.run", return_value=_ok()
     ) as mock_run, patch(f"{MESH}.time.sleep"):
         result = runner.invoke(
-            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--headless"]
         )
 
     assert result.exit_code == 0, result.output
@@ -376,7 +376,7 @@ def test_proxy_socks5_listen_adds_flag(_tailscaled_found):
         result = runner.invoke(
             cli_app,
             [
-                "mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser",
+                "mesh", "proxy", "-u", "http://fakts.example", "--headless",
                 "--socks5-listen", "localhost:1080",
             ],
         )
@@ -397,7 +397,7 @@ def test_proxy_custom_listen(_tailscaled_found):
         result = runner.invoke(
             cli_app,
             [
-                "mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser",
+                "mesh", "proxy", "-u", "http://fakts.example", "--headless",
                 "--listen", "0.0.0.0:8080",
             ],
         )
@@ -414,7 +414,7 @@ def test_proxy_tailscaled_missing_guides_install():
         f"{MESH}._fetch_well_known"
     ) as mock_fetch, patch(f"{MESH}.subprocess.Popen") as mock_popen:
         result = runner.invoke(
-            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--headless"]
         )
 
     assert result.exit_code != 0
@@ -434,7 +434,7 @@ def test_proxy_bringup_failure_raises(_tailscaled_found):
         f"{MESH}.time.sleep"
     ):
         result = runner.invoke(
-            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--no-open-browser"]
+            cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--headless"]
         )
 
     assert result.exit_code != 0

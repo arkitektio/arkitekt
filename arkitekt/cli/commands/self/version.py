@@ -22,7 +22,6 @@ def version(
         bool,
         typer.Option(
             "--all",
-            "-a",
             help="Show the version of every installed Arkitekt ecosystem package.",
         ),
     ] = False,

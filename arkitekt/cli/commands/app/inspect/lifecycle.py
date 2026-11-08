@@ -6,7 +6,8 @@ from rich.tree import Tree
 
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.utils import emit_machine_readable
+from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
+from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 
@@ -25,14 +26,9 @@ def _records(hooks: dict[str, Any]) -> list[dict[str, str]]:
 def lifecycle(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
-    pretty: Annotated[
-        bool,
-        typer.Option("--pretty", "-p", help="Should we just output json?"),
-    ] = False,
-    machine_readable: Annotated[
-        bool,
-        typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
-    ] = False,
+    as_json: JsonOption = False,
+    machine_readable: MachineReadableOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ):
     """List the agent lifecycle hooks: startup, shutdown and background
 
@@ -41,8 +37,10 @@ def lifecycle(
     workers run alongside it; shutdown hooks run on teardown. All are read from
     the app registry without connecting to a server.
     """
+    configure_logging(log_level.value)
     console = get_console(ctx)
-    app = load_app_or_exit(ctx, target)
+    with json_stdout(as_json):
+        app = load_app_or_exit(ctx, target)
 
     if app.registry.is_empty():
         cli_error(NOTHING_TO_PROVIDE)
@@ -59,8 +57,8 @@ def lifecycle(
     if machine_readable:
         emit_machine_readable("LIFECYCLE", data)
         return
-    if pretty:
-        console.print(json.dumps(data, indent=2))
+    if as_json:
+        print(json.dumps(data, indent=2))
         return
 
     tree = Tree("[bold]Lifecycle hooks[/]")

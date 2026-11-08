@@ -11,10 +11,12 @@ import subprocess
 import uuid
 
 import typer
+from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.completion import complete_flavours
 import json
 from typing import TYPE_CHECKING, Any
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
+from arkitekt.cli.options import LogLevel, LogLevelOption, UrlOption
 
 if TYPE_CHECKING:
     from arkitekt_spec import AppManifest, Inspection
@@ -216,7 +218,7 @@ def inspect_all(
         process = subprocess.Popen(
             " ".join([
                 "docker", "run", "--rm", "--network", "host",
-                build_id, "arkitekt", "inspect", "all", shlex.quote(target), "-mr",
+                build_id, "arkitekt", "inspect", "all", shlex.quote(target), "--machine-readable",
             ]),
             shell=True,
             stdout=subprocess.PIPE,
@@ -312,7 +314,6 @@ def build(
         bool,
         typer.Option(
             "--no-inspect",
-            "-n",
             help="Only build: do not run the image. Without its inspection nothing says "
             "which app it holds, so the build is not recorded for stage or publish.",
         ),
@@ -321,7 +322,6 @@ def build(
         str | None,
         typer.Option(
             "--tag",
-            "-t",
             help="Tag the build with a specific tag. Only this machine's architecture "
             "is tagged; `arkitekt plugin publish` is what pushes a multi-arch image.",
         ),
@@ -335,10 +335,8 @@ def build(
             "e.g. -p linux/amd64. Repeatable.",
         ),
     ] = None,
-    url: Annotated[
-        str,
-        typer.Option("--url", "-u", help="The fakts server to use."),
-    ] = DEFAULT_ARKITEKT_URL,
+    url: UrlOption = DEFAULT_ARKITEKT_URL,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
     """Build the app's flavours into Docker images
 
@@ -347,6 +345,7 @@ def build(
     The app is never imported on this machine, so building needs docker, not the
     app's dependencies.
     """
+    configure_logging(log_level.value)
     from .io import generate_build, get_flavours
 
     console = get_console(ctx)

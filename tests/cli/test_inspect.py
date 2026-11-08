@@ -96,8 +96,8 @@ _SIMPLE_FUNCS = ("generate_n_string", "append_world", "print_string")
 
 
 def test_inspect_requirements(app_dir):
-    """`inspect requirements -mr` emits a JSON list between its markers."""
-    result = _run_cli(app_dir, "inspect", "requirements", "-mr")
+    """`inspect requirements --machine-readable` emits a JSON list between its markers."""
+    result = _run_cli(app_dir, "inspect", "requirements", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     reqs = _between(result.stdout, "--START_REQUIREMENTS--", "--END_REQUIREMENTS--")
@@ -105,8 +105,8 @@ def test_inspect_requirements(app_dir):
 
 
 def test_inspect_implementations(app_dir):
-    """`inspect implementations -mr` lists the template's registered functions."""
-    result = _run_cli(app_dir, "inspect", "implementations", "-mr")
+    """`inspect implementations --machine-readable` lists the template's registered functions."""
+    result = _run_cli(app_dir, "inspect", "implementations", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     impls = _between(result.stdout, "--START_TEMPLATES--", "--END_TEMPLATES--")
@@ -117,8 +117,8 @@ def test_inspect_implementations(app_dir):
 
 
 def test_inspect_all(app_dir):
-    """`inspect all -mr` emits the full agent manifest with the expected sections."""
-    result = _run_cli(app_dir, "inspect", "all", "-mr")
+    """`inspect all --machine-readable` emits the full agent manifest with the expected sections."""
+    result = _run_cli(app_dir, "inspect", "all", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     agent = _between(result.stdout, "--START_AGENT--", "--END_AGENT--")
@@ -147,7 +147,7 @@ def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
         load_deployments,
     )
 
-    result = _run_cli(app_dir, "inspect", "all", "-mr")
+    result = _run_cli(app_dir, "inspect", "all", "--machine-readable")
     assert result.returncode == 0, result.stderr
     agent = _between(result.stdout, "--START_AGENT--", "--END_AGENT--")
 
@@ -171,16 +171,15 @@ def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
     assert load_deployments(dump_deployments(file)) == file
 
 
-def test_inspect_all_pretty(app_dir):
-    """`inspect all --pretty` (no markers) exits cleanly and prints the manifest.
+def test_inspect_all_json(app_dir):
+    """`inspect all --json` prints the manifest as plain, parseable JSON: not through
+    rich's console, which would wrap it."""
+    import json
 
-    The pretty branch routes through rich's console, which word-wraps output, so we
-    smoke-test it rather than JSON-parsing the (potentially reflowed) text.
-    """
-    result = _run_cli(app_dir, "inspect", "all", "--pretty")
+    result = _run_cli(app_dir, "inspect", "all", "--json")
     assert result.returncode == 0, result.stderr
-    assert "implementations" in result.stdout
-    assert "states" in result.stdout
+    agent = json.loads(result.stdout)
+    assert "implementations" in agent and "states" in agent
 
 
 # ---------------------------------------------------------------------------
@@ -189,8 +188,8 @@ def test_inspect_all_pretty(app_dir):
 
 
 def test_inspect_services(app_dir):
-    """`inspect services -mr` lists the service SDKs the app selected."""
-    result = _run_cli(app_dir, "inspect", "services", "-mr")
+    """`inspect services --machine-readable` lists the service SDKs the app selected."""
+    result = _run_cli(app_dir, "inspect", "services", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     records = _between(result.stdout, "--START_SERVICES--", "--END_SERVICES--")
@@ -251,9 +250,9 @@ def test_gen_init_keeps_existing_projects(app_dir):
     )
     result = _run_cli(app_dir, "gen", "init")
     assert result.returncode != 0  # nothing new to write
-    assert "--force" in " ".join(result.stdout.split())
+    assert "--overwrite" in " ".join(result.stdout.split())
 
-    result = _run_cli(app_dir, "gen", "init", "--force")
+    result = _run_cli(app_dir, "gen", "init", "--overwrite")
     assert result.returncode == 0, result.stderr
     projects = yaml.safe_load((app_dir / "graphql.config.yaml").read_text())["projects"]
     assert projects["other"] == {"schema": "x"}
@@ -273,8 +272,8 @@ def test_gen_points_at_turms():
 
 
 def test_inspect_lifecycle(app_dir):
-    """`inspect lifecycle -mr` emits the three hook sections."""
-    result = _run_cli(app_dir, "inspect", "lifecycle", "-mr")
+    """`inspect lifecycle --machine-readable` emits the three hook sections."""
+    result = _run_cli(app_dir, "inspect", "lifecycle", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     data = _between(result.stdout, "--START_LIFECYCLE--", "--END_LIFECYCLE--")
@@ -289,10 +288,10 @@ def test_inspect_lifecycle(app_dir):
 
 def test_kabinet_validate(app_dir):
     """After scaffolding a flavour, validate reports it as valid."""
-    # Flavours are scaffolded via the top-level `plugin init` (not under `app`).
+    # Flavours are scaffolded with `plugin flavour add`.
     init_result = CliRunner().invoke(
         cli_app,
-        ["--work-dir", str(app_dir), "plugin", "init",
+        ["--work-dir", str(app_dir), "plugin", "flavour", "add",
          "--flavour", "vanilla", "--arkitekt-version", "0.0.1"],
         input="n\n",  # decline the devcontainer prompt
     )
@@ -393,7 +392,7 @@ def no_connecting(monkeypatch):
     ["all", "requirements", "implementations", "services", "structures", "lifecycle", "variables"],
 )
 def test_inspect_never_connects(app_dir, no_connecting, command):
-    result = _invoke(app_dir, "inspect", command, "-mr")
+    result = _invoke(app_dir, "inspect", command, "--machine-readable")
 
     assert result.exit_code == 0, result.output
 
@@ -401,7 +400,7 @@ def test_inspect_never_connects(app_dir, no_connecting, command):
 def test_inspect_requirements_are_the_apps(app_dir, no_connecting):
     (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
 
-    result = _invoke(app_dir, "inspect", "requirements", "-mr")
+    result = _invoke(app_dir, "inspect", "requirements", "--machine-readable")
 
     assert result.exit_code == 0, result.output
     requirements = _between(result.output, "--START_REQUIREMENTS--", "--END_REQUIREMENTS--")
@@ -411,7 +410,7 @@ def test_inspect_requirements_are_the_apps(app_dir, no_connecting):
 def test_inspect_all_carries_the_apps_requirements_and_actions(app_dir, no_connecting):
     (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
 
-    result = _invoke(app_dir, "inspect", "all", "-mr")
+    result = _invoke(app_dir, "inspect", "all", "--machine-readable")
 
     assert result.exit_code == 0, result.output
     agent = _between(result.output, "--START_AGENT--", "--END_AGENT--")
@@ -426,7 +425,7 @@ def test_the_manifest_an_image_says_asks_for_what_a_run_asks_for(app_dir, no_con
 
     (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
 
-    result = _invoke(app_dir, "inspect", "all", "-mr")
+    result = _invoke(app_dir, "inspect", "all", "--machine-readable")
 
     assert result.exit_code == 0, result.output
     manifest = _between(result.output, "--START_MANIFEST--", "--END_MANIFEST--")
@@ -437,7 +436,7 @@ def test_the_manifest_an_image_says_asks_for_what_a_run_asks_for(app_dir, no_con
 def test_inspect_an_app_that_offers_nothing(app_dir, no_connecting):
     (app_dir / "app.py").write_text("from arkitekt import App\napp = App('quiet')\n")
 
-    result = _invoke(app_dir, "inspect", "implementations", "-mr")
+    result = _invoke(app_dir, "inspect", "implementations", "--machine-readable")
 
     assert result.exit_code == 0, result.output
     assert "offers nothing" in result.output

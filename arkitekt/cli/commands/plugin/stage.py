@@ -4,6 +4,7 @@ from arkitekt.cli.completion import complete_flavours
 from arkitekt.cli.errors import cli_error
 import subprocess
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
+from arkitekt.cli.options import UrlOption
 from arkitekt.cli.ui import command_hint, escape, step
 from arkitekt.cli.vars import get_console, get_work_dir
 
@@ -23,10 +24,7 @@ def stage(
             autocompletion=complete_flavours,
         ),
     ] = None,
-    url: Annotated[
-        str,
-        typer.Option("--url", "-u", help="The fakts server to use"),
-    ] = DEFAULT_ARKITEKT_URL,
+    url: UrlOption = DEFAULT_ARKITEKT_URL,
 ) -> None:
     """Stage the latest build for testing
 

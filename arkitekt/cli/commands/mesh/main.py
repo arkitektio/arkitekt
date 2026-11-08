@@ -26,7 +26,8 @@ import typer
 from arkitekt.cli.errors import cli_error, confirm_or_abort
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import done, escape, fail, notice, step
-from arkitekt.cli.options import UrlOption
+from arkitekt.app.terminal import force_qr, show_qr
+from arkitekt.cli.options import HeadlessOption, QrOption, UrlOption
 from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
@@ -223,13 +224,15 @@ def _display_configure_prompt(
                 webbrowser.open_new(configure_url)
             except Exception:
                 pass  # headless boxes have no browser; the printed URL is enough
-        step(console, "An organization member must authorize this machine to join the mesh")
-        console.print(
-            "  Open the following page and approve the request:\n"
-            f"  [bold green][link={configure_url}]{configure_url}[/link][/bold green]\n"
-            f"  Join code: [bold blue]{code}[/bold blue]",
-            highlight=False,
+        step(
+            console,
+            "An organization member must authorize this machine to join the mesh",
+            "opened in your browser" if open_browser else "open this link to approve it",
         )
+        console.print(f"  [link={configure_url}]{escape(configure_url)}[/link]", highlight=False, soft_wrap=True)
+        console.print(f"  code [bold]{escape(code)}[/bold]", highlight=False)
+        # A mesh is joined from headless boxes: the page is approved from a phone.
+        show_qr(console, configure_url, open_browser)
     else:
         console.print(
             f"Ask an organization member to authorize mesh join code "
@@ -522,13 +525,8 @@ def join(
             help="How long the join code stays valid, in seconds (default 600).",
         ),
     ] = 600,
-    open_browser: Annotated[
-        bool,
-        typer.Option(
-            "--open-browser/--no-open-browser",
-            help="Open the authorization page in a browser (default: open).",
-        ),
-    ] = True,
+    headless: HeadlessOption = False,
+    qr: QrOption = False,
 ) -> None:
     """Join the mesh via the device-code flow (a human authorizes this machine)
 
@@ -541,12 +539,14 @@ def join(
     https://tailscale.com/kb/1080/cli#up
     """
     console = get_console(ctx)
+    if qr:
+        force_qr()
 
     # Fail fast (before the network lookup) if tailscale is missing.
     _ensure_tailscale_installed(console)
 
     key, coord, hostname = _device_code_join(
-        console, url, machine_name, description, ephemeral, tags, expiration, open_browser
+        console, url, machine_name, description, ephemeral, tags, expiration, not headless
     )
 
     step(console, f"Authorized as {escape(hostname)}", "joining the mesh")
@@ -590,15 +590,7 @@ def leave(
 
 def proxy(
     ctx: typer.Context,
-    url: Annotated[
-        str,
-        typer.Option(
-            "--url",
-            "-u",
-            help="The fakts url for connection",
-            envvar="FAKTS_URL",
-        ),
-    ] = DEFAULT_ARKITEKT_URL,
+    url: UrlOption = DEFAULT_ARKITEKT_URL,
     machine_name: Annotated[
         str | None,
         typer.Option(
@@ -636,13 +628,8 @@ def proxy(
             help="How long the join code stays valid, in seconds (default 600).",
         ),
     ] = 600,
-    open_browser: Annotated[
-        bool,
-        typer.Option(
-            "--open-browser/--no-open-browser",
-            help="Open the authorization page in a browser (default: open).",
-        ),
-    ] = True,
+    headless: HeadlessOption = False,
+    qr: QrOption = False,
     listen: Annotated[
         str,
         typer.Option(
@@ -667,13 +654,15 @@ def proxy(
     press Ctrl-C to stop.
     """
     console = get_console(ctx)
+    if qr:
+        force_qr()
 
     # Fail fast: both the CLI and the daemon must be present.
     _ensure_tailscale_installed(console)
     tailscaled_path = _ensure_tailscaled_installed(console)
 
     key, coord, hostname = _device_code_join(
-        console, url, machine_name, description, ephemeral, tags, expiration, open_browser
+        console, url, machine_name, description, ephemeral, tags, expiration, not headless
     )
 
     TAILSCALED_STATE_DIR.mkdir(parents=True, exist_ok=True)

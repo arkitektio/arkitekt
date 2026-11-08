@@ -204,7 +204,7 @@ def test_load_target_prefers_the_work_dir_over_a_cached_module(tmp_path, monkeyp
 
 def _requirements_via_cli(work_dir, *args, **kwargs):
     result = CliRunner().invoke(
-        cli_app, ["--work-dir", str(work_dir), "inspect", "requirements", *args, "-mr"], **kwargs
+        cli_app, ["--work-dir", str(work_dir), "inspect", "requirements", *args, "--machine-readable"], **kwargs
     )
     return result
 
@@ -259,7 +259,7 @@ def test_a_module_without_an_app_is_a_clean_error(app_dir):
 def test_inspect_reports_what_was_declared_on_the_modules_app(app_dir):
     (app_dir / "app.py").write_text(APP_STYLE)
 
-    result = _run_cli(app_dir, "inspect", "implementations", "-mr")
+    result = _run_cli(app_dir, "inspect", "implementations", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     impls = _between(result.stdout, "--START_TEMPLATES--", "--END_TEMPLATES--")
@@ -270,7 +270,7 @@ def test_inspect_reports_what_was_declared_on_the_modules_app(app_dir):
 def test_inspect_lifecycle_reads_the_apps_hooks(app_dir):
     (app_dir / "app.py").write_text(APP_STYLE)
 
-    result = _run_cli(app_dir, "inspect", "lifecycle", "-mr")
+    result = _run_cli(app_dir, "inspect", "lifecycle", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     lifecycle = _between(result.stdout, "--START_LIFECYCLE--", "--END_LIFECYCLE--")
@@ -280,7 +280,7 @@ def test_inspect_lifecycle_reads_the_apps_hooks(app_dir):
 def test_inspect_structures_reads_the_apps_own_registry(app_dir):
     (app_dir / "app.py").write_text(APP_STYLE)
 
-    result = _run_cli(app_dir, "inspect", "structures", "-mr")
+    result = _run_cli(app_dir, "inspect", "structures", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     structures = _between(result.stdout, "--START_STRUCTURES--", "--END_STRUCTURES--")

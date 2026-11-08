@@ -70,7 +70,7 @@ def _scaffold(runner: CliRunner, version: str = "0.0.1") -> None:
     result = runner.invoke(
         cli_app,
         [
-            "plugin", "init",
+            "plugin", "flavour", "add",
             "--flavour", "vanilla",
             "--arkitekt-version", "0.0.1",
             # One architecture: cross-building the other needs QEMU on the host,

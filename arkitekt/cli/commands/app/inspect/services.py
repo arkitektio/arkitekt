@@ -10,7 +10,8 @@ from arkitekt_spec.declare.service import Service
 
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.ui import construct_section
-from arkitekt.cli.utils import emit_machine_readable
+from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
+from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
@@ -51,14 +52,9 @@ def services(
             help="Print the raw GraphQL SDL of this one service and exit.",
         ),
     ] = None,
-    pretty: Annotated[
-        bool,
-        typer.Option("--pretty", "-p", help="Should we just output json?"),
-    ] = False,
-    machine_readable: Annotated[
-        bool,
-        typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
-    ] = False,
+    as_json: JsonOption = False,
+    machine_readable: MachineReadableOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ):
     """List the service SDKs this app would connect through
 
@@ -66,11 +62,13 @@ def services(
     ships a GraphQL schema / turms project for codegen — all without touching a
     server.
     """
+    configure_logging(log_level.value)
     console = get_console(ctx)
     # The services a run of this app would build clients for: those it declares
     # (`App(services=[...])`, `app.service(...)`) and the one its provider brings
     # (rekuest's, when it offers something) -- not every one the process imported.
-    service_builders = run_snapshot_or_exit(load_app_or_exit(ctx, target)).services
+    with json_stdout(as_json):
+        service_builders = run_snapshot_or_exit(load_app_or_exit(ctx, target)).services
 
     if schema is not None:
         svc = service_builders.get(schema)
@@ -95,8 +93,8 @@ def services(
     if machine_readable:
         emit_machine_readable("SERVICES", records)
         return
-    if pretty:
-        console.print(json.dumps(records, indent=2))
+    if as_json:
+        print(json.dumps(records, indent=2))
         return
 
     renderables = []

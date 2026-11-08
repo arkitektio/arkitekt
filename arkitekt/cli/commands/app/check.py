@@ -20,9 +20,9 @@ from rich.markup import escape
 from arkitekt.app.terminal import done, notice
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.offline import offline
-from arkitekt.cli.options import JsonOption
+from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit, project_frame
-from arkitekt.cli.utils import human_console, json_stdout
+from arkitekt.cli.utils import configure_logging, human_console, json_stdout
 from arkitekt.cli.vars import get_console, get_work_dir
 
 REPORT_VERSION = 2
@@ -319,6 +319,7 @@ def check(
         ),
     ] = None,
     as_json: JsonOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
     """Check that the app is one a run would accept, without running it
 
@@ -339,6 +340,7 @@ def check(
     editor needs to underline it. The file is written however the check ends, and
     what the app's modules print never reaches it.
     """
+    configure_logging(log_level.value)
     console = human_console(get_console(ctx), as_json)
     with json_stdout(as_json) as emit:
         _check(ctx, target, json_out, console, emit)

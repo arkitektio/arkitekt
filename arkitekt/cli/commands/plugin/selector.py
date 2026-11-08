@@ -31,7 +31,7 @@ def add_selector(
     ] = True,
     weight: Annotated[
         int | None,
-        typer.Option("--weight", "-w", help="Scoring weight of an optional selector."),
+        typer.Option("--weight", help="Scoring weight of an optional selector."),
     ] = None,
     # cpu
     min_count: Annotated[
@@ -40,7 +40,7 @@ def add_selector(
     ] = None,
     frequency: Annotated[
         float | None,
-        typer.Option("--frequency", "-fr", help="cpu: the minimum CPU frequency, in MHz."),
+        typer.Option("--frequency", help="cpu: the minimum CPU frequency, in MHz."),
     ] = None,
     arch: Annotated[
         str | None,
@@ -68,23 +68,19 @@ def add_selector(
         int | None,
         typer.Option("--count", help="cuda: the number of GPUs required."),
     ] = None,
-    cuda_cores: Annotated[
-        int | None,
-        typer.Option("--cuda-cores", "-cc", help="cuda: deprecated, prefer --compute-capability and --vram."),
-    ] = None,
     # rocm
     api_version: Annotated[
         str | None,
-        typer.Option("--api-version", "-av", help="rocm: the minimum ROCm API version."),
+        typer.Option("--api-version", help="rocm: the minimum ROCm API version."),
     ] = None,
     api_thing: Annotated[
         str | None,
-        typer.Option("--api-thing", "-at", help="rocm: an additional ROCm capability qualifier."),
+        typer.Option("--api-thing", help="rocm: an additional ROCm capability qualifier."),
     ] = None,
     # oneapi
     one_api_version: Annotated[
         str | None,
-        typer.Option("--one-api-version", "-oav", help="oneapi: the minimum oneAPI version."),
+        typer.Option("--one-api-version", help="oneapi: the minimum oneAPI version."),
     ] = None,
     # label
     key: Annotated[
@@ -151,7 +147,6 @@ def add_selector(
             cudaVersion=cuda_version,
             memory=vram,
             count=count,
-            cudaCores=cuda_cores,
             **shared,
         )
     elif kind == "rocm":

@@ -1,6 +1,6 @@
 import typer
 
-# `flavour add` reuses the plugin `init` scaffolder.
+# `flavour add` is the scaffolder in init.py.
 from .init import init
 
 flavour = typer.Typer(

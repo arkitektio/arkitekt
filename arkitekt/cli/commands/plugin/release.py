@@ -27,6 +27,8 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
+from arkitekt.cli.utils import configure_logging
+from arkitekt.cli.options import LogLevel, LogLevelOption
 from arkitekt_spec import (
     AppManifest,
     Inspection,
@@ -279,7 +281,7 @@ def inspect_image(
     command = ["docker", "run", "--rm", "--pull", "always", "--network", "host"]
     if platform:
         command += ["--platform", platform]
-    command += [image, "arkitekt", "inspect", "all", target, "-mr"]
+    command += [image, "arkitekt", "inspect", "all", target, "--machine-readable"]
     try:
         result = subprocess.run(
             command,
@@ -353,7 +355,6 @@ def release(
         str | None,
         typer.Option(
             "--repository",
-            "-r",
             envvar="ARKITEKT_REPOSITORY",
             help="The OCI repository to publish to, e.g. ghcr.io/you/your-app. "
             "It is what others import to install the app.",
@@ -392,12 +393,14 @@ def release(
     allow_dirty: Annotated[
         bool, typer.Option("--allow-dirty", help="Release with uncommitted changes.")
     ] = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
     """Test, build and publish the app: what a CI job runs
 
     A commit tagged with the app's version becomes that release, which never changes
     afterwards. Any other commit becomes the latest build of its branch's channel.
     """
+    configure_logging(log_level.value)
     from .buildx import host_platform
     from .io import get_flavours
 

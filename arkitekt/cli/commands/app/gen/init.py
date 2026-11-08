@@ -2,6 +2,8 @@ import os
 from typing import Annotated, Any
 
 import typer
+from arkitekt.cli.utils import configure_logging
+from arkitekt.cli.options import LogLevel, LogLevelOption
 from arkitekt.cli.completion import complete_services
 import yaml
 
@@ -72,10 +74,11 @@ def init(
         str,
         typer.Option("--config", "-c", help="The name of the GraphQL config file"),
     ] = "graphql.config.yaml",
-    force: Annotated[
+    overwrite: Annotated[
         bool,
-        typer.Option("--force", "-f", help="Replace projects the config already has"),
+        typer.Option("--overwrite", help="Replace projects the config already has"),
     ] = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
     """Write a turms GraphQL config for the services this app uses
 
@@ -86,6 +89,7 @@ def init(
     your operations, then run [b]uvx --with <service> turms gen[/b]: turms
     imports the service's client while it generates.
     """
+    configure_logging(log_level.value)
     console = get_console(ctx)
     app_directory = get_work_dir(ctx)
 
@@ -110,8 +114,8 @@ def init(
         if not schema or not project:
             console.print(f"[dim]{name}: ships no schema or turms project, skipped[/]")
             continue
-        if name in projects and not force:
-            notice(console, f"{escape(name)} is already in {escape(config)}", "kept; pass --force to replace it")
+        if name in projects and not overwrite:
+            notice(console, f"{escape(name)} is already in {escape(config)}", "kept; pass --overwrite to replace it")
             continue
 
         os.makedirs(os.path.join(app_directory, "schemas"), exist_ok=True)

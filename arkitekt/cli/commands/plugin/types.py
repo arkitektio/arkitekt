@@ -19,7 +19,7 @@ ALLOWED_BUILDER_KEYS = [
 
 #: What a flavour builds for unless it says otherwise: the two architectures an
 #: Arkitekt node is actually deployed on. A single-platform list is the opt-out
-#: (``arkitekt plugin init --no-multi-arch``).
+#: (``arkitekt plugin flavour add --no-multi-arch``).
 DEFAULT_PLATFORMS = ["linux/amd64", "linux/arm64"]
 
 #: The build command every flavour gets today. ``{platform}`` and ``{output}``

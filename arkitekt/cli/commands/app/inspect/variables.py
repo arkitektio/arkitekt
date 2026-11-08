@@ -5,7 +5,8 @@ from typing import Annotated
 import typer
 
 from arkitekt.cli.ui import construct_leaking_group, done
-from arkitekt.cli.utils import emit_machine_readable
+from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
+from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, import_target_or_exit
 from arkitekt.cli.vars import get_console
 
@@ -53,14 +54,9 @@ def scan_module(module):
 def variables(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
-    pretty: Annotated[
-        bool,
-        typer.Option("--pretty", "-p", help="Should we just output json?"),
-    ] = False,
-    machine_readable: Annotated[
-        bool,
-        typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
-    ] = False,
+    as_json: JsonOption = False,
+    machine_readable: MachineReadableOption = False,
+    log_level: LogLevelOption = LogLevel.ERROR,
 ):
     """Scan the app for unsafe variables
 
@@ -72,10 +68,12 @@ def variables(
     have any, you should consider moving them into a function or class.
 
     """
+    configure_logging(log_level.value)
 
     console = get_console(ctx)
     # Only the module is scanned, so it need not declare an app.
-    module, _ = import_target_or_exit(ctx, target)
+    with json_stdout(as_json):
+        module, _ = import_target_or_exit(ctx, target)
 
     variables = scan_module(module)
 
@@ -85,8 +83,8 @@ def variables(
     if machine_readable:
         emit_machine_readable("VARIABLES", serializable)
         return
-    if pretty:
-        console.print(json.dumps(serializable, indent=2))
+    if as_json:
+        print(json.dumps(serializable, indent=2))
         return
 
     if not variables:

@@ -96,7 +96,7 @@ arguments works for a quick script.
 A standalone app and a [plugin app](plugin_app.md) declare the same `App`. What a
 script lacks is the project around it:
 
-- **No image**: nothing says how to build it. `arkitekt plugin init` adds a
+- **No image**: nothing says how to build it. `arkitekt plugin flavour add` adds a
   flavour (a Dockerfile) to the folder.
 - **No release**: nothing publishes it. `arkitekt plugin ci github` adds the
   workflow that does, on every push.

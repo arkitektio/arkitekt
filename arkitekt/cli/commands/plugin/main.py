@@ -3,7 +3,6 @@ import typer
 from arkitekt.cli.vars import get_work_dir
 from arkitekt.utils import create_arkitekt_folder
 
-from .init import init
 from .build import build
 from .validate import validate
 from .publish import publish
@@ -39,13 +38,12 @@ def plugin_callback(ctx: typer.Context) -> None:
     `arkitekt create` first.
     """
     # Flavours, builds and deployments live in the `.arkitekt` folder. The app
-    # itself is not loaded here: only the commands that need its identity (`init`
+    # itself is not loaded here: only the commands that need its identity (`flavour add`
     # for a devcontainer, `build`) import it, from their own target, so that
     # `validate`, `publish` and `selector` never run the user's module.
     create_arkitekt_folder(base_dir=get_work_dir(ctx))
 
 
-plugin.command("init")(init)
 plugin.command("build")(build)
 plugin.command("validate")(validate)
 plugin.command("publish")(publish)
