@@ -60,7 +60,7 @@ def services(
         typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
     ] = False,
 ):
-    """Lists the service SDKs this app would connect through.
+    """List the service SDKs this app would connect through
 
     Loads the target's app and reports each service it declares, its fakts requirements, and whether it
     ships a GraphQL schema / turms project for codegen — all without touching a

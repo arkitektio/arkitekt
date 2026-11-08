@@ -50,7 +50,7 @@ def implementations(
         ),
     ] = False,
 ):
-    """Inspect the actions this app offers.
+    """Inspect the actions this app offers
 
     Loads the app without connecting it and lists what it would register: each
     action by the name `arkitekt call local` takes, with its arguments, its

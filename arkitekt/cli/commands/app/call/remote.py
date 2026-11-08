@@ -157,7 +157,7 @@ def remote(
         ),
     ] = [],
 ):
-    """Call an action on the connected server and print its output.
+    """Call an action on the connected server and print its output
 
     The server assigns the call to whichever agent provides the action: for one of
     this app's own, that is this app only while it runs (`arkitekt run dev`), and

@@ -400,7 +400,7 @@ def dev(
     context: ContextOption = None,
     context_file: ContextFileOption = None,
 ) -> None:
-    """Runs the app in dev mode (with hot reloading)
+    """Run the app for development, reloading it on save
 
     A change to the app or to a module of this folder it imports reloads it: those
     modules are imported anew and the App they declare then is run. Other files in

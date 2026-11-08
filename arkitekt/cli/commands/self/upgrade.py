@@ -181,7 +181,7 @@ def upgrade(
         ),
     ] = False,
 ) -> None:
-    """Upgrade the installed Arkitekt SDK packages to their latest PyPI version.
+    """Upgrade the installed Arkitekt SDK packages to their latest PyPI version
 
     Checks [link=https://pypi.org]PyPI[/link] for the latest version of every
     installed Arkitekt ecosystem package (arkitekt, rekuest,

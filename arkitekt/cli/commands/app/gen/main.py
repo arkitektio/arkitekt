@@ -10,7 +10,7 @@ gen = typer.Typer(invoke_without_command=True)
 
 @gen.callback()
 def gen_callback(ctx: typer.Context) -> None:
-    """Code generation for Arkitekt Apps, with turms
+    """Generate typed GraphQL clients for the app's services, with turms
 
     Code generation for API's is done with
     [link=https://github.com/jhnnsrs/turms]turms[/link], which arkitekt does not

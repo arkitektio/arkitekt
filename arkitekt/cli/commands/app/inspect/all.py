@@ -21,7 +21,7 @@ def all(
         typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
     ] = False,
 ):
-    """Inspect everything this app exposes.
+    """Inspect everything this app exposes
 
     Loads the app without connecting it and reports its implementations, states,
     requirements, bloks and assets (each with its path in the app and its hash). Pass --machine-readable to get JSON instead of a table.

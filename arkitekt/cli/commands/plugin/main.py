@@ -15,10 +15,10 @@ from .selector import selector
 
 plugin = typer.Typer(
     no_args_is_help=True,
-    help="""Turn your app into a deployable Arkitekt plugin.
+    help="""Turn your app into a deployable Arkitekt plugin
 
     A plugin is an app packaged (via a flavour Dockerfile) so it can be built and
-    deployed onto any Arkitekt instance: initialize a flavour (`init`), build and
+    deployed onto any Arkitekt instance: add a flavour (`flavour add`), build and
     publish the image (`build`, `publish`), validate flavours (`validate`), and
     manage flavours/selectors. These commands operate on the app in the current
     working directory and therefore require an already-initialized app — run
@@ -29,10 +29,10 @@ plugin = typer.Typer(
 
 @plugin.callback()
 def plugin_callback(ctx: typer.Context) -> None:
-    """Turn your app into a deployable Arkitekt plugin.
+    """Turn your app into a deployable Arkitekt plugin
 
     A plugin is an app packaged (via a flavour Dockerfile) so it can be built and
-    deployed onto any Arkitekt instance: initialize a flavour (`init`), build and
+    deployed onto any Arkitekt instance: add a flavour (`flavour add`), build and
     publish the image (`build`, `publish`), validate flavours (`validate`), and
     manage flavours/selectors. These commands operate on the app in the current
     working directory and therefore require an already-initialized app — run

@@ -194,3 +194,41 @@ def test_an_app_asks_for_what_its_services_clients_need():
     assert app.scopes == ["mikro_read", "mikro_write", "openid"]
     assert app.manifest.scopes == ["mikro_read", "mikro_write", "openid"]
     assert App("com.y", "1.0", services=[mikro], scopes=["kabinet_deploy"]).scopes == ["kabinet_deploy", "mikro_read", "mikro_write", "openid"]
+
+
+def test_a_flavour_is_added_from_a_script_without_a_devcontainer(tmp_path, monkeypatch):
+    """No terminal, no question: the flavour alone, not an abort."""
+    monkeypatch.setattr("arkitekt.cli.tty.is_tty", lambda: False)
+    result = CliRunner().invoke(cli_app, [
+        "--work-dir", str(tmp_path), "plugin", "flavour", "add", "--flavour", "gpu",
+        "--no-multi-arch", "--arkitekt-version", "0.0.1",
+    ])
+
+    assert result.exit_code == 0, result.output
+    assert not (tmp_path / ".devcontainer").exists()
+    config = yaml.safe_load((tmp_path / ".arkitekt" / "flavours" / "gpu" / "config.yaml").read_text())
+    assert config["description"] == "The gpu flavour", "named after the flavour, not 'vanilla'"
+
+
+def _builds(*flavours):
+    manifest = app_manifest(App("com.x"), entrypoint="app")
+    return {f"id-{f}": Build(build_run="run", build_id=f"id-{f}", flavour=f, manifest=manifest) for f in flavours}
+
+
+def test_stage_asks_which_flavour_when_the_build_made_several(tmp_path, monkeypatch):
+    monkeypatch.setattr("arkitekt.cli.commands.plugin.io.get_builds", lambda *a, **k: _builds("vanilla", "gpu"))
+
+    result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "stage"])
+
+    assert result.exit_code == 1
+    assert "several flavours (gpu, vanilla)" in result.output and "--flavour" in result.output
+
+
+def test_stage_takes_the_only_flavour_or_the_one_named(tmp_path, monkeypatch):
+    monkeypatch.setattr("arkitekt.cli.commands.plugin.io.get_builds", lambda *a, **k: _builds("vanilla", "gpu"))
+    with patch("arkitekt.cli.commands.plugin.stage.subprocess.run") as run:
+        result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "stage", "--flavour", "gpu"])
+
+    assert "Staging build id-gpu (gpu)" in result.output
+    assert "None" not in result.output
+    assert run.called

@@ -34,7 +34,7 @@ def _which_version(executable: str, args: list[str]) -> str:
 
 
 def info(ctx: typer.Context) -> None:
-    """Print environment diagnostics for the Arkitekt CLI.
+    """Print environment diagnostics for the Arkitekt CLI
 
     Shows the installed CLI version, the Python interpreter, the available
     package managers (`uv`/`pip`), whether Docker is reachable, and the current

@@ -10,7 +10,7 @@ def validate(
         typer.Option("--flavour", "-f", help="Validate only this flavour."),
     ] = None,
 ) -> None:
-    """Validates all Dockerfiles and flavour configs for this app."""
+    """Validate every Dockerfile and flavour config of this app"""
     from .io import get_flavours
 
     console = get_console(ctx)

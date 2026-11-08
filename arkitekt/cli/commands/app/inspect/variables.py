@@ -62,7 +62,7 @@ def variables(
         typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
     ] = False,
 ):
-    """Scans your arkitekt app for unsafe variables
+    """Scan the app for unsafe variables
 
     When designing an Arkitekt app, you should not have variables in your
     global scope, as on potential reloads (like for example in development)

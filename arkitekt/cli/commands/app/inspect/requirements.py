@@ -20,7 +20,7 @@ def requirements(
         typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
     ] = False,
 ):
-    """Checks the requirements of the app
+    """List what the app requires of a deployment
 
     What a run of the app needs of a deployment: its services' requirements and
     those of the provider serving it, read off the declaration without connecting.

@@ -7,14 +7,14 @@ from arkitekt.utils import create_arkitekt_folder
 import os
 
 
-selector = typer.Typer(no_args_is_help=True, help="Manage selectors")
+selector = typer.Typer(no_args_is_help=True, help="Manage the selectors that place a flavour on hardware")
 
 KINDS = "cpu, ram, cuda, rocm, oneapi, label"
 
 
 def add_selector(
     ctx: typer.Context,
-    flavour: Annotated[str, typer.Argument()],
+    flavour: Annotated[str, typer.Argument(help="The flavour the selector is added to")],
     kind: Annotated[
         str | None,
         typer.Option("--kind", "-k", help=f"The kind of selector ({KINDS})"),
@@ -93,7 +93,7 @@ def add_selector(
         typer.Option("--value", help="label: the qualifier value; omit to only require the key to exist."),
     ] = None,
 ) -> None:
-    """Add a selector (a hardware/capability placement requirement) to a flavour.
+    """Add a selector (a hardware/capability placement requirement) to a flavour
 
     Selectors constrain hardware placement only — a service your app needs is
     a requirement, never a selector.

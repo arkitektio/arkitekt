@@ -434,7 +434,7 @@ def _bring_up_via_socket(
 
 mesh = typer.Typer(
     no_args_is_help=True,
-    help="""Join this machine to the Arkitekt WireGuard mesh via tailscale.
+    help="""Join this machine to the Arkitekt WireGuard mesh via tailscale
 
     An Arkitekt deployment can front its services with a private WireGuard mesh
     (an ionscale tailnet). Use `mesh join` to enroll this machine (an org member
@@ -538,7 +538,7 @@ def join(
         ),
     ] = True,
 ) -> None:
-    """Join the mesh via the device-code flow (a human authorizes this machine).
+    """Join the mesh via the device-code flow (a human authorizes this machine)
 
     Discovers the mesh device-code endpoints from the Fakts server's well-known
     document, requests a join code, shows the authorization page for an
@@ -577,7 +577,7 @@ def leave(
         typer.Option("--yes", "-y", help="Skip the confirmation prompt."),
     ] = False,
 ) -> None:
-    """Leave the mesh: disconnect and deregister this node (`tailscale logout`).
+    """Leave the mesh: disconnect and deregister this node (`tailscale logout`)
 
     This logs the node out of the tailnet, so a fresh `mesh join` (with a new
     authorization) is needed to reconnect.
@@ -666,7 +666,7 @@ def proxy(
         ),
     ] = None,
 ) -> None:
-    """Join the mesh and run a local HTTP proxy into it (userspace networking).
+    """Join the mesh and run a local HTTP proxy into it (userspace networking)
 
     Runs the device-code join to obtain a pre-auth key, then starts `tailscaled`
     in userspace-networking mode exposing an outbound HTTP proxy (and optionally a
@@ -734,9 +734,12 @@ def proxy(
 
 def cert(
     ctx: typer.Context,
-    domain: Annotated[str | None, typer.Argument()] = None,
+    domain: Annotated[
+        str | None,
+        typer.Argument(help="The name to certify. Default: this node's own MagicDNS name"),
+    ] = None,
 ) -> None:
-    """Fetch a TLS certificate for this node via `tailscale cert`.
+    """Fetch a TLS certificate for this node via `tailscale cert`
 
     With no DOMAIN, tailscale issues a certificate for this node's own MagicDNS
     name. Pass an explicit DOMAIN to request a certificate for that name instead.

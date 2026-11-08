@@ -316,7 +316,7 @@ def check(
         ),
     ] = None,
 ) -> None:
-    """Check that the app is one a run would accept, without running it.
+    """Check that the app is one a run would accept, without running it
 
     Imports the app and validates what it declares the way a run does before it
     connects: every action's arguments and results, every structure and the

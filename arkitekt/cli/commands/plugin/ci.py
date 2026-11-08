@@ -13,7 +13,7 @@ from arkitekt.cli.errors import cli_error
 from arkitekt.cli.ui import done, escape, notice
 from arkitekt.cli.vars import get_console, get_work_dir
 
-ci = typer.Typer(no_args_is_help=True, help="Release the app from CI on every push.")
+ci = typer.Typer(no_args_is_help=True, help="Release the app from CI on every push")
 
 _GITHUB = """\
 name: Release
@@ -176,7 +176,7 @@ def github(
     ),
     overwrite: bool = typer.Option(False, "--overwrite", help="Replace an existing workflow."),
 ) -> None:
-    """Write a GitHub Actions workflow that versions the app with semantic-release and publishes it to ghcr.io."""
+    """Write a GitHub Actions workflow that versions the app with semantic-release and publishes it to ghcr.io"""
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)
     entrypoint = entrypoint.removesuffix(".py")
@@ -202,6 +202,6 @@ def gitlab(
     ctx: typer.Context,
     overwrite: bool = typer.Option(False, "--overwrite", help="Replace an existing .gitlab-ci.yml."),
 ) -> None:
-    """Write a GitLab CI configuration that publishes to the project's registry."""
+    """Write a GitLab CI configuration that publishes to the project's registry"""
     relative = write_ci(get_work_dir(ctx), "gitlab", overwrite=overwrite)
     done(get_console(ctx), f"Wrote [bold]{escape(relative)}[/bold]", "commit it to release on every push")

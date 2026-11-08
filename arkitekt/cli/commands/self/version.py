@@ -34,7 +34,7 @@ def version(
         ),
     ] = False,
 ) -> None:
-    """Show the installed Arkitekt CLI version.
+    """Show the installed Arkitekt CLI version
 
     Prints the installed `arkitekt` version (and the Python it runs on). Use
     `--all` to list every installed Arkitekt ecosystem package, or `--plain` to

@@ -144,7 +144,7 @@ def local(
     context: ContextOption = None,
     context_file: ContextFileOption = None,
 ) -> None:
-    """Call one of this app's own actions, right here, and print what it returns.
+    """Call one of this app's own actions, right here, and print what it returns
 
     The app is started as a run starts it and the action goes through its ports,
     but nothing is registered and no server assigns anything: it is the quick way

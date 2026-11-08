@@ -34,7 +34,7 @@ def lifecycle(
         typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
     ] = False,
 ):
-    """Lists the agent lifecycle hooks: startup, shutdown and background.
+    """List the agent lifecycle hooks: startup, shutdown and background
 
     Startup hooks populate states/contexts when the agent starts (a ``@app.lifecycle``
     hook is listed among them, as it runs among them); background

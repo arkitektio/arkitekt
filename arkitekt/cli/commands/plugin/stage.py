@@ -3,7 +3,8 @@ import typer
 from arkitekt.cli.errors import cli_error
 import subprocess
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
-from arkitekt.cli.ui import command_hint
+from arkitekt.cli.ui import command_hint, escape, step
+from arkitekt.cli.vars import get_console, get_work_dir
 
 
 def stage(
@@ -13,48 +14,53 @@ def stage(
         typer.Option("--build", help="The build to use"),
     ] = None,
     flavour: Annotated[
-        str,
-        typer.Option("--flavour", "-f", help="The flavour to use"),
-    ] = "vanilla",
+        str | None,
+        typer.Option(
+            "--flavour",
+            "-f",
+            help="The flavour to stage. Default: the only one the build made",
+        ),
+    ] = None,
     url: Annotated[
         str,
         typer.Option("--url", "-u", help="The fakts server to use"),
     ] = DEFAULT_ARKITEKT_URL,
 ) -> None:
-    """Stages the latest Build for testing
+    """Stage the latest build for testing
 
-    Stages the current build for testing. This will create a temporary staged version
-    of the app that is run against the local arkitekt instance, headlessly, on the
-    app target the build recorded.
+    Runs the image of the latest build (or of --build) as a temporary staged version
+    of the app, against the local arkitekt instance, headlessly, on the app target
+    the build recorded.
     """
     from .io import get_builds
 
-    builds = get_builds(build)
+    console = get_console(ctx)
+    builds = list(get_builds(build, base_dir=get_work_dir(ctx)).values())
+    if not builds:
+        cli_error(f"Could not find any builds. Build one first: `{command_hint('plugin build')}`")
 
-    if len(builds) == 0:
-        cli_error("Could not find any builds")
-
-    if len(builds) > 1:
-        try:
-            build_model = next(
-                build for build in builds.values() if build.flavour == flavour
-            )
-        except StopIteration:
+    if flavour is None:
+        if len(builds) > 1:
+            made = ", ".join(sorted(b.flavour for b in builds))
+            cli_error(f"The build made several flavours ({made}): name one with --flavour.")
+        build_model = builds[0]
+    else:
+        matching = [b for b in builds if b.flavour == flavour]
+        if not matching:
             cli_error(
                 f"Could not find a build for flavour {flavour}. Build it first: "
                 f"`{command_hint(f'plugin build --flavour {flavour}')}`"
             )
+        build_model = matching[-1]
 
-    else:
-        build_model = list(builds.values())[0]
+    command = build_model.build_docker_command() + build_model.build_arkitekt_command(url)
 
-    command = (
-        build_model.build_docker_command()
-        + build_model.build_arkitekt_command(url)
+    step(
+        console,
+        f"Staging build {escape(build_model.build_id)} ({escape(build_model.flavour)})",
+        f"against {escape(url)}",
     )
-
-    typer.echo(f"Staging build {build} with flavour {flavour} against {url}")
-    typer.echo("Running command: " + " ".join(command))
+    console.print(f"  {escape(' '.join(command))}", highlight=False, soft_wrap=True)
 
     subprocess.run(" ".join(command), shell=True)
 

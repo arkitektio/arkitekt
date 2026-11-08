@@ -402,7 +402,7 @@ def create_command(
         str | None,
         typer.Option(
             "--logo",
-            help="Which logo to use for this app, needs to be a valid url",
+            help="The URL of the app's logo, shown to its users",
         ),
     ] = None,
     scopes: Annotated[
@@ -468,7 +468,7 @@ def create_command(
         typer.Option(
             "--overwrite-app",
             "-oa",
-            help="Do you want to overwrite the app file if it exists?",
+            help="Replace the app file if it exists, without asking",
         ),
     ] = False,
     package_manager: Annotated[
@@ -495,7 +495,7 @@ def create_command(
         ),
     ] = ["all"],
 ):
-    """Creates an Arkitekt app
+    """Create an Arkitekt app
 
     Run in an empty folder, it sets the app up right there; elsewhere name a
     folder (`arkitekt create my-app`), or answer when it asks.

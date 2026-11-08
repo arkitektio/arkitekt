@@ -74,7 +74,7 @@ def init(
         typer.Option("--force", "-f", help="Replace projects the config already has"),
     ] = False,
 ) -> None:
-    """Write a turms GraphQL config for the services this app uses.
+    """Write a turms GraphQL config for the services this app uses
 
     For every service the app declares that ships a schema and a turms project,
     this copies the schema to [b]schemas/<service>.graphql[/b], creates

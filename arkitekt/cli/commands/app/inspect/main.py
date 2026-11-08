@@ -2,7 +2,7 @@ import typer
 
 inspect = typer.Typer(
     no_args_is_help=True,
-    help="""Inspects your arkitekt app
+    help="""Inspect what the app declares, without running it
 
     Inspects various parts of your arkitekt app. This is useful for debugging
     and development. It also represents methods that are called by the arkitekt

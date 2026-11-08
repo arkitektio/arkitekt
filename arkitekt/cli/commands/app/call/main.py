@@ -5,7 +5,7 @@ import typer
 
 call = typer.Typer(
     no_args_is_help=True,
-    help="""Call actions.
+    help="""Call an app's actions, here or on the server
 
     `local` calls one of this app's own actions right here, with no server in
     between: the way to try an action while writing it. `remote` calls an action

@@ -52,7 +52,7 @@ def prod(
     context: ContextOption = None,
     context_file: ContextFileOption = None,
 ) -> None:
-    """Runs the app in production mode
+    """Run the app for production
 
     Runs the App the target module declares (``app = App(...)``). The App decides
     what it is; the connection flags you pass decide only how this run connects,

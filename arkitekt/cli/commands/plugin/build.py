@@ -335,7 +335,7 @@ def build(
         typer.Option("--url", "-u", help="The fakts server to use."),
     ] = DEFAULT_ARKITEKT_URL,
 ) -> None:
-    """Builds the arkitekt app to Docker.
+    """Build the app's flavours into Docker images
 
     Everything recorded about a build is read from the built image: what it
     declares, and the app's identity (identifier, version, author, scopes, logo).

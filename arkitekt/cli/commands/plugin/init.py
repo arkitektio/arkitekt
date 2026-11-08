@@ -4,7 +4,7 @@ from importlib.metadata import version
 from typing import Annotated
 from arkitekt.cli.validators import validate_dockerfile
 from arkitekt.cli.errors import cli_error
-from arkitekt.cli.tty import require_tty
+from arkitekt.cli import tty
 from arkitekt.cli.utils import build_relative_dir
 import typer
 from arkitekt.cli.target import (
@@ -178,18 +178,18 @@ def init(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
     flavour: Annotated[
-        str, typer.Option("--flavour", "-f", help="The flavour to use")
+        str, typer.Option("--flavour", "-f", help="The name of the flavour to add")
     ] = "vanilla",
     description: Annotated[
-        str,
+        str | None,
         typer.Option(
-            "--description", "-d", help="The description for this flavour to use"
+            "--description", "-d", help="What sets this flavour apart. Default: 'The <flavour> flavour'"
         ),
-    ] = "This is a vanilla flavour",
+    ] = None,
     overwrite: Annotated[
         bool,
         typer.Option(
-            "--overwrite", "-o", help="Should we overwrite the existing Dockerfile?"
+            "--overwrite", "-o", help="Replace the flavour's Dockerfile and config if they exist"
         ),
     ] = False,
     template: Annotated[
@@ -202,19 +202,20 @@ def init(
         ),
     ] = None,
     devcontainer: Annotated[
-        bool,
+        bool | None,
         typer.Option(
-            "--devcontainer",
+            "--devcontainer/--no-devcontainer",
             "-dc",
-            help="Should we create a devcontainer.json file?",
+            help="Also write a devcontainer.json, to develop the app inside the flavour's image. "
+            "Default: asked in a terminal, not written elsewhere",
         ),
-    ] = False,
+    ] = None,
     arkitekt_version: Annotated[
         str | None,
         typer.Option(
             "--arkitekt-version",
             "-av",
-            help="Which Arkitekt-version should we use to mount in the container?",
+            help="The arkitekt version to install in the image. Default: the one installed here",
         ),
     ] = None,
     platform: Annotated[
@@ -235,7 +236,7 @@ def init(
         ),
     ] = False,
 ) -> None:
-    """Initialize a plugin flavour for this app.
+    """Add a flavour (a Dockerfile and its config) to this app
 
     Generates a Dockerfile and flavour ``config.yaml`` under
     ``.arkitekt/flavours/<flavour>`` so the app can be built and deployed as
@@ -261,19 +262,17 @@ def init(
     dockerfile = write_flavour(
         work_dir,
         flavour,
-        description=description,
+        description=description or f"The {flavour} flavour",
         platforms=platforms,
         template=template,
         arkitekt_version=arkitekt_version,
         overwrite=overwrite,
     )
 
-    if not devcontainer:
-        require_tty(
-            "Choosing whether to create a devcontainer.json",
-            hint="Pass --devcontainer to create it non-interactively.",
-        )
-    if devcontainer or typer.confirm("Do you want to create a devcontainer.json file?"):
+    if devcontainer is None:
+        # Asked only where someone can answer: a script gets the flavour alone.
+        devcontainer = tty.is_tty() and typer.confirm("Also write a devcontainer.json?", default=False)
+    if devcontainer:
         # Only the devcontainer is named after the app, so only it loads the app.
         app = load_app_or_exit(ctx, target)
         create_devcontainer_file(

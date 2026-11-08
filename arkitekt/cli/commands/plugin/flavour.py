@@ -6,7 +6,7 @@ from .init import init
 flavour = typer.Typer(
     no_args_is_help=True,
     help="""
-    Manage flavours
+    Manage the flavours the app is built into
     """,
 )
 

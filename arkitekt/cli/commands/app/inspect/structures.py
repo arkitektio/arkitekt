@@ -60,7 +60,7 @@ def structures(
         typer.Option("--machine-readable", "-mr", help="Should we just output json?"),
     ] = False,
 ):
-    """Lists the structures this app can send and receive by id.
+    """List the structures this app can send and receive by id
 
     A structure belongs to the service that declares it, so this is a function
     of the app's services: what the App declares is what shows up here. The class

@@ -393,7 +393,7 @@ def release(
         bool, typer.Option("--allow-dirty", help="Release with uncommitted changes.")
     ] = False,
 ) -> None:
-    """Test, build and publish the app: what a CI job runs.
+    """Test, build and publish the app: what a CI job runs
 
     A commit tagged with the app's version becomes that release, which never changes
     afterwards. Any other commit becomes the latest build of its branch's channel.
