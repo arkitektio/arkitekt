@@ -110,24 +110,24 @@ def _wants_qr(link: str, opened_browser: bool) -> bool:
 def _qr(console: Console, link: str) -> None:
     """Print ``link`` as a QR code that a phone can scan in any terminal.
 
-    Each module is two spaces painted with a background colour: black or bright
-    white whatever the theme. A background fills the cell's whole height, line
-    spacing included, so no seams cut through the code, and spaces are ASCII. A
-    terminal too narrow for that gets half the height: one ``▀`` per two modules,
-    its foreground the upper one and its background the lower. Without colours the
-    light modules are drawn as blocks on the dark background most terminals have.
+    Two modules a cell: a ``▀`` whose foreground is the upper module and whose
+    background the lower, black or bright white whatever the theme. Where a
+    terminal adds line spacing (macOS does), the gap shows the cell's background,
+    the lower module's own colour: it grows a little, and no seam cuts the code.
+    A terminal that cannot show ``▀`` gets two spaces a module, painted as
+    backgrounds: twice the size, but ASCII. Without colours the light modules are
+    drawn as blocks on the dark background most terminals have.
     """
     import segno  # only a login that is approved elsewhere draws one
 
     # make_qr, not make: a short link would otherwise become a Micro QR code,
     # which phone cameras do not read.
     rows = [[bool(module) for module in row] for row in segno.make_qr(link, error="l").matrix_iter(border=_QR_BORDER)]
-    if console.color_system is not None and len(_QR_INDENT) + 2 * len(rows[0]) <= console.width:
-        for row in rows:
-            _qr_line(console, Text.assemble(*((" " * 2, f"on {_paint(dark)}") for dark in row)))
-        return
-    if console.options.ascii_only and not _forced_qr():
-        # Half blocks are not ASCII: drawn only when the code is asked for by name.
+    if console.options.ascii_only:
+        if console.color_system is not None and _forced_qr():
+            # Asked for by name: spaces are ASCII.
+            for row in rows:
+                _qr_line(console, Text.assemble(*((" " * 2, f"on {_paint(dark)}") for dark in row)))
         return
     if len(rows) % 2:
         rows.append([False] * len(rows[0]))

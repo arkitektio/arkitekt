@@ -68,9 +68,13 @@ def test_a_forced_qr_code_is_drawn_even_for_a_local_page_that_opened(capsys, mon
 LINK = "https://lab.example/f/device/?code=ABCD-EFGH"
 
 
-def _drawn(width: int, color_system: str | None = "standard") -> str:
-    out = io.StringIO()
-    console = Console(file=out, force_terminal=True, color_system=color_system, width=width)  # pyright: ignore[reportArgumentType]
+class _Ascii(io.StringIO):
+    encoding = "ascii"
+
+
+def _drawn(color_system: str | None = "standard", ascii_only: bool = False) -> str:
+    out = _Ascii() if ascii_only else io.StringIO()
+    console = Console(file=out, force_terminal=True, color_system=color_system, width=80)  # pyright: ignore[reportArgumentType]
     _qr(console, LINK)
     return out.getvalue()
 
@@ -81,34 +85,39 @@ def _modules(border: int = 4) -> list[list[bool]]:
     return [[bool(m) for m in row] for row in segno.make_qr(LINK, error="l").matrix_iter(border=border)]
 
 
-def test_a_qr_code_is_painted_with_backgrounds_two_spaces_a_module() -> None:
-    """No glyphs: a background fills the line height, so there are no seams to scan across."""
-    drawn = _drawn(width=200)
+def test_a_qr_code_is_two_modules_a_cell_coloured_above_and_below() -> None:
+    """Compact, and with no seams: the gap under a line is the lower module's colour."""
+    modules = _modules()
+    drawn = _drawn()
 
-    assert not set(drawn) & set("▀▄█")
+    lines = drawn.splitlines()
+    assert len(lines) == (len(modules) + 1) // 2
+    assert "▄" not in drawn and "█" not in drawn
+    cells = [re.findall(r"\x1b\[(\d+);(\d+)m(▀+)", line) for line in lines]
     # Dark modules black, light ones bright white (not white: a grey in many themes).
+    top = [[fg == "30" for fg, _, run in row for _ in run] for row in cells]
+    bottom = [[bg == "40" for _, bg, run in row for _ in run] for row in cells]
+    padded = modules + [[False] * len(modules[0])] * (len(modules) % 2)
+    assert top == padded[::2] and bottom == padded[1::2], "every module, with a quiet zone of four"
+    assert {fg for row in cells for fg, _, _ in row} == {"30", "97"}
+
+
+def test_a_forced_qr_code_in_an_ascii_terminal_is_painted_spaces(monkeypatch) -> None:
+    monkeypatch.delenv(QR_ENV, raising=False)
+    assert _drawn(ascii_only=True) == "", "▀ is not ASCII: only drawn when asked for"
+
+    force_qr()
+    drawn = _drawn(ascii_only=True)
+    assert not set(drawn) & set("▀▄█")
     grid = [
         [code == "40" for code, spaces in re.findall(r"\x1b\[(\d+)m( +)", line) for _ in range(len(spaces) // 2)]
         for line in drawn.splitlines()
     ]
-    assert set(re.findall(r"\x1b\[(\d+)m ", drawn)) == {"40", "107"}
-    assert grid == _modules(), "every module, with a quiet zone of four"
-
-
-def test_a_narrow_terminal_gets_half_blocks_coloured_above_and_below() -> None:
-    modules = _modules()
-    drawn = _drawn(width=2 * len(modules[0]))  # one column short of two a module, with the indent
-
-    assert "▀" in drawn and "▄" not in drawn and "█" not in drawn
-    cells = [re.findall(r"\x1b\[(\d+);(\d+)m(▀+)", line) for line in drawn.splitlines()]
-    top = [[fg == "30" for fg, _, run in row for _ in run] for row in cells]
-    bottom = [[bg == "40" for _, bg, run in row for _ in run] for row in cells]
-    padded = modules + [[False] * len(modules[0])] * (len(modules) % 2)
-    assert top == padded[::2] and bottom == padded[1::2]
+    assert grid == _modules()
 
 
 def test_without_colours_a_qr_code_draws_its_light_modules() -> None:
-    drawn = _drawn(width=200, color_system=None)
+    drawn = _drawn(color_system=None)
 
     assert "\x1b[" not in drawn
     assert "█" in drawn
