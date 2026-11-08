@@ -39,6 +39,26 @@ def arkitekt_version() -> str | None:
         return None
 
 
+def command_hint(rest: str, work_dir: str | None = None) -> str:
+    """``arkitekt <rest>`` as this project starts it, for a hint that names a command.
+
+    In a uv project (it has a ``uv.lock``) arkitekt is installed in the project's
+    environment, not on the PATH, so what starts it is ``uv run arkitekt``.
+
+    Args:
+        rest: What follows ``arkitekt``, e.g. ``"login --reauth"``.
+        work_dir: The project. Default: the running command's ``--work-dir``,
+            else the current directory.
+    """
+    from arkitekt.cli.target import infer_package_manager
+    from arkitekt.cli.vars import current_work_dir
+
+    if work_dir is None:
+        work_dir = current_work_dir()
+    prefix = "uv run " if infer_package_manager(work_dir) == "uv" else ""
+    return f"{prefix}arkitekt {rest}"
+
+
 class Adaptive:
     """A renderable built once the console is known, from whether it is ASCII only.
 
@@ -199,6 +219,7 @@ __all__ = [
     "Banner",
     "GUTTER",
     "arkitekt_version",
+    "command_hint",
     "construct_app_banner",
     "construct_banner",
     "construct_changes_group",

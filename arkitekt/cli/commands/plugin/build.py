@@ -5,7 +5,7 @@ from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument
 from arkitekt.cli.vars import get_console, get_work_dir
 import os
 import shlex
-from arkitekt.cli.ui import done, escape, notice, step
+from arkitekt.cli.ui import command_hint, done, escape, notice, step
 import subprocess
 import uuid
 
@@ -371,7 +371,7 @@ def build(
                 console.print(
                     f"[yellow]--tag names the {len(platforms)}-platform flavour's image for this "
                     "machine only; pushing that tag by hand publishes one architecture. "
-                    "`arkitekt plugin publish` pushes the manifest list.[/yellow]"
+                    f"`{command_hint('plugin publish')}` pushes the manifest list.[/yellow]"
                 )
             subprocess.run(["docker", "tag", build_tag, tag], check=True)
 

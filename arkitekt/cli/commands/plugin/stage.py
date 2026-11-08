@@ -3,6 +3,7 @@ import typer
 from arkitekt.cli.errors import cli_error
 import subprocess
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
+from arkitekt.cli.ui import command_hint
 
 
 def stage(
@@ -40,8 +41,8 @@ def stage(
             )
         except StopIteration:
             cli_error(
-                f"Could not find a build for flavour {flavour}. Please run `arkitekt plugin build` "
-                + "first to build the flavour"
+                f"Could not find a build for flavour {flavour}. Build it first: "
+                f"`{command_hint(f'plugin build --flavour {flavour}')}`"
             )
 
     else:

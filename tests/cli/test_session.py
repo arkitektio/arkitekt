@@ -62,6 +62,16 @@ def test_status_of_an_app_that_never_logged_in(app_dir):
     assert "com.test.app 0.0.1" in result.output
     assert "Not logged in" in result.output
     assert "arkitekt login" in result.output
+    assert "uv run" not in result.output, "no uv.lock: arkitekt is started as itself"
+
+
+def test_a_uv_projects_hints_start_arkitekt_with_uv_run(app_dir):
+    """In a uv project arkitekt is in the project's environment, not on the PATH."""
+    (app_dir / "uv.lock").write_text("")
+    result = _invoke(app_dir, "status")
+
+    assert result.exit_code == 0, result.output
+    assert "`uv run arkitekt login`" in _flat(result.output)
 
 
 def test_status_says_since_when_and_where(app_dir, saved):

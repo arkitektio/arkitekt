@@ -308,7 +308,7 @@ def test_kabinet_validate_without_flavours_errors(app_dir):
     """validate fails cleanly when no flavours folder exists yet."""
     result = CliRunner().invoke(cli_app, ["--work-dir", str(app_dir), "plugin", "validate"])
     assert result.exit_code != 0
-    assert "plugin init" in result.output
+    assert "plugin flavour add" in result.output
 
 
 # ---------------------------------------------------------------------------

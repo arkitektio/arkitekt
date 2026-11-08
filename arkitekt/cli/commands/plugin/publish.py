@@ -4,7 +4,7 @@ import subprocess
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.vars import get_console, get_work_dir
-from arkitekt.cli.ui import done, escape, notice, step
+from arkitekt.cli.ui import command_hint, done, escape, notice, step
 import uuid
 
 if TYPE_CHECKING:
@@ -48,7 +48,7 @@ def push_multi_arch(build_model: "Build", tag: str, work_dir: str, console) -> N
     if flavour is None:
         cli_error(
             f"Build {build_model.build_id} was made from flavour '{build_model.flavour}', "
-            "which no longer exists. Re-run `arkitekt plugin build`."
+            f"which no longer exists. Re-run `{command_hint('plugin build')}`."
         )
 
     builder = ensure_builder(build_model.platforms, console=console)
@@ -113,7 +113,7 @@ def publish(
             # command dies writing deployments.yaml.
             cli_error(
                 f"Build {build_model.build_id} was made with --no-inspect, and a deployment "
-                "records what the image offers. Re-run `arkitekt plugin build` without it."
+                f"records what the image offers. Re-run `{command_hint('plugin build')}` without it."
             )
 
         if not tag:

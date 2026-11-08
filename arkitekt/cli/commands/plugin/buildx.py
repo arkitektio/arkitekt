@@ -20,6 +20,7 @@ from collections.abc import Sequence
 from typing import Any
 
 from arkitekt.cli.errors import cli_error
+from arkitekt.cli.ui import command_hint
 
 #: The builder this CLI creates when the default one cannot build multi-platform.
 ARKITEKT_BUILDER = "arkitekt"
@@ -124,7 +125,8 @@ def _create_builder(name: str) -> None:
         cli_error(
             f"Could not create the docker buildx builder '{name}':\n{result.stdout}\n"
             "A multi-platform build needs a builder with the docker-container driver. "
-            "Build for this machine only with `arkitekt plugin init --overwrite --no-multi-arch`."
+            "Build for this machine only with "
+            f"`{command_hint('plugin flavour add --overwrite --no-multi-arch')}`."
         )
 
 
@@ -159,7 +161,7 @@ def ensure_builder(platforms: Sequence[str], console: Any = None) -> str | None:
             + f" (it offers {', '.join(reported) or 'nothing'}).\n"
             "Cross-building another architecture needs emulation on this host:\n"
             "    docker run --privileged --rm tonistiigi/binfmt --install all\n"
-            "Or build for this machine only: `arkitekt plugin init --overwrite --no-multi-arch`, "
+            f"Or build for this machine only: `{command_hint('plugin flavour add --overwrite --no-multi-arch')}`, "
             "or edit `platforms:` in .arkitekt/flavours/<flavour>/config.yaml."
         )
 

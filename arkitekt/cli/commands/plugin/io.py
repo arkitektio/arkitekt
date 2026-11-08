@@ -26,6 +26,7 @@ import yaml
 import json
 from pydantic import ValidationError
 from arkitekt.cli.errors import cli_error
+from arkitekt.cli.ui import command_hint
 
 
 def get_flavours(base_dir: str | None = None, select: str | None = None) -> dict[str, Flavour]:
@@ -35,7 +36,7 @@ def get_flavours(base_dir: str | None = None, select: str | None = None) -> dict
 
     if not os.path.exists(flavours_folder):
         cli_error(
-            "Could not find the flavours folder. Please run `arkitekt plugin init` first"
+            f"Could not find the flavours folder. Add one first: `{command_hint('plugin flavour add', base_dir)}`"
         )
 
     flavours: dict[str, Flavour] = {}
@@ -79,7 +80,7 @@ def _unreadable(config_file: str, error: ValidationError) -> NoReturn:
     """A file this CLI refuses, which is usually one written before files named their spec."""
     cli_error(
         f"Could not read {config_file}. If it was written by an older arkitekt, which named no "
-        f"spec version, delete it: `arkitekt plugin build` writes a new one.\n\n{error}"
+        f"spec version, delete it: `{command_hint('plugin build')}` writes a new one.\n\n{error}"
     )
 
 
@@ -98,7 +99,7 @@ def get_builds(selected_run: str | None = None, base_dir: str | None = None) -> 
 
     if not os.path.exists(config_file):
         cli_error(
-            "Could not find any builds. Please run `arkitekt plugin build` first"
+            f"Could not find any builds. Build one first: `{command_hint('plugin build')}`"
         )
 
     config = _read_builds(config_file)

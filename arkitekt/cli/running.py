@@ -25,6 +25,7 @@ from arkitekt.app import App
 from arkitekt.app.fakts import resolve_url
 from arkitekt.app.sessions import read_session, session_path
 from arkitekt.app.terminal import done, fail, notice, step
+from arkitekt.cli.ui import command_hint
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +133,7 @@ def report_session(
         done(
             console,
             "Session reused",
-            f"logged in {ago(started)} · `arkitekt logout` ends it",
+            f"logged in {ago(started)} · `{command_hint('logout')}` ends it",
         )
     elif options.get("token") or options.get("mandate_key"):
         done(console, f"Logged in to {escape(loaded.self.deployment_name)}", "with a token")

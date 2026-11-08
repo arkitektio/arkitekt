@@ -9,6 +9,7 @@ from rich.console import Console
 from rich.markup import escape
 
 from arkitekt.app.terminal import fail
+from arkitekt.cli.ui import command_hint
 
 #: What to say for each, and what to do about it. Matched by class name, over
 #: the exception's whole ancestry: the agent's classes are rekuest's, which is an
@@ -25,7 +26,7 @@ _KNOWN = {
     "DeviceCodeTimeoutError": ("The login was not approved in time", "run it again"),
     "NeedsReauthenticationError": (
         "The session is no longer valid",
-        "log in again with `arkitekt login --reauth`",
+        lambda: f"log in again with `{command_hint('login --reauth')}`",
     ),
     "DiscoveryError": ("Could not reach the server", "check --url"),
 }
@@ -47,7 +48,9 @@ def explain(error: BaseException) -> tuple[str, str | None] | None:
         return None
     for name in names:
         if name in _KNOWN:
-            return _KNOWN[name]
+            message, hint = _KNOWN[name]
+            # A hint that names a command is made now: how it is started depends on the project.
+            return (message, hint() if callable(hint) else hint)
     return None
 
 

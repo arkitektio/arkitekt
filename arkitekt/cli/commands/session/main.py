@@ -30,7 +30,7 @@ from arkitekt.cli.options import (
 )
 from arkitekt.cli.running import ago
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.ui import construct_app_banner, done, notice
+from arkitekt.cli.ui import command_hint, construct_app_banner, done, notice
 from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console
@@ -160,7 +160,7 @@ def status(
                 "the next run logs in again",
             )
             return
-        notice(console, "Not logged in", "`arkitekt login`, or just run the app")
+        notice(console, "Not logged in", f"`{command_hint('login')}`, or just run the app")
         return
 
     since = f"{ago(session.logged_in_at)} · " if session.logged_in_at else ""
@@ -172,5 +172,5 @@ def status(
         notice(
             console,
             f"The saved session is {state}",
-            f"logged in {since}`arkitekt login --reauth` replaces it",
+            f"logged in {since}`{command_hint('login --reauth')}` replaces it",
         )

@@ -39,7 +39,7 @@ from arkitekt_spec.release import channel_tag, channel_version, image_tag, relea
 from arkitekt.app.app import VERSION_ENV
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument
-from arkitekt.cli.ui import done, escape, notice, step
+from arkitekt.cli.ui import command_hint, done, escape, notice, step
 from arkitekt.cli.vars import get_console, get_work_dir
 
 from .build import (
@@ -413,7 +413,7 @@ def release(
 
     flavours = get_flavours(base_dir=work_dir)
     if not flavours:
-        cli_error("There is no flavour to release. Run `arkitekt plugin init` first.")
+        cli_error(f"There is no flavour to release. Add one first: `{command_hint('plugin flavour add', work_dir)}`.")
     # What git alone can refuse, it refuses before anything is built.
     check_checkout(work_dir, allow_dirty)
 
