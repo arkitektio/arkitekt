@@ -98,7 +98,7 @@ Nothing connects when the `App` is declared. `run(app)` authenticates (opening y
 time), registers the actions and blocks until you stop it. The server is taken from `$FAKTS_URL`, or
 passed explicitly with `run(app, url="localhost")`; `headless=True` prints a device code instead of
 opening a browser, with the approval link as a QR code to scan with a phone (`FAKTS_QR=0` hides it,
-`FAKTS_QR=1` shows it even when the browser opened).
+`FAKTS_QR=1`, or `--qr` on `arkitekt run`, `call` and `login`, shows it even when the browser opened).
 
 ### State, not getters
 
@@ -290,7 +290,7 @@ once there is. Standing up an Arkitekt server is the job of
 
 ```bash
 arkitekt create my-app && cd my-app   # a project: app, tests, flavour, release workflow
-arkitekt run dev                      # run it; reloads on save, shows each task it takes
+uv run arkitekt run dev               # run it; reloads on save, shows each task it takes
 arkitekt call local generate_random_image --online   # try one action: it stores an image
 uv run pytest                         # its tests, with no server
 ```

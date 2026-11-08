@@ -14,6 +14,7 @@ from arkitekt.cli.options import (
     SupervisorOption,
     ForceOption,
     HeadlessOption,
+    QrOption,
     LogLevel,
     LogLevelOption,
     ReauthOption,
@@ -25,6 +26,7 @@ from arkitekt.cli.options import (
 from arkitekt.cli.running import arun_app, interruptible
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.ui import construct_app_banner, notice
+from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -40,6 +42,7 @@ def prod(
     mandate_key: MandateKeyOption = None,
     force: ForceOption = False,
     headless: HeadlessOption = False,
+    qr: QrOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
     skip_cache: SkipCacheOption = False,
     reauth: ReauthOption = False,
@@ -58,6 +61,8 @@ def prod(
 
     console = get_console(ctx)
     configure_logging(log_level.value)
+    if qr:
+        force_qr()
     app = load_app_or_exit(ctx, target)
     options = runner_options(ctx)
     # Resolved before the banner and the connection: an App that declares an

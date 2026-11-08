@@ -79,7 +79,8 @@ def test_the_default_is_a_project_in_a_new_folder(tmp_path: Path, fake_uv):
     assert configured["semantic_release"]["version_variables"] == ["app.py:__version__"]
     assert configured["pytest"]["ini_options"]["addopts"] == "-m 'not hub'"
 
-    assert "cd my-app && arkitekt run dev" in result.output
+    # arkitekt is in the project's environment, not on the PATH.
+    assert "cd my-app && uv run arkitekt run dev" in result.output
     assert "semantic-release raises it for you" in " ".join(result.output.split())
 
 
@@ -141,9 +142,50 @@ def test_the_image_starter_brings_the_client_it_imports(tmp_path: Path, monkeypa
     assert ["uv", "add", installed] in commands
 
 
-def test_a_project_asks_for_its_name(tmp_path: Path, fake_uv, monkeypatch):
+def test_a_project_in_a_folder_that_is_not_empty_asks_for_its_name(tmp_path: Path, fake_uv, monkeypatch):
     monkeypatch.setattr("arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None)
-    result = create(tmp_path, *IDENTITY, input="asked-app\n")
+    (tmp_path / "notes.txt").write_text("mine\n")
+    result = create(tmp_path, *IDENTITY, input="n\nasked-app\n")
+    assert result.exit_code == 0, result.output
+    assert "It is not empty" in result.output
+    assert (tmp_path / "asked-app" / "app.py").exists()
+    assert not (tmp_path / "app.py").exists()
+
+
+def test_a_folder_that_is_not_empty_can_be_used_anyway(tmp_path: Path, fake_uv, monkeypatch):
+    monkeypatch.setattr("arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None)
+    (tmp_path / "notes.txt").write_text("mine\n")
+    result = create(tmp_path, *IDENTITY, input="y\n")
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "app.py").exists()
+    assert (tmp_path / "notes.txt").read_text() == "mine\n"
+
+
+@pytest.mark.parametrize("yes", [[], ["--yes"]])
+def test_an_empty_folder_is_set_up_in_place(tmp_path: Path, fake_uv, yes: list[str]):
+    result = create(tmp_path, *IDENTITY, *yes)
+    assert result.exit_code == 0, result.output
+    # Still a whole project: uv init ran, and the tests, flavour and workflow are written.
+    assert ["uv", "init"] == fake_uv[0][:2]
+    for made in ("app.py", "pyproject.toml", "tests", ".arkitekt", ".github"):
+        assert (tmp_path / made).exists(), made
+    assert not [p for p in tmp_path.iterdir() if p.is_dir() and (p / "app.py").exists()]
+    output = " ".join(result.output.split())
+    assert "Start it with `uv run arkitekt run dev`" in output
+    assert "cd " not in output
+
+
+def test_a_freshly_initialised_repository_counts_as_empty(tmp_path: Path, fake_uv):
+    (tmp_path / ".git").mkdir()
+    result = create(tmp_path, *IDENTITY)
+    assert result.exit_code == 0, result.output
+    assert (tmp_path / "app.py").exists()
+
+
+def test_a_folder_with_a_flavour_is_not_empty(tmp_path: Path, fake_uv, monkeypatch):
+    monkeypatch.setattr("arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None)
+    (tmp_path / ".arkitekt").mkdir()
+    result = create(tmp_path, *IDENTITY, input="n\nasked-app\n")
     assert result.exit_code == 0, result.output
     assert (tmp_path / "asked-app" / "app.py").exists()
 
@@ -217,11 +259,12 @@ def test_an_app_file_that_is_kept_is_asked_about_before_anything_is_made(tmp_pat
     assert "generate_random_image" in (tmp_path / "app.py").read_text()
 
 
-def test_a_project_without_a_name_cannot_be_assumed(tmp_path: Path, fake_uv):
+def test_a_project_without_a_name_cannot_be_assumed_in_a_folder_that_is_not_empty(tmp_path: Path, fake_uv):
+    (tmp_path / "notes.txt").write_text("mine\n")
     result = create(tmp_path, "--yes")
     assert result.exit_code == 1
     assert "arkitekt create my-app" in result.output
-    assert list(tmp_path.iterdir()) == []
+    assert [p.name for p in tmp_path.iterdir()] == ["notes.txt"]
 
 
 def test_the_project_is_an_app_not_a_package(tmp_path: Path, fake_uv):
@@ -395,7 +438,7 @@ def test_the_blok_template_is_a_whole_project_around_a_blok_agent(tmp_path: Path
     assert "@app.state" in source and 'app.blok(\n    "analysis",' in source
     output = " ".join(result.output.split())
     assert f"{HUB_TEST} tests it against a hub" in output
-    assert "cd analyst && arkitekt run dev" in output
+    assert "cd analyst && uv run arkitekt run dev" in output
 
 
 def test_a_blok_agent_declares_its_panel_its_state_and_its_actions(tmp_path: Path, fake_uv):

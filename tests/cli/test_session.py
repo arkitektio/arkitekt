@@ -161,6 +161,19 @@ def test_login_logs_in_and_saves_the_session(app_dir, logins):
     assert os.path.exists(session_path(*APP, DEFAULT_ARKITEKT_URL))
 
 
+def test_login_qr_shows_the_link_as_a_qr_code_whatever_the_login(app_dir, logins, monkeypatch):
+    from arkitekt.app.terminal import QR_ENV
+
+    monkeypatch.delenv(QR_ENV, raising=False)  # restored after the test: --qr sets it
+    result = _invoke(app_dir, "login", "--qr")
+
+    assert result.exit_code == 0, result.output
+    assert os.environ[QR_ENV] == "1"
+    # Not a connection option: the runner is not told of it.
+    ((_, options),) = logins
+    assert "qr" not in options
+
+
 def test_login_leaves_a_good_session_alone(app_dir, logins, saved):
     saved(logged_in_at=time.time() - DAY)
 

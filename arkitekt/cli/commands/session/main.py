@@ -20,6 +20,7 @@ from arkitekt.cli.commands.app.run.utils import explicit_options
 from arkitekt.cli.failures import report_failure
 from arkitekt.cli.options import (
     HeadlessOption,
+    QrOption,
     LogLevel,
     LogLevelOption,
     ReauthOption,
@@ -30,6 +31,7 @@ from arkitekt.cli.options import (
 from arkitekt.cli.running import ago
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.ui import construct_app_banner, done, notice
+from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -64,6 +66,7 @@ def login(
     token: TokenOption = None,
     mandate_key: MandateKeyOption = None,
     headless: HeadlessOption = False,
+    qr: QrOption = False,
     reauth: ReauthOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
@@ -75,6 +78,8 @@ def login(
     """
     console = get_console(ctx)
     configure_logging(log_level.value)
+    if qr:
+        force_qr()
     app = load_app_or_exit(ctx, target)
     options = explicit_options(ctx, LOGIN_OPTIONS)
     server = resolve_url(options.get("url"))

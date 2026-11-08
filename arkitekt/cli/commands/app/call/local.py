@@ -17,6 +17,7 @@ from arkitekt.cli.options import (
     ContextFileOption,
     ContextOption,
     HeadlessOption,
+    QrOption,
     LogLevel,
     LogLevelOption,
     ReauthOption,
@@ -27,6 +28,7 @@ from arkitekt.cli.options import (
 )
 from arkitekt.cli.running import connected_local
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
+from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -135,6 +137,7 @@ def local(
     token: TokenOption = None,
     mandate_key: MandateKeyOption = None,
     headless: HeadlessOption = False,
+    qr: QrOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
     skip_cache: SkipCacheOption = False,
     reauth: ReauthOption = False,
@@ -152,6 +155,8 @@ def local(
     """
     console = get_console(ctx)
     configure_logging(log_level.value)
+    if qr:
+        force_qr()
 
     try:
         kwargs = parse_call_args(args or [])

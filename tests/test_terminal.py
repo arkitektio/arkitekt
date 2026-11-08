@@ -6,7 +6,7 @@ from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.grants.remote.models import FaktsEndpoint
 
 from arkitekt.app.fakts import build_device_code_fakts
-from arkitekt.app.terminal import QR_ENV, logged_in, login_prompt
+from arkitekt.app.terminal import QR_ENV, force_qr, logged_in, login_prompt
 
 from .test_cache_paths import make_manifest
 
@@ -50,6 +50,16 @@ def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys, monkeypatch) -
     out = capsys.readouterr().out
     assert "open this link to approve the app" in _flat(out)
     assert "█" in out, "approved on another device: the link is a QR code too"
+
+
+def test_a_forced_qr_code_is_drawn_even_for_a_local_page_that_opened(capsys, monkeypatch) -> None:
+    monkeypatch.delenv(QR_ENV, raising=False)  # restored after the test: force_qr sets it
+    force_qr()
+    local = _challenge(ENDPOINT, "http://localhost:8000/f/device/?code=ABCD-EFGH")
+
+    asyncio.run(login_prompt(opened_browser=True)(local))  # pyright: ignore[reportArgumentType]
+
+    assert "█" in capsys.readouterr().out
 
 
 def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(capsys) -> None:

@@ -68,6 +68,17 @@ QR_ENV = "FAKTS_QR"
 _HALF_BLOCKS = {(False, False): " ", (True, False): "▀", (False, True): "▄", (True, True): "█"}
 
 
+def force_qr() -> None:
+    """Show the approval link as a QR code whatever the login looks like: what
+    ``--qr`` does. Through the environment, so the prompt of this process, of
+    fakts, and of any process a run starts all draw one."""
+    os.environ[QR_ENV] = "1"
+
+
+def _forced_qr() -> bool:
+    return os.environ.get(QR_ENV, "").strip() == "1"
+
+
 def _wants_qr(link: str, opened_browser: bool) -> bool:
     """A QR code is for approving on another device -- a phone, when the app runs
     over SSH, in a container or on a shared instrument PC. So not when the page
@@ -90,7 +101,8 @@ def _qr(console: Console, link: str) -> None:
     """Print ``link`` as a QR code, in half blocks: black on white whatever the
     theme (a code a dark theme inverts is one some scanners refuse), or, without
     colours, the light modules drawn on the dark background most terminals have."""
-    if console.options.ascii_only:
+    if console.options.ascii_only and not _forced_qr():
+        # Half blocks are not ASCII: drawn only when the code is asked for by name.
         return
     import segno  # only a login that is approved elsewhere draws one
 
@@ -154,6 +166,7 @@ __all__ = [
     "STEP",
     "done",
     "fail",
+    "force_qr",
     "logged_in",
     "login_prompt",
     "notice",

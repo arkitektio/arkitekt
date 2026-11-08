@@ -105,12 +105,19 @@ is not released as an image, and it installs no Qt binding: add the one you want
 `--template bare` writes only the app file, into the working directory. A template is a set of defaults: each part has its own
 option, so any mix is possible.
 
+Without a path, an empty folder (one holding at most `.git`, `.venv` or editor
+settings) is set up in place; in any other folder `create` asks whether to use it
+anyway, or for the name of a new one. When it is done it says how to start the
+app: in a uv project that is `uv run arkitekt run dev`, as arkitekt is installed in
+the project's environment.
+
 ```bash
 # A new project in ./my-app — prompts for identifier, author and entrypoint
 arkitekt create my-app
 
-# Asks for the name first
-arkitekt create
+# In an empty folder: sets the project up right here (still runs `uv init`).
+# In one that is not empty: asks whether to use it, or for a new folder's name
+mkdir my-app && cd my-app && arkitekt create
 
 # An agent with a panel of its own
 arkitekt create my-analyst --template blok
@@ -190,6 +197,7 @@ grouped in `--help` the same way, and only what you pass is overridden:
 | Login | `--token`, `-t` | A previously issued credential, `client_id:refresh_token`: no browser login. |
 | Login | `--mandate-key`, `-r` | A mandate key: logs the app in without a browser, as whoever issued it. |
 | Login | `--headless` | Print the login link instead of opening a browser. |
+| Login | `--qr` | Always show the login link as a QR code, also when the browser opened or the server is local (same as `FAKTS_QR=1`). |
 | Session | `--reauth` | Log in again and replace the saved session (wrong user or organization). |
 | Session | `--skip-cache` | Ignore the saved session and save none: log in, for this run only. |
 | Session | `--force-mesh` | Reach every service over the deployment's mesh and nothing else; addresses that are not on it are not tried. Same as `ARKITEKT_MESH=force`. |
@@ -380,7 +388,7 @@ arkitekt logout --url http://localhost:7080   # ... the one for that server
 | Command | Description |
 | :--- | :--- |
 | `status` | Shows the app in this folder and its session: where, since when, and whether it is still usable. |
-| `login` | Logs the app in and saves the session. Takes `--url`, `--token`, `--mandate-key`, `--headless`, `--reauth`. |
+| `login` | Logs the app in and saves the session. Takes `--url`, `--token`, `--mandate-key`, `--headless`, `--qr`, `--reauth`. |
 | `logout` | Revokes the saved session on a server that offers revocation, and forgets it on this machine. Stop an instance of the app that is still running first: it saves its session back. |
 
 Logged in as the wrong user? `arkitekt login --reauth`.

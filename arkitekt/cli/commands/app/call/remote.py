@@ -13,6 +13,7 @@ from arkitekt.cli.errors import cli_error
 from arkitekt.cli.failures import report_failure
 from arkitekt.cli.options import (
     HeadlessOption,
+    QrOption,
     LogLevel,
     LogLevelOption,
     ReauthOption,
@@ -24,6 +25,7 @@ from arkitekt.cli.options import (
 from arkitekt.cli.running import connected
 from arkitekt.cli.target import DEFAULT_TARGET, TARGET_ENVVAR, has_app, load_app_or_exit
 from arkitekt.cli.ui import construct_app_banner
+from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -142,6 +144,7 @@ def remote(
     token: TokenOption = None,
     mandate_key: MandateKeyOption = None,
     headless: HeadlessOption = False,
+    qr: QrOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
     skip_cache: SkipCacheOption = False,
     reauth: ReauthOption = False,
@@ -168,6 +171,8 @@ def remote(
 
     console = get_console(ctx)
     configure_logging(log_level.value)
+    if qr:
+        force_qr()
 
     try:
         kwargs = parse_call_args(args or [])

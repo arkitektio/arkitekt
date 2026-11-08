@@ -20,6 +20,23 @@ from arkitekt.cli.vars import get_console, get_work_dir
 #: Non-interactive escape hatch surfaced when `create` needs to prompt.
 _CREATE_HINT = "Pass --yes to accept the defaults, or provide the fields as options."
 
+#: Non-interactive escape hatch when `create` asks where the app goes.
+_FOLDER_HINT = "Name the folder: `arkitekt create my-app` (or `.` for this one)."
+
+#: What a folder may hold and still count as empty: a repository, an environment,
+#: and what editors and the OS leave behind. Anything else, `.arkitekt/` and
+#: `.github/` among it, means someone has worked there already.
+IGNORED_WHEN_EMPTY = frozenset({".git", ".venv", ".DS_Store", ".idea", ".vscode"})
+
+
+def is_empty_folder(path: str) -> bool:
+    """Whether ``path`` holds nothing an app could clash with, so ``create`` can set one up in it."""
+    try:
+        entries = os.listdir(path)
+    except OSError:
+        return False
+    return all(entry in IGNORED_WHEN_EMPTY for entry in entries)
+
 
 def get_default_package_manager():
     if shutil.which("uv"):
@@ -354,7 +371,8 @@ def create_command(
         str | None,
         typer.Argument(
             help="The folder to create the app in. '.' is this folder. "
-            "The default template asks for a name and makes a new folder of it."
+            "Without one, an empty folder is set up in place; in one that is not empty, "
+            "you are asked whether to use it or to name a new folder."
         ),
     ] = None,
     identifier: Annotated[
@@ -479,7 +497,10 @@ def create_command(
 ):
     """Creates an Arkitekt app
 
-    By default this makes a new folder holding everything an app needs to be
+    Run in an empty folder, it sets the app up right there; elsewhere name a
+    folder (`arkitekt create my-app`), or answer when it asks.
+
+    By default this makes a project holding everything an app needs to be
     developed and released: a uv project, an `app.py` that declares the app with
     `App(...)` (its identifier, version, author, scopes and logo; there is no
     separate manifest), tests of it, a flavour to build it into an image, and a
@@ -506,16 +527,21 @@ def create_command(
     preset = TEMPLATES[template]
 
     if path is None:
-        if not preset.new_folder:
+        if not preset.new_folder or is_empty_folder(parent_work_dir):
+            # An empty folder is one made for the app: it is set up right here.
             path = "."
         elif yes:
             cli_error(
-                f"The '{template}' template creates the app in a new folder: name it "
-                "(`arkitekt create my-app`), or pass `.` to use this one."
+                f"This folder is not empty, and the '{template}' template would set a project up in it: "
+                "name a new folder (`arkitekt create my-app`), or pass `.` to use this one anyway."
             )
         else:
-            require_tty("`create`", hint="Name the folder: `arkitekt create my-app` (or `.` for this one).")
-            path = str(typer.prompt("The name of your app (a new folder)"))
+            require_tty("`create`", hint=_FOLDER_HINT)
+            here = os.path.basename(os.path.abspath(parent_work_dir)) or parent_work_dir
+            if typer.confirm(f"Create the app in this folder ({here})? It is not empty", default=False):
+                path = "."
+            else:
+                path = str(typer.prompt("The name of your app (a new folder)"))
 
     # Resolve the target directory without changing process CWD. It is only named
     # here: nothing is made until every question is answered, so a wizard that is
@@ -667,11 +693,11 @@ def create_command(
 
     if starter in STARTER_COMMANDS:
         command = STARTER_COMMANDS[starter].format(entrypoint=entrypoint)
-        run_hint = f"uv run {command}" if manager == "uv" else command
     else:
-        run_hint = (
-            "arkitekt run dev" if entrypoint == "app" else f"arkitekt run dev {entrypoint}"
-        )
+        command = "arkitekt run dev" if entrypoint == "app" else f"arkitekt run dev {entrypoint}"
+    # In a uv project arkitekt is installed in the project's environment, not on
+    # the PATH: what starts it is `uv run`.
+    run_hint = f"uv run {command}" if manager == "uv" else command
     if path != ".":
         run_hint = f"cd {path} && {run_hint}"
     by = f" · {escape(author)}" if author else ""

@@ -38,6 +38,7 @@ from arkitekt.cli.options import (
     SupervisorOption,
     ForceOption,
     HeadlessOption,
+    QrOption,
     LogLevelOption,
     ReauthOption,
     SkipCacheOption,
@@ -55,6 +56,7 @@ from arkitekt.cli.target import (
 from arkitekt.app.app import App
 from arkitekt.runtime import _provider_for
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
+from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 
@@ -378,6 +380,7 @@ def dev(
     mandate_key: MandateKeyOption = None,
     force: ForceOption = False,
     headless: HeadlessOption = False,
+    qr: QrOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
     skip_cache: SkipCacheOption = False,
     reauth: ReauthOption = False,
@@ -408,6 +411,8 @@ def dev(
 
     console = get_console(ctx)
     configure_logging(log_level.value)
+    if qr:
+        force_qr()
     work_dir = get_work_dir(ctx)
     try:
         parsed = parse_target(target, work_dir)

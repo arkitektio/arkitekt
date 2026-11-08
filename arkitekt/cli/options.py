@@ -100,6 +100,17 @@ HeadlessOption = Annotated[
     ),
 ]
 
+#: Always show the login link as a QR code. Callers default this to ``False``.
+QrOption = Annotated[
+    bool,
+    typer.Option(
+        "--qr",
+        help="Always show the login link as a QR code, also when the browser opened or the server is local "
+        "(only when a login happens: a saved session needs none)",
+        rich_help_panel=LOGIN_PANEL,
+    ),
+]
+
 #: The logging level. Callers default this to ``LogLevel.ERROR``.
 LogLevelOption = Annotated[
     LogLevel,
