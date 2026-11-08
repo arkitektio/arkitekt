@@ -1,5 +1,6 @@
 from typing import Annotated
 import typer
+from arkitekt.cli.ui import done, escape, notice
 from arkitekt.cli.vars import get_console, get_work_dir
 
 
@@ -19,7 +20,7 @@ def validate(
     flavours = get_flavours(base_dir=work_dir, select=flavour)
 
     for name, loaded in flavours.items():
-        console.print(f"[green]✓[/green] Flavour [bold]{name}[/bold] is valid")
+        done(console, f"Flavour [bold]{escape(name)}[/bold] is valid")
 
         # An image built for several architectures runs anywhere; a cpu selector
         # naming an arch pins its pods to one. Both are legal, together they
@@ -31,11 +32,11 @@ def validate(
             if selector.kind == "cpu" and isinstance(arch, str)
         ]
         if pinned and len(loaded.platforms) > 1:
-            console.print(
-                f"[yellow]  Flavour [bold]{name}[/bold] builds "
-                f"{', '.join(loaded.platforms)} but its cpu selector pins arch "
-                f"{', '.join(pinned)}. Drop the arch from the selector, or build only "
-                "that platform.[/yellow]"
+            notice(
+                console,
+                f"Flavour [bold]{escape(name)}[/bold] builds {escape(', '.join(loaded.platforms))} "
+                f"but its cpu selector pins arch {escape(', '.join(pinned))}",
+                "drop the arch from the selector, or build only that platform",
             )
 
-    console.print("[green]All flavours are valid[/green]")
+    done(console, "All flavours are valid")

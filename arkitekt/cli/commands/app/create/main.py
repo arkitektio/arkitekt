@@ -661,9 +661,7 @@ def create_command(
                 if example not in had_files and example != f"{entrypoint}.py" and os.path.exists(example_file):
                     os.remove(example_file)
         else:
-            console.print(
-                "pyproject.toml already exists. Skipping uv init.", style="yellow"
-            )
+            notice(console, "pyproject.toml already exists", "uv init skipped")
 
     template_app = render_starter(starter, identifier, version, author=author, scopes=scopes, logo=logo)
 

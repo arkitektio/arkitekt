@@ -7,6 +7,7 @@ import yaml
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
+from arkitekt.cli.ui import escape, notice
 from arkitekt.cli.vars import get_console, get_work_dir
 
 GEN_HINT = "Generate the code with [b]uvx --with <service packages> turms gen[/b] (or [b]turms watch[/b])."
@@ -108,7 +109,7 @@ def init(
             console.print(f"[dim]{name}: ships no schema or turms project, skipped[/]")
             continue
         if name in projects and not force:
-            console.print(f"[yellow]{name}: already in {config}, kept (pass --force to replace it)[/]")
+            notice(console, f"{escape(name)} is already in {escape(config)}", "kept; pass --force to replace it")
             continue
 
         os.makedirs(os.path.join(app_directory, "schemas"), exist_ok=True)

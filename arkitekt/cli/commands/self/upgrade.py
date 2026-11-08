@@ -21,6 +21,7 @@ from rich.table import Table
 
 from arkitekt.cli.errors import cli_error, confirm_or_abort
 from arkitekt.cli.tty import require_tty
+from arkitekt.cli.ui import done, escape, notice, step
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.cli.commands.app.create.main import get_default_package_manager
 from arkitekt.cli.target import infer_package_manager
@@ -109,12 +110,12 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
                 "Upgrade ALL project dependencies with `uv sync --upgrade`?",
             )
         command = ["uv", "sync", "--upgrade"]
-        console.print(f"Running: {' '.join(command)}", style="cyan")
+        step(console, "Upgrading", escape(" ".join(command)))
         try:
             subprocess.run(command, check=True, cwd=get_work_dir(ctx))
         except subprocess.CalledProcessError as e:
             cli_error(f"Failed to upgrade dependencies (exit code {e.returncode}).")
-        console.print("Successfully upgraded all project dependencies. 🚀", style="green")
+        done(console, "Upgraded every dependency of the project")
         return
 
     # pip: discover outdated distributions and upgrade them.
@@ -130,7 +131,7 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
         cli_error(f"Could not determine outdated packages via pip: {e}")
 
     if not outdated_names:
-        console.print("Everything is up to date. 🎉", style="green")
+        done(console, "Everything is up to date")
         return
 
     console.print(f"{len(outdated_names)} outdated package(s): {', '.join(outdated_names)}")
@@ -139,12 +140,12 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
         confirm_or_abort(f"Upgrade all {len(outdated_names)} package(s) with pip?")
 
     command = [sys.executable, "-m", "pip", "install", "--upgrade", *outdated_names]
-    console.print(f"Running: {' '.join(command)}", style="cyan")
+    step(console, "Upgrading", escape(" ".join(command)))
     try:
         subprocess.run(command, check=True)
     except subprocess.CalledProcessError as e:
         cli_error(f"Failed to upgrade dependencies (exit code {e.returncode}).")
-    console.print("Successfully upgraded all project dependencies. 🚀", style="green")
+    done(console, "Upgraded every dependency of the project")
 
 
 def upgrade(
@@ -208,17 +209,14 @@ def upgrade(
 
         latest = _fetch_latest_version(name, pre)
         if latest is None:
-            console.print(
-                f"Could not fetch the latest version for {name}, skipping.",
-                style="yellow",
-            )
+            notice(console, f"Could not fetch the latest version of {escape(name)}", "skipped")
             continue
 
         if _is_newer(latest, current):
             outdated.append((name, current, latest))
 
     if not outdated:
-        console.print("Everything is up to date. 🎉", style="green")
+        done(console, "Everything is up to date")
         return
 
     table = Table(title="Available upgrades")
@@ -250,7 +248,7 @@ def upgrade(
         command = [sys.executable, "-m", "pip", "install", "--upgrade", *packages]
         cwd = None
 
-    console.print(f"Running: {' '.join(command)}", style="cyan")
+    step(console, "Upgrading", escape(" ".join(command)))
     try:
         subprocess.run(command, check=True, cwd=cwd)
     except subprocess.CalledProcessError as e:
@@ -258,4 +256,4 @@ def upgrade(
             f"Failed to upgrade packages (exit code {e.returncode})."
         )
 
-    console.print("Successfully upgraded the Arkitekt packages. 🚀", style="green")
+    done(console, "Upgraded the Arkitekt packages")

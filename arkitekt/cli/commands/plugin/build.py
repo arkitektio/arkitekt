@@ -1,3 +1,4 @@
+import logging
 import sys
 from typing import Annotated
 from arkitekt.cli.errors import cli_error
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
 
     from .types import Flavour
 
+logger = logging.getLogger(__name__)
 
 #: How long to let the in-container ``arkitekt inspect all`` run before
 #: treating it as wedged. Without a bound, a container that never emits the
@@ -83,10 +85,11 @@ def build_flavour(
         # the platform flags in it. Say so when the config claims more, instead
         # of quietly building one architecture for a flavour that promises two.
         if len(wanted) > 1 and console:
-            console.print(
-                f"[yellow]Flavour [bold]{flavour_name}[/bold] sets its own build_command, so it "
-                f"builds for this machine only — but its platforms say {', '.join(wanted)}. "
-                "Drop build_command from its config.yaml to build them all.[/yellow]"
+            notice(
+                console,
+                f"Flavour [bold]{escape(flavour_name)}[/bold] sets its own build_command, so it builds "
+                f"for this machine only, but its platforms say {escape(', '.join(wanted))}",
+                "drop build_command from its config.yaml to build them all",
             )
         build_host_image(build_id, flavour_name, flavour, work_dir, wanted, console=console)
         return build_id
@@ -288,7 +291,7 @@ def inspect_build(
 
     size, size_root_fs = inspect_docker_container(build_id)
     runtime, manifest = inspect_all(build_id, url, target)
-    print("Runtime inspection result:", runtime)
+    logger.debug("Runtime inspection result: %s", runtime)
     return read_inspection(runtime, size, build_id), AppManifest.model_validate(manifest)
 
 
@@ -368,10 +371,11 @@ def build(
 
         if tag:
             if len(platforms) > 1:
-                console.print(
-                    f"[yellow]--tag names the {len(platforms)}-platform flavour's image for this "
-                    "machine only; pushing that tag by hand publishes one architecture. "
-                    f"`{command_hint('plugin publish')}` pushes the manifest list.[/yellow]"
+                notice(
+                    console,
+                    f"--tag names the {len(platforms)}-platform flavour's image for this machine only",
+                    "pushing that tag by hand publishes one architecture; "
+                    f"`{command_hint('plugin publish')}` pushes the manifest list",
                 )
             subprocess.run(["docker", "tag", build_tag, tag], check=True)
 

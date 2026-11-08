@@ -25,7 +25,7 @@ import typer
 
 from arkitekt.cli.errors import cli_error, confirm_or_abort
 from arkitekt.cli.tty import require_tty
-from arkitekt.cli.ui import done, step
+from arkitekt.cli.ui import done, escape, fail, notice, step
 from arkitekt.cli.options import UrlOption
 from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -262,9 +262,7 @@ def _ensure_tailscale_installed(console) -> None:
     if shutil.which("tailscale") is not None:
         return
 
-    console.print(
-        "[bold red]tailscale is not installed[/bold red] (or not on your PATH).",
-    )
+    fail(console, "tailscale is not installed", "or not on your PATH")
     console.print(
         f"Install it from [link={TAILSCALE_INSTALL_URL}]{TAILSCALE_INSTALL_URL}[/link] "
         "— on Linux you can run:"
@@ -295,7 +293,7 @@ def _run_tailscale(console, args: list[str]) -> None:
     """
     _ensure_tailscale_installed(console)
     command = ["tailscale", *args]
-    console.print(f"Running: {' '.join(_redact(command))}", style="cyan")
+    step(console, "Running", escape(" ".join(_redact(command))))
     try:
         result = subprocess.run(command, timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
     except FileNotFoundError:
@@ -315,12 +313,8 @@ def _run_tailscale(console, args: list[str]) -> None:
 
     # Most tailscale operations need root; retry once with sudo.
     sudo_command = ["sudo", *command]
-    console.print(
-        f"'{' '.join(_redact(command))}' exited with {result.returncode}, "
-        f"retrying with sudo...",
-        style="yellow",
-    )
-    console.print(f"Running: {' '.join(_redact(sudo_command))}", style="cyan")
+    notice(console, f"'{escape(' '.join(_redact(command)))}' exited with {result.returncode}", "retrying with sudo")
+    step(console, "Running", escape(" ".join(_redact(sudo_command))))
     try:
         sudo_result = subprocess.run(sudo_command, timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
     except FileNotFoundError:
@@ -357,9 +351,7 @@ def _ensure_tailscaled_installed(console) -> str:
     path = _find_tailscaled()
     if path:
         return path
-    console.print(
-        "[bold red]tailscaled is not installed[/bold red] (or not found).",
-    )
+    fail(console, "tailscaled is not installed", "or not found")
     console.print(
         f"Install tailscale from "
         f"[link={TAILSCALE_INSTALL_URL}]{TAILSCALE_INSTALL_URL}[/link] — the "
@@ -402,7 +394,7 @@ def _bring_up_via_socket(
     command succeeds (or the attempts budget is exhausted).
     """
     command = ["tailscale", f"--socket={socket_path}", *up_args]
-    console.print(f"Running: {' '.join(_redact(command))}", style="cyan")
+    step(console, "Running", escape(" ".join(_redact(command))))
     last: subprocess.CompletedProcess[str] | None = None
     timed_out = False
     for _ in range(attempts):
@@ -557,7 +549,7 @@ def join(
         console, url, machine_name, description, ephemeral, tags, expiration, open_browser
     )
 
-    console.print(f"Authorized as [green]{hostname}[/green]; joining the mesh...")
+    step(console, f"Authorized as {escape(hostname)}", "joining the mesh")
     _run_tailscale(
         console,
         [
@@ -690,7 +682,7 @@ def proxy(
         tailscaled_path, listen, socks5_listen, TAILSCALED_STATE_DIR
     )
 
-    console.print(f"Running: {' '.join(daemon_command)}", style="cyan")
+    step(console, "Running", escape(" ".join(daemon_command)))
     try:
         proc = subprocess.Popen(daemon_command)
     except FileNotFoundError:
@@ -723,7 +715,8 @@ def proxy(
         )
         proc.wait()
     except KeyboardInterrupt:
-        console.print("\nStopping mesh proxy...", style="yellow")
+        console.print()
+        step(console, "Stopping the mesh proxy")
     finally:
         proc.terminate()
         try:
