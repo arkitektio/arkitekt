@@ -1,12 +1,15 @@
 """What a run says in the terminal on its own: the login prompt, in the CLI's look."""
 
 import asyncio
+import io
+import re
 
 from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.grants.remote.models import FaktsEndpoint
+from rich.console import Console
 
 from arkitekt.app.fakts import build_device_code_fakts
-from arkitekt.app.terminal import QR_ENV, force_qr, logged_in, login_prompt
+from arkitekt.app.terminal import QR_ENV, _qr, force_qr, logged_in, login_prompt
 
 from .test_cache_paths import make_manifest
 
@@ -60,6 +63,55 @@ def test_a_forced_qr_code_is_drawn_even_for_a_local_page_that_opened(capsys, mon
     asyncio.run(login_prompt(opened_browser=True)(local))  # pyright: ignore[reportArgumentType]
 
     assert "█" in capsys.readouterr().out
+
+
+LINK = "https://lab.example/f/device/?code=ABCD-EFGH"
+
+
+def _drawn(width: int, color_system: str | None = "standard") -> str:
+    out = io.StringIO()
+    console = Console(file=out, force_terminal=True, color_system=color_system, width=width)  # pyright: ignore[reportArgumentType]
+    _qr(console, LINK)
+    return out.getvalue()
+
+
+def _modules(border: int = 4) -> list[list[bool]]:
+    import segno
+
+    return [[bool(m) for m in row] for row in segno.make_qr(LINK, error="l").matrix_iter(border=border)]
+
+
+def test_a_qr_code_is_painted_with_backgrounds_two_spaces_a_module() -> None:
+    """No glyphs: a background fills the line height, so there are no seams to scan across."""
+    drawn = _drawn(width=200)
+
+    assert not set(drawn) & set("▀▄█")
+    # Dark modules black, light ones bright white (not white: a grey in many themes).
+    grid = [
+        [code == "40" for code, spaces in re.findall(r"\x1b\[(\d+)m( +)", line) for _ in range(len(spaces) // 2)]
+        for line in drawn.splitlines()
+    ]
+    assert set(re.findall(r"\x1b\[(\d+)m ", drawn)) == {"40", "107"}
+    assert grid == _modules(), "every module, with a quiet zone of four"
+
+
+def test_a_narrow_terminal_gets_half_blocks_coloured_above_and_below() -> None:
+    modules = _modules()
+    drawn = _drawn(width=2 * len(modules[0]))  # one column short of two a module, with the indent
+
+    assert "▀" in drawn and "▄" not in drawn and "█" not in drawn
+    cells = [re.findall(r"\x1b\[(\d+);(\d+)m(▀+)", line) for line in drawn.splitlines()]
+    top = [[fg == "30" for fg, _, run in row for _ in run] for row in cells]
+    bottom = [[bg == "40" for _, bg, run in row for _ in run] for row in cells]
+    padded = modules + [[False] * len(modules[0])] * (len(modules) % 2)
+    assert top == padded[::2] and bottom == padded[1::2]
+
+
+def test_without_colours_a_qr_code_draws_its_light_modules() -> None:
+    drawn = _drawn(width=200, color_system=None)
+
+    assert "\x1b[" not in drawn
+    assert "█" in drawn
 
 
 def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(capsys) -> None:

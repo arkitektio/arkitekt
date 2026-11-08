@@ -67,6 +67,16 @@ QR_ENV = "FAKTS_QR"
 
 _HALF_BLOCKS = {(False, False): " ", (True, False): "▀", (False, True): "▄", (True, True): "█"}
 
+#: The modules of quiet zone around a code: the four the standard asks for.
+_QR_BORDER = 4
+
+#: What a dark and a light module are painted with. Bright white, not white:
+#: plain white is a light grey in many themes, and every bit of contrast helps.
+_DARK, _LIGHT = "black", "bright_white"
+
+#: Where a code starts: indented like the rest of the prompt.
+_QR_INDENT = "  "
+
 
 def force_qr() -> None:
     """Show the approval link as a QR code whatever the login looks like: what
@@ -98,31 +108,47 @@ def _wants_qr(link: str, opened_browser: bool) -> bool:
 
 
 def _qr(console: Console, link: str) -> None:
-    """Print ``link`` as a QR code, in half blocks: black on white whatever the
-    theme (a code a dark theme inverts is one some scanners refuse), or, without
-    colours, the light modules drawn on the dark background most terminals have."""
+    """Print ``link`` as a QR code that a phone can scan in any terminal.
+
+    Each module is two spaces painted with a background colour: black or bright
+    white whatever the theme. A background fills the cell's whole height, line
+    spacing included, so no seams cut through the code, and spaces are ASCII. A
+    terminal too narrow for that gets half the height: one ``▀`` per two modules,
+    its foreground the upper one and its background the lower. Without colours the
+    light modules are drawn as blocks on the dark background most terminals have.
+    """
+    import segno  # only a login that is approved elsewhere draws one
+
+    # make_qr, not make: a short link would otherwise become a Micro QR code,
+    # which phone cameras do not read.
+    rows = [[bool(module) for module in row] for row in segno.make_qr(link, error="l").matrix_iter(border=_QR_BORDER)]
+    if console.color_system is not None and len(_QR_INDENT) + 2 * len(rows[0]) <= console.width:
+        for row in rows:
+            _qr_line(console, Text.assemble(*((" " * 2, f"on {_paint(dark)}") for dark in row)))
+        return
     if console.options.ascii_only and not _forced_qr():
         # Half blocks are not ASCII: drawn only when the code is asked for by name.
         return
-    import segno  # only a login that is approved elsewhere draws one
-
-    plain = console.color_system is None
-    # make_qr, not make: a short link would otherwise become a Micro QR code,
-    # which phone cameras do not read.
-    rows = [
-        [bool(module) != plain for module in row]
-        for row in segno.make_qr(link, error="l").matrix_iter(border=2)
-    ]
     if len(rows) % 2:
-        rows.append([plain] * len(rows[0]))
+        rows.append([False] * len(rows[0]))
     for top, bottom in zip(rows[::2], rows[1::2], strict=True):
-        line = "".join(_HALF_BLOCKS[pair] for pair in zip(top, bottom, strict=True))
-        console.print(
-            Text.assemble("  ", (line, "" if plain else "black on white")),
-            no_wrap=True,
-            crop=False,
-            highlight=False,
-        )
+        if console.color_system is None:
+            # Light on the terminal's dark background: what is drawn is the light.
+            pairs = zip((not dark for dark in top), (not dark for dark in bottom), strict=True)
+            _qr_line(console, Text("".join(_HALF_BLOCKS[pair] for pair in pairs)))
+        else:
+            _qr_line(
+                console,
+                Text.assemble(*(("▀", f"{_paint(up)} on {_paint(down)}") for up, down in zip(top, bottom, strict=True))),
+            )
+
+
+def _paint(dark: bool) -> str:
+    return _DARK if dark else _LIGHT
+
+
+def _qr_line(console: Console, line: Text) -> None:
+    console.print(Text.assemble(_QR_INDENT, line), no_wrap=True, crop=False, highlight=False)
 
 
 def login_prompt(opened_browser: bool = True) -> "DeviceCodeHook":
