@@ -3,6 +3,7 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import typer
+from arkitekt.cli.completion import complete_actions
 from rich.console import Console
 from rich.markup import escape
 
@@ -95,6 +96,7 @@ async def call_locally(
     options: dict[str, Any],
     offline: bool = True,
     context: Any = None,  # noqa: ANN401
+    work_dir: str | None = None,
 ) -> list[Any]:
     """Start ``app`` for itself, call ``action`` once, and return everything it yielded.
 
@@ -103,7 +105,7 @@ async def call_locally(
     """
     keys = [port.key for port in app.registry.implementations[action].definition.returns]
     results: list[Any] = []
-    async with connected_local(console, app, options, offline=offline, context=context) as rt:
+    async with connected_local(console, app, options, offline=offline, context=context, work_dir=work_dir) as rt:
         async for returns in rt.aiterate_local_raw(action, kwargs):
             values = [returns.get(key) for key in keys]
             results.append(values[0] if len(values) == 1 else values or None)
@@ -114,7 +116,11 @@ def local(
     ctx: typer.Context,
     action: Annotated[
         str,
-        typer.Argument(help="The action to call: the name of the function.", show_default=False),
+        typer.Argument(
+            help="The action to call: the name of the function.",
+            show_default=False,
+            autocompletion=complete_actions,
+        ),
     ],
     target: TargetArgument = DEFAULT_TARGET,
     args: Annotated[
@@ -197,6 +203,7 @@ def local(
                 options,
                 offline=not online,
                 context=loaded,
+                work_dir=get_work_dir(ctx),
             )
         )
     except LocalCallError as e:
@@ -204,7 +211,7 @@ def local(
         raise typer.Exit(code=1) from None
     except Exception as e:
         # A failure the user can act on is one line; anything else keeps its traceback.
-        if report_failure(console, e):
+        if report_failure(console, e, get_work_dir(ctx)):
             raise typer.Exit(code=1) from None
         raise
 

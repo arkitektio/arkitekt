@@ -356,3 +356,30 @@ def test_check_json_out_lists_each_action_by_the_hash_the_server_finds_it_by(tmp
 
     (action, *_) = json.loads(out.read_text())["actions"]
     assert action["hash"] and action["line"] and action["file"].endswith("app.py")
+
+
+def test_check_json_prints_the_report_alone_on_stdout(tmp_path: Path) -> None:
+    """What the app prints while it is imported, and the status line, go to stderr."""
+    import json
+
+    (tmp_path / "app.py").write_text("print('hello from the app')\n" + VALID)
+
+    result = _invoke(tmp_path, "check", "--json")
+
+    assert result.exit_code == 0, result.output
+    report = json.loads(result.stdout)
+    assert report["ok"] is True and report["app"] == {"identifier": "checked", "version": "1.2.3"}
+    assert [action["interface"] for action in report["actions"]] == ["add"]
+    assert "hello from the app" in result.stderr
+
+
+def test_check_json_reports_a_refusal_and_fails(tmp_path: Path) -> None:
+    import json
+
+    (tmp_path / "app.py").write_text(UNTYPED)
+
+    result = _invoke(tmp_path, "check", "--json")
+
+    assert result.exit_code == 1
+    report = json.loads(result.stdout)
+    assert report["ok"] is False and report["diagnostics"]

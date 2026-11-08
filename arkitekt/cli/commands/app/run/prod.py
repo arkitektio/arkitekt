@@ -73,7 +73,7 @@ def prod(
 
     async def until_stopped() -> None:
         try:
-            await arun_app(console, app, options, context=loaded)
+            await arun_app(console, app, options, context=loaded, work_dir=get_work_dir(ctx))
         except asyncio.CancelledError:
             # Said before the teardown that follows, which may take a moment.
             notice(console, "Stopping", "Ctrl+C again to force")
@@ -84,7 +84,7 @@ def prod(
             asyncio.run(until_stopped())
     except Exception as e:
         # A failure the user can act on is one line; anything else is a crash.
-        if report_failure(console, e):
+        if report_failure(console, e, get_work_dir(ctx)):
             raise typer.Exit(code=1) from None
         console.print_exception()
         cli_error("App crashed while running. See the traceback above.")

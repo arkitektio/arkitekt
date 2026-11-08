@@ -1,5 +1,10 @@
+import contextlib
+import sys
+from collections.abc import Callable, Iterator
 from typing import Any
 import json
+
+from rich.console import Console
 import logging
 import os
 
@@ -34,3 +39,30 @@ def configure_logging(log_level: str) -> None:
         logging.basicConfig(level=log_level, handlers=[RichHandler()])
     except ImportError:
         logging.basicConfig(level=log_level)
+
+
+@contextlib.contextmanager
+def json_stdout(enabled: bool) -> Iterator[Callable[[Any], None]]:
+    """Keep stdout for one JSON document, when ``enabled``.
+
+    Inside, whatever else would reach stdout (an app's own prints while it is
+    imported) goes to stderr. Yields the function that prints the document to
+    the real stdout; it does nothing when not ``enabled``.
+    """
+    stdout = sys.stdout
+
+    def emit(data: Any) -> None:  # noqa: ANN401
+        if enabled:
+            stdout.write(json.dumps(data, indent=2, default=str) + "\n")
+            stdout.flush()
+
+    if not enabled:
+        yield emit
+        return
+    with contextlib.redirect_stdout(sys.stderr):
+        yield emit
+
+
+def human_console(console: Console, as_json: bool) -> Console:
+    """The console to say things on: stderr when stdout is kept for JSON."""
+    return Console(stderr=True) if as_json else console

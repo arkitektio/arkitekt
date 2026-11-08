@@ -157,4 +157,8 @@ def main(
     ctx.obj = {}
     set_console(ctx, Console())
     set_work_dir(ctx, work_dir)
+    # Asked in the background; said after the command's own output, if at all.
+    from arkitekt.cli import updates
+
+    updates.start(ctx)
 

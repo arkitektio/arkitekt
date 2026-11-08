@@ -232,7 +232,7 @@ def report_broken(console: Console, error: BaseException, target: Target, work_d
     console.print(escape(describe_import_failure(error, target.module, work_dir)), highlight=False)
 
 
-def callback(console: Console, future: asyncio.Task[None]):
+def callback(console: Console, work_dir: str | None, future: asyncio.Task[None]):
     if future.cancelled():
         return
     else:
@@ -242,7 +242,7 @@ def callback(console: Console, future: asyncio.Task[None]):
             done(console, "App finished running")
         else:
             # A failure the user can act on is one line; anything else is a crash.
-            if report_failure(console, has_exception):
+            if report_failure(console, has_exception, work_dir):
                 return
             try:
                 raise has_exception
@@ -255,13 +255,14 @@ def _start(
     console: Console,
     candidate: Candidate,
     options: dict[str, Any],
+    work_dir: str | None = None,
 ) -> asyncio.Task[None]:
     """Start running a loaded app, reporting on its connection and its tasks."""
     console.print(construct_app_banner(candidate.app, resolve_url(options.get("url"))))
     run = asyncio.create_task(
-        arun_app(console, candidate.app, options, context=candidate.context, tasks=True)
+        arun_app(console, candidate.app, options, context=candidate.context, tasks=True, work_dir=work_dir)
     )
-    run.add_done_callback(partial(callback, console))
+    run.add_done_callback(partial(callback, console, work_dir))
     return run
 
 
@@ -328,7 +329,7 @@ async def run_dev(
     files: set[str] | None = None
     try:
         current_run = _start(
-            console, load_candidate(target, [], context, context_file, work_dir), options
+            console, load_candidate(target, [], context, context_file, work_dir), options, work_dir
         )
         files = tracked()
     except Exception as e:
@@ -360,7 +361,7 @@ async def run_dev(
                 continue
 
             await _stop(console, current_run)
-            current_run = _start(console, candidate, options)
+            current_run = _start(console, candidate, options, work_dir)
             files = tracked()
     except asyncio.CancelledError:
         # Stopped (Ctrl+C). The app is stopped here, while a second Ctrl+C is

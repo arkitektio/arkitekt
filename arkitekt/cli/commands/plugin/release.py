@@ -257,7 +257,7 @@ def push_flavour(
                 relative_dir,
                 platform=",".join(platforms),
                 output="--push",
-                builder=ensure_builder(platforms, console=console),
+                builder=ensure_builder(platforms, console=console, work_dir=work_dir),
                 extra=extra,
             )
         ]

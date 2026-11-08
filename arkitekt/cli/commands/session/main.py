@@ -19,6 +19,7 @@ from arkitekt.app.sessions import Session, read_session, session_path
 from arkitekt.cli.commands.app.run.utils import explicit_options
 from arkitekt.cli.failures import report_failure
 from arkitekt.cli.options import (
+    JsonOption,
     HeadlessOption,
     QrOption,
     LogLevel,
@@ -32,8 +33,8 @@ from arkitekt.cli.running import ago
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.ui import command_hint, construct_app_banner, done, notice
 from arkitekt.app.terminal import force_qr
-from arkitekt.cli.utils import configure_logging
-from arkitekt.cli.vars import get_console
+from arkitekt.cli.utils import configure_logging, human_console, json_stdout
+from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 #: The connection flags a login takes: how to reach the server and as whom.
@@ -53,7 +54,7 @@ def _usable_session(console: Console, app: App[Any], server: str) -> Session | N
     try:
         expected = runtime.run_manifest(app).hash()
     except Exception as e:
-        if report_failure(console, e):
+        if report_failure(console, e, get_work_dir(ctx)):
             raise typer.Exit(code=1) from None
         raise
     return session if session.is_for(expected) else None
@@ -98,7 +99,7 @@ def login(
     except KeyboardInterrupt:
         raise typer.Exit(code=1) from None
     except Exception as e:
-        if report_failure(console, e):
+        if report_failure(console, e, get_work_dir(ctx)):
             raise typer.Exit(code=1) from None
         raise
 
@@ -141,15 +142,34 @@ def status(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
     url: UrlOption = DEFAULT_ARKITEKT_URL,
+    as_json: JsonOption = False,
 ) -> None:
     """Show this folder's app and whether it is logged in"""
-    console = get_console(ctx)
-    app = load_app_or_exit(ctx, target)
-    server = resolve_url(explicit_options(ctx, ("url",)).get("url"))
-    console.print(construct_app_banner(app, server, connection="server"))
+    console = human_console(get_console(ctx), as_json)
+    with json_stdout(as_json) as emit:
+        app = load_app_or_exit(ctx, target)
+        server = resolve_url(explicit_options(ctx, ("url",)).get("url"))
+        saved = read_session(session_path(app.identifier, app.version, server))
+        session = _usable_session(console, app, server)
+        emit(
+            {
+                "app": {"identifier": app.identifier, "version": app.version},
+                "server": server,
+                # A session saved for another declaration of the app is not this one's.
+                "session": None
+                if session is None
+                else {
+                    "state": session.state(),
+                    "deployment": session.deployment,
+                    "logged_in_at": session.logged_in_at,
+                },
+                "stale_session": session is None and saved is not None,
+            }
+        )
+        if as_json:
+            return
 
-    saved = read_session(session_path(app.identifier, app.version, server))
-    session = _usable_session(console, app, server)
+    console.print(construct_app_banner(app, server, connection="server"))
     if session is None:
         if saved is not None:
             # Saved for the app as it was declared then: a scope, a service or
@@ -160,7 +180,7 @@ def status(
                 "the next run logs in again",
             )
             return
-        notice(console, "Not logged in", f"`{command_hint('login')}`, or just run the app")
+        notice(console, "Not logged in", f"`{command_hint('login', get_work_dir(ctx))}`, or just run the app")
         return
 
     since = f"{ago(session.logged_in_at)} · " if session.logged_in_at else ""
@@ -172,5 +192,5 @@ def status(
         notice(
             console,
             f"The saved session is {state}",
-            f"logged in {since}`{command_hint('login --reauth')}` replaces it",
+            f"logged in {since}`{command_hint('login --reauth', get_work_dir(ctx))}` replaces it",
         )

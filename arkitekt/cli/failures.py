@@ -26,13 +26,13 @@ _KNOWN = {
     "DeviceCodeTimeoutError": ("The login was not approved in time", "run it again"),
     "NeedsReauthenticationError": (
         "The session is no longer valid",
-        lambda: f"log in again with `{command_hint('login --reauth')}`",
+        lambda work_dir: f"log in again with `{command_hint('login --reauth', work_dir)}`",
     ),
     "DiscoveryError": ("Could not reach the server", "check --url"),
 }
 
 
-def explain(error: BaseException) -> tuple[str, str | None] | None:
+def explain(error: BaseException, work_dir: str | None = None) -> tuple[str, str | None] | None:
     """What to say about ``error``, and the hint to give, if it is a known failure."""
     names = [cls.__name__ for cls in type(error).__mro__]
     if "RuntimeNotInstalledError" in names:
@@ -50,13 +50,13 @@ def explain(error: BaseException) -> tuple[str, str | None] | None:
         if name in _KNOWN:
             message, hint = _KNOWN[name]
             # A hint that names a command is made now: how it is started depends on the project.
-            return (message, hint() if callable(hint) else hint)
+            return (message, hint(work_dir) if callable(hint) else hint)
     return None
 
 
-def report_failure(console: Console, error: BaseException) -> bool:
+def report_failure(console: Console, error: BaseException, work_dir: str | None = None) -> bool:
     """Print the line for ``error`` if it is a known failure. Returns whether it was."""
-    known = explain(error)
+    known = explain(error, work_dir)
     if known is None:
         return False
     message, hint = known

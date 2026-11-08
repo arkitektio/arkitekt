@@ -3,6 +3,7 @@ import json
 from typing import Annotated, Any
 
 import typer
+from arkitekt.cli.completion import complete_actions
 
 from rich.console import Console
 
@@ -83,7 +84,12 @@ def parse_call_args(args: list[str]) -> dict[str, Any]:
 
 
 async def call_app(
-    console: Console, app: App[Any], hash: str, kwargs: dict[str, Any], options: dict[str, Any]
+    console: Console,
+    app: App[Any],
+    hash: str,
+    kwargs: dict[str, Any],
+    options: dict[str, Any],
+    work_dir: str | None = None,
 ) -> Any:  # noqa: ANN401
     """Connect ``app`` (without providing it), find the action by hash, and call it.
 
@@ -92,7 +98,7 @@ async def call_app(
     """
     from rekuest.client.client import RekuestCaller
 
-    async with connected(console, app, options) as rt:
+    async with connected(console, app, options, work_dir=work_dir) as rt:
         rekuest = rt.require(RekuestCaller)
         action = await rekuest.afind(hash=hash)
         return await rekuest.acall_raw(kwargs=kwargs, action=action)
@@ -126,6 +132,7 @@ def remote(
                 "lists both)."
             ),
             show_default=False,
+            autocompletion=complete_actions,
         ),
     ],
     target: Annotated[
@@ -205,12 +212,12 @@ def remote(
     console.print(construct_app_banner(app, resolve_url(options.get("url"))))
 
     try:
-        result = asyncio.run(call_app(console, app, hash, kwargs, options))
+        result = asyncio.run(call_app(console, app, hash, kwargs, options, get_work_dir(ctx)))
     except LookupError as e:
         cli_error(str(e))
     except Exception as e:
         # A failure the user can act on is one line; anything else keeps its traceback.
-        if report_failure(console, e):
+        if report_failure(console, e, get_work_dir(ctx)):
             raise typer.Exit(code=1) from None
         raise
 

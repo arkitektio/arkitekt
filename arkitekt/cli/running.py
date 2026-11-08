@@ -117,7 +117,7 @@ def _elapsed(seconds: float) -> str:
 
 
 def report_session(
-    console: Console, rt: Any, before: float | None, options: dict[str, Any]
+    console: Console, rt: Any, before: float | None, options: dict[str, Any], work_dir: str | None = None
 ) -> None:  # noqa: ANN401
     """Say how the run got its session, unless the login prompt already did.
 
@@ -133,7 +133,7 @@ def report_session(
         done(
             console,
             "Session reused",
-            f"logged in {ago(started)} · `{command_hint('logout')}` ends it",
+            f"logged in {ago(started)} · `{command_hint('logout', work_dir)}` ends it",
         )
     elif options.get("token") or options.get("mandate_key"):
         done(console, f"Logged in to {escape(loaded.self.deployment_name)}", "with a token")
@@ -267,6 +267,7 @@ async def connected(
     options: dict[str, Any],
     provide: bool = False,
     tasks: bool = False,
+    work_dir: str | None = None,
 ) -> AsyncIterator[Any]:
     """Connect ``app`` with the explicitly passed ``options``, and report on it.
 
@@ -292,7 +293,7 @@ async def connected(
         extra["task_listener"] = TaskReporter(console)
     # Through the module, so the connection stays replaceable (tests patch it).
     async with runtime.connect(app, **options, **extra) as rt:
-        report_session(console, rt, before, options)
+        report_session(console, rt, before, options, work_dir)
         reported = report_connection(console, rt)
         # A providing run lasts: follow its paths. A call is over before they settle.
         watcher = asyncio.create_task(watch_paths(console, rt, reported)) if provide else None
@@ -312,6 +313,7 @@ async def connected_local(
     options: dict[str, Any],
     offline: bool = True,
     context: Any = None,  # noqa: ANN401
+    work_dir: str | None = None,
 ) -> AsyncIterator[Any]:
     """Start ``app`` for itself, to call its own actions in: nothing is registered.
 
@@ -328,7 +330,7 @@ async def connected_local(
     # Through the module, so the connection stays replaceable (tests patch it).
     async with runtime.connect_local(app, offline=offline, context=context, **options) as rt:
         if not offline:
-            report_session(console, rt, before, options)
+            report_session(console, rt, before, options, work_dir)
         yield rt
 
 
@@ -338,13 +340,14 @@ async def arun_app(
     options: dict[str, Any],
     context: Any = None,  # noqa: ANN401
     tasks: bool = False,
+    work_dir: str | None = None,
 ) -> None:
     """Connect ``app`` and provide its offerings until stopped, reporting as it goes.
 
     With ``tasks`` each task the app takes is reported too: what a developer
     watching the terminal wants, and noise in the log of a deployed app.
     """
-    async with connected(console, app, options, provide=True, tasks=tasks) as rt:
+    async with connected(console, app, options, provide=True, tasks=tasks, work_dir=work_dir) as rt:
         await rt.arun(context=context)
 
 

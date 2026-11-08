@@ -65,6 +65,28 @@ def test_status_of_an_app_that_never_logged_in(app_dir):
     assert "uv run" not in result.output, "no uv.lock: arkitekt is started as itself"
 
 
+def test_status_json_says_the_same_on_stdout(app_dir, saved):
+    import json
+
+    saved(logged_in_at=time.time() - DAY)
+    result = _invoke(app_dir, "status", "--json")
+
+    assert result.exit_code == 0, result.output
+    status = json.loads(result.stdout)
+    assert status["app"] == {"identifier": "com.test.app", "version": "0.0.1"}
+    assert status["server"] == DEFAULT_ARKITEKT_URL
+    assert status["session"]["state"] == "active"
+    assert status["stale_session"] is False
+
+
+def test_status_json_of_an_app_that_never_logged_in(app_dir):
+    import json
+
+    result = _invoke(app_dir, "status", "--json")
+
+    assert json.loads(result.stdout)["session"] is None
+
+
 def test_a_uv_projects_hints_start_arkitekt_with_uv_run(app_dir):
     """In a uv project arkitekt is in the project's environment, not on the PATH."""
     (app_dir / "uv.lock").write_text("")

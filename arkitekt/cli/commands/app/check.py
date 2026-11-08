@@ -4,7 +4,7 @@ import inspect
 import json
 import os
 import warnings
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -14,12 +14,15 @@ from arkitekt_spec.declare.agents.dependency import prepare_dependency_variables
 from arkitekt_spec.blok.vocabulary import BlokError
 from arkitekt_spec.declare.blok.action import action_blok_id
 from arkitekt_spec.declare.catalogs import CatalogWarning
+from rich.console import Console
 from rich.markup import escape
 
 from arkitekt.app.terminal import done, notice
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.offline import offline
+from arkitekt.cli.options import JsonOption
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit, project_frame
+from arkitekt.cli.utils import human_console, json_stdout
 from arkitekt.cli.vars import get_console, get_work_dir
 
 REPORT_VERSION = 2
@@ -315,6 +318,7 @@ def check(
             help="Also write what the check found to this file as JSON, for an editor to place in the source.",
         ),
     ] = None,
+    as_json: JsonOption = False,
 ) -> None:
     """Check that the app is one a run would accept, without running it
 
@@ -329,12 +333,31 @@ def check(
     prop its catalog does not know (unless it was declared ``mode="strict"``), or
     an operation no catalog provides.
 
-    With --json-out the same findings are written to a file too, each with its rule
+    With --json the report is printed on stdout instead (everything else goes to
+    stderr); with --json-out the same findings are written to a file too, each with its rule
     code, the blok and node it is about and the line that declared it: what an
     editor needs to underline it. The file is written however the check ends, and
     what the app's modules print never reaches it.
     """
-    console = get_console(ctx)
+    console = human_console(get_console(ctx), as_json)
+    with json_stdout(as_json) as emit:
+        _check(ctx, target, json_out, console, emit)
+
+
+def _check(
+    ctx: typer.Context,
+    target: str,
+    json_out: Path | None,
+    console: Console,
+    emit: Callable[[Any], None],
+) -> None:
+    """What ``check`` does; ``emit`` prints the report when --json asked for it."""
+
+    def report_to(report: dict[str, Any]) -> None:
+        if json_out is not None:
+            write_report(json_out, report)
+        emit(report)
+
     report: dict[str, Any] = {
         "version": REPORT_VERSION,
         "ok": False,
@@ -353,26 +376,24 @@ def check(
                 snapshot = run_snapshot_or_exit(app)
         except typer.Exit as exit_:
             # cli_error raised the exit while handling what went wrong: that is its context.
-            if json_out is not None:
-                findings = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
-                report["diagnostics"] = [warning_record(warning) for warning in findings]
-                if exit_.__context__ is not None:
-                    report["diagnostics"].append(error_record(exit_.__context__, get_work_dir(ctx)))
-                write_report(json_out, report)
+            findings = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
+            report["diagnostics"] = [warning_record(warning) for warning in findings]
+            if exit_.__context__ is not None:
+                report["diagnostics"].append(error_record(exit_.__context__, get_work_dir(ctx)))
+            report_to(report)
             raise
     findings = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
     for warning in findings:
         notice(console, escape(str(warning.message)))
-    if json_out is not None:
-        report.update(
-            ok=True,
-            bloks=blok_records(snapshot.registry),
-            actions=action_records(snapshot.registry),
-            protocols=protocol_records(snapshot.registry),
-            structures=structure_records(snapshot.registry),
-            diagnostics=[warning_record(warning) for warning in findings],
-        )
-        write_report(json_out, report)
+    report.update(
+        ok=True,
+        bloks=blok_records(snapshot.registry),
+        actions=action_records(snapshot.registry),
+        protocols=protocol_records(snapshot.registry),
+        structures=structure_records(snapshot.registry),
+        diagnostics=[warning_record(warning) for warning in findings],
+    )
+    report_to(report)
     summary = summarize(snapshot.registry)
     if findings:
         summary += f" · {_counted(len(findings), 'warning')}"

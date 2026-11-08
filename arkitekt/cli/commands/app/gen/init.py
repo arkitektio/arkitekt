@@ -2,6 +2,7 @@ import os
 from typing import Annotated, Any
 
 import typer
+from arkitekt.cli.completion import complete_services
 import yaml
 
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
@@ -60,6 +61,7 @@ def init(
             "--service",
             "-s",
             help="A service to set up codegen for (repeatable; default: every service the app declares that ships a turms project)",
+            autocompletion=complete_services,
         ),
     ] = None,
     api: Annotated[

@@ -39,7 +39,7 @@ def arkitekt_version() -> str | None:
         return None
 
 
-def command_hint(rest: str, work_dir: str | None = None) -> str:
+def command_hint(rest: str, work_dir: str | None) -> str:
     """``arkitekt <rest>`` as this project starts it, for a hint that names a command.
 
     In a uv project (it has a ``uv.lock``) arkitekt is installed in the project's
@@ -47,14 +47,12 @@ def command_hint(rest: str, work_dir: str | None = None) -> str:
 
     Args:
         rest: What follows ``arkitekt``, e.g. ``"login --reauth"``.
-        work_dir: The project. Default: the running command's ``--work-dir``,
-            else the current directory.
+        work_dir: The project: the command's ``--work-dir``. Handed down, not
+            looked up, as everything is; ``None`` is the current directory.
     """
     from arkitekt.cli.target import infer_package_manager
-    from arkitekt.cli.vars import current_work_dir
 
-    if work_dir is None:
-        work_dir = current_work_dir()
+    work_dir = work_dir or os.getcwd()
     prefix = "uv run " if infer_package_manager(work_dir) == "uv" else ""
     return f"{prefix}arkitekt {rest}"
 

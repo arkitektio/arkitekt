@@ -1,5 +1,6 @@
 from typing import Annotated
 import typer
+from arkitekt.cli.completion import complete_flavours
 from arkitekt.cli.errors import cli_error
 import subprocess
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -19,6 +20,7 @@ def stage(
             "--flavour",
             "-f",
             help="The flavour to stage. Default: the only one the build made",
+            autocompletion=complete_flavours,
         ),
     ] = None,
     url: Annotated[
@@ -35,9 +37,10 @@ def stage(
     from .io import get_builds
 
     console = get_console(ctx)
-    builds = list(get_builds(build, base_dir=get_work_dir(ctx)).values())
+    work_dir = get_work_dir(ctx)
+    builds = list(get_builds(build, base_dir=work_dir).values())
     if not builds:
-        cli_error(f"Could not find any builds. Build one first: `{command_hint('plugin build')}`")
+        cli_error(f"Could not find any builds. Build one first: `{command_hint('plugin build', work_dir)}`")
 
     if flavour is None:
         if len(builds) > 1:
@@ -49,7 +52,7 @@ def stage(
         if not matching:
             cli_error(
                 f"Could not find a build for flavour {flavour}. Build it first: "
-                f"`{command_hint(f'plugin build --flavour {flavour}')}`"
+                f"`{command_hint(f'plugin build --flavour {flavour}', work_dir)}`"
             )
         build_model = matching[-1]
 

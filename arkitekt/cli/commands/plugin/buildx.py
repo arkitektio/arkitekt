@@ -107,7 +107,7 @@ def _supports(reported: Sequence[str], wanted: str) -> bool:
     return any(r == wanted or r.startswith(wanted + "/") for r in reported)
 
 
-def _create_builder(name: str) -> None:
+def _create_builder(name: str, work_dir: str | None) -> None:
     """Create the container-driver builder a multi-platform build needs."""
     result = subprocess.run(
         [
@@ -126,11 +126,11 @@ def _create_builder(name: str) -> None:
             f"Could not create the docker buildx builder '{name}':\n{result.stdout}\n"
             "A multi-platform build needs a builder with the docker-container driver. "
             "Build for this machine only with "
-            f"`{command_hint('plugin flavour add --overwrite --no-multi-arch')}`."
+            f"`{command_hint('plugin flavour add --overwrite --no-multi-arch', work_dir)}`."
         )
 
 
-def ensure_builder(platforms: Sequence[str], console: Any = None) -> str | None:
+def ensure_builder(platforms: Sequence[str], console: Any = None, work_dir: str | None = None) -> str | None:
     """The builder to pass as ``--builder`` for these platforms.
 
     Building only for the host is what docker does out of the box, so that path
@@ -150,7 +150,7 @@ def ensure_builder(platforms: Sequence[str], console: Any = None) -> str | None:
                 f"Creating the docker buildx builder [bold]{ARKITEKT_BUILDER}[/bold] "
                 "(docker-container driver), which a multi-platform build needs."
             )
-        _create_builder(ARKITEKT_BUILDER)
+        _create_builder(ARKITEKT_BUILDER, work_dir)
 
     reported = builder_platforms(ARKITEKT_BUILDER)
     missing = [p for p in wanted if not _supports(reported, p)]
@@ -161,7 +161,7 @@ def ensure_builder(platforms: Sequence[str], console: Any = None) -> str | None:
             + f" (it offers {', '.join(reported) or 'nothing'}).\n"
             "Cross-building another architecture needs emulation on this host:\n"
             "    docker run --privileged --rm tonistiigi/binfmt --install all\n"
-            f"Or build for this machine only: `{command_hint('plugin flavour add --overwrite --no-multi-arch')}`, "
+            f"Or build for this machine only: `{command_hint('plugin flavour add --overwrite --no-multi-arch', work_dir)}`, "
             "or edit `platforms:` in .arkitekt/flavours/<flavour>/config.yaml."
         )
 

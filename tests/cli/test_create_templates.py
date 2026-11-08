@@ -205,7 +205,8 @@ def _answering(monkeypatch) -> None:
 )
 def test_a_wizard_that_is_left_halfway_makes_no_folder(tmp_path: Path, fake_uv, monkeypatch, answers: str):
     _answering(monkeypatch)
-    result = create(tmp_path, "my-app", input=answers)
+    # The first question is the template; Enter takes the default.
+    result = create(tmp_path, "my-app", input="\n" + answers)
     assert result.exit_code != 0
     assert list(tmp_path.iterdir()) == []
 
@@ -219,7 +220,7 @@ def test_a_wizard_left_at_the_version_makes_no_folder(tmp_path: Path, fake_uv, m
 
 def test_the_folder_is_made_when_the_wizard_is_through(tmp_path: Path, fake_uv, monkeypatch):
     _answering(monkeypatch)
-    result = create(tmp_path, "my-app", input="com.test.app\nme\napp\n")
+    result = create(tmp_path, "my-app", input="\ncom.test.app\nme\napp\n")
     assert result.exit_code == 0, result.output
     assert (tmp_path / "my-app" / "app.py").exists()
 
@@ -865,3 +866,26 @@ def test_tests_that_are_there_are_left_alone(tmp_path: Path, fake_uv):
     assert result.exit_code == 0, result.output
     assert sorted(p.name for p in (tmp_path / "tests").iterdir()) == ["test_mine.py"]
     assert "left as it is" in result.output
+
+
+def test_a_wizard_asks_for_the_template_first(tmp_path: Path, fake_uv, monkeypatch):
+    _answering(monkeypatch)
+    result = create(tmp_path, "my-viewer", input="nope\nqt\ncom.test.app\nme\napp\n")
+
+    assert result.exit_code == 0, result.output
+    output = " ".join(result.output.split())
+    for name in ("project", "blok", "qt", "bare"):
+        assert name in output
+    assert "'nope' is not one of" in output, "asked again"
+    assert "QtApp(" in (tmp_path / "my-viewer" / "app.py").read_text()
+
+
+@pytest.mark.parametrize("named", [["--template", "project"], ["--identifier", "com.test.app"], ["--yes"]])
+def test_a_command_line_that_says_what_to_make_is_not_asked_for_a_template(
+    tmp_path: Path, fake_uv, monkeypatch, named: list[str]
+):
+    _answering(monkeypatch)
+    result = create(tmp_path, "my-app", *named, "--author", "me", "--entrypoint", "app", input="com.test.app\n")
+
+    assert result.exit_code == 0, result.output
+    assert "What should be set up?" not in result.output

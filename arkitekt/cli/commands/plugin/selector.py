@@ -1,5 +1,6 @@
 from typing import Annotated, Any
 import typer
+from arkitekt.cli.completion import complete_flavours
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.vars import get_console, get_work_dir
@@ -14,7 +15,9 @@ KINDS = "cpu, ram, cuda, rocm, oneapi, label"
 
 def add_selector(
     ctx: typer.Context,
-    flavour: Annotated[str, typer.Argument(help="The flavour the selector is added to")],
+    flavour: Annotated[
+        str, typer.Argument(help="The flavour the selector is added to", autocompletion=complete_flavours)
+    ],
     kind: Annotated[
         str | None,
         typer.Option("--kind", "-k", help=f"The kind of selector ({KINDS})"),

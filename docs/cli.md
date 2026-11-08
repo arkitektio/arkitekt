@@ -67,6 +67,23 @@ documentation. Those links live as constants in
 > directory, and finds it from its own `module[:attr]` target rather than from a
 > manifest. Without one it stops with a hint to run `arkitekt create`.
 
+**Hints name the command as your project starts it.** In a uv project (one with a
+`uv.lock`) arkitekt lives in the project's environment, so every hint says
+`uv run arkitekt …`; elsewhere it says `arkitekt …`.
+
+**Shell completion** (`arkitekt --install-completion`) completes values too: the
+app's action names for `call local` / `call remote`, flavour names for
+`plugin build` / `stage` / `validate` / `selector add`, and the app's services for
+`gen init --service`. Completing an action imports the app offline, the way
+`check` does: nothing connects or runs.
+
+**Newer releases.** Once a day, in the background, a command asks PyPI for the
+newest arkitekt and, when it is newer than the one running, says so on stderr
+after its own output, with how to get it (`uvx arkitekt@latest` when run through
+uvx, `arkitekt self upgrade` otherwise). It never holds a command up for more than
+a second, and is not asked in CI, when stderr is not a terminal, or with
+`ARKITEKT_NO_UPDATE_CHECK=1`.
+
 ---
 
 # App development
@@ -105,7 +122,9 @@ is not released as an image, and it installs no Qt binding: add the one you want
 `--template bare` writes only the app file, into the working directory. A template is a set of defaults: each part has its own
 option, so any mix is possible.
 
-Without a path, an empty folder (one holding at most `.git`, `.venv` or editor
+Run as a wizard (no `--template`, `--identifier` or `--yes`, in a terminal), it
+first lists the four templates with what each sets up and asks which; Enter takes
+`project`. Without a path, an empty folder (one holding at most `.git`, `.venv` or editor
 settings) is set up in place; in any other folder `create` asks whether to use it
 anyway, or for the name of a new one. When it is done it says how to start the
 app: in a uv project that is `uv run arkitekt run dev`, as arkitekt is installed in
@@ -369,6 +388,11 @@ that resolves it. Nothing is connected or logged in to. It prints one line for a
 valid app (`◆ my-app 0.1.0 is valid  3 actions · uses mikro`) and exits with 1,
 saying where the problem is, otherwise -- so it also serves in CI.
 
+`arkitekt check --json` prints the full report (the app, its actions, bloks,
+protocols, structures and every diagnostic) on stdout and nothing else: what the
+app prints while it is imported, and the status line, go to stderr. `--json-out
+FILE` writes the same report to a file.
+
 Every command reports an app that does not import the same way: where in your
 code, the line, and the error, rather than a traceback.
 
@@ -387,7 +411,7 @@ arkitekt logout --url http://localhost:7080   # ... the one for that server
 
 | Command | Description |
 | :--- | :--- |
-| `status` | Shows the app in this folder and its session: where, since when, and whether it is still usable. |
+| `status` | Shows the app in this folder and its session: where, since when, and whether it is still usable. `--json` prints the same on stdout (`app`, `server`, `session` with its `state`, `deployment` and `logged_in_at`, or `null`). |
 | `login` | Logs the app in and saves the session. Takes `--url`, `--token`, `--mandate-key`, `--headless`, `--qr`, `--reauth`. |
 | `logout` | Revokes the saved session on a server that offers revocation, and forgets it on this machine. Stop an instance of the app that is still running first: it saves its session back. |
 

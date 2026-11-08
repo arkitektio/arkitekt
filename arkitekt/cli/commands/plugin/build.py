@@ -11,6 +11,7 @@ import subprocess
 import uuid
 
 import typer
+from arkitekt.cli.completion import complete_flavours
 import json
 from typing import TYPE_CHECKING, Any
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -97,7 +98,7 @@ def build_flavour(
     build_host_image(build_id, flavour_name, flavour, work_dir, wanted, console=console)
 
     host = host_platform()
-    builder = ensure_builder(wanted, console=console)
+    builder = ensure_builder(wanted, console=console, work_dir=work_dir)
     foreign = [p for p in wanted if p != host]
     if foreign:
         if console:
@@ -142,7 +143,7 @@ def build_host_image(
         return
 
     host = host_platform()
-    builder = ensure_builder(platforms, console=console)
+    builder = ensure_builder(platforms, console=console, work_dir=work_dir)
 
     if host not in platforms:
         # Nothing would be left in the local image store, and every step after
@@ -304,6 +305,7 @@ def build(
             "--flavour",
             "-f",
             help="The flavour to build. By default all flavours are built.",
+            autocompletion=complete_flavours,
         ),
     ] = None,
     no_inspect: Annotated[
@@ -375,7 +377,7 @@ def build(
                     console,
                     f"--tag names the {len(platforms)}-platform flavour's image for this machine only",
                     "pushing that tag by hand publishes one architecture; "
-                    f"`{command_hint('plugin publish')}` pushes the manifest list",
+                    f"`{command_hint('plugin publish', work_dir)}` pushes the manifest list",
                 )
             subprocess.run(["docker", "tag", build_tag, tag], check=True)
 

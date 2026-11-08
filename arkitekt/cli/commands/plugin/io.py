@@ -80,7 +80,9 @@ def _unreadable(config_file: str, error: ValidationError) -> NoReturn:
     """A file this CLI refuses, which is usually one written before files named their spec."""
     cli_error(
         f"Could not read {config_file}. If it was written by an older arkitekt, which named no "
-        f"spec version, delete it: `{command_hint('plugin build')}` writes a new one.\n\n{error}"
+        # The file is in the project's .arkitekt folder: the project is the one above it.
+        f"spec version, delete it: `{command_hint('plugin build', os.path.dirname(os.path.dirname(config_file)))}` "
+        f"writes a new one.\n\n{error}"
     )
 
 
@@ -99,7 +101,7 @@ def get_builds(selected_run: str | None = None, base_dir: str | None = None) -> 
 
     if not os.path.exists(config_file):
         cli_error(
-            f"Could not find any builds. Build one first: `{command_hint('plugin build')}`"
+            f"Could not find any builds. Build one first: `{command_hint('plugin build', base_dir)}`"
         )
 
     config = _read_builds(config_file)

@@ -48,10 +48,10 @@ def push_multi_arch(build_model: "Build", tag: str, work_dir: str, console) -> N
     if flavour is None:
         cli_error(
             f"Build {build_model.build_id} was made from flavour '{build_model.flavour}', "
-            f"which no longer exists. Re-run `{command_hint('plugin build')}`."
+            f"which no longer exists. Re-run `{command_hint('plugin build', work_dir)}`."
         )
 
-    builder = ensure_builder(build_model.platforms, console=console)
+    builder = ensure_builder(build_model.platforms, console=console, work_dir=work_dir)
     command = flavour.generate_build_command(
         tag,
         flavour_relative_dir(build_model.flavour),
@@ -113,7 +113,7 @@ def publish(
             # command dies writing deployments.yaml.
             cli_error(
                 f"Build {build_model.build_id} was made with --no-inspect, and a deployment "
-                f"records what the image offers. Re-run `{command_hint('plugin build')}` without it."
+                f"records what the image offers. Re-run `{command_hint('plugin build', work_dir)}` without it."
             )
 
         if not tag:

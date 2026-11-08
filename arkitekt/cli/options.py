@@ -212,3 +212,13 @@ ContextFileOption = Annotated[
         readable=True,
     ),
 ]
+
+#: Print the result as JSON. Callers default this to ``False``.
+JsonOption = Annotated[
+    bool,
+    typer.Option(
+        "--json",
+        help="Print the result as JSON on stdout; what is said along the way, and what "
+        "the app prints, goes to stderr",
+    ),
+]

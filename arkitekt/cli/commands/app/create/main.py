@@ -7,6 +7,7 @@ from getpass import getuser
 from typing import Annotated
 
 import typer
+from rich.console import Console
 import semver
 
 from arkitekt.cli.validators import validate_template
@@ -365,6 +366,36 @@ def render_starter(
     )
 
 
+def _is_a_wizard(ctx: typer.Context, identifier: str | None, yes: bool) -> bool:
+    """Whether `create` asks its questions one by one, so the template can be the first.
+
+    Only when nothing says what to make: no --template, no --identifier, no --yes,
+    and a terminal to answer in. A command line that names any of it is a script's.
+    """
+    from arkitekt.cli import tty
+    from arkitekt.cli.commands.app.run.utils import explicit_options
+
+    return (
+        identifier is None
+        and not yes
+        and "template" not in explicit_options(ctx, ("template",))
+        and tty.is_tty()
+    )
+
+
+def pick_template(console: Console) -> str:
+    """Ask which template to set up, showing what each one is."""
+    console.print("What should be set up?")
+    width = max(len(name) for name in TEMPLATES)
+    for name, preset in TEMPLATES.items():
+        console.print(f"  [bold]{name:<{width}}[/bold]  {escape(preset.summary)}", highlight=False)
+    while True:
+        answer = str(typer.prompt("Template", default=DEFAULT_TEMPLATE)).strip()
+        if answer in TEMPLATES:
+            return answer
+        console.print(f"'{escape(answer)}' is not one of {', '.join(TEMPLATES)}.", highlight=False)
+
+
 def create_command(
     ctx: typer.Context,
     path: Annotated[
@@ -524,6 +555,8 @@ def create_command(
 
     console = get_console(ctx)
     parent_work_dir = get_work_dir(ctx)
+    if _is_a_wizard(ctx, identifier, yes):
+        template = pick_template(console)
     preset = TEMPLATES[template]
 
     if path is None:
