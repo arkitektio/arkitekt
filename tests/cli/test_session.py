@@ -87,6 +87,25 @@ def test_status_json_of_an_app_that_never_logged_in(app_dir):
     assert json.loads(result.stdout)["session"] is None
 
 
+def test_status_says_a_known_failure_of_the_manifest_in_one_line(app_dir, saved, monkeypatch):
+    """Checking the saved session builds the run's manifest; a failure there is one line."""
+    saved(logged_in_at=time.time() - DAY)
+
+    class NeedsReauthenticationError(Exception):
+        pass
+
+    def failing(app):
+        raise NeedsReauthenticationError("stale")
+
+    (app_dir / "uv.lock").write_text("")
+    monkeypatch.setattr("arkitekt.runtime.run_manifest", failing)
+    result = _invoke(app_dir, "status")
+
+    assert result.exit_code == 1, result.output
+    assert "The session is no longer valid" in result.output
+    assert "uv run arkitekt login --reauth" in _flat(result.output)
+
+
 def test_a_uv_projects_hints_start_arkitekt_with_uv_run(app_dir):
     """In a uv project arkitekt is in the project's environment, not on the PATH."""
     (app_dir / "uv.lock").write_text("")

@@ -5,6 +5,8 @@ what happened and what to do next. Anything else is a bug and keeps its tracebac
 """
 
 
+from collections.abc import Callable
+
 from rich.console import Console
 from rich.markup import escape
 
@@ -14,7 +16,11 @@ from arkitekt.cli.ui import command_hint
 #: What to say for each, and what to do about it. Matched by class name, over
 #: the exception's whole ancestry: the agent's classes are rekuest's, which is an
 #: optional extra, and fakts' are deep in its grants.
-_KNOWN = {
+#: A hint is said as it is, or made when it is said: one that names a command
+#: depends on the project it is about.
+Hint = str | Callable[[str | None], str] | None
+
+_KNOWN: dict[str, tuple[str, Hint]] = {
     "AgentIsAlreadyBusy": (
         "Another instance of this app is already connected",
         "pass --force to take over",
@@ -42,7 +48,7 @@ def explain(error: BaseException, work_dir: str | None = None) -> tuple[str, str
         # One class for every way the transport gives up; the message says which.
         text = str(error).lower()
         if "kicked" in text:
-            return _KNOWN["AgentWasKicked"]
+            return ("Another instance of this app took over its connection", None)
         if "retries" in text or "flapping" in text:
             return ("Lost the connection to the server and could not get it back", None)
         return None

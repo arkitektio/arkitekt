@@ -41,7 +41,7 @@ from arkitekt.constants import DEFAULT_ARKITEKT_URL
 LOGIN_OPTIONS = ("url", "token", "mandate_key", "headless")
 
 
-def _usable_session(console: Console, app: App[Any], server: str) -> Session | None:
+def _usable_session(console: Console, app: App[Any], server: str, work_dir: str) -> Session | None:
     """The saved session a run of ``app`` against ``server`` would use, if any.
 
     One is saved per app, version and server, for the manifest it was approved
@@ -54,7 +54,7 @@ def _usable_session(console: Console, app: App[Any], server: str) -> Session | N
     try:
         expected = runtime.run_manifest(app).hash()
     except Exception as e:
-        if report_failure(console, e, get_work_dir(ctx)):
+        if report_failure(console, e, work_dir):
             raise typer.Exit(code=1) from None
         raise
     return session if session.is_for(expected) else None
@@ -86,7 +86,7 @@ def login(
     server = resolve_url(options.get("url"))
     console.print(construct_app_banner(app, server, connection="logging in to"))
 
-    session = _usable_session(console, app, server)
+    session = _usable_session(console, app, server, get_work_dir(ctx))
     if session is not None and session.state() == "active" and not reauth:
         since = f"{ago(session.logged_in_at)} · " if session.logged_in_at else ""
         done(console, "Already logged in", f"{since}--reauth logs in again")
@@ -154,7 +154,7 @@ def status(
         app = load_app_or_exit(ctx, target)
         server = resolve_url(explicit_options(ctx, ("url",)).get("url"))
         saved = read_session(session_path(app.identifier, app.version, server))
-        session = _usable_session(console, app, server)
+        session = _usable_session(console, app, server, get_work_dir(ctx))
         emit(
             {
                 "app": {"identifier": app.identifier, "version": app.version},
