@@ -70,9 +70,12 @@ def test_the_default_is_a_project_in_a_new_folder(tmp_path: Path, fake_uv):
     # ...and a workflow that has semantic-release cut the version, then calls the action.
     workflow = yaml.safe_load((project / ".github" / "workflows" / "release.yaml").read_text())
     steps = workflow["jobs"]["release"]["steps"]
-    assert steps[-2]["run"].endswith("semantic-release version")
-    assert steps[-1]["uses"].startswith("arkitektio/arkitekt/ci/github@")
-    assert steps[-1]["with"]["release"] == "${{ steps.version.outputs.released }}"
+    assert steps[-3]["run"].endswith("semantic-release version")
+    assert steps[-2]["uses"].startswith("arkitektio/arkitekt/ci/github@")
+    assert steps[-2]["with"]["release"] == "${{ steps.version.outputs.released }}"
+    # ...and then fills in the README's install badge, now that the repository is known.
+    assert "plugin badge --update" in steps[-1]["run"]
+    assert "<!-- arkitekt:badge -->" in (project / "README.md").read_text()
 
     # semantic-release raises the version where the app declares it, and nowhere else.
     configured = tomllib.loads((project / "pyproject.toml").read_text())["tool"]
@@ -350,6 +353,18 @@ def test_every_part_of_a_template_has_its_own_option(
     assert (tmp_path / ".arkitekt" / "flavours" / "vanilla").exists() is flavour
     assert (tmp_path / ".github" / "workflows" / "release.yaml").exists() is github
     assert (tmp_path / ".gitlab-ci.yml").exists() is gitlab
+
+
+def test_a_project_released_from_github_gets_a_place_for_its_install_badge(tmp_path: Path, fake_uv):
+    from arkitekt.cli.commands.plugin.badge import END, PLACEHOLDER, START
+
+    (tmp_path / "README.md").write_text("# my app\n")
+    result = create(
+        tmp_path, ".", "--template", "bare", "--package-manager", "uv", "--flavour", "--ci", "github", *IDENTITY
+    )
+    assert result.exit_code == 0, result.output
+    # No remote yet: the release workflow fills it in on its first run.
+    assert (tmp_path / "README.md").read_text() == f"# my app\n\n{START}\n{PLACEHOLDER}\n{END}\n"
 
 
 def test_a_project_on_pip_gets_the_pip_image_and_no_workflow(tmp_path: Path):

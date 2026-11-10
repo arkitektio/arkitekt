@@ -448,12 +448,16 @@ def test_ci_github_writes_a_workflow_that_versions_and_then_calls_the_action():
         assert workflow[True] == {"push": {"branches": ["main"]}}
         job = workflow["jobs"]["release"]
         assert job["permissions"] == {"contents": "write", "packages": "write"}
-        checkout, _, test, version, release = job["steps"]
+        checkout, _, test, version, release, badge = job["steps"]
         assert checkout["with"]["fetch-depth"] == 0
         assert test["run"] == "uv run pytest"
         assert version["run"].endswith("semantic-release version")
         assert release["uses"].startswith("arkitektio/arkitekt/ci/github@")
         assert release["with"] == {"target": "app", "release": "${{ steps.version.outputs.released }}"}
+        # After the release (which builds a clean tree), only where the README has a place.
+        assert badge["continue-on-error"] is True
+        assert 'plugin badge --update --repository "ghcr.io/${{ github.repository }}"' in badge["run"]
+        assert "[skip ci]" in badge["run"]
 
         configured = tomllib.loads((Path(directory) / "pyproject.toml").read_text())["tool"]["semantic_release"]
         assert configured["version_variables"] == ["app.py:__version__"]

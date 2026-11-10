@@ -266,6 +266,29 @@ def hub_tests(work_dir: str, entrypoint: str = "app") -> str | None:
     return relative if os.path.exists(os.path.join(work_dir, relative)) else None
 
 
+def write_readme_badge(work_dir: str) -> str | None:
+    """Give the README its place for the install badge, filled in when the package is known.
+
+    The package is the one the release workflow publishes for the checkout's GitHub
+    remote; a project created before it has one gets the placeholder, which that
+    workflow fills in on its first run.
+
+    Returns:
+        The package the badge installs, or ``None`` when it waits for the workflow.
+    """
+    from arkitekt.cli.commands.plugin.badge import (
+        PLACEHOLDER,
+        install_badge,
+        package_for_remote,
+        write_badge,
+    )
+    from arkitekt.cli.commands.plugin.release import _source
+
+    package = package_for_remote(_source(work_dir))
+    write_badge(os.path.join(work_dir, "README.md"), install_badge(package) if package else PLACEHOLDER)
+    return package
+
+
 def current_branch(work_dir: str) -> str:
     """The branch a fresh project is on, which is the one its pushes will come from."""
     try:
@@ -717,6 +740,10 @@ def create_command(
         else:
             workflow = write_ci(work_dir, forge.value, branch=current_branch(work_dir), entrypoint=entrypoint)
 
+    badge_package = None
+    if workflow and forge is Forge.github:
+        badge_package = write_readme_badge(work_dir)
+
     if starter in STARTER_COMMANDS:
         command = STARTER_COMMANDS[starter].format(entrypoint=entrypoint)
     else:
@@ -757,6 +784,14 @@ def create_command(
             )
         if forge is Forge.github:
             notice(console, "A package GitHub creates is private", GITHUB_VISIBILITY_NOTE)
+            if badge_package:
+                notice(console, "README.md has an 'Open in Arkitekt' badge", f"it installs {escape(badge_package)}")
+            else:
+                notice(
+                    console,
+                    "README.md has a place for an 'Open in Arkitekt' badge",
+                    "the release workflow fills it in on its first run on GitHub",
+                )
     if starter in STARTER_NEEDS:
         what, how = STARTER_NEEDS[starter]
         notice(console, what, how.format(add="uv add" if manager == "uv" else "pip install"))

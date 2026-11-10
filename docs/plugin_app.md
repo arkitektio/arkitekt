@@ -103,6 +103,21 @@ A deployment's kabinet then *imports* the repository (`ghcr.io/<org>/<app>`) and
 lists its releases; the workflow never talks to a deployment. On GitHub, a
 package a workflow creates is private until you make it public.
 
+### The "Open in Arkitekt" badge
+
+A click on the badge opens the reader's Orkestrator on "Install an app" for the
+package, which imports it into their organization's kabinet. Which package that
+is (`ghcr.io/<owner>/<repo>`) is only known once the code is on GitHub, so
+`arkitekt create` gives `README.md` a place for the badge, between
+`<!-- arkitekt:badge -->` markers, and the workflow fills it in on its first
+run (a `docs:` commit marked `[skip ci]`), and again only if the repository
+moves. Delete the markers and it leaves the README alone.
+
+`arkitekt plugin badge` prints the badge for this checkout's GitHub remote;
+`--write` puts it in the README, `--repository ghcr.io/owner/app` names
+another package. The badge installs the package, never the source: make the
+package public, or the import fails.
+
 `arkitekt plugin ci github|gitlab` writes the workflow into a project that has
 none. For GitHub the app has to keep its version in a variable semantic-release
 can raise: `__version__ = "1.2.3"`, and `App("...", __version__)`.

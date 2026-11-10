@@ -56,6 +56,21 @@ jobs:
           target: {module}
           # The commit semantic-release tagged is that release, not a build of the branch.
           release: ${{{{ steps.version.outputs.released }}}}
+      # The README's "Open in Arkitekt" badge installs the package published above, which
+      # is only known here. Written on the first run (and if the repository moves), where
+      # the README has a place for it; after the release, which builds a clean tree.
+      - name: Badge
+        # Cosmetic: never what fails a run whose release went out.
+        continue-on-error: true
+        run: |
+          uv run arkitekt plugin badge --update --repository "ghcr.io/${{{{ github.repository }}}}"
+          if ! git diff --quiet -- README.md; then
+            git -c user.name="github-actions[bot]" \\
+              -c user.email="41898282+github-actions[bot]@users.noreply.github.com" \\
+              commit -m "docs: point the install badge at this repository's package [skip ci]" -- README.md
+            git push origin "HEAD:${{{{ github.ref_name }}}}" \\
+              || echo "::warning::Could not push the README badge; the next run writes it again."
+          fi
 """
 
 #: The semantic-release the workflow runs. Its major is pinned: a new one may read
