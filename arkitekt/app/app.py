@@ -595,9 +595,10 @@ class App(Generic[Ctx]):
                 tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
                 one, a client shows the app's default logo.
             bloks: The action's own bloks, one per context, which each one's root
-                names: an ``"<Overlay>...</Overlay>"`` is drawn into the space that hosts
-                the run, its ``<Anchor dep="robot">`` anchored at the agent the run got
-                for that parameter; an ``"<Html>...</Html>"`` is a task panel. A bare
+                names: an ``"<Html>...</Html>"`` is a task panel; a
+                ``"<Space room="room:lab">...</Space>"`` places the run's dependencies in a
+                room whose layout is shared, its ``<Placed dep="robot">`` drawing the agent
+                the run got for that parameter with its own scene blok. A bare
                 tree, or an ``ActionBlok`` for locals and the like; one needs no list.
                 They name devices only by the function's dependency
                 parameters, read the run under ``@task``, are checked now, and are not
@@ -863,9 +864,10 @@ class App(Generic[Ctx]):
                 tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
                 one, a client shows the app's default logo.
             bloks: The action's own bloks, one per context, which each one's root
-                names: an ``"<Overlay>...</Overlay>"`` is drawn into the space that hosts
-                the run, its ``<Anchor dep="robot">`` anchored at the agent the run got
-                for that parameter; an ``"<Html>...</Html>"`` is a task panel. A bare
+                names: an ``"<Html>...</Html>"`` is a task panel; a
+                ``"<Space room="room:lab">...</Space>"`` places the run's dependencies in a
+                room whose layout is shared, its ``<Placed dep="robot">`` drawing the agent
+                the run got for that parameter with its own scene blok. A bare
                 tree, or an ``ActionBlok`` for locals and the like; one needs no list.
                 They name devices only by the function's dependency
                 parameters, read the run under ``@task``, are checked now, and are not
@@ -1401,7 +1403,7 @@ class App(Generic[Ctx]):
             component: The component tree, as v2 BSX or already parsed. Its root
                 names the context: ``<Html>`` for a panel, ``<Scene>`` for a full 3D
                 view, ``<AgentLogo>`` for the app's logo or ``<ActionLogo>`` for an
-                action's. An ``<Overlay>`` belongs to an action (``bloks=``).
+                action's. A ``<Space>`` belongs to an action (``bloks=``).
             description: What the blok shows.
             locals: Its form state, written only through ``bind`` on a control
                 (``<Input bind={iterations} />``) and read bare in a call:

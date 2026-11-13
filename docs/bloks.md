@@ -238,7 +238,7 @@ A blok's root names its context, what draws it; there is no `context=` to pass:
 | `<Scene>` | `SCENE` | A 3D view, of models the app brings. |
 | `<AgentLogo>` | `LOGO` | The app's logo, drawn with SVG shapes. |
 | `<ActionLogo>` | `ACTION_LOGO` | An action's logo, drawn against the action's `task`. |
-| `<Overlay>` | `OVERLAY` | Drawn into the space that hosts a run: an action's own blok only. |
+| `<Space>` | `SCENE` | A 3D view placing the run's dependencies in a shared room: an action's own blok only. |
 
 Any other root is refused (`context.root_unknown`).
 
@@ -304,8 +304,8 @@ app.blok("crop_action_logo", from_svg(Path("crop.svg"), context="action_logo"))
 ## An action's own bloks
 
 An action or workflow can bring bloks of its own, one per context, sent with its
-definition and named by their root: `<Html>` for a task panel, `<Scene>` for a 3D view,
-`<Overlay>` drawn into the space that hosts the run. They read the run as `task`, its args as `args`, the agent running it
+definition and named by their root: `<Html>` for a task panel, `<Scene>` for a 3D view, or
+`<Space>` for one that places the run's dependencies. They read the run as `task`, its args as `args`, the agent running it
 as `self` and the agents the run got as `deps.<key>`, the action's dependency keys:
 
 ```python
@@ -315,12 +315,13 @@ from arkitekt import ActionBlok, Local
     bloks=[
         ActionBlok(
             """
-            <Overlay>
-              <Anchor dep="robot">
+            <Space room="room:lab">
+              <Placed dep="robot" matrix={[[1, 0, 0, 0.8], [0, 1, 0, 0], [0, 0, 1, 0.15], [0, 0, 0, 1]]}>
                 <Popout open={task.ask != null}><ask /></Popout>
-              </Anchor>
+              </Placed>
+              <Placed dep="stage" />
               <if when={show_path}><Route through={["robot", "stage"]} progress={task.progress} /></if>
-            </Overlay>
+            </Space>
             """,
             locals={"show_path": Local(True, persist=True)},
         ),

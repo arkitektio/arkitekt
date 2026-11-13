@@ -40,7 +40,7 @@ def test_a_workflows_bloks_reach_its_definition() -> None:
 
         @app.workflow(
             bloks=[
-                '<Overlay><Anchor dep="robot"><ask /></Anchor></Overlay>',
+                '<Space room="lab"><Placed dep="robot"><ask /></Placed></Space>',
                 ActionBlok(
                     "<Html><Card><Progress value={task.progress} /><Switch bind={verbose} /></Card></Html>",
                     locals={"verbose": Local(False, persist=True)},
@@ -52,8 +52,8 @@ def test_a_workflows_bloks_reach_its_definition() -> None:
             robot.pick(slot)
 
     (implementation,) = [i for i in app.registry.implementations.values() if i.definition.key == "move"]
-    overlay, panel = implementation.definition.bloks
-    assert (overlay.context, overlay.source) == ("OVERLAY", '<Overlay><Anchor dep="robot"><ask /></Anchor></Overlay>')
+    space, panel = implementation.definition.bloks
+    assert (space.context, space.source) == ("SCENE", '<Space room="lab"><Placed dep="robot"><ask /></Placed></Space>')
     assert (panel.context, panel.vocab) == ("HTML", 2)
     assert [(local.key, local.persist) for local in panel.locals] == [("verbose", True)]
 
@@ -62,9 +62,9 @@ def test_a_blok_naming_no_parameter_is_refused_at_decoration() -> None:
     app = App("flow")
     app.registry.declare(app="arm")(Arm)
 
-    with pytest.raises(ValueError, match="names 'stage', which is not a dependency of the action"):
+    with pytest.raises(ValueError, match=r"'stage' is not a dependency of the blok .*\[deps.unknown\]"):
 
-        @app.workflow(bloks='<Overlay><Anchor dep="stage" /></Overlay>')
+        @app.workflow(bloks='<Space room="lab"><Placed dep="stage" /></Space>')
         def move(robot: Arm, slot: int) -> None:
             """Move a slide."""
             robot.pick(slot)

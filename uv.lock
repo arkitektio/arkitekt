@@ -378,7 +378,7 @@ requires-dist = [
     { name = "arkitekt-runtime", marker = "extra == 'all'", specifier = ">=9" },
     { name = "arkitekt-runtime", marker = "extra == 'rekuest'", specifier = ">=9" },
     { name = "arkitekt-runtime", extras = ["qt"], marker = "extra == 'qt'", specifier = ">=6.0" },
-    { name = "arkitekt-spec", specifier = ">=8" },
+    { name = "arkitekt-spec", specifier = ">=9" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=5" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=5" },
@@ -496,7 +496,7 @@ qt = [
 
 [[package]]
 name = "arkitekt-spec"
-version = "8.0.0"
+version = "9.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -506,9 +506,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/58/40/6117999155cd9bad5a998ec209e1176157a954ae4a3ab7659dc4e961ae2b/arkitekt_spec-8.0.0.tar.gz", hash = "sha256:5ee57fc759dfb4ddde191e8c0c61cd6fc52f003fe3d24f99e0008dc47378d2da", size = 327415, upload-time = "2026-11-01T18:39:40.888Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/cd/e6/6521a9a932d6289d469ab7191ce9c138302315db74f0a8d6b364c8f095a4/arkitekt_spec-9.0.0.tar.gz", hash = "sha256:817361b72c27932fa813b6a11fdca6474fe04a72d6ed26dd82df6bb01535f0bd", size = 327839, upload-time = "2026-11-13T12:29:42.863Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/7b/a0/2f355a5f71b4f8309c97db630a43601be10a7acf82af6077855b71a78326/arkitekt_spec-8.0.0-py3-none-any.whl", hash = "sha256:0b65724f5bec18441fe309e2eafe38c129c31c741cf5beb14023899c65a570a0", size = 380449, upload-time = "2026-11-01T18:39:39.536Z" },
+    { url = "https://files.pythonhosted.org/packages/75/6d/ec998bae65cfe31ccef3701741f138e974b1f4f0bfcaf5e02d14fa88ea3b/arkitekt_spec-9.0.0-py3-none-any.whl", hash = "sha256:12edef0009f1bfd1c4661bad1d74631ab8cf4d97eb2d1796bb76107be5b3b8fc", size = 380760, upload-time = "2026-11-13T12:29:41.444Z" },
 ]
 
 [[package]]
