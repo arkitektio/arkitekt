@@ -28,7 +28,7 @@ dependencies = [
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
     # 6.0: CatalogWarning.finding/.blok, BlokError.node and action_blok_id (check --json-out).
-    "arkitekt-spec>=9",
+    "arkitekt-spec>=9.1",
     # The mesh node, so services a deployment serves only on its mesh resolve
     # without an extra. Native code: only where arkitekt-mesh ships a wheel (abi3,
     # CPython) -- anywhere else pip would build it from source with a Rust toolchain.

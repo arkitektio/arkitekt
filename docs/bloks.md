@@ -331,6 +331,36 @@ from arkitekt import ActionBlok, Local
 def move(robot: Arm, stage: Stage, slot: int) -> None: ...
 ```
 
+### Before a run
+
+Starting a run is its own interface, so it has its own bloks: `assign_bloks=`, one per
+context. An assign blok has no `task`. It reads the arguments being filled in as `args`, the
+agents a run would get as `deps` (from a dry run), and may call them to prepare:
+
+```python
+@app.workflow(
+    bloks=[...],
+    assign_bloks="""
+    <Html>
+      <Row>
+        <Space room="room:lab" height="24rem"><Placed dep="robot" /></Space>
+        <Card>
+          <Button disabled={homing.running} onClick={deps.robot.home() into homing}>Home the arm</Button>
+          <args />
+          <Button disabled={!homing.done} onClick={assign.start()}>Start</Button>
+        </Card>
+      </Row>
+    </Html>
+    """,
+)
+def move(robot: Arm, stage: Stage, slot: int) -> None: ...
+```
+
+`<args />` places the generated argument form (without it the client shows the form beside
+the blok). `assign.start()` starts the run with the arguments as filled in and the very agents
+the blok was shown. What a run *needs* still belongs in the workflow: a run can be started
+without ever opening this blok.
+
 `bloks=` takes one blok or a list, each a bare BSX string (or parsed tree) or an
 `ActionBlok`, which adds `locals`, `demo`, `queries`, `subscriptions`, `catalogs`,
 `module` and `description`, like `app.blok`. One blok needs no list:

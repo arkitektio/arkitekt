@@ -173,3 +173,17 @@ def test_kind_less_locals_register_without_a_kind() -> None:
     tree = declared.components[0] if declared.components else parse_bsx(declared.source or "", view=default_view())
     resolved = resolve_scope(tree, BlokScope(kind="action", locals=tuple(declared.locals or ())), default_view())
     assert [(local.key, local.kind) for local in resolved.locals] == [("verbose", "BOOL")]
+
+
+def test_an_action_declares_a_blok_for_starting_a_run() -> None:
+    app = App("flow")
+    app.registry.declare(app="arm")(Arm)
+
+    @app.workflow(assign_bloks="<Html><Card><args /><Button onClick={assign.start()}>Start</Button></Card></Html>")
+    def move(robot: Arm, slot: int) -> None:
+        """Move a slide."""
+        robot.pick(slot)
+
+    (implementation,) = [i for i in app.registry.implementations.values() if i.definition.key == "move"]
+    (blok,) = implementation.definition.bloks
+    assert (blok.phase, blok.context) == ("ASSIGN", "HTML")

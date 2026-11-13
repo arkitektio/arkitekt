@@ -516,6 +516,7 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
+        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -549,6 +550,7 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
+        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -594,6 +596,10 @@ class App(Generic[Ctx]):
                 this app declares (``app.blok(name, "<ActionLogo>...</ActionLogo>")``), or a
                 tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
                 one, a client shows the app's default logo.
+            assign_bloks: The action's own bloks for starting a run of it, one per
+                context: shown before there is a task, with the arguments being filled in
+                as ``args`` and the agents a run would get as ``deps``. ``<args />`` places
+                the argument form, ``assign.start()`` starts the run with those agents.
             bloks: The action's own bloks, one per context, which each one's root
                 names: an ``"<Html>...</Html>"`` is a task panel; a
                 ``"<Space room="room:lab">...</Space>"`` places the run's dependencies in a
@@ -655,6 +661,7 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 bloks=bloks,
+                assign_bloks=assign_bloks,
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
@@ -692,6 +699,7 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
+        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -738,6 +746,7 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 bloks=bloks,
+                assign_bloks=assign_bloks,
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
@@ -776,6 +785,7 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
+        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -809,6 +819,7 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
+        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -863,6 +874,10 @@ class App(Generic[Ctx]):
                 this app declares (``app.blok(name, "<ActionLogo>...</ActionLogo>")``), or a
                 tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
                 one, a client shows the app's default logo.
+            assign_bloks: The action's own bloks for starting a run of it, one per
+                context: shown before there is a task, with the arguments being filled in
+                as ``args`` and the agents a run would get as ``deps``. ``<args />`` places
+                the argument form, ``assign.start()`` starts the run with those agents.
             bloks: The action's own bloks, one per context, which each one's root
                 names: an ``"<Html>...</Html>"`` is a task panel; a
                 ``"<Space room="room:lab">...</Space>"`` places the run's dependencies in a
@@ -924,6 +939,7 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 bloks=bloks,
+                assign_bloks=assign_bloks,
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
@@ -961,6 +977,7 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
+        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -1008,6 +1025,7 @@ class App(Generic[Ctx]):
                 logo=logo,
                 execution=Execution.WORKFLOW,
                 bloks=bloks,
+                assign_bloks=assign_bloks,
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
