@@ -10,14 +10,25 @@ that are registered: it also covers what is served from somewhere else.
 import textwrap
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
-from typing import TYPE_CHECKING, Any
+from typing import Any, Protocol
 
 from arkitekt_spec.declare.demands import DemandFinding, check_demands
 
 from arkitekt.app.app import App
 
-if TYPE_CHECKING:
-    from arkitekt.runtime import Runtime
+
+class _Running(Protocol):
+    """What is read of a running app here (an :class:`arkitekt.runtime.Runtime` is one).
+
+    Said as a protocol, so that this module does not import the runtime that imports it.
+    """
+
+    @property
+    def app(self) -> App[Any]: ...
+    @property
+    def clients(self) -> dict[str, Any]: ...
+    @property
+    def snapshot(self) -> Any | None: ...  # noqa: ANN401
 
 
 class DependencyCheckError(ValueError):
@@ -85,12 +96,12 @@ class UnmetDependency:
         return f"{self.app}: {self.action}: {self.dependency}: {self.reason}"
 
 
-def _rekuest_of(runtime: "Runtime[Any]") -> Any | None:  # noqa: ANN401
+def _rekuest_of(runtime: _Running) -> Any | None:  # noqa: ANN401
     """The run's client that can ask rekuest for a dry run, if it has one."""
     return next((client for client in runtime.clients.values() if hasattr(client, "adependency_tree")), None)
 
 
-async def acheck_running(runtimes: "Iterable[Runtime[Any]]") -> list[UnmetDependency]:
+async def acheck_running(runtimes: Iterable[_Running]) -> list[UnmetDependency]:
     """Ask the server whether every dependency of these running apps would bind now.
 
     For each action with dependencies, the server resolves them as an assign
