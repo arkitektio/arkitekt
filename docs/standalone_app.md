@@ -88,6 +88,56 @@ A program with a life of its own (a GUI, a control program) does not call `run`,
 which blocks: it calls `run_detached(app, ...)` with the same arguments. See
 [Embedding an app](embedding.md).
 
+### Several apps in one process
+
+`run_all(a, b, c)` (and `arun_all` inside a running loop) provides several apps
+at once, each as its own agent with its own login:
+
+```python
+from arkitekt import run_all
+
+run_all(robot_app, microscope_app, protocol_app, headless=True)
+```
+
+They connect in no order. What an app depends on is bound when one of its
+tasks is assigned, not when it registers, so a dependent app may register
+before its providers. Only a call has to wait for them, and `providing` is the
+way to make one: its block is entered once every app is registered, with each
+app's runtime (`running[app]`), and leaving it stops the apps.
+
+```python
+from arkitekt import providing
+
+async with providing(robot_app, microscope_app, protocol_app, timeout=30) as running:
+    rekuest = running[protocol_app].require(RekuestCaller)
+    await rekuest.acall(process_slides, loaded_slides=slides)
+    await running.wait()   # go on serving until stopped
+```
+
+`running.wait()` returns once every app has stopped; without it the apps are
+stopped when the block ends.
+
+One app is started the same way in two steps: `await runtime.astart()` returns
+when its agent is registered, `await runtime.aloop()` then serves it
+(`runtime.arun()` is the two in a row).
+
+When one of the apps depends on another (a protocol declared with
+`@app.declare(app="robot")`), `check=True` compares what it demands with what
+the other declares before anything logs in, and refuses to start a set that
+does not fit. The same comparison is `check_apps(a, b, c)` in code and
+`arkitekt check protocol.py --with robot.py` on the command line. A dependency
+on an app that is not given is never an error: it is simply not checked.
+
+For those, and for the last word, ask the server once the apps are registered:
+`await running.check()` has it resolve every action's dependencies as an assign
+would, among all the agents it knows, and returns what it would refuse, with
+the reason.
+
+Every app needs its own identifier, and each asks for its own approval the
+first time; the prompts say which app they are for. One app failing stops the
+others. Apps that need no identity of their own are better merged into one
+(`merge`): one agent, one login.
+
 The identifier defaults to the calling file's name, so `easy()` with no
 arguments works for a quick script.
 

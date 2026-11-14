@@ -14,10 +14,11 @@ from arkitekt_spec.declare.agents.dependency import prepare_dependency_variables
 from arkitekt_spec.blok.vocabulary import BlokError
 from arkitekt_spec.declare.blok.action import action_blok_id
 from arkitekt_spec.declare.catalogs import CatalogWarning
+from arkitekt_spec.declare.demands import DemandFinding, check_demands
 from rich.console import Console
 from rich.markup import escape
 
-from arkitekt.app.terminal import done, notice
+from arkitekt.app.terminal import done, fail, notice
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.offline import offline
 from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption
@@ -301,6 +302,24 @@ def protocol_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     return records
 
 
+def demand_record(finding: DemandFinding) -> dict[str, Any]:
+    """An unmet (or uncompared) dependency demand as a report diagnostic, at the protocol that declares it."""
+    return _compact(
+        {
+            "level": "error" if finding.level == "error" else "info",
+            "code": finding.code,
+            "message": f"{finding.subject}: {finding.message}",
+            "hint": (
+                "The server refuses to assign a task depending on it. Change the protocol to what the app offers."
+                if finding.level == "error"
+                else None
+            ),
+            "file": finding.file,
+            "call_line": finding.line,
+        }
+    )
+
+
 def write_report(path: Path, report: dict[str, Any]) -> None:
     """Write ``report`` to ``path`` whole: a reader never sees half of it."""
     partial = path.with_name(f".{path.name}.partial")
@@ -316,6 +335,14 @@ def check(
         typer.Option(
             "--json-out",
             help="Also write what the check found to this file as JSON, for an editor to place in the source.",
+        ),
+    ] = None,
+    with_: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--with",
+            help="Another app ('module[:attr]') this one depends on: what the app demands of it is "
+            "compared with what it declares. Repeatable.",
         ),
     ] = None,
     as_json: JsonOption = False,
@@ -334,6 +361,12 @@ def check(
     prop its catalog does not know (unless it was declared ``mode="strict"``), or
     an operation no catalog provides.
 
+    With --with, the protocols the app declares are also compared with the apps
+    they are directed at: an action or state the other app does not offer, or
+    offers with other ports, is an error, as the server refuses to assign a task
+    that depends on it. A protocol directed at an app that was not given is not
+    checked.
+
     With --json the report is printed on stdout instead (everything else goes to
     stderr); with --json-out the same findings are written to a file too, each with its rule
     code, the blok and node it is about and the line that declared it: what an
@@ -343,7 +376,7 @@ def check(
     configure_logging(log_level.value)
     console = human_console(get_console(ctx), as_json)
     with json_stdout(as_json) as emit:
-        _check(ctx, target, json_out, console, emit)
+        _check(ctx, target, json_out, console, emit, with_ or [])
 
 
 def _check(
@@ -352,6 +385,7 @@ def _check(
     json_out: Path | None,
     console: Console,
     emit: Callable[[Any], None],
+    others: list[str],
 ) -> None:
     """What ``check`` does; ``emit`` prints the report when --json asked for it."""
 
@@ -376,6 +410,7 @@ def _check(
                 app = load_app_or_exit(ctx, target)
                 report["app"] = {"identifier": app.identifier, "version": app.version}
                 snapshot = run_snapshot_or_exit(app)
+                providers = {other.identifier: other.registry for other in (load_app_or_exit(ctx, o) for o in others)}
         except typer.Exit as exit_:
             # cli_error raised the exit while handling what went wrong: that is its context.
             findings = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
@@ -395,6 +430,18 @@ def _check(
         structures=structure_records(snapshot.registry),
         diagnostics=[warning_record(warning) for warning in findings],
     )
+    # Only asked for with --with: without another app there is nothing to compare with.
+    demands = check_demands(app.registry, providers) if providers else []
+    unmet = [finding for finding in demands if finding.level == "error"]
+    report["diagnostics"].extend(demand_record(finding) for finding in demands)
+    for finding in demands:
+        said = escape(f"{finding.subject}: {finding.message}")
+        where = escape(f"{finding.file}:{finding.line}") if finding.file else None
+        (fail if finding.level == "error" else notice)(console, said, where)
+    if unmet:
+        report["ok"] = False
+        report_to(report)
+        raise typer.Exit(code=1)
     report_to(report)
     summary = summarize(snapshot.registry)
     if findings:

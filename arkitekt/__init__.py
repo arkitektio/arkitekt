@@ -131,6 +131,7 @@ from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
 from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
+from arkitekt_spec.declare.definition.policy import CallPolicy, policy
 from arkitekt_spec.declare.task import (
     AssignmentHook,
     AssignPrompt,
@@ -151,15 +152,20 @@ from fakts.mesh import MeshOptions, MeshProxy
 
 from .app.app import App, merge
 from .app.sources import DISCOVER, Source
+from .checks import DemandFinding, DependencyCheckError, UnmetDependency, check_apps
 from .inspect import inspect
 from .runtime import (
     DetachedRun,
+    RunningApps,
     Runtime,
     arun,
+    arun_all,
     connect,
     has_stored_login,
     logout,
+    providing,
     run,
+    run_all,
     run_detached,
 )
 from .serve import serve
@@ -173,8 +179,16 @@ __all__ = [
     "DISCOVER",
     "Runtime",
     "arun",
+    "arun_all",
+    "check_apps",
+    "DemandFinding",
+    "DependencyCheckError",
+    "UnmetDependency",
     "connect",
+    "providing",
+    "RunningApps",
     "run",
+    "run_all",
     "serve",
     # beside a program with a life of its own
     "run_detached",
@@ -233,6 +247,8 @@ __all__ = [
     "StatePreconditionFailed",
     "aretry",
     "retry",
+    "policy",
+    "CallPolicy",
     # what @app.action takes
     "PortGroupInput",
     "EffectInput",

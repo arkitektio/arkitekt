@@ -15,6 +15,7 @@ How to connect (url, tokens, ...) is an argument of the run, not part of the app
 import asyncio
 import logging
 import threading
+from contextlib import asynccontextmanager
 from types import TracebackType
 from typing import (
     TYPE_CHECKING,
@@ -25,7 +26,7 @@ from typing import (
     cast,
     overload,
 )
-from collections.abc import AsyncIterator, Mapping, Sequence
+from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
 
 from arkitekt_spec.declare.agents.connection import ConnectionState
 from arkitekt_spec.declare.provider import Provider
@@ -51,6 +52,8 @@ from arkitekt.device_id import resolve_device_id
 
 if TYPE_CHECKING:
     from arkitekt_spec.declare.agents.connection import ConnectionListener, TaskListener
+
+    from arkitekt.checks import UnmetDependency
     from fakts.models import ActiveFakts, AuthFakt, Manifest
     from koil import KoilFuture
 
@@ -454,6 +457,46 @@ class Runtime(KoiledModel, Generic[Ctx]):
     async def _aprovide(self, context: Ctx | None) -> None:
         """Provide the app's offerings with ``context``, already checked by the caller."""
         await self._require_agent().aprovide(context=context)
+
+    @overload
+    async def astart(self: "Runtime[None]", context: None = None, *, timeout: float | None = None) -> None: ...
+    @overload
+    async def astart(self, context: Ctx, *, timeout: float | None = None) -> None: ...
+
+    async def astart(self, context: Ctx | None = None, *, timeout: float | None = None) -> None:
+        """Start the app and register its agent: the first half of :meth:`arun`.
+
+        Returns once the server has acknowledged the agent, so what follows may
+        rely on the app being there. Nothing is served until :meth:`aloop`::
+
+            async with connect(app, provide=True) as rt:
+                await rt.astart(timeout=30)
+                serving = asyncio.create_task(rt.aloop())
+                ...
+
+        Args:
+            context: The app context, as for :meth:`arun`.
+            timeout: How long the start (startup hooks and registration) may
+                take, in seconds. Unbounded when ``None``.
+
+        Raises:
+            AppContextError: If ``context`` is not what the app declared.
+            LookupError: If the app offers nothing.
+            TimeoutError: If the start takes longer than ``timeout``.
+        """
+        self._require_context(context)
+        await self._require_agent().aconnect(context=context, timeout=timeout)
+
+    async def aloop(self) -> None:
+        """Serve the started app until stopped: the second half of :meth:`arun`.
+
+        Cancelling it shuts the agent down (shutdown hooks included), so cancel
+        it and wait for it before leaving the runtime.
+
+        Raises:
+            LookupError: If the app offers nothing.
+        """
+        await self._require_agent().aloop()
 
     @overload
     def run(self: "Runtime[None]", context: None = None) -> None: ...
@@ -1086,6 +1129,380 @@ async def arun(
         await runtime.arun(context=context)
 
 
+def _labelled_login_prompt(identifier: str, headless: bool) -> DeviceCodeHook:
+    """The terminal login prompt, saying which app asks: several apps log in at once."""
+    from rich.console import Console
+    from rich.markup import escape
+
+    from arkitekt.app.terminal import login_prompt
+
+    prompt = login_prompt(opened_browser=not headless)
+
+    async def hook(challenge: DeviceCodeChallenge) -> None:
+        Console().print(f"[bold]{escape(identifier)}[/bold] asks to log in", highlight=False)
+        await prompt(challenge)
+
+    return hook
+
+
+class RunningApps(Mapping[str, "Runtime[Any]"]):
+    """The apps of a :func:`providing` block: their runtimes, by app.
+
+    ::
+
+        async with providing(upper_app, reverse_app) as running:
+            upper = running[upper_app].require(RekuestCaller)
+            await running.wait()
+
+    It is a mapping by app identifier (``running["upper"]``, iteration, ``len``);
+    looking a runtime up by the app itself keeps the type of its context.
+    """
+
+    def __init__(self, runtimes: Mapping[str, "Runtime[Any]"], serving: Sequence["asyncio.Task[None]"]) -> None:
+        """Hold the started runtimes and the tasks serving them."""
+        self._runtimes = runtimes
+        self._serving = serving
+
+    @overload
+    def __getitem__(self, app: App[Ctx]) -> "Runtime[Ctx]": ...
+    @overload
+    def __getitem__(self, app: str) -> "Runtime[Any]": ...
+
+    def __getitem__(self, app: "App[Any] | str") -> "Runtime[Any]":
+        """The runtime of an app: by the app, or by its identifier.
+
+        Raises:
+            KeyError: If the app is not one of those provided.
+        """
+        if isinstance(app, str):
+            return self._runtimes[app]
+        runtime = self._runtimes.get(app.identifier)
+        if runtime is None or runtime.app is not app:
+            raise KeyError(f"App {app.identifier!r} is not one of the apps provided here: {sorted(self._runtimes)}.")
+        return runtime
+
+    def __iter__(self) -> Iterator[str]:
+        """The identifiers of the apps."""
+        return iter(self._runtimes)
+
+    def __len__(self) -> int:
+        """How many apps are provided."""
+        return len(self._runtimes)
+
+    async def check(self) -> "list[UnmetDependency]":
+        """Ask the server whether every dependency of these apps would bind now.
+
+        The live counterpart of ``check=True``: the server resolves each action's
+        dependencies as an assign would, among every agent registered with it, so
+        one served by an app that is not run here is checked too::
+
+            async with providing(lab_app) as running:
+                for unmet in await running.check():
+                    print(unmet)
+
+        Returns:
+            What an assign would be refused for; empty when all of them would go
+            through. See :func:`arkitekt.checks.acheck_running`.
+        """
+        from arkitekt.checks import acheck_running
+
+        return await acheck_running(self._runtimes.values())
+
+    async def wait(self) -> None:
+        """Serve until stopped: return once every app has stopped.
+
+        An app that fails does not wait for the rest: it ends this wait, the
+        block and the other apps, and its error is raised from the block.
+        """
+        await asyncio.wait(self._serving)
+
+
+@asynccontextmanager
+async def providing(
+    *apps: App[Any],
+    contexts: Mapping[str, Any] | None = None,
+    timeout: float | None = None,
+    check: bool = False,
+    url: str | Source = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+) -> AsyncIterator[RunningApps]:
+    """Several apps, connected, registered and provided for as long as the block runs.
+
+    Every app is its own agent with its own login, in its own task. The block is
+    entered once all of them are registered, with their runtimes by app,
+    and leaving it stops them::
+
+        async with providing(upper_app, reverse_app, pipeline_app) as running:
+            rekuest = running[pipeline_app].require(RekuestCaller)
+            await rekuest.acall(process, text="hello")
+            await running.wait()  # go on serving until stopped
+
+    They connect and register at once, in no order: what an app depends on is
+    bound when one of its tasks is assigned, not when it registers. An app that
+    fails, before or while the block runs, stops the others and the block.
+
+    For apps that need no identity of their own, one merged app
+    (:func:`arkitekt.merge`) is one agent and one login instead.
+
+    A token (``--token``, ``$FAKTS_TOKEN``) is one app's credential, so none is
+    read here: each app uses its saved login, the mandate key, or asks.
+
+    Args:
+        *apps: The apps to provide. Their identifiers must differ: the
+            identifier names an app's saved login.
+        contexts: The app context of each app that declares one, by the app's
+            identifier (see :func:`run`).
+        timeout: How long each app's start (startup hooks and registration) may
+            take once it is logged in, in seconds. Unbounded when ``None``.
+        check: Compare what the apps demand of each other first
+            (:func:`arkitekt.check_apps`) and refuse to start when one demands
+            what another does not offer. A dependency on an app that is not
+            among ``apps`` is not checked. Off by default.
+        url: The fakts server, or where to find it, for all of them (see
+            :func:`run`).
+        mandate_key: A mandate key to log each app in with (see :func:`run`).
+        skip_cache: Neither read nor write the fakts cache (see :func:`run`).
+        reauth: Log in again even when a session is cached (see :func:`run`).
+        headless: Print the device-code prompts instead of opening a browser.
+        device_code_hook: Called with each login to approve, instead of the
+            terminal prompt. Without one, each prompt names the app it is for.
+        force: Take over an existing agent connection of each app.
+        allow_insecure_transport: Talk plain http to a server that is not on
+            this machine (see :func:`run`).
+        device_id: This device's identity (see :func:`run`).
+        mesh: How to reach services only on the deployment's mesh (see
+            :func:`run`).
+
+    Yields:
+        The running apps: their runtimes by app, and ``wait()``.
+
+    Raises:
+        ValueError: If no app is given, two apps share an identifier, or
+            ``contexts`` names an app that is not given. Raised before anything
+            connects or logs in.
+        AppContextError: If a context is not what its app declared. Raised
+            before anything connects or logs in.
+        DependencyCheckError: With ``check``, if an app demands what another
+            does not offer. Raised before anything connects or logs in.
+        LookupError: If an app offers nothing.
+        TimeoutError: If an app does not start within ``timeout``.
+    """
+    if not apps:
+        raise ValueError("No app to run: at least one is needed.")
+    identifiers = [app.identifier for app in apps]
+    twice = sorted({i for i in identifiers if identifiers.count(i) > 1})
+    if twice:
+        raise ValueError(
+            f"These apps share an identifier: {twice}. An identifier names an app's "
+            "saved login, so every app run together needs its own."
+        )
+    contexts = contexts or {}
+    unknown = sorted(set(contexts) - set(identifiers))
+    if unknown:
+        raise ValueError(f"`contexts` names apps that are not run: {unknown}. Running: {identifiers}.")
+    for app in apps:
+        app.registry.require_app_context(contexts.get(app.identifier), whose=f"App {app.identifier!r}")
+    if check:
+        from arkitekt.checks import DependencyCheckError, check_apps
+
+        unmet = [finding for finding in check_apps(*apps) if finding.level == "error"]
+        if unmet:
+            raise DependencyCheckError(unmet)
+
+    runtimes: dict[str, Runtime[Any]] = {}
+    started = {identifier: asyncio.Event() for identifier in identifiers}
+
+    async def provide(app: App[Any]) -> None:
+        # One task enters, starts, serves and leaves the runtime: what a run
+        # enters (cancel scopes, timeouts) is left in the task that entered it.
+        identifier = app.identifier
+        hook = device_code_hook
+        if hook is None and len(apps) > 1:
+            hook = _labelled_login_prompt(identifier, headless)
+        runtime = connect(
+            app,
+            provide=True,
+            url=url,
+            token=None,
+            mandate_key=mandate_key,
+            skip_cache=skip_cache,
+            reauth=reauth,
+            headless=headless,
+            device_code_hook=hook,
+            force=force,
+            allow_insecure_transport=allow_insecure_transport,
+            device_id=device_id,
+            mesh=mesh,
+        )
+        async with runtime:
+            await runtime.astart(contexts.get(identifier), timeout=timeout)
+            runtimes[identifier] = runtime
+            started[identifier].set()
+            await runtime.aloop()
+
+    try:
+        async with asyncio.TaskGroup() as group:
+            serving = [group.create_task(provide(app), name=app.identifier) for app in apps]
+            # An app failing to start cancels this wait, and the others, through the group.
+            await asyncio.gather(*(event.wait() for event in started.values()))
+            try:
+                yield RunningApps(runtimes, serving)
+            finally:
+                # Cancelling a served app shuts its agent down and leaves its runtime.
+                for task in serving:
+                    task.cancel()
+    except BaseExceptionGroup as errors:
+        # One thing went wrong (an app, or the block): raise that, not a group of one.
+        if len(errors.exceptions) == 1:
+            raise errors.exceptions[0] from None
+        raise
+
+
+async def arun_all(
+    *apps: App[Any],
+    contexts: Mapping[str, Any] | None = None,
+    timeout: float | None = None,
+    check: bool = False,
+    url: str | Source = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+) -> None:
+    """Connect several apps and provide each until stopped, in one process.
+
+    :func:`providing`, held open until the apps stop: each app is its own agent
+    with its own login, and one of them failing stops the others.
+
+    Args:
+        *apps: The apps to provide, each under its own identifier.
+        contexts: The app context of each app that declares one, by identifier.
+        timeout: How long each app's start may take once it is logged in, in
+            seconds. Unbounded when ``None``.
+        check: Check the apps against each other first, as for :func:`providing`.
+        url: The fakts server, or where to find it, for all of them (see
+            :func:`run`).
+        mandate_key: A mandate key to log each app in with (see :func:`run`).
+        skip_cache: Neither read nor write the fakts cache (see :func:`run`).
+        reauth: Log in again even when a session is cached (see :func:`run`).
+        headless: Print the device-code prompts instead of opening a browser.
+        device_code_hook: Called with each login to approve, instead of the
+            terminal prompt. Without one, each prompt names the app it is for.
+        force: Take over an existing agent connection of each app.
+        allow_insecure_transport: Talk plain http to a server that is not on
+            this machine (see :func:`run`).
+        device_id: This device's identity (see :func:`run`).
+        mesh: How to reach services only on the deployment's mesh (see
+            :func:`run`).
+
+    Raises:
+        ValueError: As for :func:`providing`.
+        AppContextError: As for :func:`providing`.
+        LookupError: If an app offers nothing.
+        TimeoutError: If an app does not start within ``timeout``.
+    """
+    async with providing(
+        *apps,
+        contexts=contexts,
+        timeout=timeout,
+        check=check,
+        url=url,
+        mandate_key=mandate_key,
+        skip_cache=skip_cache,
+        reauth=reauth,
+        headless=headless,
+        device_code_hook=device_code_hook,
+        force=force,
+        allow_insecure_transport=allow_insecure_transport,
+        device_id=device_id,
+        mesh=mesh,
+    ) as running:
+        await running.wait()
+
+
+def run_all(
+    *apps: App[Any],
+    contexts: Mapping[str, Any] | None = None,
+    timeout: float | None = None,
+    check: bool = False,
+    url: str | Source = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+) -> None:
+    """Connect several apps and provide each until stopped: :func:`arun_all`, blocking.
+
+    ::
+
+        if __name__ == "__main__":
+            run_all(upper_app, reverse_app, pipeline_app)
+
+    Args:
+        *apps: The apps to provide, each under its own identifier.
+        contexts: The app context of each app that declares one, by identifier.
+        timeout: How long each app's start may take once it is logged in, in
+            seconds. Unbounded when ``None``.
+        check: Check the apps against each other first, as for :func:`providing`.
+        url: The fakts server, or where to find it, for all of them (see
+            :func:`run`).
+        mandate_key: A mandate key to log each app in with (see :func:`run`).
+        skip_cache: Neither read nor write the fakts cache (see :func:`run`).
+        reauth: Log in again even when a session is cached (see :func:`run`).
+        headless: Print the device-code prompts instead of opening a browser.
+        device_code_hook: Called with each login to approve, instead of the
+            terminal prompt. Without one, each prompt names the app it is for.
+        force: Take over an existing agent connection of each app.
+        allow_insecure_transport: Talk plain http to a server that is not on
+            this machine (see :func:`run`).
+        device_id: This device's identity (see :func:`run`).
+        mesh: How to reach services only on the deployment's mesh (see
+            :func:`run`).
+
+    Raises:
+        ValueError: As for :func:`providing`.
+        AppContextError: As for :func:`providing`.
+        LookupError: If an app offers nothing.
+        TimeoutError: If an app does not start within ``timeout``.
+    """
+    asyncio.run(
+        arun_all(
+            *apps,
+            contexts=contexts,
+            timeout=timeout,
+            check=check,
+            url=url,
+            mandate_key=mandate_key,
+            skip_cache=skip_cache,
+            reauth=reauth,
+            headless=headless,
+            device_code_hook=device_code_hook,
+            force=force,
+            allow_insecure_transport=allow_insecure_transport,
+            device_id=device_id,
+            mesh=mesh,
+        )
+    )
+
+
 def run_manifest(app: App[Any], device_id: str | Source | None = DISCOVER) -> "Manifest":
     """The manifest a run of ``app`` sends: what the server is asked to approve.
 
@@ -1549,15 +1966,19 @@ def logout(
 
 __all__ = [
     "DetachedRun",
+    "RunningApps",
     "Runtime",
     "alogin",
     "arun",
+    "arun_all",
     "LocalRun",
     "connect",
     "connect_local",
     "has_stored_login",
     "logout",
+    "providing",
     "run",
+    "run_all",
     "run_detached",
     "run_manifest",
 ]

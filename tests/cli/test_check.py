@@ -383,3 +383,34 @@ def test_check_json_reports_a_refusal_and_fails(tmp_path: Path) -> None:
     assert result.exit_code == 1
     report = json.loads(result.stdout)
     assert report["ok"] is False and report["diagnostics"]
+
+
+ROBOT = (
+    "from arkitekt import App\n"
+    "app = App('robot', '1.0.0')\n\n"
+    "@app.action\n"
+    "def move(trajectory: str) -> bool:\n"
+    "    return True\n"
+)
+
+LAB = (
+    "from arkitekt import App\n"
+    "app = App('lab', '1.0.0')\n\n"
+    "@app.declare(app='robot')\n"
+    "class Robot:\n"
+    "    def move(self, {argument}: str) -> bool: ...\n\n"
+    "@app.workflow\n"
+    "def go(robot: Robot) -> bool:\n"
+    "    return robot.move('home')\n"
+)
+
+
+@pytest.mark.parametrize(("argument", "exit_code"), [("trajectory", 0), ("name", 1)])
+def test_check_with_another_app_compares_what_is_demanded_of_it(tmp_path: Path, argument: str, exit_code: int) -> None:
+    (tmp_path / "robot.py").write_text(ROBOT)
+    (tmp_path / "lab.py").write_text(LAB.format(argument=argument))
+
+    result = _invoke(tmp_path, "check", "lab", "--with", "robot")
+
+    assert result.exit_code == exit_code, result.output
+    assert ("is expected at 0" in result.output) is bool(exit_code)

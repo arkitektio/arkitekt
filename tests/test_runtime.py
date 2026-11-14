@@ -13,7 +13,7 @@ import pytest
 from arkitekt_spec.declare.errors import RegistryFrozenError
 from arkitekt_spec.declare.service import Service
 
-from arkitekt import App, connect, run
+from arkitekt import App, DependencyCheckError, arun_all, connect, providing, run
 
 from .fakes import (
     FakeAgent,
@@ -311,3 +311,109 @@ async def test_the_supervisor_that_started_the_process_reaches_its_agent(monkeyp
     async with connect(picture_app(), provide=True) as rt:
         assert rt.agent is not None
         assert rt.agent.supervisor == "from-arg"
+
+
+def offering_app(identifier: str) -> App[None]:
+    """An app of its own identifier that offers one action through the fake provider."""
+    app = App(identifier, providers=[RekuestProvider()])
+
+    @app.action
+    def shout(text: str) -> str:
+        """Shouts it."""
+        return text.upper()
+
+    return app
+
+
+@pytest.mark.asyncio
+async def test_several_apps_are_started_before_the_block_and_left_after_it(monkeypatch: pytest.MonkeyPatch) -> None:
+    async def aloop(self: FakeAgent) -> None:
+        # As a real agent's loop: it serves until it is cancelled.
+        await asyncio.Event().wait()
+
+    monkeypatch.setattr(FakeAgent, "aloop", aloop)
+
+    one = offering_app("one")
+    async with providing(one, offering_app("two")) as runtimes:
+        assert sorted(runtimes) == ["one", "two"]
+        assert runtimes[one] is runtimes["one"], "an app is looked up by itself as by its identifier"
+        with pytest.raises(KeyError, match="not one of the apps"):
+            runtimes[offering_app("one")]
+        agents = {identifier: runtime.agent for identifier, runtime in runtimes.items()}
+        for identifier, runtime in runtimes.items():
+            assert runtime.app.identifier == identifier
+            assert runtime.agent.provided == [None], "each app was started by its own agent"  # pyright: ignore[reportOptionalMemberAccess]
+            assert "exit agent" not in runtime.agent.log  # pyright: ignore[reportOptionalMemberAccess]
+    assert all("exit agent" in agent.log for agent in agents.values())  # pyright: ignore[reportOptionalMemberAccess]
+
+
+@pytest.mark.asyncio
+async def test_waiting_on_the_running_apps_returns_when_they_have_all_stopped() -> None:
+    # The fake agent's loop ends at once, as a real one's does when its connection closes for good.
+    async with providing(offering_app("one"), offering_app("two")) as running:
+        await asyncio.wait_for(running.wait(), timeout=2)
+
+
+@pytest.mark.asyncio
+async def test_apps_sharing_an_identifier_are_refused_before_anything_connects() -> None:
+    with pytest.raises(ValueError, match="share an identifier"):
+        await arun_all(offering_app("same"), offering_app("same"))
+
+
+@pytest.mark.asyncio
+async def test_a_checked_start_refuses_apps_that_do_not_fit_before_anything_connects() -> None:
+    lab = App("lab", providers=[RekuestProvider()])
+
+    @lab.declare(app="one")
+    class One:
+        def shout(self, words: str) -> str:
+            """Shouts it."""
+            ...
+
+    @lab.workflow
+    def loud(one: One) -> str:
+        """Has it shouted."""
+        return one.shout("hello")
+
+    with pytest.raises(DependencyCheckError, match="'words' \\(STRING\\) is expected at 0"):
+        async with providing(offering_app("one"), lab, check=True):
+            pytest.fail("the block was entered")
+
+
+@pytest.mark.asyncio
+async def test_running_apps_ask_the_server_whether_their_dependencies_would_bind(monkeypatch: pytest.MonkeyPatch) -> None:
+    from types import SimpleNamespace
+
+    from tests.fakes import FakeRekuest
+
+    asked: list[str] = []
+
+    async def amy_implementation_at(self: FakeRekuest, interface: str) -> SimpleNamespace:
+        asked.append(interface)
+        return SimpleNamespace(id="7")
+
+    async def adependency_tree(self: FakeRekuest, implementation: str) -> SimpleNamespace:
+        refused = SimpleNamespace(key="one", unmet="no agent of 'one' is connected", mapped_agents=[])
+        return SimpleNamespace(satisfied=False, dependencies=[refused])
+
+    monkeypatch.setattr(FakeRekuest, "amy_implementation_at", amy_implementation_at, raising=False)
+    monkeypatch.setattr(FakeRekuest, "adependency_tree", adependency_tree, raising=False)
+
+    lab = App("lab", providers=[RekuestProvider()])
+
+    @lab.declare(app="one")
+    class One:
+        def shout(self, text: str) -> str:
+            """Shouts it."""
+            ...
+
+    @lab.workflow
+    def loud(one: One) -> str:
+        """Has it shouted."""
+        return one.shout("hello")
+
+    async with providing(lab, offering_app("two")) as running:
+        unmet = await running.check()
+
+    assert asked == ["loud"], "only an action with dependencies is asked about"
+    assert [str(u) for u in unmet] == ["lab: loud: one: no agent of 'one' is connected"]

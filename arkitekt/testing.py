@@ -59,8 +59,6 @@ Nothing here is loaded unless a project asks for it, and nothing is autouse.
 
 import os
 import sys
-import threading
-import time
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -74,8 +72,11 @@ except ImportError as e:  # pragma: no cover - depends on what is installed
         "pip install 'arkitekt[rekuest]'."
     ) from e
 
+from koil import unkoil
+from koil.bridge import unkoil_task
+
 from arkitekt.app.app import App, Ctx
-from arkitekt.runtime import ConnectionState, Runtime, _interface_of, _provider_for, connect, connect_local
+from arkitekt.runtime import Runtime, _interface_of, _provider_for, connect, connect_local
 
 if TYPE_CHECKING:
     from konstruktor import Hub  # pyright: ignore[reportMissingImports]
@@ -157,36 +158,22 @@ def served_app(
     real ones (``runtime.require(Mikro)``).
 
     Raises:
-        TimeoutError: If it does not register within ``timeout`` seconds.
-        RuntimeError: If its run stops before it registers (or what stopped it).
+        TimeoutError: If, once logged in, it does not start and register within ``timeout`` seconds.
     """
     # A test starts the app's tasks as the app: it takes in the caller, whose scope it then
     # asks for at login.
     from rekuest.arkitekt import rekuest_caller_service
 
     app.service(rekuest_caller_service)
-    registered = threading.Event()
-
-    async def on_state(state: ConnectionState) -> None:
-        if state is ConnectionState.REGISTERED:
-            registered.set()
-
-    with connect(
-        app, provide=True, url=url, mandate_key=mandate_key, headless=True, connection_listener=on_state
-    ) as runtime:
-        # None is the context of an app that declares none; run_detached checks it against the app.
-        running = runtime.run_detached(cast(Ctx, context))
+    with connect(app, provide=True, url=url, mandate_key=mandate_key, headless=True) as runtime:
+        # Started, then served: the start returns once rekuest acknowledged the agent, and
+        # raises what kept it from registering.
+        unkoil(runtime.astart, cast(Ctx, context), timeout=timeout)
+        serving = unkoil_task(runtime.aloop)
         try:
-            deadline = time.monotonic() + timeout
-            while not registered.wait(0.5):
-                if running.done():
-                    running.result()  # raises what stopped it
-                    raise RuntimeError("The app's run stopped before it registered with rekuest.")
-                if time.monotonic() > deadline:
-                    raise TimeoutError(f"The app did not register with rekuest within {timeout:.0f}s.")
             yield runtime
         finally:
-            running.cancel()
+            serving.cancel()
 
 
 @dataclass(frozen=True)
