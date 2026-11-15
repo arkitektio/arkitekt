@@ -197,16 +197,18 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
         file, line = _declared_at(declared.function) if declared is not None else (None, None)
         for blok in implementation.definition.bloks or ():
             context = ComponentContext(blok.context).value
+            # An assign blok reads `assign`, not `task`: its id and its scope's kind say so.
+            kind = "assign" if blok.phase == "ASSIGN" else "action"
             records.append(
                 _compact(
                     {
-                        "blok": action_blok_id(interface, blok.context),
+                        "blok": action_blok_id(interface, blok.context, kind),
                         "context": context,
                         "source": blok.source,
                         "file": file,
                         "call_line": line,
                         "scope": scope_record(
-                            kind="action",
+                            kind=kind,
                             context=context,
                             dependencies=implementation.dependencies,
                             locals_=blok.locals,

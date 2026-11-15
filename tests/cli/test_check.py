@@ -414,3 +414,23 @@ def test_check_with_another_app_compares_what_is_demanded_of_it(tmp_path: Path, 
 
     assert result.exit_code == exit_code, result.output
     assert ("is expected at 0" in result.output) is bool(exit_code)
+
+
+ASSIGN_BLOK = (
+    VALID
+    + '\nfrom arkitekt import ActionBlok\n\n\n@app.workflow(\n'
+    + '    bloks=[ActionBlok("<Html><Text>{task.status}</Text></Html>")],\n'
+    + '    assign_bloks=[ActionBlok("<Html><args /><Button onClick={assign.start()}>Go</Button></Html>")],\n'
+    + ')\ndef stain(rounds: int = 1) -> None:\n    """Stain\n\n    Stains a slide\n    """\n'
+)
+
+
+def test_an_assign_blok_is_reported_as_one(tmp_path: Path) -> None:
+    """Its scope's kind decides what an editor lets it read: `assign`, and no `task`."""
+    (tmp_path / "app.py").write_text(ASSIGN_BLOK)
+
+    code, report = _report(tmp_path)
+
+    assert code == 0, report["diagnostics"]
+    kinds = {blok["blok"]: blok["scope"]["kind"] for blok in report["bloks"]}
+    assert kinds == {"stain:html": "action", "stain:assign:html": "assign"}
