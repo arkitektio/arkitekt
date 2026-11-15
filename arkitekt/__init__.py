@@ -95,15 +95,15 @@ from arkitekt_spec.blok.prompt import (
     function_signature,
 )
 from arkitekt_spec.blok.catalogs import (
-    ORKESTRATOR_MODULE,
-    STANDARD_CATALOGS,
+    ORKESTRATOR_CATALOG_ID,
     BlokView,
+    base_catalog,
     blok_view,
+    checking_catalogs,
     default_view,
-    orkestrator_module,
-    standard_catalog,
+    orkestrator_catalog,
+    orkestrator_view,
 )
-from arkitekt_spec.declare.blok.registry import catalogs_of
 from arkitekt_spec.blok.vocabulary import BlokError, Finding, Function, load_vocabulary
 from arkitekt_spec.declare.catalogs import (
     BLOK_ARGS_ROOT,
@@ -283,11 +283,11 @@ __all__ = [
     "parse_ui_catalog",
     "blok_view",
     "default_view",
-    "STANDARD_CATALOGS",
-    "ORKESTRATOR_MODULE",
-    "standard_catalog",
-    "orkestrator_module",
-    "catalogs_of",
+    "ORKESTRATOR_CATALOG_ID",
+    "base_catalog",
+    "orkestrator_catalog",
+    "orkestrator_view",
+    "checking_catalogs",
     "BlokError",
     "Finding",
     "load_vocabulary",

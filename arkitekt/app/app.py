@@ -1399,8 +1399,7 @@ class App(Generic[Ctx]):
         demo: BlokDemoInput | Mapping[str, JSONSerializable] | None = None,
         queries: Mapping[str, Query] | None = None,
         subscriptions: Mapping[str, Subscription] | None = None,
-        catalogs: Sequence[str] | None = None,
-        module: str | None = None,
+        catalog: str | None = None,
         default: bool = False,
         for_model: str | None = None,
         for_node: str | None = None,
@@ -1438,11 +1437,13 @@ class App(Generic[Ctx]):
             queries: Its declared reads, ``queries.<name>``, each a :class:`Query`.
             subscriptions: Its declared streams, ``subscriptions.<name>``, each a
                 :class:`Subscription`.
-            catalogs: The catalogs it needs (``"ui@1"``, ``"scene@1"``); those its
-                components come from when left out.
-            module: The module (an app's own unversioned extras) it renders
-                against besides its catalogs: the Orkestrator's when left out, or
-                one this app declared with :meth:`ui_catalog`.
+            catalog: The catalog it is written for. Left out, it is written for the
+                base catalog, which every renderer draws, and runs everywhere. To use
+                what one frontend draws beyond it, name that frontend's catalog by the
+                address it is published at (:data:`arkitekt.ORKESTRATOR_CATALOG_ID` for
+                the Orkestrator's, which adds mikro's scene), or one this app declared
+                with :meth:`ui_catalog` by its name. A component of another catalog
+                is refused by ``arkitekt check``.
             default: Whether this is the app's default blok for its context.
                 Declaring another default for the same context replaces it.
             for_model: The model (``"sha256:..."``) this blok decorates: a viewer
@@ -1469,8 +1470,7 @@ class App(Generic[Ctx]):
             demo=demo,
             queries=queries,
             subscriptions=subscriptions,
-            catalogs=catalogs,
-            module=module,
+            catalog=catalog,
             default=default,
             for_model=for_model,
             for_node=for_node,

@@ -215,7 +215,7 @@ def test_check_json_out_places_each_warning_at_its_blok(tmp_path: Path) -> None:
     code, report = _report(tmp_path)
 
     assert code == 0
-    assert report["version"] == 2 and report["ok"] is True
+    assert report["version"] == 3 and report["ok"] is True
     assert report["app"] == {"identifier": "checked", "version": "1.2.3"}
     (diagnostic,) = report["diagnostics"]
     assert diagnostic["code"] == "catalog.unknown_component" and diagnostic["level"] == "warning"

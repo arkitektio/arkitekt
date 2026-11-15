@@ -11,6 +11,8 @@ from typing import Annotated, Any
 import typer
 from arkitekt_spec.actions import ComponentContext
 from arkitekt_spec.declare.agents.dependency import prepare_dependency_variables
+from arkitekt_spec.blok.catalogs import checking_catalogs
+from arkitekt_spec.blok.catalogs.fetch import CatalogUnavailable, resolve_catalog
 from arkitekt_spec.blok.vocabulary import BlokError
 from arkitekt_spec.declare.blok.action import action_blok_id
 from arkitekt_spec.declare.catalogs import CatalogWarning
@@ -26,7 +28,7 @@ from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.utils import configure_logging, human_console, json_stdout
 from arkitekt.cli.vars import get_console, get_work_dir
 
-REPORT_VERSION = 2
+REPORT_VERSION = 3
 """The shape of a ``--json-out`` report; raised when a field changes meaning or goes.
 
 2: every blok carries its ``scope``, an action's blok where its action was declared, and the
@@ -124,15 +126,15 @@ def scope_record(
     queries: Iterable[Any] = (),
     subscriptions: Iterable[Any] = (),
     args: Iterable[str] | None = None,
-    catalogs: Iterable[str] = (),
-    module: str | None = None,
+    catalog: str | None = None,
     assets: Iterable[str] | None = None,
 ) -> dict[str, Any]:
     """What a blok's reads and calls resolve against, as the BSX core takes it (``BlokCheckScope``).
 
     Field names as the models spell them (snake_case), like the corpus' ``scope``: an editor
     completes ``deps.<key>``, ``args.<key>`` and the locals from it. A local's kind is as
-    declared; the core infers the rest from the tree.
+    declared; the core infers the rest from the tree. ``catalog`` is the one the blok is
+    written for (its address, or the name of one the app declared); null: the base catalog.
     """
     return {
         "kind": kind,
@@ -142,8 +144,7 @@ def scope_record(
         "queries": _dumped(queries),
         "subscriptions": _dumped(subscriptions),
         "args": list(args) if args is not None else None,
-        "catalogs": list(catalogs),
-        "module": module,
+        "catalog": catalog,
         "assets": sorted(assets) if assets is not None else None,
     }
 
@@ -185,8 +186,7 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
                         queries=declaration.queries,
                         subscriptions=declaration.subscriptions,
                         args=[port.key for port in declaration.args],
-                        catalogs=(blok.catalogs or ()) if blok is not None else declaration.catalogs,
-                        module=declaration.module,
+                        catalog=declaration.catalog,
                         assets=assets,
                     ),
                 }
@@ -213,8 +213,7 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
                             queries=blok.queries,
                             subscriptions=blok.subscriptions,
                             args=[port.key for port in implementation.definition.args or ()],
-                            catalogs=blok.catalogs,
-                            module=blok.module,
+                            catalog=blok.catalog,
                         ),
                     }
                 )
@@ -345,6 +344,23 @@ def check(
             "compared with what it declares. Repeatable.",
         ),
     ] = None,
+    catalog: Annotated[
+        list[str] | None,
+        typer.Option(
+            "--catalog",
+            help="A catalog a blok of the app is written for, by the address it is published at "
+            "(https://...). It is pulled from there (or taken from what was kept the last time) "
+            "before the app is imported, so its bloks are checked against it. Repeatable. The base "
+            "catalog and the Orkestrator's ship with arkitekt and need none.",
+        ),
+    ] = None,
+    offline_catalogs: Annotated[
+        bool,
+        typer.Option(
+            "--offline-catalogs",
+            help="Pull no catalog: use only what ships with arkitekt and what was kept before.",
+        ),
+    ] = False,
     as_json: JsonOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
@@ -357,9 +373,15 @@ def check(
     imported (``with connect(app)`` at module level) is refused at that line.
     Exits with 1 and says where the problem is otherwise, so it also serves in CI.
 
-    What does not block a run is listed as a warning: a blok using a component or
-    prop its catalog does not know (unless it was declared ``mode="strict"``), or
-    an operation no catalog provides.
+    A blok is checked here against the catalog it is written for, which a run does
+    not do: registering an app holds its bloks to the blok language alone, and
+    whoever draws a blok checks it against the catalog it has. What a catalog says
+    is listed as a warning (a component or prop it does not know, unless the blok
+    was declared ``mode="strict"``); a component of a catalog the blok is not
+    written for is an error. The base catalog, which every renderer draws, and
+    the Orkestrator's ship with arkitekt. Any other is named with --catalog and
+    pulled from the address it is published at: over https only, read as data,
+    and kept for the next check.
 
     With --with, the protocols the app declares are also compared with the apps
     they are directed at: an action or state the other app does not offer, or
@@ -376,7 +398,7 @@ def check(
     configure_logging(log_level.value)
     console = human_console(get_console(ctx), as_json)
     with json_stdout(as_json) as emit:
-        _check(ctx, target, json_out, console, emit, with_ or [])
+        _check(ctx, target, json_out, console, emit, with_ or [], catalog or [], pull=not offline_catalogs)
 
 
 def _check(
@@ -386,6 +408,9 @@ def _check(
     console: Console,
     emit: Callable[[Any], None],
     others: list[str],
+    catalogs: list[str] | None = None,
+    *,
+    pull: bool = True,
 ) -> None:
     """What ``check`` does; ``emit`` prints the report when --json asked for it."""
 
@@ -403,7 +428,13 @@ def _check(
         "structures": [],
         "diagnostics": [],
     }
-    with warnings.catch_warnings(record=True) as caught:
+    # Made known before the app is imported: a blok is read against its catalog as it is declared.
+    for address in catalogs or []:
+        try:
+            resolve_catalog(address, fetch=pull, refresh=pull)
+        except CatalogUnavailable as error:
+            notice(console, escape(f"{error}: what it adds to the base catalog is not checked"))
+    with warnings.catch_warnings(record=True) as caught, checking_catalogs():
         warnings.simplefilter("always", CatalogWarning)
         try:
             with offline():

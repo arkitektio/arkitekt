@@ -1,15 +1,25 @@
-"""The App's module and blok facade. The rules themselves are arkitekt-spec's and are tested there."""
+"""The App's catalog and blok facade. The rules themselves are arkitekt-spec's and are tested there."""
 
 import sys
 import warnings
+from collections.abc import Iterator
 
 import pytest
+from arkitekt_spec.blok.catalogs import checking_catalogs
 from arkitekt_spec.declare.catalogs import CatalogWarning, ComponentSpec, OperationSpec, PropSpec
 
 from arkitekt import App, BlokError, Local, PortKind, Query
 
-# A renderer's own components. Their names are not the standard catalogs': a declared module
-# is drawn beside base and the standard catalogs, which keep theirs.
+@pytest.fixture(autouse=True)
+def _catalogs_checked() -> Iterator[None]:
+    """These tests declare bloks as ``arkitekt check`` loads an app: held to their catalog too.
+    An app that merely registers is held to the blok language alone."""
+    with checking_catalogs():
+        yield
+
+
+# A renderer's own components. Their names are not the base catalog's: a declared catalog
+# adds to the base, which keeps its own.
 SLIDER = ComponentSpec(
     name="DeskSlider",
     accepts_children=False,
@@ -27,19 +37,19 @@ def test_ui_catalog_reaches_the_registry() -> None:
     assert declared.description == "the desktop app"
 
 
-def test_blok_passes_its_module_through() -> None:
+def test_blok_passes_its_catalog_through() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
-    app.blok("panel", "<Html><Box><DeskSlider min={1} /></Box></Html>", module="electron")
+    app.blok("panel", "<Html><Box><DeskSlider min={1} /></Box></Html>", catalog="electron")
 
-    assert app.registry.registered_bloks["panel"].module == "electron"
+    assert app.registry.registered_bloks["panel"].catalog == "electron"
 
 
 def test_a_blok_is_validated_against_the_declared_module() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
     with pytest.raises(BlokError, match="Slidr") as refused:
-        app.blok("bad", "<Html><Box><Slidr /></Box></Html>", module="electron", mode="strict")
+        app.blok("bad", "<Html><Box><Slidr /></Box></Html>", catalog="electron", mode="strict")
     assert refused.value.code == "catalog.unknown_component"
 
 
@@ -47,7 +57,7 @@ def test_a_catalog_finding_is_a_warning_by_default() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
     with pytest.warns(CatalogWarning, match=r"\[catalog.unknown_component\]"):
-        app.blok("loose", "<Html><Box><Slidr /></Box></Html>", module="electron")
+        app.blok("loose", "<Html><Box><Slidr /></Box></Html>", catalog="electron")
 
 
 def test_a_warning_is_told_once_at_the_apps_own_line() -> None:
@@ -57,7 +67,7 @@ def test_a_warning_is_told_once_at_the_apps_own_line() -> None:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         line = sys._getframe().f_lineno + 1
-        app.blok("loose", "<Html><Box><Slidr /></Box></Html>", module="electron")
+        app.blok("loose", "<Html><Box><Slidr /></Box></Html>", catalog="electron")
         app.registry.get_declared_bloks()
     found = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
     assert ["[catalog.unknown_component]" in str(warning.message) for warning in found] == [True]
@@ -183,16 +193,25 @@ def test_blok_passes_its_args_through() -> None:
         app.blok("other", "<Html><Text>{args.dataset}</Text></Html>", args={"image": Image})
 
 
-def test_a_module_may_shadow_a_standard_component() -> None:
-    """The module's ``Slider`` is drawn, with a ``catalog.shadow`` warning where it is used."""
+def test_a_catalog_never_redefines_a_component_of_the_base() -> None:
+    """A catalog only adds: its own ``Slider`` beside the base catalog's is refused."""
     app = App("demo")
     own_slider = ComponentSpec(name="Slider", accepts_children=False, props=(PropSpec(key="min", kind="FLOAT", required=True),))
-    app.ui_catalog("electron", components=[own_slider, BOX])
-    with pytest.warns(CatalogWarning, match=r"\[catalog.shadow\]"):
-        app.blok("panel", "<Html><Box><Slider min={1} /></Box></Html>", module="electron")
+    with pytest.raises(ValueError, match="redefines <Slider> of base@3"):
+        app.ui_catalog("electron", components=[own_slider, BOX])
 
 
-def test_a_blok_naming_an_undeclared_module_is_warned() -> None:
+def test_a_blok_naming_a_catalog_not_known_here_is_warned() -> None:
     app = App("demo")
-    with pytest.warns(CatalogWarning, match=r"\[module.unknown\]"):
-        app.blok("panel", "<Html><Thing /></Html>", module="nowhere")
+    with pytest.warns(CatalogWarning, match=r"\[catalog.unknown\]"):
+        app.blok("panel", "<Html><Thing /></Html>", catalog="nowhere")
+
+
+def test_an_app_that_merely_registers_is_held_to_the_language_alone() -> None:
+    """What a catalog says is checked by whoever draws the blok, and by ``arkitekt check``."""
+    with checking_catalogs(False), warnings.catch_warnings():
+        warnings.simplefilter("error", CatalogWarning)
+        app = App("demo")
+        app.blok("loose", "<Html><Slidr /></Html>", mode="strict")
+        with pytest.raises(BlokError, match="roots.unknown"):
+            app.blok("wrong", "<Html><Text>{nothing.here}</Text></Html>")
