@@ -15,6 +15,7 @@ import numpy as np
 import pytest
 import xarray as xr
 from arkitekt.runtime import Runtime
+from arkitekt_spec.declare.blok.registry import resolved_locals
 
 from __ENTRYPOINT__ import (
     HISTORY_LENGTH,
@@ -186,7 +187,9 @@ def test_the_panel_is_declared_and_everything_it_names_exists():
     # an action it names that the app does not have fails here.
     panel = app.registry.get_declared_bloks()["analysis"]
 
-    assert [(local.key, local.default) for local in panel.locals] == [("objects", 12)]
+    # Its slider's local borrows the port of the argument it feeds: an INT starting at 12.
+    locals_ = resolved_locals(panel, app.registry).values()
+    assert [(local.key, local.default) for local in locals_] == [("objects", 12)]
     # Its one dependency is the agent itself, demanding what the panel reads and calls.
     (agent,) = panel.dependencies
     assert {state.key for state in agent.state_dependencies or ()} == {"Analysis"}

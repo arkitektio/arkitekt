@@ -394,7 +394,10 @@ saying where the problem is, otherwise -- so it also serves in CI.
 `arkitekt check --json` prints the full report (the app, its actions, bloks,
 protocols, structures and every diagnostic) on stdout and nothing else: what the
 app prints while it is imported, and the status line, go to stderr. `--json-out
-FILE` writes the same report to a file.
+FILE` writes the same report to a file. Each blok comes with its source, where it was
+declared and its `scope`, where it is mounted: the kinds the mount takes, its dependencies,
+`args`, `catalog` and `assets`. What the blok owns (its locals, queries and subscriptions) is
+in its source.
 
 Every command reports an app that does not import the same way: where in your
 code, the line, and the error, rather than a traceback.

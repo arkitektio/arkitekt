@@ -6,9 +6,11 @@ from collections.abc import Iterator
 
 import pytest
 from arkitekt_spec.blok.catalogs import checking_catalogs
+from arkitekt_spec.declare.blok.registry import resolved_locals
 from arkitekt_spec.declare.catalogs import CatalogWarning, ComponentSpec, OperationSpec, PropSpec
 
-from arkitekt import App, BlokError, Local, PortKind, Query
+from arkitekt import App, BlokError, PortKind
+
 
 @pytest.fixture(autouse=True)
 def _catalogs_checked() -> Iterator[None]:
@@ -26,6 +28,7 @@ SLIDER = ComponentSpec(
     props=(PropSpec(key="min", kind="FLOAT", required=True),),
 )
 BOX = ComponentSpec(name="Box", accepts_children=True)
+ELECTRON = '<Blok kind="agent" context="panel" catalog="electron">'
 
 
 def test_ui_catalog_reaches_the_registry() -> None:
@@ -40,7 +43,7 @@ def test_ui_catalog_reaches_the_registry() -> None:
 def test_blok_passes_its_catalog_through() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
-    app.blok("panel", "<Html><Box><DeskSlider min={1} /></Box></Html>", catalog="electron")
+    app.blok("panel", ELECTRON + "<Box><DeskSlider min={1} /></Box></Blok>")
 
     assert app.registry.registered_bloks["panel"].catalog == "electron"
 
@@ -49,7 +52,7 @@ def test_a_blok_is_validated_against_the_declared_module() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
     with pytest.raises(BlokError, match="Slidr") as refused:
-        app.blok("bad", "<Html><Box><Slidr /></Box></Html>", catalog="electron", mode="strict")
+        app.blok("bad", ELECTRON + "<Box><Slidr /></Box></Blok>", mode="strict")
     assert refused.value.code == "catalog.unknown_component"
 
 
@@ -57,7 +60,7 @@ def test_a_catalog_finding_is_a_warning_by_default() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
     with pytest.warns(CatalogWarning, match=r"\[catalog.unknown_component\]"):
-        app.blok("loose", "<Html><Box><Slidr /></Box></Html>", catalog="electron")
+        app.blok("loose", ELECTRON + "<Box><Slidr /></Box></Blok>")
 
 
 def test_a_warning_is_told_once_at_the_apps_own_line() -> None:
@@ -67,7 +70,7 @@ def test_a_warning_is_told_once_at_the_apps_own_line() -> None:
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
         line = sys._getframe().f_lineno + 1
-        app.blok("loose", "<Html><Box><Slidr /></Box></Html>", catalog="electron")
+        app.blok("loose", ELECTRON + "<Box><Slidr /></Box></Blok>")
         app.registry.get_declared_bloks()
     found = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
     assert ["[catalog.unknown_component]" in str(warning.message) for warning in found] == [True]
@@ -94,15 +97,15 @@ def test_blok_declares_its_locals_and_its_queries() -> None:
     app.blok(
         "form",
         """
-        <Html>
+        <Blok kind="agent" context="panel">
+          <local name="iterations" default={15} persist />
+          <query name="images" service="mikro" document="query { images { id } }" />
           <Card>
             <Slider bind={iterations} min={1} max={40} />
             <Text>{queries.images.value}</Text>
           </Card>
-        </Html>
+        </Blok>
         """,
-        locals={"iterations": Local(15, persist=True)},
-        queries={"images": Query(service="mikro", document="query { images { id } }")},
         demo={"queries": {"images": []}},
     )
 
@@ -110,9 +113,8 @@ def test_blok_declares_its_locals_and_its_queries() -> None:
         # The app knows no schema for mikro, so the query is not checked: a warning.
         warnings.simplefilter("ignore", CatalogWarning)
         declared = app.registry.get_declared_bloks()["form"]
-    (local,) = declared.locals
+    (local,) = resolved_locals(declared, app.registry).values()
     assert (local.key, local.default, local.kind, local.persist) == ("iterations", 15, PortKind.INT, True)
-    assert [query.key for query in declared.queries] == ["images"]
     assert declared.demo is not None and declared.demo.queries == {"images": []}
     assert declared.vocab == 2
 
@@ -120,7 +122,7 @@ def test_blok_declares_its_locals_and_its_queries() -> None:
 def test_a_blok_reading_an_undeclared_local_is_refused() -> None:
     app = App("demo")
     with pytest.raises(BlokError):
-        app.blok("form", "<Html><Slider bind={iterations} /></Html>")
+        app.blok("form", '<Blok kind="agent" context="panel"><Slider bind={iterations} /></Blok>')
 
 
 def test_a_blok_reads_then_and_draws_relative_time_with_the_time_component() -> None:
@@ -128,16 +130,16 @@ def test_a_blok_reads_then_and_draws_relative_time_with_the_time_component() -> 
     viewed moment and ``<Time relative>`` ticks by itself."""
     app = App("demo")
     with pytest.raises(BlokError, match=r"roots\.unknown"):
-        app.blok("clock", "<Html><Text>{now}</Text></Html>")
+        app.blok("clock", '<Blok kind="agent" context="panel"><Text>{now}</Text></Blok>')
     with pytest.warns(CatalogWarning, match=r"\[expr\.unknown_function\]"):
-        app.blok("since", "<Html><Text>{time.since(t: self.run.started)}</Text></Html>")
-    app.blok("clock", "<Html><Card><Time value={self.run.started} relative /><Text>{then}</Text></Card></Html>")
+        app.blok("since", '<Blok kind="agent" context="panel"><Text>{time.since(t: self.run.started)}</Text></Blok>')
+    app.blok("clock", '<Blok kind="agent" context="panel"><Card><Time value={self.run.started} relative /><Text>{then}</Text></Card></Blok>')
 
 
 def test_an_action_and_a_workflow_are_drawn_by_the_action_logo_they_name() -> None:
     app = App("demo")
-    app.blok("app", '<AgentLogo><Path d="M0 0" fill="brand" /></AgentLogo>', default=True)
-    app.blok("crop", '<ActionLogo><Path d="M0 0" fill={task.running ? "brand" : "muted"} /></ActionLogo>')
+    app.blok("app", '<Blok kind="agent" context="logo"><Logo><Path d="M0 0" fill="brand" /></Logo></Blok>', default=True)
+    app.blok("crop", '<Blok kind="action" context="logo"><Logo><Path d="M0 0" fill={task.running ? "brand" : "muted"} /></Logo></Blok>')
 
     @app.action(logo="crop")
     def crop(amount: float) -> float:
@@ -169,7 +171,7 @@ def test_an_action_naming_a_logo_the_app_does_not_declare_is_refused() -> None:
 def test_an_action_logo_paints_with_the_palette() -> None:
     app = App("demo")
     with pytest.raises(BlokError, match="#fbbf24"):
-        app.blok("loud", '<ActionLogo><Path d="M0 0" fill="#fbbf24" /></ActionLogo>')
+        app.blok("loud", '<Blok kind="action" context="logo"><Logo><Path d="M0 0" fill="#fbbf24" /></Logo></Blok>')
 
 
 def test_blok_passes_its_args_through() -> None:
@@ -185,26 +187,26 @@ def test_blok_passes_its_args_through() -> None:
     async def expand_image(id: str) -> Image:
         return Image(id)
 
-    app.blok("inspector", "<Html><Text>{args.image.id}</Text></Html>", args={"image": Image})
+    app.blok("inspector", '<Blok kind="agent" context="panel"><Text>{args.image.id}</Text></Blok>', args={"image": Image})
 
     declared = app.registry.registered_bloks["inspector"]
     assert [port.identifier for port in declared.args] == ["@t/image"]
     with pytest.raises(BlokError):
-        app.blok("other", "<Html><Text>{args.dataset}</Text></Html>", args={"image": Image})
+        app.blok("other", '<Blok kind="agent" context="panel"><Text>{args.dataset}</Text></Blok>', args={"image": Image})
 
 
 def test_a_catalog_never_redefines_a_component_of_the_base() -> None:
     """A catalog only adds: its own ``Slider`` beside the base catalog's is refused."""
     app = App("demo")
     own_slider = ComponentSpec(name="Slider", accepts_children=False, props=(PropSpec(key="min", kind="FLOAT", required=True),))
-    with pytest.raises(ValueError, match="redefines <Slider> of base@3"):
+    with pytest.raises(ValueError, match="redefines <Slider> of base@4"):
         app.ui_catalog("electron", components=[own_slider, BOX])
 
 
 def test_a_blok_naming_a_catalog_not_known_here_is_warned() -> None:
     app = App("demo")
     with pytest.warns(CatalogWarning, match=r"\[catalog.unknown\]"):
-        app.blok("panel", "<Html><Thing /></Html>", catalog="nowhere")
+        app.blok("panel", '<Blok kind="agent" context="panel" catalog="nowhere"><Thing /></Blok>')
 
 
 def test_an_app_that_merely_registers_is_held_to_the_language_alone() -> None:
@@ -212,6 +214,6 @@ def test_an_app_that_merely_registers_is_held_to_the_language_alone() -> None:
     with checking_catalogs(False), warnings.catch_warnings():
         warnings.simplefilter("error", CatalogWarning)
         app = App("demo")
-        app.blok("loose", "<Html><Slidr /></Html>", mode="strict")
+        app.blok("loose", '<Blok kind="agent" context="panel"><Slidr /></Blok>', mode="strict")
         with pytest.raises(BlokError, match="roots.unknown"):
-            app.blok("wrong", "<Html><Text>{nothing.here}</Text></Html>")
+            app.blok("wrong", '<Blok kind="agent" context="panel"><Text>{nothing.here}</Text></Blok>')

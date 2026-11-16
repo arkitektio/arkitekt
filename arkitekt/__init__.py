@@ -80,7 +80,6 @@ from arkitekt_spec.declare.blok.from_svg import (
 )
 from arkitekt_spec.declare.blok.action import ActionBlok
 from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
-from arkitekt_spec.declare.blok.declarations import Local, Query, Subscription
 from arkitekt_spec.declare.blok.unparse import to_bsx
 from arkitekt_spec.declare.blok.validate import (
     BlokScope,
@@ -292,9 +291,6 @@ __all__ = [
     "Finding",
     "load_vocabulary",
     "Function",
-    "Local",
-    "Query",
-    "Subscription",
     "BLOK_ARGS_ROOT",
     "Diagnostic",
     "BlokCheckMode",

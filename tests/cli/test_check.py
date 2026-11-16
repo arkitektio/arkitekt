@@ -170,7 +170,7 @@ def test_check_refuses_an_app_a_run_would_refuse(tmp_path):
 def test_check_lists_what_a_blok_uses_that_its_catalog_does_not_know(tmp_path):
     """A catalog finding does not block a run, so check says it and still passes."""
     (tmp_path / "app.py").write_text(
-        VALID + "\napp.blok('panel', '<Html><Card><Slidr /><Button lable=\"Go\" /></Card></Html>')\n"
+        VALID + "\napp.blok('panel', '<Blok kind=\"agent\" context=\"panel\"><Card><Slidr /><Button lable=\"Go\" /></Card></Blok>')\n"
     )
 
     result = _invoke(tmp_path, "check")
@@ -184,7 +184,7 @@ def test_check_lists_what_a_blok_uses_that_its_catalog_does_not_know(tmp_path):
 
 def test_check_refuses_a_strict_blok_its_catalog_does_not_know(tmp_path):
     (tmp_path / "app.py").write_text(
-        VALID + "\napp.blok('panel', '<Html><Card><Slidr /></Card></Html>', mode='strict')\n"
+        VALID + "\napp.blok('panel', '<Blok kind=\"agent\" context=\"panel\"><Card><Slidr /></Card></Blok>', mode='strict')\n"
     )
 
     result = _invoke(tmp_path, "check")
@@ -205,7 +205,7 @@ def _line_of(source: str, text: str) -> int:
     return next(number for number, line in enumerate(source.splitlines(), start=1) if text in line)
 
 
-MULTILINE_BLOK = VALID + '\napp.blok(\n    "panel",\n    """\n    <Html><Card><Slidr /></Card></Html>\n    """,\n)\n'
+MULTILINE_BLOK = VALID + '\napp.blok(\n    "panel",\n    """\n    <Blok kind=\"agent\" context=\"panel\"><Card><Slidr /></Card></Blok>\n    """,\n)\n'
 
 
 def test_check_json_out_places_each_warning_at_its_blok(tmp_path: Path) -> None:
@@ -215,7 +215,7 @@ def test_check_json_out_places_each_warning_at_its_blok(tmp_path: Path) -> None:
     code, report = _report(tmp_path)
 
     assert code == 0
-    assert report["version"] == 3 and report["ok"] is True
+    assert report["version"] == 4 and report["ok"] is True
     assert report["app"] == {"identifier": "checked", "version": "1.2.3"}
     (diagnostic,) = report["diagnostics"]
     assert diagnostic["code"] == "catalog.unknown_component" and diagnostic["level"] == "warning"
@@ -223,10 +223,10 @@ def test_check_json_out_places_each_warning_at_its_blok(tmp_path: Path) -> None:
     assert diagnostic["file"] == str(tmp_path / "app.py")
     assert diagnostic["call_line"] == _line_of(MULTILINE_BLOK, "app.blok(")
     (blok,) = report["bloks"]
-    assert blok["blok"] == "panel" and blok["context"] == "HTML"
+    assert blok["blok"] == "panel" and blok["context"] == "PANEL"
     assert blok["source"] in MULTILINE_BLOK, "the source as written: an editor finds the literal by it"
     assert blok["call_line"] == diagnostic["call_line"]
-    assert blok["scope"]["kind"] == "agent" and blok["scope"]["context"] == "HTML"
+    assert blok["scope"]["kinds"] == ["agent"], "where it is mounted: app.blok takes an agent blok"
     assert blok["scope"]["args"] == [], "an app blok declaring no args reads none"
 
 
@@ -234,7 +234,7 @@ def test_check_json_out_names_an_action_blok_by_interface_and_context(tmp_path: 
     source = (
         "from arkitekt import App\n"
         "app = App('checked', '1.2.3')\n\n"
-        "@app.workflow(bloks='<Html><Card><Slidr /><ask /></Card></Html>')\n"
+        "@app.workflow(bloks='<Blok kind=\"action\" context=\"panel\"><Card><Slidr /><ask /></Card></Blok>')\n"
         "def add(a: int) -> int:\n"
         "    return a\n"
     )
@@ -243,11 +243,11 @@ def test_check_json_out_names_an_action_blok_by_interface_and_context(tmp_path: 
     code, report = _report(tmp_path)
 
     assert code == 0
-    assert {d["blok"] for d in report["diagnostics"]} == {"add:html"}
+    assert {d["blok"] for d in report["diagnostics"]} == {"add:panel"}
     (blok,) = report["bloks"]
-    assert blok["blok"] == "add:html"
+    assert blok["blok"] == "add:panel"
     assert (blok["file"], blok["call_line"]) == (str(tmp_path / "app.py"), _line_of(source, "@app.workflow"))
-    assert blok["scope"]["kind"] == "action" and blok["scope"]["args"] == ["a"]
+    assert blok["scope"]["kinds"] == ["action", "assign"] and blok["scope"]["args"] == ["a"]
 
 
 DEPENDENT = (
@@ -259,7 +259,7 @@ DEPENDENT = (
     "    def ping(self, n: int) -> int:\n"
     "        \"\"\"Ping.\"\"\"\n"
     "        ...\n\n"
-    "@app.workflow(bloks='<Html><Card /></Html>')\n"
+    "@app.workflow(bloks='<Blok kind=\"action\" context=\"panel\"><Card /></Blok>')\n"
     "def run(lab: Lab, a: int) -> int:\n"
     "    return a\n"
 )
@@ -302,7 +302,7 @@ def test_check_json_out_names_the_class_behind_each_identifier(tmp_path: Path) -
 
 
 def test_check_json_out_records_the_refusal_that_stopped_it(tmp_path: Path) -> None:
-    source = VALID + "\napp.blok('panel', '<Html><Card><Slidr /></Card></Html>', mode='strict')\n"
+    source = VALID + "\napp.blok('panel', '<Blok kind=\"agent\" context=\"panel\"><Card><Slidr /></Card></Blok>', mode='strict')\n"
     (tmp_path / "app.py").write_text(source)
 
     code, report = _report(tmp_path)
@@ -316,7 +316,7 @@ def test_check_json_out_records_the_refusal_that_stopped_it(tmp_path: Path) -> N
 
 
 def test_check_json_out_places_a_parse_error_in_the_bsx(tmp_path: Path) -> None:
-    source = VALID + "\napp.blok('panel', '<Html><Card></Html>')\n"
+    source = VALID + "\napp.blok('panel', '<Blok kind=\"agent\" context=\"panel\"><Card></Blok>')\n"
     (tmp_path / "app.py").write_text(source)
 
     code, report = _report(tmp_path)
@@ -419,18 +419,19 @@ def test_check_with_another_app_compares_what_is_demanded_of_it(tmp_path: Path, 
 ASSIGN_BLOK = (
     VALID
     + '\nfrom arkitekt import ActionBlok\n\n\n@app.workflow(\n'
-    + '    bloks=[ActionBlok("<Html><Text>{task.status}</Text></Html>")],\n'
-    + '    assign_bloks=[ActionBlok("<Html><args /><Button onClick={assign.start()}>Go</Button></Html>")],\n'
+    + '    bloks=[\n'
+    + '        ActionBlok(\'<Blok kind="action" context="panel"><Text>{task.status}</Text></Blok>\'),\n'
+    + '        ActionBlok(\'<Blok kind="assign" context="panel"><args /><Button onClick={assign.start()}>Go</Button></Blok>\'),\n'
+    + '    ],\n'
     + ')\ndef stain(rounds: int = 1) -> None:\n    """Stain\n\n    Stains a slide\n    """\n'
 )
 
 
 def test_an_assign_blok_is_reported_as_one(tmp_path: Path) -> None:
-    """Its scope's kind decides what an editor lets it read: `assign`, and no `task`."""
+    """Its id says it is the action's assign blok; its `<Blok kind>` what an editor lets it read."""
     (tmp_path / "app.py").write_text(ASSIGN_BLOK)
 
     code, report = _report(tmp_path)
 
     assert code == 0, report["diagnostics"]
-    kinds = {blok["blok"]: blok["scope"]["kind"] for blok in report["bloks"]}
-    assert kinds == {"stain:html": "action", "stain:assign:html": "assign"}
+    assert [blok["blok"] for blok in report["bloks"]] == ["stain:panel", "stain:assign:panel"]

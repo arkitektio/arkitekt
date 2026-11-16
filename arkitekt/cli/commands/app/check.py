@@ -28,7 +28,7 @@ from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.utils import configure_logging, human_console, json_stdout
 from arkitekt.cli.vars import get_console, get_work_dir
 
-REPORT_VERSION = 3
+REPORT_VERSION = 4
 """The shape of a ``--json-out`` report; raised when a field changes meaning or goes.
 
 2: every blok carries its ``scope``, an action's blok where its action was declared, and the
@@ -119,30 +119,22 @@ def _declared_at(obj: Any) -> tuple[str | None, int | None]:  # noqa: ANN401
 
 def scope_record(
     *,
-    kind: str,
-    context: str,
+    kinds: Iterable[str],
     dependencies: Iterable[Any] = (),
-    locals_: Iterable[Any] = (),
-    queries: Iterable[Any] = (),
-    subscriptions: Iterable[Any] = (),
     args: Iterable[str] | None = None,
     catalog: str | None = None,
     assets: Iterable[str] | None = None,
 ) -> dict[str, Any]:
-    """What a blok's reads and calls resolve against, as the BSX core takes it (``BlokCheckScope``).
+    """Where a blok is mounted, as the BSX core checks it there (the corpus' ``mount``).
 
-    Field names as the models spell them (snake_case), like the corpus' ``scope``: an editor
-    completes ``deps.<key>``, ``args.<key>`` and the locals from it. A local's kind is as
-    declared; the core infers the rest from the tree. ``catalog`` is the one the blok is
-    written for (its address, or the name of one the app declared); null: the base catalog.
+    Field names as the models spell them (snake_case): an editor completes ``deps.<key>`` and
+    ``args.<key>`` from it. The blok's kind and context are its ``<Blok>``'s, its locals,
+    queries and subscriptions its tree's; ``kinds`` are the kinds the mount takes.
+    ``catalog`` is the one its ``<Blok>`` names; null: the base catalog.
     """
     return {
-        "kind": kind,
-        "context": context,
+        "kinds": list(kinds),
         "dependencies": _dumped(dependencies),
-        "locals": _dumped(locals_),
-        "queries": _dumped(queries),
-        "subscriptions": _dumped(subscriptions),
         "args": list(args) if args is not None else None,
         "catalog": catalog,
         "assets": sorted(assets) if assets is not None else None,
@@ -151,7 +143,7 @@ def scope_record(
 
 def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     """Each blok the app declares with the BSX it was written as, for a reader to find it by,
-    and its scope.
+    and where it is mounted.
 
     An app blok says where it was declared, an action's blok where its action was (the
     decorator's line); an action's blok is named
@@ -179,12 +171,8 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
                     "file": os.path.abspath(at.filename) if at is not None else None,
                     "call_line": at.lineno if at is not None else None,
                     "scope": scope_record(
-                        kind="action_logo" if context == ComponentContext.ACTION_LOGO.value else "agent",
-                        context=context,
+                        kinds=("agent", "action") if context == ComponentContext.LOGO.value else ("agent",),
                         dependencies=blok.dependencies if blok is not None else (),
-                        locals_=declaration.locals,
-                        queries=declaration.queries,
-                        subscriptions=declaration.subscriptions,
                         args=[port.key for port in declaration.args],
                         catalog=declaration.catalog,
                         assets=assets,
@@ -197,7 +185,6 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
         file, line = _declared_at(declared.function) if declared is not None else (None, None)
         for blok in implementation.definition.bloks or ():
             context = ComponentContext(blok.context).value
-            # An assign blok reads `assign`, not `task`: its id and its scope's kind say so.
             kind = "assign" if blok.phase == "ASSIGN" else "action"
             records.append(
                 _compact(
@@ -208,12 +195,8 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
                         "file": file,
                         "call_line": line,
                         "scope": scope_record(
-                            kind=kind,
-                            context=context,
+                            kinds=("action", "assign"),
                             dependencies=implementation.dependencies,
-                            locals_=blok.locals,
-                            queries=blok.queries,
-                            subscriptions=blok.subscriptions,
                             args=[port.key for port in implementation.definition.args or ()],
                             catalog=blok.catalog,
                         ),

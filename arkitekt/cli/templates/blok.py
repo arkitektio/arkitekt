@@ -6,7 +6,7 @@ from typing import Annotated
 import numpy as np
 import xarray as xr
 
-from arkitekt import App, Key, Local, Task, run
+from arkitekt import App, Key, Task, run
 from mikro import Mikro, mikro_service
 from mikro.api.schema import IdentityTransformInput, LensDerivedFromInput, ValueRelation
 from mikro.arkitekt.specs import Image, LabelMask
@@ -307,8 +307,10 @@ def clear_history(state: Analysis) -> None:
 
 # ---------------------------------------------------------------------------
 # The blok: the agent's own panel. A tree of components the user interface
-# draws, its root `<Html>` naming it a panel (`<Scene>` would be a 3D view); it reads the state (`self.Analysis...`), keeps the value of its
-# slider in a local (`objects`, written only by the slider it is bound to), and
+# draws, its `<Blok kind="agent" context="panel">` saying what it is (`context="scene"`
+# would be a 3D view); it reads the state (`self.Analysis...`), keeps the value of its
+# slider in a local (`<local name="objects" like=...>`, written only by the slider it is
+# bound to, its port borrowed from the action's argument it feeds), and
 # its buttons call the actions above. `into name` keeps a call at hand as a task
 # record: `name.running`, `name.done`, and what it returned, `name.returns.<key>`.
 # A return is read by the key the action gives it (`Annotated[Image, Key("image")]`,
@@ -324,7 +326,8 @@ def clear_history(state: Analysis) -> None:
 app.blok(
     "analysis",
     """
-        <Html>
+        <Blok kind="agent" context="panel">
+            <local name="objects" like="self.generate_test_image.objects" />
             <Card className="w-[420px] shadow-md">
                 <CardHeader>
                     <div className="flex items-center justify-between">
@@ -397,12 +400,9 @@ app.blok(
                     </div>
                 </CardContent>
             </Card>
-        </Html>
+        </Blok>
     """,
     description="What the agent is analysing, what it found, and buttons to run it",
-    # The slider's local is a port like the action's argument it feeds: an INT that
-    # starts at the argument's default.
-    locals={"objects": Local.like(generate_test_image, "objects")},
 )
 
 

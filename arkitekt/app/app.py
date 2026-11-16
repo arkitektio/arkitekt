@@ -57,7 +57,6 @@ from arkitekt_spec.declare.actors.policy import KEEP, DisconnectPolicy
 from arkitekt_spec.declare.actors.types import Actifier
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.blok.action import ActionBloks
-from arkitekt_spec.declare.blok.declarations import Local, Query, Subscription
 from arkitekt_spec.declare.catalogs import BlokCheckMode, ComponentSpec, OperationSpec
 from arkitekt_spec.declare.coercible_types import OptimisticCoercible
 from arkitekt_spec.declare.provider import Provider
@@ -516,7 +515,6 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
-        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -550,7 +548,6 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
-        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -593,19 +590,18 @@ class App(Generic[Ctx]):
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
             logo: The logo that draws the action: the name of an action logo blok
-                this app declares (``app.blok(name, "<ActionLogo>...</ActionLogo>")``), or a
-                tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
-                one, a client shows the app's default logo.
-            assign_bloks: The action's own bloks for starting a run of it, one per
-                context: shown before there is a task, with the arguments being filled in
-                as ``args`` and the agents a run would get as ``deps``. ``<args />`` places
-                the argument form, ``assign.start()`` starts the run with those agents.
-            bloks: The action's own bloks, one per context, which each one's root
-                names: an ``"<Html>...</Html>"`` is a task panel; a
-                ``"<Space room="room:lab">...</Space>"`` places the run's dependencies in a
-                room whose layout is shared, its ``<Placed dep="robot">`` drawing the agent
-                the run got for that parameter with its own scene blok. A bare
-                tree, or an ``ActionBlok`` for locals and the like; one needs no list.
+                this app declares (``app.blok(name, '<Blok kind="action" context="logo">...</Blok>')``),
+                or a tree of its own (``bsx(...)``). Without one, a client shows the app's
+                default logo.
+            bloks: The action's own bloks, one per kind and context, each a ``<Blok>``:
+                ``kind="action"`` for how a client shows a run (``context="panel"`` a task
+                panel; ``context="scene"`` holding a ``<Space room="room:lab">`` that places
+                the run's dependencies in a room whose layout is shared, its
+                ``<Placed dep="robot">`` drawing the agent the run got for that parameter
+                with its own scene blok), ``kind="assign"`` for starting one (shown before
+                there is a task; ``<args />`` places the argument form, ``assign.start()``
+                starts the run). A bare tree, or an ``ActionBlok`` for a demo and a
+                description; one needs no list.
                 They name devices only by the function's dependency
                 parameters, read the run under ``@task``, are checked now, and are not
                 part of the action's hash.
@@ -661,7 +657,6 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 bloks=bloks,
-                assign_bloks=assign_bloks,
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
@@ -699,7 +694,6 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
-        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -746,7 +740,6 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 bloks=bloks,
-                assign_bloks=assign_bloks,
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
@@ -785,7 +778,6 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
-        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -819,7 +811,6 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
-        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -871,19 +862,18 @@ class App(Generic[Ctx]):
                 shown to whoever decides about a lost task. Defaults to the app's
                 ``effects``.
             logo: The logo that draws the action: the name of an action logo blok
-                this app declares (``app.blok(name, "<ActionLogo>...</ActionLogo>")``), or a
-                tree of its own (``bsx("<ActionLogo>...</ActionLogo>")``). Without
-                one, a client shows the app's default logo.
-            assign_bloks: The action's own bloks for starting a run of it, one per
-                context: shown before there is a task, with the arguments being filled in
-                as ``args`` and the agents a run would get as ``deps``. ``<args />`` places
-                the argument form, ``assign.start()`` starts the run with those agents.
-            bloks: The action's own bloks, one per context, which each one's root
-                names: an ``"<Html>...</Html>"`` is a task panel; a
-                ``"<Space room="room:lab">...</Space>"`` places the run's dependencies in a
-                room whose layout is shared, its ``<Placed dep="robot">`` drawing the agent
-                the run got for that parameter with its own scene blok. A bare
-                tree, or an ``ActionBlok`` for locals and the like; one needs no list.
+                this app declares (``app.blok(name, '<Blok kind="action" context="logo">...</Blok>')``),
+                or a tree of its own (``bsx(...)``). Without one, a client shows the app's
+                default logo.
+            bloks: The action's own bloks, one per kind and context, each a ``<Blok>``:
+                ``kind="action"`` for how a client shows a run (``context="panel"`` a task
+                panel; ``context="scene"`` holding a ``<Space room="room:lab">`` that places
+                the run's dependencies in a room whose layout is shared, its
+                ``<Placed dep="robot">`` drawing the agent the run got for that parameter
+                with its own scene blok), ``kind="assign"`` for starting one (shown before
+                there is a task; ``<args />`` places the argument form, ``assign.start()``
+                starts the run). A bare tree, or an ``ActionBlok`` for a demo and a
+                description; one needs no list.
                 They name devices only by the function's dependency
                 parameters, read the run under ``@task``, are checked now, and are not
                 part of the action's hash.
@@ -939,7 +929,6 @@ class App(Generic[Ctx]):
                 effects=effects,
                 logo=logo,
                 bloks=bloks,
-                assign_bloks=assign_bloks,
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
@@ -977,7 +966,6 @@ class App(Generic[Ctx]):
         effects: Effects | None = None,
         logo: str | ComponentNodeInput | None = None,
         bloks: ActionBloks | None = None,
-        assign_bloks: ActionBloks | None = None,
         dynamic_asks: bool = False,
         dynamic_calls: bool = False,
         dynamic_informs: bool = False,
@@ -1025,7 +1013,6 @@ class App(Generic[Ctx]):
                 logo=logo,
                 execution=Execution.WORKFLOW,
                 bloks=bloks,
-                assign_bloks=assign_bloks,
                 dynamic_asks=dynamic_asks,
                 dynamic_calls=dynamic_calls,
                 dynamic_informs=dynamic_informs,
@@ -1395,65 +1382,49 @@ class App(Generic[Ctx]):
         component: str | ComponentNodeInput,
         description: str | None = None,
         *,
-        locals: Mapping[str, Local[object] | JSONSerializable] | None = None,
         demo: BlokDemoInput | Mapping[str, JSONSerializable] | None = None,
-        queries: Mapping[str, Query] | None = None,
-        subscriptions: Mapping[str, Subscription] | None = None,
-        catalog: str | None = None,
         default: bool = False,
         for_model: str | None = None,
         for_node: str | None = None,
         args: Mapping[str, object] | None = None,
         mode: BlokCheckMode = "warning",
     ) -> None:
-        r"""Declare a blok of this app's agent (blok language v2): ``app.blok("monitor", "<Html><Card/></Html>")``.
+        r"""Declare a blok of this app's agent (blok language v2):
+        ``app.blok("monitor", '<Blok kind="agent" context="panel"><Card/></Blok>')``.
 
-        The tree reads the agent as ``self``: ``self.<state>.<field>``,
-        ``self.tasks.<action>``, ``self.assets.<name>``, and calls it as
-        ``self.<action>(name: value) into <record>``. What it reads of ``self``
-        becomes its one dependency when the agent is built. It is checked now,
-        by the spec's validator, against the language and its catalog: an error
-        raises, a warning is a :class:`~arkitekt_spec.declare.catalogs.CatalogWarning`.
+        The blok is one ``<Blok kind="agent" context="panel|scene|logo">`` and declares what
+        it owns inside: ``<local name="iterations" default={15} persist />`` (form state a
+        control writes through ``bind``, in scope in its parent's subtree; ``like="self.<action>.<arg>"``
+        borrows an argument's port), ``<query>`` and ``<subscription>``. ``catalog="..."`` on
+        the ``<Blok>`` names the catalog it is written for (the base catalog when left out;
+        :data:`arkitekt.ORKESTRATOR_CATALOG_ID` for what only the Orkestrator draws). The tree
+        reads the agent as ``self``: ``self.<state>.<field>``, ``self.tasks.<action>``,
+        ``self.assets.<name>``, and calls it as ``self.<action>(name: value) into <record>``.
+        What it reads of ``self`` becomes its one dependency when the agent is built. It is
+        checked now, by the spec's validator, against the language and its catalog: an error
+        raises, a warning is a :class:`~arkitekt_spec.declare.catalogs.CatalogWarning`. An
+        action's logo (``<Blok kind="action" context="logo"><Logo>...</Logo></Blok>``) is
+        declared here too, and named by the action's ``logo=``.
 
         Args:
             name: The blok's name.
-            component: The component tree, as v2 BSX or already parsed. Its root
-                names the context: ``<Html>`` for a panel, ``<Scene>`` for a full 3D
-                view, ``<AgentLogo>`` for the app's logo or ``<ActionLogo>`` for an
-                action's. A ``<Space>`` belongs to an action (``bloks=``).
+            component: The ``<Blok>``, as v2 BSX or already parsed. A scene holds one
+                ``<Scene>``, a logo one ``<Logo>``. A ``<Space>`` belongs to an action
+                (``bloks=``).
             description: What the blok shows.
-            locals: Its form state, written only through ``bind`` on a control
-                (``<Input bind={iterations} />``) and read bare in a call:
-                ``{"iterations": Local(15, persist=True)}``. A local is a port, and
-                ``Local()`` is usually enough: its kind comes, in order, from a type
-                (``Local[float]()``, ``Local(type=list[str])``, a registered structure),
-                an action's argument (``Local.like(deconvolve, "iterations")``, which
-                copies that port), its default (``Local(15)`` is an INT), the call it is
-                passed to whole, or the control bound to it; else it is ANY, checked
-                against nothing. A bare value is a local with that default.
             demo: What a preview renders it with, mirroring the roots it reads:
                 ``{"deps": {"self": {...}}, "args": {...}, "queries": {...}}``.
                 Placeholders for the states of ``self`` it reads when left out.
-            queries: Its declared reads, ``queries.<name>``, each a :class:`Query`.
-            subscriptions: Its declared streams, ``subscriptions.<name>``, each a
-                :class:`Subscription`.
-            catalog: The catalog it is written for. Left out, it is written for the
-                base catalog, which every renderer draws, and runs everywhere. To use
-                what one frontend draws beyond it, name that frontend's catalog by the
-                address it is published at (:data:`arkitekt.ORKESTRATOR_CATALOG_ID` for
-                the Orkestrator's, which adds mikro's scene), or one this app declared
-                with :meth:`ui_catalog` by its name. A component of another catalog
-                is refused by ``arkitekt check``.
             default: Whether this is the app's default blok for its context.
                 Declaring another default for the same context replaces it.
             for_model: The model (``"sha256:..."``) this blok decorates: a viewer
-                showing that model offers it where ``for_node`` is clicked. Html
+                showing that model offers it where ``for_node`` is clicked. Panel
                 bloks only.
             for_node: The node of ``for_model`` to attach to; the model's root
                 when left out.
             args: The items the blok is opened for, typed like an action's
                 arguments (``{"dataset": ArrayDataset}``) and read as
-                ``args.dataset``. Html bloks only.
+                ``args.dataset``. Panel bloks only.
             mode: ``"warning"`` (the default) warns about a catalog finding,
                 ``"strict"`` refuses it.
 
@@ -1466,11 +1437,7 @@ class App(Generic[Ctx]):
             name,
             component,
             description=description,
-            locals=locals,
             demo=demo,
-            queries=queries,
-            subscriptions=subscriptions,
-            catalog=catalog,
             default=default,
             for_model=for_model,
             for_node=for_node,
@@ -1495,8 +1462,8 @@ class App(Generic[Ctx]):
             app.register_asset("scope", "models/scope.glb")
             app.register_asset("logo", "art/logo.png")
 
-            app.blok("view", '<Scene><Model src={self.assets.scope} /></Scene>')
-            app.blok("panel", '<Html><Image src={self.assets.logo} /></Html>')
+            app.blok("view", '<Blok kind="agent" context="scene"><Scene><Model src={self.assets.scope} /></Scene></Blok>')
+            app.blok("panel", '<Blok kind="agent" context="panel"><Image src={self.assets.logo} /></Blok>')
 
         When the app runs, a file the server does not hold yet is uploaded. The
         server checks it against its hash and the rules of its kind; one it
@@ -1540,7 +1507,7 @@ class App(Generic[Ctx]):
     ) -> None:
         """Declare a module: what a renderer draws and evaluates beyond the spec's catalogs.
 
-        Bloks naming it as their ``module`` are validated against it offline, when they
+        Bloks naming it in their ``<Blok catalog="...">`` are validated against it offline, when they
         are declared, rather than only once the server sees them. The same declaration
         is what a UI app uploads with ``registerModule``.
 
@@ -1549,7 +1516,7 @@ class App(Generic[Ctx]):
         should not be made to serve.
 
         Args:
-            name: The module's name, as bloks name it (``module="electron"``).
+            name: The module's name, as bloks name it (``<Blok catalog="electron">``).
             components: The components the UI can render.
             operations: Pure operations the UI can evaluate, extending the base catalog.
             description: What the module is.
@@ -1625,11 +1592,11 @@ class App(Generic[Ctx]):
 
             @app.interactions
             class UI(Protocol):
-                @ask('<Html><Button label="Go" onClick={task.answer(values: {ok: true})} /></Html>')
+                @ask('<Blok kind="task" context="panel"><Button label="Go" onClick={task.answer(values: {ok: true})} /></Blok>')
                 def go(self, name: str) -> Annotated[bool, Key("ok")]:
                     \"\"\"Go on?\"\"\"
 
-                @inform("<Html><Text text={args.name} /></Html>")
+                @inform('<Blok kind="task" context="panel"><Text text={args.name} /></Blok>')
                 def started(self, name: str) -> None:
                     \"\"\"Started.\"\"\"
 

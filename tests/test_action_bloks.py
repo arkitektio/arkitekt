@@ -6,21 +6,14 @@ is checked against the function's dependency parameters right away, and that an 
 bloks sends what it always did.
 """
 
-import json
 import warnings
 from typing import Protocol
 
 import pytest
+from arkitekt_spec.declare.blok.registry import resolved_locals
 from arkitekt_spec.declare.catalogs import CatalogWarning
 
-from arkitekt_runtime import messages
-from arkitekt_spec.blok.bsx import parse_bsx
-from arkitekt_spec.blok.catalogs import default_view
-from arkitekt_spec.declare.blok.infer import resolve_scope
-from arkitekt_spec.declare.blok.registry import resolved_locals
-from arkitekt_spec.declare.blok.validate import BlokScope
-
-from arkitekt import ActionBlok, App, Local
+from arkitekt import ActionBlok, App
 
 
 class Arm(Protocol):
@@ -29,6 +22,9 @@ class Arm(Protocol):
     def pick(self, slot: int) -> None:
         """Pick."""
         ...
+
+
+SPACE = '<Blok kind="action" context="scene"><Space room="lab"><Placed dep="robot"><ask /></Placed></Space></Blok>'
 
 
 def test_a_workflows_bloks_reach_its_definition() -> None:
@@ -40,10 +36,11 @@ def test_a_workflows_bloks_reach_its_definition() -> None:
 
         @app.workflow(
             bloks=[
-                '<Space room="lab"><Placed dep="robot"><ask /></Placed></Space>',
+                SPACE,
                 ActionBlok(
-                    "<Html><Card><Progress value={task.progress} /><Switch bind={verbose} /></Card></Html>",
-                    locals={"verbose": Local(False, persist=True)},
+                    '<Blok kind="action" context="panel"><local name="verbose" default={false} persist />'
+                    "<Card><Progress value={task.progress} /><Switch bind={verbose} /></Card></Blok>",
+                    description="The run's progress",
                 ),
             ]
         )
@@ -53,9 +50,8 @@ def test_a_workflows_bloks_reach_its_definition() -> None:
 
     (implementation,) = [i for i in app.registry.implementations.values() if i.definition.key == "move"]
     space, panel = implementation.definition.bloks
-    assert (space.context, space.source) == ("SCENE", '<Space room="lab"><Placed dep="robot"><ask /></Placed></Space>')
-    assert (panel.context, panel.vocab) == ("HTML", 2)
-    assert [(local.key, local.persist) for local in panel.locals] == [("verbose", True)]
+    assert (space.context, space.source) == ("SCENE", SPACE)
+    assert (panel.context, panel.phase, panel.vocab) == ("PANEL", "RUN", 2)
 
 
 def test_a_blok_naming_no_parameter_is_refused_at_decoration() -> None:
@@ -64,7 +60,7 @@ def test_a_blok_naming_no_parameter_is_refused_at_decoration() -> None:
 
     with pytest.raises(ValueError, match=r"'stage' is not a dependency of the blok .*\[deps.unknown\]"):
 
-        @app.workflow(bloks='<Space room="lab"><Placed dep="stage" /></Space>')
+        @app.workflow(bloks='<Blok kind="action" context="scene"><Space room="lab"><Placed dep="stage" /></Space></Blok>')
         def move(robot: Arm, slot: int) -> None:
             """Move a slide."""
             robot.pick(slot)
@@ -83,7 +79,7 @@ def test_an_action_without_bloks_sends_none() -> None:
 
 
 def test_a_local_without_kind_takes_it_from_its_use() -> None:
-    """``Local()`` is enough: the argument it is passed to whole types it."""
+    """``<local name="factor" />`` is enough: the argument it is passed to whole types it."""
     app = App("flow")
 
     @app.action
@@ -93,14 +89,11 @@ def test_a_local_without_kind_takes_it_from_its_use() -> None:
 
     app.blok(
         "panel",
-        "<Html><Card><Button onClick={self.scale(factor: factor) into run}>Go</Button><Input bind={note} /></Card></Html>",
-        locals={"factor": Local(), "note": Local()},
+        '<Blok kind="agent" context="panel"><local name="factor" /><local name="note" />'
+        "<Card><Button onClick={self.scale(factor: factor) into run}>Go</Button><Input bind={note} /></Card></Blok>",
     )
 
-    blok = app.registry.get_declared_bloks()["panel"]
-    # Sent as written (the server infers the same); resolved, they are typed by their use.
-    assert all("kind" not in local.model_fields_set for local in blok.locals or ())
-    built = {local.key: local for local in resolved_locals(blok, app.registry)}
+    built = {local.key: local for local in resolved_locals(app.registry.get_declared_bloks()["panel"], app.registry).values()}
     assert (built["factor"].kind, built["note"].kind) == ("FLOAT", "STRING")
 
 
@@ -118,11 +111,11 @@ def test_a_local_like_an_argument_borrows_its_port() -> None:
 
     app.blok(
         "panel",
-        "<Html><Card><Slider bind={slot} min={0} max={9} /><Button onClick={self.move(slot: slot)}>Go</Button></Card></Html>",
-        locals={"slot": Local.like(move.interface, "slot", persist=True)},
+        '<Blok kind="agent" context="panel"><local name="slot" like="self.move.slot" persist />'
+        "<Card><Slider bind={slot} min={0} max={9} /><Button onClick={self.move(slot: slot)}>Go</Button></Card></Blok>",
     )
 
-    (local,) = app.registry.get_declared_bloks()["panel"].locals
+    (local,) = resolved_locals(app.registry.get_declared_bloks()["panel"], app.registry).values()
     assert (local.kind, local.default, local.persist, local.description) == ("INT", 3, True, "Where to.")
 
 
@@ -135,55 +128,27 @@ def test_a_local_like_an_unknown_argument_is_refused() -> None:
         return slot
 
     with pytest.raises(ValueError, match="local.like"):
-        app.blok("panel", "<Html><Card><Slider bind={x} /></Card></Html>", locals={"x": Local.like(move.interface, "nope")})
+        app.blok("panel", '<Blok kind="agent" context="panel"><local name="x" like="self.move.nope" /><Card><Slider bind={x} /></Card></Blok>')
 
 
 def test_an_untold_local_is_any_and_no_error() -> None:
     app = App("flow")
     with warnings.catch_warnings():
         warnings.simplefilter("error", CatalogWarning)
-        app.blok("panel", "<Html><Card><Text>{x}</Text></Card></Html>", locals={"x": Local()})
-    (local,) = resolved_locals(app.registry.get_declared_bloks()["panel"], app.registry)
+        app.blok("panel", '<Blok kind="agent" context="panel"><local name="x" /><Card><Text>{x}</Text></Card></Blok>')
+    (local,) = resolved_locals(app.registry.get_declared_bloks()["panel"], app.registry).values()
     assert local.kind == "ANY"
-
-
-def test_kind_less_locals_register_without_a_kind() -> None:
-    """An agent's and an action's bloks send a left-out kind as left out: the server infers it
-    (a given ANY it would keep). Resolved, the action blok's local is typed by its control."""
-    app = App("flow")
-
-    @app.action(bloks=[ActionBlok("<Html><Card><Switch bind={verbose} /></Card></Html>", locals={"verbose": Local()})])
-    def scale(factor: float) -> float:
-        """Scale."""
-        return factor
-
-    app.blok("panel", "<Html><Card><Button onClick={self.scale(factor: factor)}>Go</Button></Card></Html>", locals={"factor": Local()})
-
-    agent_input = app.registry.to_implement_agent_input(name="flow")
-    register = messages.Register(token="t", spec_version="8.0.0", **agent_input.model_dump(mode="json", by_alias=False, exclude_unset=True))
-    wire = json.loads(register.model_dump_json())
-
-    [panel] = [blok for blok in wire["bloks"] if blok["key"] == "panel"]
-    [action_blok] = wire["implementations"][0]["definition"]["bloks"]
-    assert [local.get("kind") for local in panel["locals"]] == [None]
-    assert [local.get("kind") for local in action_blok["locals"]] == [None]
-
-    (implementation,) = app.registry.implementations.values()
-    (declared,) = implementation.definition.bloks
-    tree = declared.components[0] if declared.components else parse_bsx(declared.source or "", view=default_view())
-    resolved = resolve_scope(tree, BlokScope(kind="action", locals=tuple(declared.locals or ())), default_view())
-    assert [(local.key, local.kind) for local in resolved.locals] == [("verbose", "BOOL")]
 
 
 def test_an_action_declares_a_blok_for_starting_a_run() -> None:
     app = App("flow")
     app.registry.declare(app="arm")(Arm)
 
-    @app.workflow(assign_bloks="<Html><Card><args /><Button onClick={assign.start()}>Start</Button></Card></Html>")
+    @app.workflow(bloks='<Blok kind="assign" context="panel"><Card><args /><Button onClick={assign.start()}>Start</Button></Card></Blok>')
     def move(robot: Arm, slot: int) -> None:
         """Move a slide."""
         robot.pick(slot)
 
     (implementation,) = [i for i in app.registry.implementations.values() if i.definition.key == "move"]
     (blok,) = implementation.definition.bloks
-    assert (blok.phase, blok.context) == ("ASSIGN", "HTML")
+    assert (blok.phase, blok.context) == ("ASSIGN", "PANEL")
