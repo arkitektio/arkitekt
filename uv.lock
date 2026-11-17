@@ -375,10 +375,10 @@ requires-dist = [
     { name = "alpaka", marker = "extra == 'all'", specifier = ">=3.4" },
     { name = "alpaka", marker = "extra == 'alpaka'", specifier = ">=3.4" },
     { name = "arkitekt-fastapi", marker = "extra == 'serve'", specifier = ">=4" },
-    { name = "arkitekt-runtime", marker = "extra == 'all'", specifier = ">=10.0.2" },
-    { name = "arkitekt-runtime", marker = "extra == 'rekuest'", specifier = ">=10.0.2" },
+    { name = "arkitekt-runtime", marker = "extra == 'all'", specifier = ">=10.1" },
+    { name = "arkitekt-runtime", marker = "extra == 'rekuest'", specifier = ">=10.1" },
     { name = "arkitekt-runtime", extras = ["qt"], marker = "extra == 'qt'", specifier = ">=10" },
-    { name = "arkitekt-spec", specifier = ">=12" },
+    { name = "arkitekt-spec", specifier = ">=12.2" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=5" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=5" },
@@ -475,7 +475,7 @@ wheels = [
 
 [[package]]
 name = "arkitekt-runtime"
-version = "10.0.2"
+version = "10.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "arkitekt-spec" },
@@ -484,9 +484,9 @@ dependencies = [
     { name = "koil" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/3e/2d/8836f16bd1e41e7bba63d55b24b8bebcaedc990419f44b089de78f466299/arkitekt_runtime-10.0.2.tar.gz", hash = "sha256:cdbc1fbef5a402b2dafc951f0bd15d8c8d404186e07da6fe572c62788744359a", size = 134559, upload-time = "2026-11-16T15:19:10.557Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/5c/3ef4ae0e357fe37f8cb8e5694f20c151f83bed1b76d1a9bf8150fa9320ed/arkitekt_runtime-10.1.0.tar.gz", hash = "sha256:ab7bb09395ca1b9a3f164ed2d8effad76ac7acb4dbe7a1490bc7c7168fe9bbcc", size = 137000, upload-time = "2026-11-17T11:28:56.133Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d5/7a/b37e9a5e64486fbb18b63a023e99cb87e6d877fe5df05f40857a08a0efe2/arkitekt_runtime-10.0.2-py3-none-any.whl", hash = "sha256:a3c4bb2ed505eb5f049a7ce05b8d2a2093e9929469926471e7efe3941ddf0ff1", size = 164990, upload-time = "2026-11-16T15:19:09.298Z" },
+    { url = "https://files.pythonhosted.org/packages/24/a5/ab4dde78ec6a425bed3d3f4efc1f7c7d488f4d56e6d187946979042ff48a/arkitekt_runtime-10.1.0-py3-none-any.whl", hash = "sha256:861f2f89214dcb64da3974da628bf0ec10c27cd0fa8452a9638321445876950c", size = 167448, upload-time = "2026-11-17T11:28:54.37Z" },
 ]
 
 [package.optional-dependencies]
@@ -496,7 +496,7 @@ qt = [
 
 [[package]]
 name = "arkitekt-spec"
-version = "12.0.0"
+version = "12.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -506,9 +506,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/df/8d/28f12932ce095599231cac6774cd120ffd3df4ca8b4a112369542ace94c1/arkitekt_spec-12.0.0.tar.gz", hash = "sha256:3d5df9c3a8d99809f797b799227d35602c4693507d256f7d745609211c1493f0", size = 352450, upload-time = "2026-11-16T15:12:06.241Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d2/ec/c42f989d9b588cf4d54473352b2b536dd8bd7327d1e4542e5df896b92c14/arkitekt_spec-12.2.0.tar.gz", hash = "sha256:1ca77e8312a3ef02db4d9e9feb0cb69510e8cc5d27d32b17e9ad238621f7ba06", size = 353948, upload-time = "2026-11-17T11:27:13.538Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/77/0f/5d798fccc52fb87ee162a15b4cacb77ad7e91239a81cd44742cdada9ca28/arkitekt_spec-12.0.0-py3-none-any.whl", hash = "sha256:c54d65c963c34062af7535eb9f9e0e6770d755286fbac883b3912cd260a29bdc", size = 403708, upload-time = "2026-11-16T15:12:04.942Z" },
+    { url = "https://files.pythonhosted.org/packages/58/5b/2b0c97a56b45d63333778afe01f907a9f850677f28fc01bc57cf8345b6ad/arkitekt_spec-12.2.0-py3-none-any.whl", hash = "sha256:8876fa1e6e38e9014f3609cc2a15d3d0cfa17b7df1993030903501e0cde90193", size = 405249, upload-time = "2026-11-17T11:27:12.256Z" },
 ]
 
 [[package]]

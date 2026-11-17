@@ -28,7 +28,7 @@ dependencies = [
     # The app wire format (manifest, inspection, selectors, deployments.yaml) the
     # plugin CLI writes and `inspect all` emits. Shared with the kabinet server.
     # 6.0: CatalogWarning.finding/.blok, BlokError.node and action_blok_id (check --json-out).
-    "arkitekt-spec>=12",
+    "arkitekt-spec>=12.2",
     # The mesh node, so services a deployment serves only on its mesh resolve
     # without an extra. Native code: only where arkitekt-mesh ships a wheel (abi3,
     # CPython) -- anywhere else pip would build it from source with a Rust toolchain.
@@ -44,7 +44,7 @@ rekuest = [
     # The rekuest that speaks to the server and takt pair, on the runtime whose
     # agent reports its connection (the CLI says when it is registered).
     "rekuest>=15",
-    "arkitekt-runtime>=10.0.2",
+    "arkitekt-runtime>=10.1",
 ]
 alpaka = [
     "alpaka>=3.4",
