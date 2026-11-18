@@ -42,6 +42,12 @@ POLL_INTERVAL_SECONDS = 1
 TAILSCALE_UP_TIMEOUT_SECONDS = 90
 #: Machine-global state dir for the userspace proxy daemon (`mesh proxy`).
 TAILSCALED_STATE_DIR = Path.home() / ".arkitekt" / "mesh"
+#: Where `mesh relay` keeps its node (its keys: one relay per machine by default).
+RELAY_STATE_DIR = Path.home() / ".arkitekt" / "mesh-relay"
+#: The UDP port `mesh relay` forwards on unless told otherwise.
+DEFAULT_RELAY_PORT = 40000
+#: How often `mesh relay` looks at what it carries, to say when that changes.
+RELAY_STATUS_INTERVAL_SECONDS = 5.0
 #: Default local address the `mesh proxy` HTTP proxy listens on.
 DEFAULT_PROXY_LISTEN = "localhost:1055"
 #: Locations to look for the `tailscaled` daemon (often off a non-root PATH).
@@ -436,10 +442,13 @@ mesh = typer.Typer(
     authorizes it on a web page and it receives a single-use pre-auth key),
     `mesh leave` to disconnect and deregister it, `mesh proxy` to join and expose
     a local HTTP proxy into the mesh, and `mesh cert` to fetch a TLS certificate.
+    `mesh relay` makes this machine a peer relay: it forwards UDP for nodes that
+    find no direct path to each other.
 
-    These commands drive the local `tailscale` binary (falling back to `sudo` when
-    elevated privileges are required), so tailscale must be installed first --
-    see https://tailscale.com/download.
+    All but `mesh relay` drive the local `tailscale` binary (falling back to
+    `sudo` when elevated privileges are required), so tailscale must be installed
+    first -- see https://tailscale.com/download. `mesh relay` runs the mesh node
+    in this process.
     """,
 )
 
@@ -453,8 +462,13 @@ def _device_code_join(
     tags: Sequence[str],
     expiration: int,
     open_browser: bool,
+    relay: bool = False,
 ) -> tuple[str, str, str]:
-    """Run the mesh device-code flow; returns ``(authkey, coord_url, hostname)``."""
+    """Run the mesh device-code flow; returns ``(authkey, coord_url, hostname)``.
+
+    With ``relay`` the machine asks to join as a peer relay, and the flow fails
+    unless the authorizer let it in as one.
+    """
     machine_name = machine_name or socket.gethostname()
 
     step(console, "Asking the server how to join its mesh", escape(url))
@@ -468,8 +482,20 @@ def _device_code_join(
         "tags": list(tags),
         "expiration_time_seconds": expiration,
     }
+    if relay:
+        payload["relay"] = True
 
     granted = _run_mesh_device_code(console, endpoints, payload, open_browser, expiration)
+
+    if relay and not granted.get("relay"):
+        # A server that does not know of relays, or an approver who did not
+        # tick it: a plain machine's key, which makes no relay.
+        cli_error(
+            "This machine was authorized to join the mesh, but not as a relay. "
+            "The approver has to allow it to relay on the authorization page "
+            "(and the server has to support peer relays). Run the command again "
+            "and approve it as a relay."
+        )
 
     key = granted.get("ionscale_auth_key")
     if not key:
@@ -714,6 +740,236 @@ def proxy(
             proc.kill()
 
 
+def _relay_bindings() -> Any:
+    """The mesh node's Python bindings, new enough to relay."""
+    try:
+        import arkitekt_mesh  # type: ignore[import-not-found]
+    except ImportError:
+        cli_error(
+            "`mesh relay` runs the mesh node in this process and needs its bindings, "
+            'which are not installed here. Install them with `pip install "arkitekt-mesh>=0.15"` '
+            "(prebuilt for CPython on Linux x86_64/aarch64, macOS and Windows)."
+        )
+    if not hasattr(arkitekt_mesh.Node, "relay"):
+        cli_error(
+            "The installed arkitekt-mesh cannot relay yet. Upgrade it: "
+            '`pip install -U "arkitekt-mesh>=0.15"`.'
+        )
+    return arkitekt_mesh
+
+
+def _format_bytes(count: int) -> str:
+    size = float(count)
+    for unit in ("B", "KiB", "MiB", "GiB"):
+        if size < 1024 or unit == "GiB":
+            return f"{size:.0f} {unit}" if unit == "B" else f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} GiB"
+
+
+async def _serve_relay(
+    console,
+    bindings: Any,
+    state_dir: Path,
+    hostname: str,
+    coord: str | None,
+    key: str | None,
+    port: int,
+    endpoints: Sequence[str],
+) -> None:
+    """Start the node, relay on ``port`` and say what it carries until stopped."""
+    try:
+        node = await bindings.Node.start(
+            str(state_dir),
+            hostname,
+            control_url=coord,
+            auth_key=key,
+            proxy_auth=True,
+        )
+    except bindings.Locked:
+        cli_error(
+            f"A mesh relay is already running from {state_dir}. Stop it first, or "
+            "give this one a --state-dir of its own."
+        )
+    except bindings.NeedsLogin as e:
+        # Its key expired, or the node was removed from the mesh.
+        cli_error(
+            f"The mesh no longer takes this relay ({e}). Run `arkitekt mesh relay "
+            "--rejoin` to have it authorized again."
+        )
+    except bindings.MeshError as e:
+        cli_error(f"The relay could not join the mesh: {e}")
+
+    try:
+        try:
+            status = await node.relay(port, list(endpoints))
+        except bindings.MeshError as e:
+            cli_error(f"The relay could not start: {e}")
+
+        done(console, f"Relaying on the mesh as [green]{escape(hostname)}[/green]")
+        console.print(f"  UDP port [green]{status.port}[/green]", highlight=False)
+        for address in status.addresses:
+            console.print(f"  reached at [green]{escape(address)}[/green]", highlight=False)
+        console.print(
+            "  Both peers of a pair have to reach that port: open it in the firewall, "
+            "forward it on the router\n"
+            "  (and name the forwarded address with --endpoint if it is not listed).\n"
+            "  Press Ctrl-C to stop.",
+            highlight=False,
+        )
+
+        async def watch_control() -> None:
+            while True:
+                control = await node.control_changed()
+                if control.state == "connected":
+                    step(console, "Connected to the mesh's coordination server again")
+                elif control.state == "reconnecting":
+                    notice(console, "Lost the mesh's coordination server", "reconnecting")
+                else:
+                    fail(
+                        console,
+                        "The mesh no longer takes this relay",
+                        f"{escape(control.reason or control.state)}; run it with --rejoin",
+                    )
+
+        watcher = asyncio.ensure_future(watch_control())
+        try:
+            seen = (status.addresses, 0)
+            while True:
+                await asyncio.sleep(RELAY_STATUS_INTERVAL_SECONDS)
+                status = await node.relay_status()
+                if status is None:
+                    return
+                now = (status.addresses, status.bound)
+                if now != seen:
+                    if now[0] != seen[0]:
+                        step(console, "Reached at", escape(", ".join(status.addresses)))
+                    if now[1] != seen[1]:
+                        step(
+                            console,
+                            f"Relaying for {status.bound} pair(s) of peers",
+                            f"{_format_bytes(status.bytes)} forwarded",
+                        )
+                    seen = now
+        finally:
+            watcher.cancel()
+    finally:
+        node.close()
+
+
+def relay(
+    ctx: typer.Context,
+    url: UrlOption = DEFAULT_ARKITEKT_URL,
+    machine_name: Annotated[
+        str | None,
+        typer.Option(
+            "--name",
+            "-n",
+            help="Requested machine name (a hint; defaults to this host's hostname). "
+            "The authorizer may edit it.",
+        ),
+    ] = None,
+    description: Annotated[
+        str | None,
+        typer.Option(
+            "--description",
+            help="Human-readable purpose, shown on the authorization page.",
+        ),
+    ] = None,
+    port: Annotated[
+        int,
+        typer.Option(
+            "--port",
+            help=f"The UDP port to relay on (default {DEFAULT_RELAY_PORT}). Peers must be able to reach it.",
+        ),
+    ] = DEFAULT_RELAY_PORT,
+    endpoints: Annotated[
+        list[str],
+        typer.Option(
+            "--endpoint",
+            help="Where peers reach the port, as IP:PORT (repeatable): for a relay behind a "
+            "port forward. Without it the relay tells its own address and what a STUN server sees.",
+        ),
+    ] = [],
+    state_dir: Annotated[
+        Path,
+        typer.Option(
+            "--state-dir",
+            help="Where the relay keeps its mesh identity. A relay that joined once starts "
+            "again from here without a new authorization.",
+        ),
+    ] = RELAY_STATE_DIR,
+    rejoin: Annotated[
+        bool,
+        typer.Option(
+            "--rejoin",
+            help="Have the relay authorized again, although it joined before "
+            "(after its key expired or it was removed from the mesh).",
+        ),
+    ] = False,
+    expiration: Annotated[
+        int,
+        typer.Option(
+            "--expiration",
+            help="How long the join code stays valid, in seconds (default 600).",
+        ),
+    ] = 600,
+    headless: HeadlessOption = False,
+    qr: QrOption = False,
+) -> None:
+    """Run a peer relay: forward UDP for mesh nodes that find no direct path
+
+    Two nodes behind networks that let nothing in talk through a shared relay
+    (DERP), which is slow. A peer relay is a machine of your own that forwards
+    their packets over UDP instead. It cannot read them (the encryption is
+    between the two nodes), but it carries the traffic, so run it somewhere
+    with bandwidth and a UDP port both sides can reach: a server with a public
+    address, or behind a port forward (see --endpoint).
+
+    The first run asks an owner or admin of the organization to authorize this
+    machine as a relay on a web page; later runs start from the state it kept.
+    Needs no tailscale: the mesh node runs in this process. Runs in the
+    foreground; press Ctrl-C to stop.
+    """
+    console = get_console(ctx)
+    if qr:
+        force_qr()
+    if not 0 < port < 65536:
+        cli_error(f"--port takes a UDP port (1-65535), not {port}.")
+    for endpoint in endpoints:
+        host, _, endpoint_port = endpoint.rpartition(":")
+        if not host or not endpoint_port.isdigit():
+            cli_error(f"--endpoint takes IP:PORT, not {endpoint!r}.")
+
+    bindings = _relay_bindings()
+    hostname = machine_name or socket.gethostname()
+    key: str | None = None
+    coord: str | None = None
+    if rejoin or not bindings.Node.has_state(str(state_dir)):
+        key, coord, hostname = _device_code_join(
+            console,
+            url,
+            machine_name,
+            description or "A peer relay: forwards UDP for nodes that find no direct path",
+            False,
+            [],
+            expiration,
+            not headless,
+            relay=True,
+        )
+        step(console, f"Authorized as the relay {escape(hostname)}", "joining the mesh")
+    else:
+        step(console, "Starting the relay that joined before", escape(str(state_dir)))
+
+    try:
+        asyncio.run(
+            _serve_relay(console, bindings, state_dir, hostname, coord, key, port, endpoints)
+        )
+    except KeyboardInterrupt:
+        console.print()
+        step(console, "Stopping the relay")
+
+
 def cert(
     ctx: typer.Context,
     domain: Annotated[
@@ -738,4 +994,5 @@ def cert(
 mesh.command("join")(join)
 mesh.command("leave")(leave)
 mesh.command("proxy")(proxy)
+mesh.command("relay")(relay)
 mesh.command("cert")(cert)

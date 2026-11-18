@@ -10,6 +10,7 @@ import asyncio
 import re
 import subprocess
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -515,3 +516,141 @@ def test_tailscale_up_timeout_surfaces_clean_error():
 
     assert result.exit_code != 0
     assert "did not finish within" in result.output
+
+
+# --------------------------------------------------------------------------- #
+# mesh relay
+# --------------------------------------------------------------------------- #
+
+
+class _FakeMeshError(Exception):
+    pass
+
+
+class _FakeRelayNode:
+    """The mesh node's bindings, as far as `mesh relay` uses them."""
+
+    started: list[dict[str, Any]] = []
+    joined_before = False
+
+    def __init__(self) -> None:
+        self.relays: list[tuple[int, list[str]]] = []
+        self.closed = False
+        self.polls = 0
+
+    @staticmethod
+    def has_state(statedir: str) -> bool:
+        return _FakeRelayNode.joined_before
+
+    @staticmethod
+    async def start(statedir, hostname, control_url=None, auth_key=None, **options):
+        node = _FakeRelayNode()
+        _FakeRelayNode.started.append(
+            {
+                "statedir": statedir,
+                "hostname": hostname,
+                "control_url": control_url,
+                "auth_key": auth_key,
+                "options": options,
+                "node": node,
+            }
+        )
+        return node
+
+    async def relay(self, port, endpoints=None):
+        self.relays.append((port, list(endpoints or [])))
+        return SimpleNamespace(
+            port=port, addresses=["203.0.113.7:40000"], sessions=0, bound=0, packets=0, bytes=0
+        )
+
+    async def relay_status(self):
+        # One pair bound, then the node is gone (which ends the command).
+        self.polls += 1
+        if self.polls > 1:
+            return None
+        return SimpleNamespace(
+            port=40000, addresses=["203.0.113.7:40000"], sessions=1, bound=1, packets=9, bytes=4096
+        )
+
+    async def control_changed(self):
+        await asyncio.sleep(3600)
+
+    def close(self) -> None:
+        self.closed = True
+
+
+def _fake_relay_bindings(joined_before: bool = False) -> SimpleNamespace:
+    _FakeRelayNode.started = []
+    _FakeRelayNode.joined_before = joined_before
+    return SimpleNamespace(
+        Node=_FakeRelayNode,
+        MeshError=_FakeMeshError,
+        NeedsLogin=type("NeedsLogin", (_FakeMeshError,), {}),
+        Locked=type("Locked", (_FakeMeshError,), {}),
+    )
+
+
+def test_relay_asks_to_be_one_and_runs_the_node_in_process(tmp_path):
+    runner = CliRunner()
+    p_fetch, p_start, _ = _patch_flow()
+    granted = {**GRANTED, "relay": True}
+    with p_fetch, p_start as mock_start, patch(
+        f"{MESH}._mesh_poll", return_value=granted
+    ), patch(f"{MESH}._relay_bindings", return_value=_fake_relay_bindings()), patch(
+        f"{MESH}.RELAY_STATUS_INTERVAL_SECONDS", 0
+    ), patch(f"{MESH}.subprocess.run") as mock_run:
+        result = runner.invoke(
+            cli_app,
+            [
+                "mesh", "relay", "-u", "http://fakts.example", "--headless",
+                "--port", "41000", "--endpoint", "198.51.100.4:41000",
+                "--state-dir", str(tmp_path),
+            ],
+        )
+
+    assert result.exit_code == 0, result.output
+    # It asked to join as a relay, and no tailscale binary was involved.
+    assert mock_start.call_args.args[1]["relay"] is True
+    mock_run.assert_not_called()
+    started = _FakeRelayNode.started[0]
+    assert started["auth_key"] == "tskey-abc123"
+    assert started["control_url"] == "https://coord.example"
+    assert started["hostname"] == "my-box"
+    assert started["statedir"] == str(tmp_path)
+    assert started["node"].relays == [(41000, ["198.51.100.4:41000"])]
+    assert started["node"].closed, "the node is stopped with the command"
+    out = _plain(result.output)
+    assert "203.0.113.7:40000" in out
+    assert "1 pair(s)" in out
+    assert "tskey-abc123" not in out
+
+
+def test_relay_refuses_to_run_as_a_plain_machine():
+    # Approved without the relay tick (or by a server that knows none): the
+    # key is a plain machine's, and a relay nobody may ask relays nothing.
+    runner = CliRunner()
+    p_fetch, p_start, p_poll = _patch_flow()
+    with p_fetch, p_start, p_poll, patch(
+        f"{MESH}._relay_bindings", return_value=_fake_relay_bindings()
+    ):
+        result = runner.invoke(
+            cli_app, ["mesh", "relay", "-u", "http://fakts.example", "--headless"]
+        )
+
+    assert result.exit_code != 0
+    assert "not as a relay" in _plain(result.output)
+    assert _FakeRelayNode.started == []
+
+
+def test_relay_that_joined_before_starts_without_asking_again(tmp_path):
+    runner = CliRunner()
+    with patch(f"{MESH}._fetch_well_known") as mock_fetch, patch(
+        f"{MESH}._relay_bindings", return_value=_fake_relay_bindings(joined_before=True)
+    ), patch(f"{MESH}.RELAY_STATUS_INTERVAL_SECONDS", 0):
+        result = runner.invoke(cli_app, ["mesh", "relay", "--state-dir", str(tmp_path)])
+
+    assert result.exit_code == 0, result.output
+    mock_fetch.assert_not_called()
+    started = _FakeRelayNode.started[0]
+    assert started["auth_key"] is None and started["control_url"] is None
+    assert started["node"].relays == [(40000, [])]
