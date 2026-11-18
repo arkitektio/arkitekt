@@ -453,6 +453,35 @@ def test_call_remote_connects_the_app_and_calls_through_its_rekuest(app_dir, mon
     assert '"returned": 42' in result.output
 
 
+def test_call_remote_with_an_agent_calls_the_action_on_that_agent(app_dir, monkeypatch):
+    seen = {}
+
+    class FakeRekuest:
+        async def afind(self, hash):
+            return "the-action"
+
+        async def acall_raw(self, kwargs, action, on_agent):
+            seen["call"] = (action, on_agent)
+
+    class FakeRuntime:
+        def require(self, cls):
+            return FakeRekuest()
+
+    @asynccontextmanager
+    async def fake_connect(app, **options):
+        seen["options"] = options
+        yield FakeRuntime()
+
+    monkeypatch.setattr("arkitekt.runtime.connect", fake_connect)
+
+    result = _invoke(app_dir, "call", "remote", "ab" * 32, "--agent", "7")
+
+    assert result.exit_code == 0, result.output
+    assert seen["call"] == ("the-action", "7")
+    # The agent is the call's, not the connection's.
+    assert seen["options"] == {}
+
+
 def test_call_remote_without_an_app_calls_as_the_cli_app_with_rekuest(
     app_dir, monkeypatch
 ):

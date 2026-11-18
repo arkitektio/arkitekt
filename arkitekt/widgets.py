@@ -4,6 +4,7 @@
 """
 
 from arkitekt_spec.actions import (
+    BlokAssignWidgetInput,
     ChoiceAssignWidgetInput,
     ChoiceReturnWidgetInput,
     CustomAssignWidgetInput,
@@ -21,6 +22,7 @@ from arkitekt_spec.declare.widgets import (
     CustomReturnWidget,
     CustomWidget,
     ParagraphWidget,
+    PortBlok,
     ProxyWidget,
     SearchWidget,
     SliderWidget,
@@ -33,6 +35,7 @@ from arkitekt_spec.declare.widgets import (
 )
 
 __all__ = [
+    "BlokAssignWidgetInput",
     "BsxWidget",
     "ChoiceAssignWidgetInput",
     "ChoiceReturnWidget",
@@ -43,6 +46,7 @@ __all__ = [
     "CustomReturnWidgetInput",
     "CustomWidget",
     "ParagraphWidget",
+    "PortBlok",
     "ProxyAssignWidgetInput",
     "ProxyWidget",
     "SearchAssignWidgetInput",

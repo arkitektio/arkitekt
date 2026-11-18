@@ -35,6 +35,10 @@ _KNOWN: dict[str, tuple[str, Hint]] = {
         lambda work_dir: f"log in again with `{command_hint('login --reauth', work_dir)}`",
     ),
     "DiscoveryError": ("Could not reach the server", "check --url"),
+    "StatefulNeedsAgent": (
+        "This action is stateful: it runs on a named agent, not on whichever one provides it",
+        "pass --agent with the id of the agent to run it on",
+    ),
 }
 
 

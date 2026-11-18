@@ -90,18 +90,22 @@ async def call_app(
     kwargs: dict[str, Any],
     options: dict[str, Any],
     work_dir: str | None = None,
+    agent: str | None = None,
 ) -> Any:  # noqa: ANN401
     """Connect ``app`` (without providing it), find the action by hash, and call it.
 
     The call goes through the run's rekuest client, so only actions available on
-    the connected server can be called.
+    the connected server can be called. With ``agent`` (an agent id) the action runs
+    on that agent, rather than on whichever agent provides it.
     """
     from rekuest.client.client import RekuestCaller
 
     async with connected(console, app, options, work_dir=work_dir) as rt:
         rekuest = rt.require(RekuestCaller)
         action = await rekuest.afind(hash=hash)
-        return await rekuest.acall_raw(kwargs=kwargs, action=action)
+        # Only when asked for: a call that names no agent goes out as it always did.
+        named: dict[str, Any] = {"on_agent": agent} if agent is not None else {}
+        return await rekuest.acall_raw(kwargs=kwargs, action=action, **named)
 
 
 def _looks_like_a_hash(value: str) -> bool:
@@ -163,13 +167,25 @@ def remote(
             help="An argument of the call, as key=value (the value is read as JSON when it parses).",
         ),
     ] = [],
+    agent: Annotated[
+        str | None,
+        typer.Option(
+            "--agent",
+            help=(
+                "The id of the agent to run the action on. A stateful action needs "
+                "one; without it the server picks whichever agent provides the action."
+            ),
+            show_default=False,
+        ),
+    ] = None,
 ):
     """Call an action on the connected server and print its output
 
     The server assigns the call to whichever agent provides the action: for one of
     this app's own, that is this app only while it runs (`arkitekt run dev`), and
     it may as well be a copy of it running elsewhere. To call the code in front of
-    you, use `arkitekt call local`.
+    you, use `arkitekt call local`. `--agent` names the agent instead, which a
+    stateful action requires: its state lives on one agent.
 
     An action of this app is named; any other is given by its hash. The app is
     only read to turn the name into a hash: the call is always made as
@@ -212,7 +228,9 @@ def remote(
     console.print(construct_app_banner(app, resolve_url(options.get("url"))))
 
     try:
-        result = asyncio.run(call_app(console, app, hash, kwargs, options, get_work_dir(ctx)))
+        result = asyncio.run(
+            call_app(console, app, hash, kwargs, options, get_work_dir(ctx), agent=agent)
+        )
     except LookupError as e:
         cli_error(str(e))
     except Exception as e:
