@@ -131,8 +131,8 @@ def build_device_code_fakts(
         cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
-        # None: what $FAKTS_ALIAS_* say (Fakts' own default).
-        **({"alias_policy": alias_policy} if alias_policy is not None else {}),
+        # None: what $FAKTS_ALIAS_* say.
+        alias_policy=alias_policy if alias_policy is not None else AliasPolicy.from_env(),
     )
 
 
@@ -172,8 +172,8 @@ def build_mandate_key_fakts(
         cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
-        # None: what $FAKTS_ALIAS_* say (Fakts' own default).
-        **({"alias_policy": alias_policy} if alias_policy is not None else {}),
+        # None: what $FAKTS_ALIAS_* say.
+        alias_policy=alias_policy if alias_policy is not None else AliasPolicy.from_env(),
     )
 
 
@@ -209,8 +209,8 @@ def build_token_fakts(
         cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
-        # None: what $FAKTS_ALIAS_* say (Fakts' own default).
-        **({"alias_policy": alias_policy} if alias_policy is not None else {}),
+        # None: what $FAKTS_ALIAS_* say.
+        alias_policy=alias_policy if alias_policy is not None else AliasPolicy.from_env(),
     )
 
 
