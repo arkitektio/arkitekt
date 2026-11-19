@@ -17,6 +17,7 @@ from fakts.grants.remote.authorizers.static import StaticAuthorizer
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts.grants.remote.models import FaktsEndpoint
 from fakts.mesh import MeshOptions, MeshProxy
+from fakts.models import AliasPolicy
 from fakts.models import ActiveFakts, Manifest
 from fakts.protocols import FaktsCache
 
@@ -92,6 +93,7 @@ def build_device_code_fakts(
     device_code_hook: DeviceCodeHook | None = None,
     allow_insecure_transport: bool = False,
     mesh: MeshOptions | MeshProxy | None = None,
+    alias_policy: AliasPolicy | None = None,
 ) -> Fakts:
     """Builds a Fakts instance for device code authentication.
 
@@ -129,6 +131,8 @@ def build_device_code_fakts(
         cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
+        # None: what $FAKTS_ALIAS_* say (Fakts' own default).
+        **({"alias_policy": alias_policy} if alias_policy is not None else {}),
     )
 
 
@@ -144,6 +148,7 @@ def build_mandate_key_fakts(
     reauth: bool = False,
     allow_insecure_transport: bool = False,
     mesh: MeshOptions | MeshProxy | None = None,
+    alias_policy: AliasPolicy | None = None,
 ) -> Fakts:
     """Builds a Fakts instance that logs in with a mandate key.
 
@@ -167,6 +172,8 @@ def build_mandate_key_fakts(
         cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
+        # None: what $FAKTS_ALIAS_* say (Fakts' own default).
+        **({"alias_policy": alias_policy} if alias_policy is not None else {}),
     )
 
 
@@ -178,6 +185,7 @@ def build_token_fakts(
     reauth: bool = False,
     allow_insecure_transport: bool = False,
     mesh: MeshOptions | MeshProxy | None = None,
+    alias_policy: AliasPolicy | None = None,
 ) -> Fakts:
     """Builds a Fakts instance from a credential issued earlier.
 
@@ -201,6 +209,8 @@ def build_token_fakts(
         cache=_build_cache(manifest, url, skip_cache, reauth),
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
+        # None: what $FAKTS_ALIAS_* say (Fakts' own default).
+        **({"alias_policy": alias_policy} if alias_policy is not None else {}),
     )
 
 
@@ -390,6 +400,7 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
             reauth=reauth,
             allow_insecure_transport=allow_insecure_transport,
             mesh=mesh,
+            alias_policy=options.alias_policy,
         )
     if mandate_key:
         return build_mandate_key_fakts(
@@ -400,6 +411,7 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
             reauth=reauth,
             allow_insecure_transport=allow_insecure_transport,
             mesh=mesh,
+            alias_policy=options.alias_policy,
         )
     return build_device_code_fakts(
         manifest=manifest,
@@ -410,4 +422,5 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
         device_code_hook=options.device_code_hook,
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
+        alias_policy=options.alias_policy,
     )

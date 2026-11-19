@@ -4,6 +4,7 @@ from collections.abc import Iterable
 import typer
 
 from arkitekt.app.fakts import forced_mesh
+from fakts.models import AliasPolicy
 
 __all__ = [
     "CONNECTION_OPTIONS",
@@ -53,8 +54,15 @@ def explicit_options(ctx: typer.Context, names: Iterable[str]) -> dict[str, Any]
 def runner_options(ctx: typer.Context) -> dict[str, Any]:
     """The keyword arguments a run command hands to :func:`arkitekt.arun`: the
     explicitly passed connection flags. ``--force-mesh`` goes as the ``mesh``
-    it stands for."""
+    it stands for, ``--prefer-reach`` / ``--exclude-reach`` as the ``alias_policy``."""
     options = explicit_options(ctx, CONNECTION_OPTIONS)
     if explicit_options(ctx, ("force_mesh",)).get("force_mesh"):
         options["mesh"] = forced_mesh()
+    reaches = explicit_options(ctx, ("prefer_reach", "exclude_reach"))
+    if reaches:
+        # The flags passed replace what the environment says of the same thing.
+        # Validated: an unknown reach is refused here, not ignored.
+        options["alias_policy"] = AliasPolicy(
+            **{**AliasPolicy.from_env().model_dump(), **{key: list(value) for key, value in reaches.items() if value}}
+        )
     return options

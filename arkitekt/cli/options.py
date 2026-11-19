@@ -186,6 +186,33 @@ ForceMeshOption = Annotated[
     ),
 ]
 
+#: Reaches of a service's addresses to try before the hub owner's ranking.
+PreferReachOption = Annotated[
+    list[str] | None,
+    typer.Option(
+        "--prefer-reach",
+        help=(
+            "Try a service's addresses of this reach first (loopback, internal, lan, mesh, "
+            "public; repeatable, in order); the hub owner's ranking decides within each. "
+            "Default: $FAKTS_ALIAS_PREFER_REACH."
+        ),
+        rich_help_panel=SESSION_PANEL,
+    ),
+]
+
+#: Reaches of a service's addresses never to use.
+ExcludeReachOption = Annotated[
+    list[str] | None,
+    typer.Option(
+        "--exclude-reach",
+        help=(
+            "Never use a service's addresses of this reach (loopback, internal, lan, mesh, "
+            "public; repeatable). Default: $FAKTS_ALIAS_EXCLUDE_REACH."
+        ),
+        rich_help_panel=SESSION_PANEL,
+    ),
+]
+
 #: The app context, as ``module:attr``: an instance of the class the App declared
 #: (``App(..., app_context=Config)``), or a zero-argument factory of one.
 ContextOption = Annotated[

@@ -3,6 +3,7 @@
 from typing import Any
 
 from fakts.mesh import MeshOptions, MeshProxy
+from fakts.models import AliasPolicy
 from pydantic import BaseModel, ConfigDict
 
 from arkitekt.app.sources import DISCOVER, Source
@@ -56,5 +57,9 @@ class ConnectionOptions(BaseModel):
     """How to reach mesh-only services (``True`` runs a node, ``False`` or ``None`` is off):
     ``--mesh``, ``$ARKITEKT_MESH_PROXY`` / ``$ARKITEKT_MESH``, then auto (see
     :func:`arkitekt.app.fakts.mesh_from_env`)."""
+    alias_policy: AliasPolicy | None = None
+    """This run's own say over which aliases it uses, on top of the hub owner's ranking:
+    ``--prefer-reach`` / ``--exclude-reach``, else ``$FAKTS_ALIAS_PREFER_REACH``,
+    ``$FAKTS_ALIAS_EXCLUDE_REACH``, ``$FAKTS_ALIAS_EXCLUDE`` (``fakts.AliasPolicy``)."""
 
     model_config = ConfigDict(arbitrary_types_allowed=True, extra="forbid")

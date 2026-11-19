@@ -34,7 +34,9 @@ from arkitekt.cli.options import (
     TokenOption,
     MandateKeyOption,
     DeviceIdOption,
+    ExcludeReachOption,
     ForceMeshOption,
+    PreferReachOption,
     SupervisorOption,
     ForceOption,
     HeadlessOption,
@@ -386,6 +388,8 @@ def dev(
     skip_cache: SkipCacheOption = False,
     reauth: ReauthOption = False,
     force_mesh: ForceMeshOption = False,
+    prefer_reach: PreferReachOption = None,
+    exclude_reach: ExcludeReachOption = None,
     device_id: DeviceIdOption = None,
     supervisor: SupervisorOption = None,
     deep: Annotated[

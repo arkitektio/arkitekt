@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING, Any, overload
 from arkitekt_spec.declare.app import AppRegistry
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
 from fakts.mesh import MeshOptions, MeshProxy
+from fakts.models import AliasPolicy
 
 from arkitekt.app.app import App, Ctx
 from arkitekt.app.options import ConnectionOptions
@@ -43,6 +44,7 @@ def serve(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[None]: ...
 @overload
@@ -62,6 +64,7 @@ def serve(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[Ctx]: ...
 
@@ -82,6 +85,7 @@ def serve(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
     **fastapi_options: Any,  # noqa: ANN401
 ) -> Runtime[Any]:
     """Provide ``app``'s offerings over ``fastapi_app`` for as long as it runs.
@@ -123,6 +127,8 @@ def serve(
             ``plugin_engine``), stated by its agent on every Register. Defaults to
             ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
             ``None`` states none.
+        alias_policy: This run's own say over which aliases it uses, on top of the
+            hub owner's ranking (``fakts.AliasPolicy``); ``None``: ``$FAKTS_ALIAS_*``.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process,
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
@@ -175,6 +181,7 @@ def serve(
             device_id=device_id,
             supervisor=supervisor,
             mesh=mesh,
+            alias_policy=alias_policy,
         ),
         provider=fastapi_agent,
     )

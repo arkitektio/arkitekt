@@ -36,6 +36,7 @@ from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge, Dev
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts.grants.remote.models import SSLContextModel
 from fakts.mesh import MeshOptions, MeshProxy
+from fakts.models import AliasPolicy
 from koil import unkoil
 from koil.bridge import unkoil_task
 from koil.composition import KoiledModel
@@ -654,6 +655,7 @@ def connect_local(
     task_listener: "TaskListener | None" = None,
     allow_insecure_transport: bool | Source = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> Runtime[Ctx]:
     """Make a runtime that runs ``app`` for itself: nothing is registered or served.
 
@@ -693,6 +695,7 @@ def connect_local(
             task_listener=task_listener,
             allow_insecure_transport=allow_insecure_transport,
             mesh=mesh,
+            alias_policy=alias_policy,
         ),
         local=LocalRun(clients=list(clients), offline=offline, context=context),
     )
@@ -758,6 +761,7 @@ def connect(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> Runtime[Ctx]:
     """Make a runtime for ``app`` that connects when entered.
 
@@ -812,6 +816,8 @@ def connect(
             ``plugin_engine``), stated by its agent on every Register. Defaults to
             ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
             ``None`` states none.
+        alias_policy: This run's own say over which aliases it uses, on top of the
+            hub owner's ranking (``fakts.AliasPolicy``); ``None``: ``$FAKTS_ALIAS_*``.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process,
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
@@ -839,6 +845,7 @@ def connect(
             device_id=device_id,
             supervisor=supervisor,
             mesh=mesh,
+            alias_policy=alias_policy,
         ),
         provider=_provider_for(app) if provide else None,
     )
@@ -863,6 +870,7 @@ def run(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> None: ...
 @overload
 def run(
@@ -883,6 +891,7 @@ def run(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> None: ...
 
 
@@ -904,6 +913,7 @@ def run(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> None:
     """Connect ``app`` and provide its offerings until stopped: the rekuest runtime.
 
@@ -955,6 +965,8 @@ def run(
             ``plugin_engine``), stated by its agent on every Register. Defaults to
             ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
             ``None`` states none.
+        alias_policy: This run's own say over which aliases it uses, on top of the
+            hub owner's ranking (``fakts.AliasPolicy``); ``None``: ``$FAKTS_ALIAS_*``.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process,
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
@@ -985,6 +997,7 @@ def run(
         device_id=device_id,
         supervisor=supervisor,
         mesh=mesh,
+        alias_policy=alias_policy,
     )
     # Entered synchronously, around the unkoil rather than inside it: koil
     # establishes its loop when the runtime is entered.
@@ -1011,6 +1024,7 @@ async def arun(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> None: ...
 @overload
 async def arun(
@@ -1031,6 +1045,7 @@ async def arun(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> None: ...
 
 
@@ -1052,6 +1067,7 @@ async def arun(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> None:
     """Connect ``app`` and provide its actions until stopped, asynchronously.
 
@@ -1094,6 +1110,8 @@ async def arun(
             ``plugin_engine``), stated by its agent on every Register. Defaults to
             ``"discover"``: ``--supervisor``, then ``$ARKITEKT_SUPERVISOR``;
             ``None`` states none.
+        alias_policy: This run's own say over which aliases it uses, on top of the
+            hub owner's ranking (``fakts.AliasPolicy``); ``None``: ``$FAKTS_ALIAS_*``.
         mesh: How to reach services only on the deployment's mesh:
             ``MeshOptions()`` or ``True`` runs a node in this process,
             ``MeshProxy(url=...)`` goes through a running proxy, ``False`` is off.
@@ -1124,6 +1142,7 @@ async def arun(
         device_id=device_id,
         supervisor=supervisor,
         mesh=mesh,
+        alias_policy=alias_policy,
     )
     async with runtime:
         await runtime.arun(context=context)
@@ -1233,6 +1252,7 @@ async def providing(
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> AsyncIterator[RunningApps]:
     """Several apps, connected, registered and provided for as long as the block runs.
 
@@ -1278,6 +1298,8 @@ async def providing(
         allow_insecure_transport: Talk plain http to a server that is not on
             this machine (see :func:`run`).
         device_id: This device's identity (see :func:`run`).
+        alias_policy: This run's own say over which aliases it uses, on top of the
+            hub owner's ranking (``fakts.AliasPolicy``); ``None``: ``$FAKTS_ALIAS_*``.
         mesh: How to reach services only on the deployment's mesh (see
             :func:`run`).
 
@@ -1341,6 +1363,7 @@ async def providing(
             allow_insecure_transport=allow_insecure_transport,
             device_id=device_id,
             mesh=mesh,
+            alias_policy=alias_policy,
         )
         async with runtime:
             await runtime.astart(contexts.get(identifier), timeout=timeout)
@@ -1381,6 +1404,7 @@ async def arun_all(
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> None:
     """Connect several apps and provide each until stopped, in one process.
 
@@ -1405,6 +1429,8 @@ async def arun_all(
         allow_insecure_transport: Talk plain http to a server that is not on
             this machine (see :func:`run`).
         device_id: This device's identity (see :func:`run`).
+        alias_policy: This run's own say over which aliases it uses, on top of the
+            hub owner's ranking (``fakts.AliasPolicy``); ``None``: ``$FAKTS_ALIAS_*``.
         mesh: How to reach services only on the deployment's mesh (see
             :func:`run`).
 
@@ -1429,6 +1455,7 @@ async def arun_all(
         allow_insecure_transport=allow_insecure_transport,
         device_id=device_id,
         mesh=mesh,
+        alias_policy=alias_policy,
     ) as running:
         await running.wait()
 
@@ -1448,6 +1475,7 @@ def run_all(
     allow_insecure_transport: bool | Source = DISCOVER,
     device_id: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> None:
     """Connect several apps and provide each until stopped: :func:`arun_all`, blocking.
 
@@ -1474,6 +1502,8 @@ def run_all(
         allow_insecure_transport: Talk plain http to a server that is not on
             this machine (see :func:`run`).
         device_id: This device's identity (see :func:`run`).
+        alias_policy: This run's own say over which aliases it uses, on top of the
+            hub owner's ranking (``fakts.AliasPolicy``); ``None``: ``$FAKTS_ALIAS_*``.
         mesh: How to reach services only on the deployment's mesh (see
             :func:`run`).
 
@@ -1499,6 +1529,7 @@ def run_all(
             allow_insecure_transport=allow_insecure_transport,
             device_id=device_id,
             mesh=mesh,
+            alias_policy=alias_policy,
         )
     )
 
@@ -1760,6 +1791,7 @@ def run_detached(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> DetachedRun[None]: ...
 @overload
 def run_detached(
@@ -1780,6 +1812,7 @@ def run_detached(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> DetachedRun[Ctx]: ...
 
 
@@ -1801,6 +1834,7 @@ def run_detached(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
 ) -> DetachedRun[Any]:
     """Run ``app`` beside a program that has a life of its own. Returns at once.
 
@@ -1863,6 +1897,7 @@ def run_detached(
             device_id=device_id,
             supervisor=supervisor,
             mesh=mesh,
+            alias_policy=alias_policy,
         ),
     )
     running.start()

@@ -53,6 +53,23 @@ def test_prod_force_mesh_hands_the_runner_a_forced_mesh(app_dir, recorded_runs, 
     assert options == {"mesh": MeshOptions(force=True)}
 
 
+def test_prod_reach_flags_hand_the_runner_an_alias_policy(app_dir, recorded_runs, monkeypatch):
+    from fakts.models import AliasPolicy
+
+    monkeypatch.setenv("FAKTS_ALIAS_EXCLUDE", "old-lab")
+    monkeypatch.setenv("FAKTS_ALIAS_PREFER_REACH", "public")
+    result = _invoke(
+        app_dir, "run", "prod", "app:app", "--prefer-reach", "loopback", "--prefer-reach", "lan", "--exclude-reach", "public"
+    )
+
+    assert result.exit_code == 0, result.output
+    ((_, options),) = recorded_runs
+    # The flags replace what the environment says of the same thing; the rest of it stays.
+    assert options == {
+        "alias_policy": AliasPolicy(prefer_reach=["loopback", "lan"], exclude_reach=["public"], exclude_aliases=["old-lab"])
+    }
+
+
 def test_prod_hands_the_supervisor_and_device_id_to_the_runner(app_dir, recorded_runs):
     result = _invoke(app_dir, "run", "prod", "app:app", "--supervisor", "plugin_engine", "--device-id", "host:1")
 
