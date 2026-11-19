@@ -382,8 +382,8 @@ requires-dist = [
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=5" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=5" },
-    { name = "fakts", extras = ["crypto"], specifier = ">=6.2" },
-    { name = "fakts", extras = ["mesh"], marker = "(platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (platform_python_implementation == 'CPython' and sys_platform == 'darwin')", specifier = ">=6.4.2" },
+    { name = "fakts", extras = ["crypto"], specifier = ">=6.5.0" },
+    { name = "fakts", extras = ["mesh"], marker = "(platform_machine == 'aarch64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (platform_machine == 'x86_64' and platform_python_implementation == 'CPython' and sys_platform == 'linux') or (platform_machine == 'AMD64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (platform_machine == 'ARM64' and platform_python_implementation == 'CPython' and sys_platform == 'win32') or (platform_python_implementation == 'CPython' and sys_platform == 'darwin')", specifier = ">=6.5.0" },
     { name = "fluss", marker = "extra == 'all'", specifier = ">=4.3.2" },
     { name = "fluss", marker = "extra == 'fluss'", specifier = ">=4.3.2" },
     { name = "kabinet", marker = "extra == 'all'", specifier = ">=7" },
@@ -496,7 +496,7 @@ qt = [
 
 [[package]]
 name = "arkitekt-spec"
-version = "12.5.0"
+version = "12.6.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -506,9 +506,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/39/1d9aeb0094b589d034cbeec45d95412c6ad09d87f4134660488d5b90b90d/arkitekt_spec-12.5.0.tar.gz", hash = "sha256:c0848f57e8d61a8070e623297ed41caab90a5a7dfb5e4716e74a8ec185241ddc", size = 360412, upload-time = "2026-11-18T18:04:45.876Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/0e/f6/a2e02f4cd2ef21dbb033cd43748f12f7a5b74bf8c9425088510a92d3febc/arkitekt_spec-12.6.0.tar.gz", hash = "sha256:d52a62f8f38ce6b7401a885a934172ae2ca14b82cced5d776246a4bedc4bab33", size = 360535, upload-time = "2026-11-19T19:48:45.816Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/d8/5a/0773f278166386e4b3e3ca0bb0e703464a991300744d326c9b46765cf1f6/arkitekt_spec-12.5.0-py3-none-any.whl", hash = "sha256:467f4a5d902813296485e3fa4bc4fb3099b9bbe3416e1727420fb3558a23cb0c", size = 412739, upload-time = "2026-11-18T18:04:44.497Z" },
+    { url = "https://files.pythonhosted.org/packages/9e/8e/5ffd652ac7b2048edc9dd1311e4a66750f06bc5e3e3017ec1276da0f2d1e/arkitekt_spec-12.6.0-py3-none-any.whl", hash = "sha256:120f7d2e3df453ba91115a82b197cd13c96290bb781553f943d51bd5458340be", size = 412935, upload-time = "2026-11-19T19:48:44.394Z" },
 ]
 
 [[package]]
@@ -1028,7 +1028,7 @@ wheels = [
 
 [[package]]
 name = "fakts"
-version = "6.4.2"
+version = "6.5.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
@@ -1037,9 +1037,9 @@ dependencies = [
     { name = "koil" },
     { name = "pydantic" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/04/df/4d8205a9ace3277c2c1ec82e49c92c067eed5b373d5dfb1acb169fa80a65/fakts-6.4.2.tar.gz", hash = "sha256:3691d66586ea5f49d0e6c361992277e536343a0b15bdec7d54dc4285af2a8b30", size = 112234, upload-time = "2026-11-18T15:52:08.809Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/08/15/b365f872faa6103b1e53e676141d927abb0b905a2ea9d310181af585d4e9/fakts-6.5.0.tar.gz", hash = "sha256:3a4fc4e57a35ee2a629e7bfd8f318cabbf12564cf9cbe215ac412cde3d1f2121", size = 114125, upload-time = "2026-11-19T19:52:23.079Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e0/6c/71dfbab66f8e280e73927289993a1609fc3ce21ace0748fcb64a1a23cacc/fakts-6.4.2-py3-none-any.whl", hash = "sha256:ed64a646dec27e9d5081c69495834fbfa64648f79a90da7f1f8fc440c8d5530b", size = 119067, upload-time = "2026-11-18T15:52:07.317Z" },
+    { url = "https://files.pythonhosted.org/packages/55/ba/c83a10df582d5ffed1f67b73d36faec3802fb183a6bbeca8bc88454d1290/fakts-6.5.0-py3-none-any.whl", hash = "sha256:c59c356ceae8489a20782d27e3e8c583c5908e8f3129e2d4744943913b78cf5a", size = 120823, upload-time = "2026-11-19T19:52:21.86Z" },
 ]
 
 [package.optional-dependencies]
