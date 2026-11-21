@@ -228,9 +228,15 @@ app.blok(
 - `catalog="..."` on the `<Blok>`: the catalog it is written for (see
   [What a blok may be made of](#what-a-blok-may-be-made-of)); the base catalog when left out.
 
-A custom blok (`rekuest.createBlok`) declares every dependency it reads: each `deps.<key>`
-names one of its declared dependencies, with the demands it needs. A dependency no agent is bound to reads as `failed` (code `deps.unbound`), and a call to it
-is disabled.
+A custom blok (`rekuest.createBlok`) is bound to agents where it is materialized, and reads
+each as `agents.<key>`: a key it declares, with the demands it needs. One no agent is bound to
+reads as `failed` (code `deps.unbound`), and a call to it is disabled. `deps` is not written in
+a custom blok: it always means the agents a run of an action uses, which a custom blok
+declares for an action of a bound agent with
+`<dependencies key="cells" like="agents.<key>.<action>" />`.
+
+Forking an app's blok gives a custom one: the app's own agent (`self`) becomes one the copy is
+bound to, named after the app (`self.stage` reads `agents.openuc2.stage`).
 
 ## Contexts
 
