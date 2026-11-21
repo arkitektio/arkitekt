@@ -68,9 +68,10 @@ async def test_two_apps_exchange_a_data_stream_over_the_mesh(hub: Hub, own_state
     async with on_the_mesh(hub, "spectrometer") as publishing, on_the_mesh(hub, "viewer") as viewing:
         spectrometer, viewer = publishing.require(Lovekit), viewing.require(Lovekit)
         # Each on a node of its own: the media server is an alias its node carries.
-        for client in (spectrometer, viewer):
-            assert client.livekit is not None and client.livekit.is_mesh()
-        assert spectrometer.livekit.proxy != viewer.livekit.proxy
+        media, watched = spectrometer.livekit, viewer.livekit
+        assert media is not None and watched is not None
+        assert media.is_mesh() and watched.is_mesh()
+        assert media.proxy != watched.proxy
 
         async with spectrometer.publish([SPECTRUM]) as live:
             await live.wait_connected(timeout=120)
