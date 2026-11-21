@@ -421,9 +421,9 @@ dev = [
     { name = "elektro", specifier = ">=5" },
     { name = "fluss", specifier = ">=4.3.2" },
     { name = "kabinet", specifier = ">=7" },
-    { name = "konstruktor", specifier = ">=0.37.0" },
+    { name = "konstruktor", specifier = ">=0.41" },
     { name = "kraph", specifier = ">=4.1.1" },
-    { name = "lovekit", specifier = ">=3.1.1" },
+    { name = "lovekit", specifier = ">=6" },
     { name = "mikro", specifier = ">=12.2.0" },
     { name = "numpy", specifier = ">=2" },
     { name = "pytest", specifier = ">=9.0.3" },
@@ -1473,18 +1473,18 @@ wheels = [
 
 [[package]]
 name = "konstruktor"
-version = "0.37.0"
+version = "0.41.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dokker" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8b/6e/df557434386066463a1af18bb6a6d06b017994d335e2864293fb12a61e9f/konstruktor-0.37.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:f6954ec2dfa34476ac016a11c548597c3aa79cc56a57d327f093f52df0bc585d", size = 5309287, upload-time = "2026-11-05T13:06:28.629Z" },
-    { url = "https://files.pythonhosted.org/packages/e8/70/b59b849c9532a0bafda6eed0081511b3376d4bfd455e789a9a5fe69ec79f/konstruktor-0.37.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:edf9b12366ffd414aabb6faf61c88cf83f0d01e0316ff5a30aa4b0661bb0a91d", size = 5095381, upload-time = "2026-11-05T13:06:30.668Z" },
-    { url = "https://files.pythonhosted.org/packages/cb/e1/ca9e9c2396c9633dcd2bb3c257983f2966f7153a62d9d31c06020c64bcd3/konstruktor-0.37.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:a4db13ba325f9e4c3a4ab4926e2b02b5ba19ba28ec30713d6c7f3df5c088a672", size = 5136707, upload-time = "2026-11-05T13:06:32.55Z" },
-    { url = "https://files.pythonhosted.org/packages/84/ed/73c5c3685131fe36e6d4d8e4e8e6dad651f3cfc841438967bfd1927f8ecf/konstruktor-0.37.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:2b2cb6e72d2361691549fd9e9073519c24fcbc16931fc066d2546e368c72cfb8", size = 5463288, upload-time = "2026-11-05T13:06:34.86Z" },
-    { url = "https://files.pythonhosted.org/packages/5c/f0/20f431273d5ebcfaa936332a6af65a2a2051958c67df8cc5a5d30e0a261e/konstruktor-0.37.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:526159dd51ee8e3dcc6276ea3e6eb64906f22d87419c5df202c5fc6b16b15805", size = 5562143, upload-time = "2026-11-05T13:06:38.051Z" },
-    { url = "https://files.pythonhosted.org/packages/33/29/2749eabae0128179f61a2624182ef10dbb4904d86ec855f01dfcdfa91bd5/konstruktor-0.37.0-py3-none-win_amd64.whl", hash = "sha256:a0e949d2c374ba8230d4b1f804eef1c0d269be0c4bb4ed8c66165c0281b8df9c", size = 5535960, upload-time = "2026-11-05T13:06:40.147Z" },
+    { url = "https://files.pythonhosted.org/packages/10/34/8cc69b267c180bf21a98a9f80efb084da5f8ef9b0f189d09b5be3bb84a71/konstruktor-0.41.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:7b58e519d80b1984899e96f84b4216f2310c925ba3816df31558dcce036edf43", size = 5378002, upload-time = "2026-11-21T13:47:33.156Z" },
+    { url = "https://files.pythonhosted.org/packages/b7/2e/8affc27b9c5e32cee9d4f160d5c127645294f2ed8ab547813ccb2cc52ff4/konstruktor-0.41.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:4ee74c8ba4454b3c4ff4d4181bcb832083671e200e0c80022eeea1686e496340", size = 5159841, upload-time = "2026-11-21T13:47:35.154Z" },
+    { url = "https://files.pythonhosted.org/packages/e7/a6/87a4ba95c8edad57fa237d39a1c7c4ad6f742ab7df3d83d6ed94b5c5415b/konstruktor-0.41.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:256407d4747145c5513dc750fa5bff6e352cf2deb259a4f9f9642309a6be0f21", size = 5206715, upload-time = "2026-11-21T13:47:37.294Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/79/378df104a7145d23ca31075859d62b14122f712956ae253fc875652cc974/konstruktor-0.41.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:51637db19c8b73bcf3037a87f7cae97f8cbe2097c6371e09e451af9c5a9cb6d0", size = 5527974, upload-time = "2026-11-21T13:47:39.018Z" },
+    { url = "https://files.pythonhosted.org/packages/48/68/a78d0e711c5d928af548ae2a08929872d631c5e07da06f51d728ffd917da/konstruktor-0.41.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:121f14efa114e0dc25be3dca4d7676f2cefddd38064f81b72d15b4c954ed66ae", size = 5628459, upload-time = "2026-11-21T13:47:40.912Z" },
+    { url = "https://files.pythonhosted.org/packages/0f/fd/c8307ad7fb545e76aaa5f595ed7eb22b889006cd8d5ef286c74e0ac2aa88/konstruktor-0.41.0-py3-none-win_amd64.whl", hash = "sha256:e010d9ae014235e1df3f319a54989259ea8f5e86665e0143c33aa5921c6753b4", size = 5605130, upload-time = "2026-11-21T13:47:42.485Z" },
 ]
 
 [[package]]
@@ -1505,7 +1505,7 @@ wheels = [
 
 [[package]]
 name = "livekit"
-version = "1.1.13"
+version = "1.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
@@ -1514,13 +1514,14 @@ dependencies = [
     { name = "protobuf" },
     { name = "types-protobuf" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8d/92/dcd4f295913533ddd0d48153cc28f1358d550bea651460bd895256981c4d/livekit-1.1.13.tar.gz", hash = "sha256:aa2bd89cf0c2ebcaa71a240275964c23900a0422a2a3d43d274e88a211a0ecfc", size = 370211, upload-time = "2026-06-30T11:54:00.321Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/b0/51a0f0726117b3010081951d28a7447c46a856c7693e2894e6045daf74a6/livekit-1.3.0.tar.gz", hash = "sha256:a40a72a20c4a38e6e8ac75695568f862b193c1c5a840a413e37bfa481bf336dc", size = 404618, upload-time = "2026-11-16T20:07:23.201Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9d/bd/15100217109595aedbb9bcfdfc1c77513c0f44940d72644d16b611476941/livekit-1.1.13-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:2a19b023de9a573fe5da629e3ee514f2962c87e1afec95a6b19bbbdb6ea8f703", size = 10147642, upload-time = "2026-06-30T11:53:48.781Z" },
-    { url = "https://files.pythonhosted.org/packages/97/dd/4f001a9c5ccde361a53437a09bc04dc9cad8003c6711c2bcc0734e18e626/livekit-1.1.13-py3-none-macosx_11_0_arm64.whl", hash = "sha256:90b6796e0c4515bc1e8a1e109a40b88d82c36b12452b7ae01fe35be7ee8357ba", size = 8968740, upload-time = "2026-06-30T11:53:51.223Z" },
-    { url = "https://files.pythonhosted.org/packages/26/1a/7e97a45a4b6e10ce3a4e9938e3d3fa0a6512a6557f5990685eab4f6e88d1/livekit-1.1.13-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:43779c0f3bb27589cd517d60c442c674c2f967a97db158829a533974a29a3997", size = 9980507, upload-time = "2026-06-30T11:53:53.349Z" },
-    { url = "https://files.pythonhosted.org/packages/e3/9d/389bbdf39ccd2c464a4749ba7be1584dea608518c32a5ddbc511db6b0cf7/livekit-1.1.13-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:f4e83f0e272f4b2e9cc39dbefd7bb23b75bd8c105478d867c2869254ca4e149a", size = 11367692, upload-time = "2026-06-30T11:53:55.409Z" },
-    { url = "https://files.pythonhosted.org/packages/da/ce/a3d3e0566dbd2586c325240d44afec6d44421eb794bcf8dbaca15463a7b7/livekit-1.1.13-py3-none-win_amd64.whl", hash = "sha256:22dff7a39cb3d590a4757e20d3ce5d326ab882350386f5070f45cbd6d9ccf839", size = 10717013, upload-time = "2026-06-30T11:53:57.701Z" },
+    { url = "https://files.pythonhosted.org/packages/93/a4/d4bc73a07d6cce4031ac06cceb314f1e3bf34e5c38a1c4037312fddb85ee/livekit-1.3.0-py3-none-macosx_10_15_x86_64.whl", hash = "sha256:e855de7277cf78fb0dce9da3e18f4627fce7300accd295581823cd3d78065cf7", size = 10355754, upload-time = "2026-11-16T20:07:09.185Z" },
+    { url = "https://files.pythonhosted.org/packages/65/26/b284e6c7163ec09b40cb720ad8143ce2e6fcdf5032a3a152416433cf9896/livekit-1.3.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:2028e2c93537142e1aaf19bdce4ee3bf699fc629227ab88375818695a202c7c2", size = 9067076, upload-time = "2026-11-16T20:07:12.442Z" },
+    { url = "https://files.pythonhosted.org/packages/4a/2d/d01010364e83cc9700fd60496221adbcedbe3533adba7c0c979a970ae0d2/livekit-1.3.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:e8e60f88925b812adb06adb73e5e3b1c667c401b019b6213a9bac81e0328b3b3", size = 10151723, upload-time = "2026-11-16T20:07:14.913Z" },
+    { url = "https://files.pythonhosted.org/packages/be/85/0c59fbba7180b4a031f2d74f00daa5df1dc061825532ce59cb6fb5ea2820/livekit-1.3.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:dc369f687b8a7c21e233a622a3c3e333c7c7a44d094472d33a2a422f22137484", size = 11412458, upload-time = "2026-11-16T20:07:17.223Z" },
+    { url = "https://files.pythonhosted.org/packages/04/9f/64e1887d197cda7a3828e2d79dc1210b457090eb8bf9f1815c4f92560200/livekit-1.3.0-py3-none-win_amd64.whl", hash = "sha256:46db69d8adcf94058d5b37c6a24878ba327563d2cb6a8287f7dcddc93b1d2194", size = 10869847, upload-time = "2026-11-16T20:07:19.375Z" },
+    { url = "https://files.pythonhosted.org/packages/d6/c3/605165052aea779f91553d213430e431cd316ee6fd6c5f80c2ad6a02bbb8/livekit-1.3.0-py3-none-win_arm64.whl", hash = "sha256:8e0ae148e53d0c9a493260acbf8361654e5e594b32862c731c731205c7090273", size = 9018849, upload-time = "2026-11-16T20:07:21.438Z" },
 ]
 
 [[package]]
@@ -1534,19 +1535,21 @@ wheels = [
 
 [[package]]
 name = "lovekit"
-version = "3.1.1"
+version = "6.0.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiohttp" },
     { name = "arkitekt-spec" },
     { name = "fakts" },
     { name = "livekit" },
+    { name = "numpy", version = "2.4.6", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.12'" },
+    { name = "numpy", version = "2.5.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.12'" },
     { name = "rath" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/f4/1d/c9bed4d3d8cc283ab8714ce98e71ed7366a5c1175a36398a0bfd40abfee3/lovekit-3.1.1.tar.gz", hash = "sha256:4911ccd1eda927ef53d19f73f47eb1773c51bdb0d9678444645950c078d3ceac", size = 14156, upload-time = "2026-10-04T19:15:55.116Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/d1/9e/6d8f036c2e9451a05e4d763b83517db2ae944f537cbfd570d1595c921918/lovekit-6.0.0.tar.gz", hash = "sha256:dbc587cc45e031b6c2032952c35ad2e27b93a196a3ee0401227dc5c095bdc49a", size = 27885, upload-time = "2026-11-21T13:36:47.903Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/17/74/a18ec94a67420f06bde0b61377f678c0e560b90aec93f2dd368df27776ef/lovekit-3.1.1-py3-none-any.whl", hash = "sha256:fc03ddba469b3ee79c72387112f00cf3749c9261a73e67c4f6ffd9c1bf691429", size = 14708, upload-time = "2026-10-04T19:15:54.216Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/4c/104c3442ea5117b93394810d78c3d994b9147ba461d4aa2e95c89899bccd/lovekit-6.0.0-py3-none-any.whl", hash = "sha256:c7a55ae51c411b9baf5c0482eb1c36b75db5cc795f2fed41549840dc056f4601", size = 31100, upload-time = "2026-11-21T13:36:47.212Z" },
 ]
 
 [[package]]

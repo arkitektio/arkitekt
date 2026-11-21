@@ -31,7 +31,7 @@ import pytest
 
 pytestmark = [pytest.mark.mesh, pytest.mark.needs_docker]
 
-konstruktor = pytest.importorskip("konstruktor", reason="builds the hub the app logs in to")
+pytest.importorskip("konstruktor", reason="builds the hub the app logs in to")
 pytest.importorskip("mikro", reason="the service the app calls")
 
 if TYPE_CHECKING:
@@ -45,19 +45,6 @@ APP = "mesh-install-test"
 def docker(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     """Run the docker CLI, capturing what it says."""
     return subprocess.run(["docker", *args], capture_output=True, text=True, check=check)
-
-
-@pytest.fixture(scope="module")
-def hub() -> Iterator[Hub]:
-    """mikro, on a hub with a mesh of its own."""
-    from mikro import mikro_service
-
-    with konstruktor.testing_hub(
-        name="meshhub", service_images=[mikro_service.image], mandate_keys=1, mesh=True
-    ) as hub:
-        hub.up()
-        hub.wait_ready()
-        yield hub
 
 
 @pytest.fixture(scope="module")
