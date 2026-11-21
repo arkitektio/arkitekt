@@ -358,6 +358,20 @@ def test_a_run_says_its_hub_and_when_a_mesh_path_turns_direct(app_dir, monkeypat
     assert "◆ mikro, rekuest direct lab.mesh.internal:80, 8080 · 172.21.0.23:41641" in output
 
 
+def test_a_run_says_which_service_is_outside_the_versions_the_app_wants(app_dir, monkeypatch):
+    fakts = _session(time.time())
+    fakts.version_mismatches = lambda: [
+        SimpleNamespace(key="mikro", service="live.arkitekt.mikro", running="11.4.0", wanted=">=12.1")
+    ]
+    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], fakts=fakts))
+
+    result = _invoke(app_dir, "run", "prod")
+
+    assert result.exit_code == 0, result.output
+    output = " ".join(result.output.split())
+    assert "□ mikro is 11.4.0 here, this app wants >=12.1 some calls may fail" in output
+
+
 def _raising(error):
     async def during(run):
         raise error

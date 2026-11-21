@@ -237,6 +237,19 @@ def report_connection(console: Console, rt: Any) -> dict[str, str | None]:  # no
     return reported
 
 
+def report_versions(console: Console, rt: Any) -> None:  # noqa: ANN401
+    """Say which services run outside the versions the app asked for. They are used anyway."""
+    mismatches = getattr(getattr(rt, "fakts", None), "version_mismatches", None)
+    for mismatch in mismatches() if mismatches else []:
+        running = escape(mismatch.running or "an unknown version")
+        wanted = escape(mismatch.wanted or "another version")
+        notice(
+            console,
+            f"{escape(mismatch.key)} is {running} here, this app wants {wanted}",
+            "some calls may fail",
+        )
+
+
 async def watch_paths(console: Console, rt: Any, reported: dict[str, str | None]) -> None:  # noqa: ANN401
     """Say whenever a mesh host's path turns direct or falls back to the relay.
 
@@ -295,6 +308,7 @@ async def connected(
     async with runtime.connect(app, **options, **extra) as rt:
         report_session(console, rt, before, options, work_dir)
         reported = report_connection(console, rt)
+        report_versions(console, rt)
         # A providing run lasts: follow its paths. A call is over before they settle.
         watcher = asyncio.create_task(watch_paths(console, rt, reported)) if provide else None
         try:
@@ -391,6 +405,7 @@ __all__ = [
     "connected_local",
     "logged_in_at",
     "report_connection",
+    "report_versions",
     "report_session",
     "watch_paths",
 ]
