@@ -75,7 +75,9 @@ def shout(text: str) -> str:
     return text.upper()
 
 
-def test_a_call_through_rekuest_is_an_auto_root_task_on_the_apps_own_implementation() -> None:
+def test_a_call_through_rekuest_is_an_auto_root_task_on_the_apps_own_implementation() -> (
+    None
+):
     runtime = FakeRuntime({"shout": SimpleNamespace(function=shout)})
 
     by_name = call_through_rekuest(runtime, "shout", "hi", loud=True)  # pyright: ignore[reportArgumentType]
@@ -106,9 +108,12 @@ def test_a_run_that_does_not_provide_is_not_called_through_rekuest() -> None:
 
 
 @pytest.mark.parametrize(
-    ("through_rekuest", "expected"), [(False, "in process"), (True, "shout through rekuest")]
+    ("through_rekuest", "expected"),
+    [(False, "in process"), (True, "shout through rekuest")],
 )
-def test_teststack_calls_the_way_it_was_made(through_rekuest: bool, expected: str) -> None:
+def test_teststack_calls_the_way_it_was_made(
+    through_rekuest: bool, expected: str
+) -> None:
     runtime = FakeRuntime({"shout": SimpleNamespace(function=shout)})
     stack = TestStack(
         hub=None,  # pyright: ignore[reportArgumentType]

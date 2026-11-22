@@ -58,8 +58,8 @@ class _OkProc:
 
     def communicate(self, timeout=None):
         payload = (
-            b"noise\n--START_AGENT--{\"implementations\": []}--END_AGENT--\n"
-            b"--START_MANIFEST--{\"identifier\": \"com.x\", \"version\": \"1.0.0\"}--END_MANIFEST--\n"
+            b'noise\n--START_AGENT--{"implementations": []}--END_AGENT--\n'
+            b'--START_MANIFEST--{"identifier": "com.x", "version": "1.0.0"}--END_MANIFEST--\n'
         )
         return (payload, b"")
 
@@ -71,7 +71,10 @@ def test_inspect_all_parses_payload_within_bound():
     with patch(f"{BUILD}.subprocess.Popen", return_value=_OkProc()):
         result = inspect_all("build-123", "http://fakts.example")
 
-    assert result == ({"implementations": []}, {"identifier": "com.x", "version": "1.0.0"})
+    assert result == (
+        {"implementations": []},
+        {"identifier": "com.x", "version": "1.0.0"},
+    )
 
 
 class _AgentOnlyProc:
@@ -80,7 +83,7 @@ class _AgentOnlyProc:
     returncode = 0
 
     def communicate(self, timeout=None):
-        return (b"--START_AGENT--{\"implementations\": []}--END_AGENT--\n", b"")
+        return (b'--START_AGENT--{"implementations": []}--END_AGENT--\n', b"")
 
 
 def test_an_image_that_does_not_say_which_app_it_is_is_refused():

@@ -1,5 +1,7 @@
 import os
+
 from rich.console import Console
+
 from .errors import cli_error
 
 

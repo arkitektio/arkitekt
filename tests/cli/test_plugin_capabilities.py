@@ -8,17 +8,34 @@ Nothing here needs docker: the records are written straight from the flavour.
 import pytest
 import typer
 import yaml
-from arkitekt_spec import AppManifest, ContainerEngineCapability, FolderCapability, Inspection
+from arkitekt_spec import (
+    AppManifest,
+    ContainerEngineCapability,
+    FolderCapability,
+    Inspection,
+)
 from typer.testing import CliRunner
 
-from arkitekt.cli.commands.plugin.io import generate_build, generate_deployment, get_flavours
+from arkitekt.cli.commands.plugin.io import (
+    generate_build,
+    generate_deployment,
+    get_flavours,
+)
 from arkitekt.cli.main import cli_app
 
 
 def _init(tmp_path):
     return CliRunner().invoke(
         cli_app,
-        ["--work-dir", str(tmp_path), "plugin", "flavour", "add", "--arkitekt-version", "0.0.1"],
+        [
+            "--work-dir",
+            str(tmp_path),
+            "plugin",
+            "flavour",
+            "add",
+            "--arkitekt-version",
+            "0.0.1",
+        ],
         input="n\n",
     )
 
@@ -45,7 +62,10 @@ def test_capabilities_reach_the_build_and_the_deployments_file(tmp_path):
         ],
     )
     flavour = get_flavours(base_dir=str(tmp_path))["vanilla"]
-    granted = [ContainerEngineCapability(name="engine"), FolderCapability(name="data", target="/data")]
+    granted = [
+        ContainerEngineCapability(name="engine"),
+        FolderCapability(name="data", target="/data"),
+    ]
     assert flavour.capabilities == granted
 
     build = generate_build(
@@ -59,7 +79,9 @@ def test_capabilities_reach_the_build_and_the_deployments_file(tmp_path):
     )
     assert build.capabilities == granted
 
-    deployed = generate_deployment("run", build, "org/engine:0.1.0", base_dir=str(tmp_path))
+    deployed = generate_deployment(
+        "run", build, "org/engine:0.1.0", base_dir=str(tmp_path)
+    )
     assert deployed.capabilities == granted
     written = yaml.safe_load((tmp_path / ".arkitekt" / "deployments.yaml").read_text())
     assert written["app_images"][0]["capabilities"][0] == {
@@ -72,7 +94,10 @@ def test_capabilities_reach_the_build_and_the_deployments_file(tmp_path):
 
 def test_a_typo_in_a_capability_is_refused_when_the_flavour_is_read(tmp_path, capsys):
     _init(tmp_path)
-    _declare(tmp_path, [{"kind": "folder", "name": "data", "target": "/data", "writable": True}])
+    _declare(
+        tmp_path,
+        [{"kind": "folder", "name": "data", "target": "/data", "writable": True}],
+    )
     with pytest.raises(typer.Exit):
         get_flavours(base_dir=str(tmp_path))
     assert "capabilities.0.folder.writable" in capsys.readouterr().err

@@ -1,0 +1,10 @@
+# This repo's ruff settings: the arkitekt standard (ruff.shared.toml, synced
+# from arkitektio/.github) plus what is this repo's own. Add excludes for
+# vendored code and per-file ignores here; never edit ruff.shared.toml.
+extend = "ruff.shared.toml"
+target-version = "py311"
+extend-exclude = [
+  # Rendered by string replacement (__APP_VERSION__, __APP_ARGUMENTS__) into a new
+  # project, not importable modules: the placeholders are undefined names here.
+  "arkitekt/cli/templates",
+]

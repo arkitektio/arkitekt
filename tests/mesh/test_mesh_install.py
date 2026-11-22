@@ -44,7 +44,9 @@ APP = "mesh-install-test"
 
 def docker(*args: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     """Run the docker CLI, capturing what it says."""
-    return subprocess.run(["docker", *args], capture_output=True, text=True, check=check)
+    return subprocess.run(
+        ["docker", *args], capture_output=True, text=True, check=check
+    )
 
 
 @pytest.fixture(scope="module")

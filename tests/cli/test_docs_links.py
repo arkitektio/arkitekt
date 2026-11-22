@@ -8,8 +8,8 @@ These tests ensure the constants stay consistent and that each command group's
 import pytest
 from typer.testing import CliRunner
 
-from arkitekt.cli.main import cli_app
 from arkitekt.cli import docs
+from arkitekt.cli.main import cli_app
 
 
 def test_routes_build_on_base_url():

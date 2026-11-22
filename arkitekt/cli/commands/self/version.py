@@ -6,13 +6,15 @@ package of the Arkitekt ecosystem.
 
 import platform
 import sys
-from importlib.metadata import version as installed_version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as installed_version
 from typing import Annotated
 
 import typer
 from rich.table import Table
 
 from arkitekt.cli.vars import get_console
+
 from .constants import ARKITEKT_PACKAGES
 
 

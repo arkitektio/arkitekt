@@ -80,7 +80,9 @@ def test_registering_on_a_qt_app(qapp: Any, method: str) -> None:
     getattr(app, method)(implementation)
 
     assert app.registry.implementations, f"{method} registered nothing"
-    assert "rekuest" not in app.services, "run() brings rekuest; the app declares only what it offers"
+    assert "rekuest" not in app.services, (
+        "run() brings rekuest; the app declares only what it offers"
+    )
 
 
 def test_the_magic_bar_builds_on_an_unentered_runtime(qapp: Any) -> None:
@@ -88,7 +90,9 @@ def test_the_magic_bar_builds_on_an_unentered_runtime(qapp: Any) -> None:
     from arkitekt.qt.magic_bar import MagicBar
 
     app = build_qt_app("bar", version="1.2", logo=None)
-    runtime = connect(app, provide=True, token="token", url="http://127.0.0.1:1", skip_cache=True)
+    runtime = connect(
+        app, provide=True, token="token", url="http://127.0.0.1:1", skip_cache=True
+    )
     bar = MagicBar(runtime)
 
     assert bar.profile.app is app
@@ -107,7 +111,9 @@ def test_the_magic_bar_provides_the_run_with_its_context(qapp: Any) -> None:
         pass
 
     app = build_qt_app("bar-context", app_context=Stage)
-    runtime = connect(app, provide=True, token="token", url="http://127.0.0.1:1", skip_cache=True)
+    runtime = connect(
+        app, provide=True, token="token", url="http://127.0.0.1:1", skip_cache=True
+    )
     stage = Stage()
     bar = MagicBar(runtime, context=stage)
     seen: list[Any] = []
@@ -126,6 +132,12 @@ def test_the_magic_bar_provides_the_run_with_its_context(qapp: Any) -> None:
 def test_a_magic_bar_without_a_context_provides_none(qapp: Any) -> None:
     from arkitekt.qt.magic_bar import MagicBar
 
-    runtime = connect(build_qt_app("bar-plain"), provide=True, token="token", url="http://127.0.0.1:1", skip_cache=True)
+    runtime = connect(
+        build_qt_app("bar-plain"),
+        provide=True,
+        token="token",
+        url="http://127.0.0.1:1",
+        skip_cache=True,
+    )
 
     assert MagicBar(runtime).context is None

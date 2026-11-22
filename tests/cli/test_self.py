@@ -11,7 +11,9 @@ MODULE = "arkitekt.cli.commands.self.upgrade"
 
 
 def _pypi_payload(version: str) -> bytes:
-    return json.dumps({"info": {"version": version}, "releases": {version: []}}).encode()
+    return json.dumps(
+        {"info": {"version": version}, "releases": {version: []}}
+    ).encode()
 
 
 def _fake_urlopen(version: str):
@@ -26,9 +28,11 @@ def _fake_urlopen(version: str):
 def test_self_upgrade_pip_outdated():
     """An outdated package triggers a pip upgrade with the right command."""
     runner = CliRunner()
-    with patch(f"{MODULE}.installed_version", return_value="1.0.0"), patch(
-        f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")
-    ), patch(f"{MODULE}.subprocess.run") as mock_run:
+    with (
+        patch(f"{MODULE}.installed_version", return_value="1.0.0"),
+        patch(f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")),
+        patch(f"{MODULE}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(
             cli_app, ["self", "upgrade", "--package-manager", "pip", "--yes"]
         )
@@ -46,11 +50,12 @@ def test_self_upgrade_pip_outdated():
 def test_self_upgrade_uv_outdated():
     """With uv selected, uv add --upgrade is used and uv presence is checked."""
     runner = CliRunner()
-    with patch(f"{MODULE}.installed_version", return_value="1.0.0"), patch(
-        f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")
-    ), patch(f"{MODULE}.shutil.which", return_value="/usr/bin/uv"), patch(
-        f"{MODULE}.subprocess.run"
-    ) as mock_run:
+    with (
+        patch(f"{MODULE}.installed_version", return_value="1.0.0"),
+        patch(f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")),
+        patch(f"{MODULE}.shutil.which", return_value="/usr/bin/uv"),
+        patch(f"{MODULE}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(
             cli_app, ["self", "upgrade", "--package-manager", "uv", "--yes"]
         )
@@ -67,11 +72,12 @@ def test_self_upgrade_uv_outdated():
 def test_self_upgrade_uv_not_installed():
     """Selecting uv without uv installed raises a clear error."""
     runner = CliRunner()
-    with patch(f"{MODULE}.installed_version", return_value="1.0.0"), patch(
-        f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")
-    ), patch(f"{MODULE}.shutil.which", return_value=None), patch(
-        f"{MODULE}.subprocess.run"
-    ) as mock_run:
+    with (
+        patch(f"{MODULE}.installed_version", return_value="1.0.0"),
+        patch(f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")),
+        patch(f"{MODULE}.shutil.which", return_value=None),
+        patch(f"{MODULE}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(
             cli_app, ["self", "upgrade", "--package-manager", "uv", "--yes"]
         )
@@ -83,9 +89,11 @@ def test_self_upgrade_uv_not_installed():
 def test_self_upgrade_up_to_date():
     """When installed == latest, nothing is upgraded."""
     runner = CliRunner()
-    with patch(f"{MODULE}.installed_version", return_value="2.0.0"), patch(
-        f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")
-    ), patch(f"{MODULE}.subprocess.run") as mock_run:
+    with (
+        patch(f"{MODULE}.installed_version", return_value="2.0.0"),
+        patch(f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")),
+        patch(f"{MODULE}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(
             cli_app, ["self", "upgrade", "--package-manager", "pip", "--yes"]
         )
@@ -100,9 +108,11 @@ def test_self_upgrade_up_to_date():
 def test_self_upgrade_confirm_no_aborts():
     """Declining the confirmation prompt aborts without upgrading."""
     runner = CliRunner()
-    with patch(f"{MODULE}.installed_version", return_value="1.0.0"), patch(
-        f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")
-    ), patch(f"{MODULE}.subprocess.run") as mock_run:
+    with (
+        patch(f"{MODULE}.installed_version", return_value="1.0.0"),
+        patch(f"{MODULE}.urllib.request.urlopen", _fake_urlopen("2.0.0")),
+        patch(f"{MODULE}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(
             cli_app, ["self", "upgrade", "--package-manager", "pip"], input="n\n"
         )

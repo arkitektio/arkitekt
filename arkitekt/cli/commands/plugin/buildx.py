@@ -86,9 +86,7 @@ def builder_platforms(name: str) -> list[str]:
             check=True,
         )
     except subprocess.CalledProcessError as e:
-        cli_error(
-            f"Could not inspect the docker buildx builder '{name}':\n{e.stdout}"
-        )
+        cli_error(f"Could not inspect the docker buildx builder '{name}':\n{e.stdout}")
 
     platforms: list[str] = []
     for line in result.stdout.splitlines():
@@ -111,9 +109,13 @@ def _create_builder(name: str, work_dir: str | None) -> None:
     """Create the container-driver builder a multi-platform build needs."""
     result = subprocess.run(
         [
-            "docker", "buildx", "create",
-            "--name", name,
-            "--driver", "docker-container",
+            "docker",
+            "buildx",
+            "create",
+            "--name",
+            name,
+            "--driver",
+            "docker-container",
             "--bootstrap",
         ],
         stdout=subprocess.PIPE,
@@ -130,7 +132,9 @@ def _create_builder(name: str, work_dir: str | None) -> None:
         )
 
 
-def ensure_builder(platforms: Sequence[str], console: Any = None, work_dir: str | None = None) -> str | None:
+def ensure_builder(
+    platforms: Sequence[str], console: Any = None, work_dir: str | None = None
+) -> str | None:
     """The builder to pass as ``--builder`` for these platforms.
 
     Building only for the host is what docker does out of the box, so that path

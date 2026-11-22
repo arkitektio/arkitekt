@@ -9,8 +9,9 @@ What needs no server is tested in `test___ENTRYPOINT__.py`.
 """
 
 import pytest
-from arkitekt.testing import TestStack
 from mikro import Mikro
+
+from arkitekt.testing import TestStack
 
 # Every test in this file runs against a hub.
 pytestmark = pytest.mark.hub

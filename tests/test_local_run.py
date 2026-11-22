@@ -68,7 +68,12 @@ def app(log: list[str], built: list[Any]) -> App[None]:
 def test_an_action_is_called_by_function_and_by_name(app: App[None]) -> None:
     with local_app(app) as rt:
         assert rt.call_local("add", 1) == 3
-        assert rt.call_local(app.registry.get_declared_implementation("add").function, a=1, b=1) == 2
+        assert (
+            rt.call_local(
+                app.registry.get_declared_implementation("add").function, a=1, b=1
+            )
+            == 2
+        )
 
 
 @pytest.mark.asyncio
@@ -78,14 +83,18 @@ async def test_it_is_called_from_async_code_too(app: App[None]) -> None:
         assert [value async for value in rt.aiterate_local("add", 1)] == [3]
 
 
-def test_the_app_is_started_and_stopped_around_the_run(app: App[None], log: list[str]) -> None:
+def test_the_app_is_started_and_stopped_around_the_run(
+    app: App[None], log: list[str]
+) -> None:
     with local_app(app) as rt:
         assert log == ["startup"]
         rt.call_local("add", 1)
     assert log == ["startup", "shutdown"]
 
 
-def test_a_replaced_client_is_what_actions_and_expanders_get(app: App[None], built: list[Any]) -> None:
+def test_a_replaced_client_is_what_actions_and_expanders_get(
+    app: App[None], built: list[Any]
+) -> None:
     fake = PictureClient("fake")
     with local_app(app, clients=[fake]) as rt:
         assert rt.require(PictureClient) is fake
@@ -102,7 +111,9 @@ def test_a_replaced_client_is_entered_and_left_with_the_run(app: App[None]) -> N
     assert client.log == ["enter real", "exit real"]
 
 
-def test_a_service_that_is_not_replaced_points_nowhere(app: App[None], monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_service_that_is_not_replaced_points_nowhere(
+    app: App[None], monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Offline builds its own fakts: the deployment's is never asked for."""
 
     def never(manifest: Any, options: Any) -> None:  # noqa: ANN401
@@ -165,7 +176,7 @@ def add(a: int, b: int = 2) -> int:
     return a + b
 '''
 
-PROJECT_TEST = '''
+PROJECT_TEST = """
 from app import add
 
 
@@ -175,7 +186,7 @@ def test_by_name(call):
 
 def test_by_function(call):
     assert call(add, a=1, b=1) == 2
-'''
+"""
 
 
 def test_the_pytest_fixtures_find_and_call_the_projects_app(tmp_path: Path) -> None:
@@ -186,7 +197,17 @@ def test_the_pytest_fixtures_find_and_call_the_projects_app(tmp_path: Path) -> N
     env = {**os.environ, "PYTHONPATH": os.pathsep.join(p for p in sys.path if p)}
     env.pop("ARKITEKT_APP", None)
     result = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider", "--rootdir", str(tmp_path), str(tmp_path)],
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            "--rootdir",
+            str(tmp_path),
+            str(tmp_path),
+        ],
         cwd=tmp_path,
         env=env,
         capture_output=True,
@@ -197,17 +218,19 @@ def test_the_pytest_fixtures_find_and_call_the_projects_app(tmp_path: Path) -> N
     assert "2 passed" in result.stdout
 
 
-PROJECT_STACK_TEST = '''
+PROJECT_STACK_TEST = """
 from arkitekt.testing import TestStack
 
 
 def test_annotated(call, request):
     annotation: type[TestStack[None]] = TestStack[None]
     assert annotation is not None
-'''
+"""
 
 
-def test_importing_teststack_into_a_test_module_is_not_collected(tmp_path: Path) -> None:
+def test_importing_teststack_into_a_test_module_is_not_collected(
+    tmp_path: Path,
+) -> None:
     """Its name starts with ``Test``: pytest must not take it for a test class."""
     (tmp_path / "app.py").write_text(PROJECT_APP)
     (tmp_path / "conftest.py").write_text('pytest_plugins = ["arkitekt.testing"]\n')
@@ -216,9 +239,17 @@ def test_importing_teststack_into_a_test_module_is_not_collected(tmp_path: Path)
     env.pop("ARKITEKT_APP", None)
     result = subprocess.run(
         [
-            sys.executable, "-m", "pytest", "-q", "-p", "no:cacheprovider",
-            "-W", "error::pytest.PytestCollectionWarning",
-            "--rootdir", str(tmp_path), str(tmp_path),
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "-p",
+            "no:cacheprovider",
+            "-W",
+            "error::pytest.PytestCollectionWarning",
+            "--rootdir",
+            str(tmp_path),
+            str(tmp_path),
         ],
         cwd=tmp_path,
         env=env,
@@ -230,7 +261,9 @@ def test_importing_teststack_into_a_test_module_is_not_collected(tmp_path: Path)
     assert "1 passed" in result.stdout
 
 
-def test_a_connected_local_run_is_the_app_a_providing_run_logs_in_as(app: App[None]) -> None:
+def test_a_connected_local_run_is_the_app_a_providing_run_logs_in_as(
+    app: App[None],
+) -> None:
     """Same manifest, so the same saved session: a local call neither asks for a
     second login nor replaces the one `run` made."""
     pytest.importorskip("rekuest")
@@ -242,7 +275,9 @@ def test_a_connected_local_run_is_the_app_a_providing_run_logs_in_as(app: App[No
     assert {r.key for r in local.requirements or []} >= {"rekuest"}
 
 
-def test_a_local_run_of_an_app_without_services_reaches_no_server(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_local_run_of_an_app_without_services_reaches_no_server(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """The provider's own service is not a reason to log in: the local agent talks to nobody."""
     bare = App("local-bare", "0.1.0")
 
@@ -252,7 +287,9 @@ def test_a_local_run_of_an_app_without_services_reaches_no_server(monkeypatch: p
         return a + b
 
     def never(manifest: Any, options: Any) -> None:  # noqa: ANN401
-        raise AssertionError("a local run of an app without services built the deployment's fakts")
+        raise AssertionError(
+            "a local run of an app without services built the deployment's fakts"
+        )
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
     with connect_local(bare, offline=False) as rt:

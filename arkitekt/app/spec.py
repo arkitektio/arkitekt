@@ -90,7 +90,9 @@ def app_declaration(
     agent = run.registry.to_implement_agent_input(description=app.description)
     # The scopes a run asks for, its provider's services' among them, like its requirements: the
     # build records them, a mandate key is pinned to them, and a run asking for more is refused.
-    manifest = app_manifest(app, entrypoint).model_copy(update={"scopes": list(run.manifest.scopes)})
+    manifest = app_manifest(app, entrypoint).model_copy(
+        update={"scopes": list(run.manifest.scopes)}
+    )
     return AppDeclaration(
         manifest=manifest,
         requirements=list(run.manifest.requirements or ()),

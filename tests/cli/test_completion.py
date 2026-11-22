@@ -3,7 +3,11 @@
 from pathlib import Path
 from typing import Any
 
-from arkitekt.cli.completion import complete_actions, complete_flavours, complete_services
+from arkitekt.cli.completion import (
+    complete_actions,
+    complete_flavours,
+    complete_services,
+)
 
 APP = (
     "from arkitekt import App\n"

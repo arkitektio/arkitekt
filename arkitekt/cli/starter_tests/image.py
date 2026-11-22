@@ -10,9 +10,9 @@ Its actions store images, so calling them needs the service: those tests are in
 
 import numpy as np
 import pytest
-from arkitekt.runtime import Runtime
-
 from __ENTRYPOINT__ import app, blur_pixels, random_pixels
+
+from arkitekt.runtime import Runtime
 
 
 def test_random_pixels_have_the_size_asked_for():

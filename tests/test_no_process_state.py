@@ -33,7 +33,10 @@ def test_no_module_uses_context_variables() -> None:
     offenders = [
         str(path.relative_to(PACKAGE))
         for path in sorted(PACKAGE.rglob("*.py"))
-        if any(name.split(".")[0] == "contextvars" for name in _imports(ast.parse(path.read_text())))
+        if any(
+            name.split(".")[0] == "contextvars"
+            for name in _imports(ast.parse(path.read_text()))
+        )
     ]
     assert not offenders, f"context variables are back in: {offenders}"
 

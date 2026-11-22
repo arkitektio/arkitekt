@@ -19,8 +19,8 @@ from pathlib import Path
 from typing import Annotated, Any
 
 import numpy as np
-from numpy.typing import NDArray
 import tifffile
+from numpy.typing import NDArray
 from skimage import measure
 from skimage.filters import gaussian, threshold_otsu
 
@@ -51,9 +51,10 @@ def write_demo_tiff() -> str:
 
 
 @app.action
-def read_tiff(path: Annotated[str, Description("A TIFF on this machine")]) -> NDArray[Any]:
-    """Reads a TIFF with tifffile. The array stays on this agent.
-    """
+def read_tiff(
+    path: Annotated[str, Description("A TIFF on this machine")],
+) -> NDArray[Any]:
+    """Reads a TIFF with tifffile. The array stays on this agent."""
     return np.asarray(tifffile.imread(path))
 
 
@@ -62,16 +63,14 @@ def segment(
     image: NDArray[Any],
     sigma: Annotated[float, Description("Smoothing before thresholding")] = 2.0,
 ) -> NDArray[Any]:
-    """Otsu-thresholds a smoothed copy and labels the connected components.
-    """
+    """Otsu-thresholds a smoothed copy and labels the connected components."""
     smoothed = gaussian(image.astype(np.float32), sigma=sigma)
     return measure.label(smoothed > threshold_otsu(smoothed))
 
 
 @app.action
 def count_objects(labels: NDArray[Any]) -> int:
-    """How many labels the mask carries, background excluded.
-    """
+    """How many labels the mask carries, background excluded."""
     return int(labels.max())
 
 

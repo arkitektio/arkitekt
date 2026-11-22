@@ -6,17 +6,16 @@ from dataclasses import dataclass
 from getpass import getuser
 from typing import Annotated
 
+import semver
 import typer
 from rich.console import Console
-import semver
 
-from arkitekt.cli.validators import validate_template
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import done, escape, notice
 from arkitekt.cli.utils import build_relative_dir
+from arkitekt.cli.validators import validate_template
 from arkitekt.cli.vars import get_console, get_work_dir
-
 
 #: Non-interactive escape hatch surfaced when `create` needs to prompt.
 _CREATE_HINT = "Pass --yes to accept the defaults, or provide the fields as options."
@@ -161,6 +160,7 @@ def needs_extra(extra: str, asked_for: list[str]) -> bool:
         return False
     return extra in EXTRAS_BESIDE_ALL or "all" not in asked_for
 
+
 DEFAULT_BRANCH = "main"
 
 #: The example module `uv init` writes into a new app.
@@ -197,11 +197,11 @@ pytest_plugins = ["arkitekt.testing"]
 '''
 
 #: What points the fixtures at an app that is not in ``app.py``.
-CONFTEST_TARGET = '''
+CONFTEST_TARGET = """
 import os
 
 os.environ.setdefault("ARKITEKT_APP", "{entrypoint}")
-'''
+"""
 
 #: What the file of a starter's tests against a hub is called after, beside the one with no server.
 HUB_TESTS_SUFFIX = "_hub"
@@ -211,10 +211,10 @@ ENTRYPOINT_PLACEHOLDER = "__ENTRYPOINT__"
 
 #: Keeps a bare `pytest` to the tests that need no server: the last `-m` wins, so
 #: `pytest -m hub` still selects the ones that run against a hub.
-PYTEST_OPTIONS = '''
+PYTEST_OPTIONS = """
 [tool.pytest.ini_options]
 addopts = "-m 'not hub'"
-'''
+"""
 
 
 def write_pytest_options(work_dir: str) -> bool:
@@ -245,7 +245,9 @@ def write_tests(work_dir: str, starter: str, entrypoint: str = "app") -> str | N
     if os.path.exists(tests_dir):
         return None
     os.makedirs(tests_dir)
-    environment = "" if entrypoint == "app" else CONFTEST_TARGET.format(entrypoint=entrypoint)
+    environment = (
+        "" if entrypoint == "app" else CONFTEST_TARGET.format(entrypoint=entrypoint)
+    )
     with open(os.path.join(tests_dir, "conftest.py"), "w") as file:
         file.write(CONFTEST.format(environment=environment))
     relative = os.path.join("tests", f"test_{entrypoint}.py")
@@ -255,7 +257,9 @@ def write_tests(work_dir: str, starter: str, entrypoint: str = "app") -> str | N
         if not os.path.exists(source_path):
             continue
         with open(source_path) as source:
-            with open(os.path.join(tests_dir, f"test_{entrypoint}{suffix}.py"), "w") as file:
+            with open(
+                os.path.join(tests_dir, f"test_{entrypoint}{suffix}.py"), "w"
+            ) as file:
                 file.write(source.read().replace(ENTRYPOINT_PLACEHOLDER, entrypoint))
     return relative
 
@@ -285,7 +289,10 @@ def write_readme_badge(work_dir: str) -> str | None:
     from arkitekt.cli.commands.plugin.release import _source
 
     package = package_for_remote(_source(work_dir))
-    write_badge(os.path.join(work_dir, "README.md"), install_badge(package) if package else PLACEHOLDER)
+    write_badge(
+        os.path.join(work_dir, "README.md"),
+        install_badge(package) if package else PLACEHOLDER,
+    )
     return package
 
 
@@ -302,7 +309,11 @@ def current_branch(work_dir: str) -> str:
         )
     except OSError:
         return DEFAULT_BRANCH
-    return result.stdout.strip() if result.returncode == 0 and result.stdout.strip() else DEFAULT_BRANCH
+    return (
+        result.stdout.strip()
+        if result.returncode == 0 and result.stdout.strip()
+        else DEFAULT_BRANCH
+    )
 
 
 #: The placeholder in a template that becomes the ``App(...)`` arguments.
@@ -344,7 +355,9 @@ def render_app_arguments(
     return ", ".join(arguments)
 
 
-def render_template(template_source: str, app_arguments: str, version: str | None = None) -> str:
+def render_template(
+    template_source: str, app_arguments: str, version: str | None = None
+) -> str:
     """Fill a template's ``App(...)`` placeholder, and its version's if it has one.
 
     A plain replace, not ``str.format``: a template is Python source, and
@@ -357,7 +370,9 @@ def render_template(template_source: str, app_arguments: str, version: str | Non
     rendered = template_source.replace(APP_ARGUMENTS_PLACEHOLDER, app_arguments)
     if APP_VERSION_PLACEHOLDER in rendered:
         if version is None:
-            raise ValueError(f"The template has an {APP_VERSION_PLACEHOLDER} placeholder, and no version was given.")
+            raise ValueError(
+                f"The template has an {APP_VERSION_PLACEHOLDER} placeholder, and no version was given."
+            )
         # Double quotes: what semantic-release writes back, so a release changes one number.
         rendered = rendered.replace(APP_VERSION_PLACEHOLDER, f'"{version}"')
     return rendered
@@ -411,12 +426,16 @@ def pick_template(console: Console) -> str:
     console.print("What should be set up?")
     width = max(len(name) for name in TEMPLATES)
     for name, preset in TEMPLATES.items():
-        console.print(f"  [bold]{name:<{width}}[/bold]  {escape(preset.summary)}", highlight=False)
+        console.print(
+            f"  [bold]{name:<{width}}[/bold]  {escape(preset.summary)}", highlight=False
+        )
     while True:
         answer = str(typer.prompt("Template", default=DEFAULT_TEMPLATE)).strip()
         if answer in TEMPLATES:
             return answer
-        console.print(f"'{escape(answer)}' is not one of {', '.join(TEMPLATES)}.", highlight=False)
+        console.print(
+            f"'{escape(answer)}' is not one of {', '.join(TEMPLATES)}.", highlight=False
+        )
 
 
 def create_command(
@@ -568,7 +587,11 @@ def create_command(
     `--flavour/--no-flavour`, `--tests/--no-tests`, `--ci`, `--starter`, and the
     folder itself.
     """
-    from arkitekt.cli.commands.plugin.ci import CI_FILES, GITHUB_VISIBILITY_NOTE, write_ci
+    from arkitekt.cli.commands.plugin.ci import (
+        CI_FILES,
+        GITHUB_VISIBILITY_NOTE,
+        write_ci,
+    )
     from arkitekt.cli.commands.plugin.init import write_flavour
 
     console = get_console(ctx)
@@ -589,7 +612,10 @@ def create_command(
         else:
             require_tty("`create`", hint=_FOLDER_HINT)
             here = os.path.basename(os.path.abspath(parent_work_dir)) or parent_work_dir
-            if typer.confirm(f"Create the app in this folder ({here})? It is not empty", default=False):
+            if typer.confirm(
+                f"Create the app in this folder ({here})? It is not empty",
+                default=False,
+            ):
                 path = "."
             else:
                 path = str(typer.prompt("The name of your app (a new folder)"))
@@ -618,11 +644,15 @@ def create_command(
     if forge is not Forge.none and manager != "uv":
         # What a forge runs is `uv run arkitekt plugin release`, on the project's lockfile.
         if ci is not None:
-            cli_error(f"Releasing from {forge.value} needs a uv project. Pass --package-manager uv, or --ci none.")
+            cli_error(
+                f"Releasing from {forge.value} needs a uv project. Pass --package-manager uv, or --ci none."
+            )
         forge = Forge.none
     if forge is not Forge.none and not with_flavour:
         if ci is not None:
-            cli_error(f"Releasing from {forge.value} builds a flavour, so --no-flavour leaves it nothing to release.")
+            cli_error(
+                f"Releasing from {forge.value} builds a flavour, so --no-flavour leaves it nothing to release."
+            )
         forge = Forge.none
 
     if not identifier:
@@ -631,7 +661,9 @@ def create_command(
             identifier = default_identifier
         else:
             require_tty("`create`", hint=_CREATE_HINT)
-            identifier = str(typer.prompt("Your app identifier", default=default_identifier))
+            identifier = str(
+                typer.prompt("Your app identifier", default=default_identifier)
+            )
 
     if not author:
         if yes:
@@ -683,7 +715,6 @@ def create_command(
     os.makedirs(work_dir, exist_ok=True)
 
     if manager == "uv":
-
         pyproject = os.path.join(work_dir, "pyproject.toml")
         if not os.path.exists(pyproject):
             had_repository = os.path.exists(os.path.join(work_dir, ".git"))
@@ -692,7 +723,15 @@ def create_command(
             # project in, and the app is a module of it. A packaged project (uv 0.12
             # makes one by default) has a src/ and a build backend the image never uses.
             subprocess.run(
-                ["uv", "init", "--app", "--no-package", "--name", identifier, "--no-workspace"],
+                [
+                    "uv",
+                    "init",
+                    "--app",
+                    "--no-package",
+                    "--name",
+                    identifier,
+                    "--no-workspace",
+                ],
                 check=True,
                 cwd=work_dir,
             )
@@ -709,19 +748,29 @@ def create_command(
             # entrypoint takes its place, unless it is the entrypoint.
             for example in UV_EXAMPLE_MODULES:
                 example_file = os.path.join(work_dir, example)
-                if example not in had_files and example != f"{entrypoint}.py" and os.path.exists(example_file):
+                if (
+                    example not in had_files
+                    and example != f"{entrypoint}.py"
+                    and os.path.exists(example_file)
+                ):
                     os.remove(example_file)
         else:
             notice(console, "pyproject.toml already exists", "uv init skipped")
 
-    template_app = render_starter(starter, identifier, version, author=author, scopes=scopes, logo=logo)
+    template_app = render_starter(
+        starter, identifier, version, author=author, scopes=scopes, logo=logo
+    )
 
     if should_write_app:
         with open(entrypoint_file, "w") as f:
             f.write(template_app)
 
-    if with_flavour and not os.path.exists(os.path.join(work_dir, ".arkitekt", "flavours", "vanilla")):
-        write_flavour(work_dir, "vanilla", template="uv" if manager == "uv" else "vanilla")
+    if with_flavour and not os.path.exists(
+        os.path.join(work_dir, ".arkitekt", "flavours", "vanilla")
+    ):
+        write_flavour(
+            work_dir, "vanilla", template="uv" if manager == "uv" else "vanilla"
+        )
 
     test_file = None
     if preset.tests if tests is None else tests:
@@ -736,9 +785,18 @@ def create_command(
     workflow = None
     if forge is not Forge.none:
         if os.path.exists(os.path.join(work_dir, CI_FILES[forge.value])):
-            notice(console, f"{escape(CI_FILES[forge.value])} already exists", "left as it is")
+            notice(
+                console,
+                f"{escape(CI_FILES[forge.value])} already exists",
+                "left as it is",
+            )
         else:
-            workflow = write_ci(work_dir, forge.value, branch=current_branch(work_dir), entrypoint=entrypoint)
+            workflow = write_ci(
+                work_dir,
+                forge.value,
+                branch=current_branch(work_dir),
+                entrypoint=entrypoint,
+            )
 
     badge_package = None
     if workflow and forge is Forge.github:
@@ -747,7 +805,11 @@ def create_command(
     if starter in STARTER_COMMANDS:
         command = STARTER_COMMANDS[starter].format(entrypoint=entrypoint)
     else:
-        command = "arkitekt run dev" if entrypoint == "app" else f"arkitekt run dev {entrypoint}"
+        command = (
+            "arkitekt run dev"
+            if entrypoint == "app"
+            else f"arkitekt run dev {entrypoint}"
+        )
     # In a uv project arkitekt is installed in the project's environment, not on
     # the PATH: what starts it is `uv run`.
     run_hint = f"uv run {command}" if manager == "uv" else command
@@ -783,9 +845,15 @@ def create_command(
                 f"tag a commit v{escape(version)} to publish that version",
             )
         if forge is Forge.github:
-            notice(console, "A package GitHub creates is private", GITHUB_VISIBILITY_NOTE)
+            notice(
+                console, "A package GitHub creates is private", GITHUB_VISIBILITY_NOTE
+            )
             if badge_package:
-                notice(console, "README.md has an 'Open in Arkitekt' badge", f"it installs {escape(badge_package)}")
+                notice(
+                    console,
+                    "README.md has an 'Open in Arkitekt' badge",
+                    f"it installs {escape(badge_package)}",
+                )
             else:
                 notice(
                     console,
@@ -794,5 +862,12 @@ def create_command(
                 )
     if starter in STARTER_NEEDS:
         what, how = STARTER_NEEDS[starter]
-        notice(console, what, how.format(add="uv add" if manager == "uv" else "pip install"))
-    notice(console, f"Start it with `{run_hint}`. We are excited to see what you come up with!")
+        notice(
+            console,
+            what,
+            how.format(add="uv add" if manager == "uv" else "pip install"),
+        )
+    notice(
+        console,
+        f"Start it with `{run_hint}`. We are excited to see what you come up with!",
+    )

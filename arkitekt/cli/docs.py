@@ -25,6 +25,7 @@ MESH_DOCS = f"{CLI_DOCS_BASE}/mesh"
 #: `login`, `logout` and `status` share one page.
 SESSION_DOCS = f"{CLI_DOCS_BASE}/session"
 
+
 def help_epilog(url: str) -> str:
     """Render a Typer/rich epilogue that links to the hosted docs for a command.
 

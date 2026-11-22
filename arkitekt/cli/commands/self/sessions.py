@@ -53,7 +53,10 @@ def sessions(
             notice(console, "Nothing to forget")
             return
         if forget_all and not yes:
-            require_tty("Forgetting every session", hint="Pass --yes to do it non-interactively.")
+            require_tty(
+                "Forgetting every session",
+                hint="Pass --yes to do it non-interactively.",
+            )
             confirm_or_abort(f"Forget all {len(chosen)} sessions on this machine?")
         for session in chosen:
             forget(session.path)

@@ -4,7 +4,6 @@ from arkitekt.cli.vars import get_console
 
 from .init import GEN_HINT, init
 
-
 gen = typer.Typer(invoke_without_command=True)
 
 

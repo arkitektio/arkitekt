@@ -69,8 +69,15 @@ def check_apps(*apps: App[Any]) -> list[DemandFinding]:
     registries = {app.identifier: app.registry for app in apps}
     findings: list[DemandFinding] = []
     for app in apps:
-        others = {identifier: registry for identifier, registry in registries.items() if identifier != app.identifier}
-        findings.extend(replace(finding, consumer=app.identifier) for finding in check_demands(app.registry, others))
+        others = {
+            identifier: registry
+            for identifier, registry in registries.items()
+            if identifier != app.identifier
+        }
+        findings.extend(
+            replace(finding, consumer=app.identifier)
+            for finding in check_demands(app.registry, others)
+        )
     return findings
 
 
@@ -98,7 +105,14 @@ class UnmetDependency:
 
 def _rekuest_of(runtime: _Running) -> Any | None:  # noqa: ANN401
     """The run's client that can ask rekuest for a dry run, if it has one."""
-    return next((client for client in runtime.clients.values() if hasattr(client, "adependency_tree")), None)
+    return next(
+        (
+            client
+            for client in runtime.clients.values()
+            if hasattr(client, "adependency_tree")
+        ),
+        None,
+    )
 
 
 async def acheck_running(runtimes: Iterable[_Running]) -> list[UnmetDependency]:
@@ -122,7 +136,10 @@ async def acheck_running(runtimes: Iterable[_Running]) -> list[UnmetDependency]:
         if rekuest is None or runtime.snapshot is None:
             continue
         app = runtime.app.identifier
-        for interface, implementation in runtime.snapshot.registry.implementations.items():
+        for (
+            interface,
+            implementation,
+        ) in runtime.snapshot.registry.implementations.items():
             if not implementation.dependencies:
                 continue
             mine = await rekuest.amy_implementation_at(interface=interface)
@@ -130,18 +147,40 @@ async def acheck_running(runtimes: Iterable[_Running]) -> list[UnmetDependency]:
             found = len(unmet)
             for dependency in tree.dependencies:
                 if dependency.unmet:
-                    unmet.append(UnmetDependency(app, interface, dependency.key, dependency.unmet))
+                    unmet.append(
+                        UnmetDependency(
+                            app, interface, dependency.key, dependency.unmet
+                        )
+                    )
                 for agent in dependency.mapped_agents:
                     for bound in agent.mapped_implementations:
                         unmet.extend(
-                            UnmetDependency(app, interface, f"{dependency.key} > {bound.key} > {below.key}", below.unmet)
+                            UnmetDependency(
+                                app,
+                                interface,
+                                f"{dependency.key} > {bound.key} > {below.key}",
+                                below.unmet,
+                            )
                             for below in bound.resolved_dependencies
                             if below.unmet
                         )
             if not tree.satisfied and len(unmet) == found:
                 # Deeper than the two levels asked for: the server still says no.
-                unmet.append(UnmetDependency(app, interface, "*", "a dependency further down the tree is unmet"))
+                unmet.append(
+                    UnmetDependency(
+                        app,
+                        interface,
+                        "*",
+                        "a dependency further down the tree is unmet",
+                    )
+                )
     return unmet
 
 
-__all__ = ["DemandFinding", "DependencyCheckError", "UnmetDependency", "acheck_running", "check_apps"]
+__all__ = [
+    "DemandFinding",
+    "DependencyCheckError",
+    "UnmetDependency",
+    "acheck_running",
+    "check_apps",
+]

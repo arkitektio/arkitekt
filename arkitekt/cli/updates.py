@@ -125,7 +125,11 @@ class UpdateCheck:
     """One command's look at whether a newer arkitekt is out."""
 
     def __init__(
-        self, current: str, cache_file: str | None = None, now: float | None = None, work_dir: str | None = None
+        self,
+        current: str,
+        cache_file: str | None = None,
+        now: float | None = None,
+        work_dir: str | None = None,
     ) -> None:
         self.current = current
         self.work_dir = work_dir
@@ -135,9 +139,14 @@ class UpdateCheck:
         self._thread: threading.Thread | None = None
         cached = _read_cache(self.cache_file)
         self.latest: str | None = cached.get("latest") if cached else None
-        fresh = cached is not None and self.now - float(cached.get("checked_at", 0)) < CHECK_EVERY_SECONDS
+        fresh = (
+            cached is not None
+            and self.now - float(cached.get("checked_at", 0)) < CHECK_EVERY_SECONDS
+        )
         if not fresh:
-            self._thread = threading.Thread(target=self._fetch, name="arkitekt-update-check", daemon=True)
+            self._thread = threading.Thread(
+                target=self._fetch, name="arkitekt-update-check", daemon=True
+            )
             self._thread.start()
 
     def _fetch(self) -> None:

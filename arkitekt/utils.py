@@ -1,5 +1,5 @@
-import os
 import json
+import os
 
 from fakts.cache.file import ensure_private_dir
 
@@ -70,6 +70,7 @@ def ensure_ignored(path: str) -> None:
 
 
 from typing import Any
+
 
 def create_devcontainer_file(
     manifest: Any,

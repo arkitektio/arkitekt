@@ -80,9 +80,7 @@ def test_at_least_rekuest_is_here() -> None:
 
 
 @pytest.mark.asyncio
-@pytest.mark.parametrize(
-    "declared", SERVICES, ids=lambda s: s.name
-)
+@pytest.mark.parametrize("declared", SERVICES, ids=lambda s: s.name)
 async def test_a_declared_service_builds_its_client(declared: Service[Any]) -> None:
     unknown = [r.key for r in declared.get_requirements() if r.key not in ADDRESSES]
     assert not unknown, (
@@ -107,12 +105,14 @@ async def test_a_declared_service_builds_its_client(declared: Service[Any]) -> N
 async def test_the_rekuest_provider_builds_its_agent_without_a_client() -> None:
     """The agent talks to rekuest over its own socket only; it takes no client."""
     from fakts.testing import build_testing_fakts
-    from rekuest.agents.backend import SocketAgentBackend
     from rekuest.agents.agent import RekuestAgent
+    from rekuest.agents.backend import SocketAgentBackend
     from rekuest.agents.transport.websocket import WebsocketAgentTransport
     from rekuest.arkitekt import rekuest_provider, rekuest_service
 
-    aliases: dict[str, Any] = {r.key: ADDRESSES[r.key] for r in rekuest_service.get_requirements()}
+    aliases: dict[str, Any] = {
+        r.key: ADDRESSES[r.key] for r in rekuest_service.get_requirements()
+    }
     async with build_testing_fakts(aliases=aliases) as fakts:
         registry = AppRegistry()
         agent = await rekuest_provider.build(fakts, registry, {})

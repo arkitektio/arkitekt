@@ -55,4 +55,5 @@ class RunSnapshot(BaseModel):
         """The one provider the app declared, or ``None`` for an app offering nothing."""
         return self.registry.provider_declaration
 
+
 __all__ = ["RunSnapshot"]

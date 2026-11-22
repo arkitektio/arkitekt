@@ -15,19 +15,25 @@ def attach(scene: str) -> str:
 def test_the_decorator_passes_them_on() -> None:
     app = App("hints")
     app.action(protocols=["on_scene_init"])(attach)
-    assert app.registry.implementations["attach"].definition.protocols == ("on_scene_init",)
+    assert app.registry.implementations["attach"].definition.protocols == (
+        "on_scene_init",
+    )
 
 
 def test_the_register_twin_passes_them_on() -> None:
     app = App("hints")
     app.register_action(attach, protocols=["on_scene_init"])
-    assert app.registry.implementations["attach"].definition.protocols == ("on_scene_init",)
+    assert app.registry.implementations["attach"].definition.protocols == (
+        "on_scene_init",
+    )
 
 
 def test_a_workflow_passes_them_on() -> None:
     app = App("hints")
     app.workflow(protocols=["on_scene_leave"])(attach)
-    assert app.registry.implementations["attach"].definition.protocols == ("on_scene_leave",)
+    assert app.registry.implementations["attach"].definition.protocols == (
+        "on_scene_leave",
+    )
 
 
 def test_an_action_without_hints_has_none() -> None:

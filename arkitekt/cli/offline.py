@@ -12,7 +12,7 @@ only being checked. Under :func:`offline`:
 """
 
 from collections.abc import Generator
-from contextlib import contextmanager, ExitStack
+from contextlib import ExitStack, contextmanager
 from types import ModuleType
 
 import arkitekt
@@ -24,7 +24,7 @@ class ConnectedAtImport(RuntimeError):
     """An app module tried to reach a server while it was imported to be checked."""
 
 
-_ADVICE = "move it behind `if __name__ == \"__main__\":` so that importing the app only declares it"
+_ADVICE = 'move it behind `if __name__ == "__main__":` so that importing the app only declares it'
 
 
 def _refuse(what: str) -> ConnectedAtImport:
@@ -61,7 +61,9 @@ async def _refuse_aenter(self: Runtime[object]) -> Runtime[object]:
     raise _refuse("connects (it enters a runtime)")
 
 
-def _patch(stack: ExitStack, owner: ModuleType | type, name: str, value: object) -> None:
+def _patch(
+    stack: ExitStack, owner: ModuleType | type, name: str, value: object
+) -> None:
     """Set ``owner.name`` for the stack's lifetime; a class attribute it only inherited is
     removed again rather than copied onto it."""
     if isinstance(owner, type) and name not in owner.__dict__:

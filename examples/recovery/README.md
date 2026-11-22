@@ -51,9 +51,9 @@ make no claim of their own; an action's own claim wins.
 try:
     handler.dispense(well, volume_ul=v)
 except AgentLost as lost:
-    if not lost.started:        # never reached the robot: nothing happened
+    if not lost.started:  # never reached the robot: nothing happened
         handler.dispense(well, volume_ul=v)
-    else:                       # started, fate unknown: a person decides
+    else:  # started, fate unknown: a person decides
         task.hold(f"dispense into {well} was lost: check the well", lost=lost)
 ```
 

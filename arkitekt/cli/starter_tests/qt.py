@@ -16,12 +16,15 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 try:
     from qtpy import QtWidgets
 except Exception as error:  # qtpy is installed, a binding (PyQt, PySide) may not be
-    pytest.skip(f"No Qt binding is installed: `uv add pyqt6` (or pyside6). {error}", allow_module_level=True)
+    pytest.skip(
+        f"No Qt binding is installed: `uv add pyqt6` (or pyside6). {error}",
+        allow_module_level=True,
+    )
+
+from __ENTRYPOINT__ import Window, app, show_message  # noqa: E402
 
 from arkitekt.runtime import Runtime  # noqa: E402
 from arkitekt.testing import local_app  # noqa: E402
-
-from __ENTRYPOINT__ import Window, app, show_message  # noqa: E402
 
 
 @pytest.fixture(scope="module")
@@ -45,7 +48,9 @@ def test_count_words(call):
     assert call("count_words", text="") == 0
 
 
-def test_the_app_is_started_with_its_window(local_runtime: Runtime[Window], window: Window):
+def test_the_app_is_started_with_its_window(
+    local_runtime: Runtime[Window], window: Window
+):
     assert local_runtime.app is app
     assert app.registry.app_context_class is Window
 

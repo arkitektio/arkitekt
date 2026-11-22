@@ -1,14 +1,17 @@
+import os
 from typing import Annotated, Any
+
 import typer
+
 from arkitekt.cli.completion import complete_flavours
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.utils import create_arkitekt_folder
-import os
 
-
-selector = typer.Typer(no_args_is_help=True, help="Manage the selectors that place a flavour on hardware")
+selector = typer.Typer(
+    no_args_is_help=True, help="Manage the selectors that place a flavour on hardware"
+)
 
 KINDS = "cpu, ram, cuda, rocm, oneapi, label"
 
@@ -16,7 +19,11 @@ KINDS = "cpu, ram, cuda, rocm, oneapi, label"
 def add_selector(
     ctx: typer.Context,
     flavour: Annotated[
-        str, typer.Argument(help="The flavour the selector is added to", autocompletion=complete_flavours)
+        str,
+        typer.Argument(
+            help="The flavour the selector is added to",
+            autocompletion=complete_flavours,
+        ),
     ],
     kind: Annotated[
         str | None,
@@ -44,7 +51,9 @@ def add_selector(
     ] = None,
     arch: Annotated[
         str | None,
-        typer.Option("--arch", help="cpu: the CPU architecture of the image (amd64, arm64, ...)."),
+        typer.Option(
+            "--arch", help="cpu: the CPU architecture of the image (amd64, arm64, ...)."
+        ),
     ] = None,
     # ram
     memory: Annotated[
@@ -54,11 +63,16 @@ def add_selector(
     # cuda
     compute_capability: Annotated[
         str | None,
-        typer.Option("--compute-capability", help="cuda: the minimum CUDA compute capability (e.g. 8.6)."),
+        typer.Option(
+            "--compute-capability",
+            help="cuda: the minimum CUDA compute capability (e.g. 8.6).",
+        ),
     ] = None,
     cuda_version: Annotated[
         str | None,
-        typer.Option("--cuda-version", help="cuda: the minimum CUDA driver/runtime version."),
+        typer.Option(
+            "--cuda-version", help="cuda: the minimum CUDA driver/runtime version."
+        ),
     ] = None,
     vram: Annotated[
         int | None,
@@ -75,7 +89,9 @@ def add_selector(
     ] = None,
     api_thing: Annotated[
         str | None,
-        typer.Option("--api-thing", help="rocm: an additional ROCm capability qualifier."),
+        typer.Option(
+            "--api-thing", help="rocm: an additional ROCm capability qualifier."
+        ),
     ] = None,
     # oneapi
     one_api_version: Annotated[
@@ -85,11 +101,16 @@ def add_selector(
     # label
     key: Annotated[
         str | None,
-        typer.Option("--key", help="label: the qualifier key the backend resource must carry."),
+        typer.Option(
+            "--key", help="label: the qualifier key the backend resource must carry."
+        ),
     ] = None,
     value: Annotated[
         str | None,
-        typer.Option("--value", help="label: the qualifier value; omit to only require the key to exist."),
+        typer.Option(
+            "--value",
+            help="label: the qualifier value; omit to only require the key to exist.",
+        ),
     ] = None,
 ) -> None:
     """Add a selector (a hardware/capability placement requirement) to a flavour
@@ -106,6 +127,7 @@ def add_selector(
         RamSelector,
         RocmSelector,
     )
+
     from .types import Flavour
 
     console = get_console(ctx)
@@ -138,7 +160,9 @@ def add_selector(
     # variant with only the fields that variant carries. Aliased fields are
     # passed by alias, the name a type checker knows them by.
     if kind == "cpu":
-        new_selector = CpuSelector(minCount=min_count, frequency=frequency, arch=arch, **shared)
+        new_selector = CpuSelector(
+            minCount=min_count, frequency=frequency, arch=arch, **shared
+        )
     elif kind == "ram":
         new_selector = RamSelector(min=memory, **shared)
     elif kind == "cuda":
@@ -150,7 +174,9 @@ def add_selector(
             **shared,
         )
     elif kind == "rocm":
-        new_selector = RocmSelector(apiVersion=api_version, apiThing=api_thing, **shared)
+        new_selector = RocmSelector(
+            apiVersion=api_version, apiThing=api_thing, **shared
+        )
     elif kind == "oneapi":
         new_selector = OneApiSelector(oneapiVersion=one_api_version, **shared)
     elif kind == "label":

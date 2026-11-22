@@ -1,8 +1,8 @@
 """Fake services and clients for the app and runtime tests: no fakts, no server."""
 
+from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
-from collections.abc import AsyncIterator
 
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.provider import Provider
@@ -168,7 +168,11 @@ class RecordedRun:
 
     async def arun(self, context: Any = None) -> None:  # noqa: ANN401
         """Record the run as the user asked for it; then do what the test wants of it."""
-        asked = {**self.options, "context": context} if context is not None else self.options
+        asked = (
+            {**self.options, "context": context}
+            if context is not None
+            else self.options
+        )
         self.runs.append((self.app, asked))
         if self.during is not None:
             await self.during(self)
@@ -191,7 +195,9 @@ def recording_connect(runs: list[Any], fakts: Any = None, during: Any = None) ->
         task_listener: Any = None,  # noqa: ANN401
         **options: Any,  # noqa: ANN401
     ) -> AsyncIterator[RecordedRun]:
-        run = RecordedRun(app, options, runs, listener=connection_listener, fakts=fakts, during=during)
+        run = RecordedRun(
+            app, options, runs, listener=connection_listener, fakts=fakts, during=during
+        )
         run.task_listener = task_listener
         yield run
 
@@ -213,8 +219,9 @@ def write_session(
     import os
     import time
 
-    from arkitekt.app.sessions import session_path
     from fakts.cache.file import CacheFile
+
+    from arkitekt.app.sessions import session_path
 
     now = time.time()
     cached = CacheFile.model_validate(
@@ -222,7 +229,15 @@ def write_session(
             "fakts": {
                 "self": {
                     "deployment_name": deployment,
-                    "alias": {"id": "a", "host": "h", "port": 1, "ssl": True, "path": "p", "challenge": "c", "kind": "k"},
+                    "alias": {
+                        "id": "a",
+                        "host": "h",
+                        "port": 1,
+                        "ssl": True,
+                        "path": "p",
+                        "challenge": "c",
+                        "kind": "k",
+                    },
                 },
                 "auth": {
                     "client_id": "client",

@@ -1,10 +1,10 @@
-from typing import Any
 from collections.abc import Iterable
+from typing import Any
 
 import typer
+from fakts.models import AliasPolicy
 
 from arkitekt.app.fakts import forced_mesh
-from fakts.models import AliasPolicy
 
 __all__ = [
     "CONNECTION_OPTIONS",
@@ -63,6 +63,9 @@ def runner_options(ctx: typer.Context) -> dict[str, Any]:
         # The flags passed replace what the environment says of the same thing.
         # Validated: an unknown reach is refused here, not ignored.
         options["alias_policy"] = AliasPolicy(
-            **{**AliasPolicy.from_env().model_dump(), **{key: list(value) for key, value in reaches.items() if value}}
+            **{
+                **AliasPolicy.from_env().model_dump(),
+                **{key: list(value) for key, value in reaches.items() if value},
+            }
         )
     return options

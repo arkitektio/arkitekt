@@ -29,7 +29,9 @@ from .fakes import (
 
 def picture_app(service: Service[Any] | None = None) -> App[None]:
     """An app using pictures (and a fake rekuest provider, since it offers an action)."""
-    app = App("runtime", services=[service or PictureService()], providers=[RekuestProvider()])
+    app = App(
+        "runtime", services=[service or PictureService()], providers=[RekuestProvider()]
+    )
 
     @app.action
     def show(picture: Picture) -> str:
@@ -60,18 +62,28 @@ async def test_a_run_binds_its_snapshot_to_its_own_clients() -> None:
 
     async with connect(app) as a:
         async with connect(app) as b:
-            assert a.snapshot is not None and b.snapshot is not None, "entered runs have one"
+            assert a.snapshot is not None and b.snapshot is not None, (
+                "entered runs have one"
+            )
             from_a, from_b = await asyncio.gather(
-                a.snapshot.registry.structure_registry.get_fullfilled_structure("@pictures/picture").expand("1"),
-                b.snapshot.registry.structure_registry.get_fullfilled_structure("@pictures/picture").expand("2"),
+                a.snapshot.registry.structure_registry.get_fullfilled_structure(
+                    "@pictures/picture"
+                ).expand("1"),
+                b.snapshot.registry.structure_registry.get_fullfilled_structure(
+                    "@pictures/picture"
+                ).expand("2"),
             )
 
     assert (from_a.owner, from_b.owner) == ("pictures-1", "pictures-2")
     assert a.get(PictureClient) is not b.get(PictureClient)
     # The declaration is never bound: a run binds copies of its entries.
-    declared = app.registry.structure_registry.get_fullfilled_structure("@pictures/picture")
+    declared = app.registry.structure_registry.get_fullfilled_structure(
+        "@pictures/picture"
+    )
     assert a.snapshot is not None
-    bound_in_a = a.snapshot.registry.structure_registry.get_fullfilled_structure("@pictures/picture")
+    bound_in_a = a.snapshot.registry.structure_registry.get_fullfilled_structure(
+        "@pictures/picture"
+    )
     assert bound_in_a is not declared
     assert declared.aexpand is not bound_in_a.aexpand
 
@@ -124,7 +136,10 @@ async def test_a_failing_client_leaves_what_was_entered() -> None:
         async def __aenter__(self) -> "Broken":
             raise ConnectionError("down")
 
-    app = App("broken", services=[PictureService(log=log), OtherService(log=log, client_cls=Broken)])
+    app = App(
+        "broken",
+        services=[PictureService(log=log), OtherService(log=log, client_cls=Broken)],
+    )
     with pytest.raises(ConnectionError):
         async with connect(app):
             pass
@@ -155,7 +170,12 @@ class Config:
 async def test_a_run_refuses_the_wrong_context_before_the_agent_starts() -> None:
     from arkitekt_spec.declare.errors import AppContextError
 
-    app = App("ctx", services=[PictureService()], providers=[RekuestProvider()], app_context=Config)
+    app = App(
+        "ctx",
+        services=[PictureService()],
+        providers=[RekuestProvider()],
+        app_context=Config,
+    )
     async with connect(app, provide=True) as rt:
         agent = rt.agent
         assert isinstance(agent, FakeAgent)
@@ -174,14 +194,21 @@ async def test_a_run_refuses_the_wrong_context_before_the_agent_starts() -> None
             await rt.arun(context=Config())  # pyright: ignore[reportCallIssue, reportArgumentType]
 
 
-def test_run_refuses_a_missing_context_before_logging_in(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_refuses_a_missing_context_before_logging_in(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from arkitekt_spec.declare.errors import AppContextError
 
     def never(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
         raise AssertionError("fakts must not be built for a run that cannot start")
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
-    app = App("ctx", services=[PictureService()], providers=[RekuestProvider()], app_context=Config)
+    app = App(
+        "ctx",
+        services=[PictureService()],
+        providers=[RekuestProvider()],
+        app_context=Config,
+    )
     with pytest.raises(AppContextError, match="none was given"):
         # The missing context is the point.
         run(app)  # pyright: ignore[reportArgumentType]
@@ -190,10 +217,19 @@ def test_run_refuses_a_missing_context_before_logging_in(monkeypatch: pytest.Mon
 @pytest.mark.asyncio
 async def test_the_agent_enters_after_the_clients_and_leaves_first() -> None:
     log: list[str] = []
-    app = App("order", services=[PictureService(log=log)], providers=[RekuestProvider(log)])
+    app = App(
+        "order", services=[PictureService(log=log)], providers=[RekuestProvider(log)]
+    )
     async with connect(app, provide=True):
         pass
-    assert log == ["enter pictures-1", "enter rekuest", "enter agent", "exit agent", "exit rekuest", "exit pictures-1"]
+    assert log == [
+        "enter pictures-1",
+        "enter rekuest",
+        "enter agent",
+        "exit agent",
+        "exit rekuest",
+        "exit pictures-1",
+    ]
 
 
 @pytest.mark.asyncio
@@ -286,7 +322,9 @@ async def test_a_run_hands_its_connection_listener_to_its_agent() -> None:
 
 
 @pytest.mark.asyncio
-async def test_the_supervisor_that_started_the_process_reaches_its_agent(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_the_supervisor_that_started_the_process_reaches_its_agent(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """``$ARKITEKT_SUPERVISOR`` (set by e.g. the plugin engine) is what the agent states on Register."""
     monkeypatch.setattr("sys.argv", ["app.py"])
     monkeypatch.setenv("ARKITEKT_SUPERVISOR", "plugin_engine")
@@ -326,7 +364,9 @@ def offering_app(identifier: str) -> App[None]:
 
 
 @pytest.mark.asyncio
-async def test_several_apps_are_started_before_the_block_and_left_after_it(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_several_apps_are_started_before_the_block_and_left_after_it(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     async def aloop(self: FakeAgent) -> None:
         # As a real agent's loop: it serves until it is cancelled.
         await asyncio.Event().wait()
@@ -336,13 +376,17 @@ async def test_several_apps_are_started_before_the_block_and_left_after_it(monke
     one = offering_app("one")
     async with providing(one, offering_app("two")) as runtimes:
         assert sorted(runtimes) == ["one", "two"]
-        assert runtimes[one] is runtimes["one"], "an app is looked up by itself as by its identifier"
+        assert runtimes[one] is runtimes["one"], (
+            "an app is looked up by itself as by its identifier"
+        )
         with pytest.raises(KeyError, match="not one of the apps"):
             runtimes[offering_app("one")]
         agents = {identifier: runtime.agent for identifier, runtime in runtimes.items()}
         for identifier, runtime in runtimes.items():
             assert runtime.app.identifier == identifier
-            assert runtime.agent.provided == [None], "each app was started by its own agent"  # pyright: ignore[reportOptionalMemberAccess]
+            assert runtime.agent.provided == [None], (  # pyright: ignore[reportOptionalMemberAccess]
+                "each app was started by its own agent"
+            )
             assert "exit agent" not in runtime.agent.log  # pyright: ignore[reportOptionalMemberAccess]
     assert all("exit agent" in agent.log for agent in agents.values())  # pyright: ignore[reportOptionalMemberAccess]
 
@@ -355,13 +399,17 @@ async def test_waiting_on_the_running_apps_returns_when_they_have_all_stopped() 
 
 
 @pytest.mark.asyncio
-async def test_apps_sharing_an_identifier_are_refused_before_anything_connects() -> None:
+async def test_apps_sharing_an_identifier_are_refused_before_anything_connects() -> (
+    None
+):
     with pytest.raises(ValueError, match="share an identifier"):
         await arun_all(offering_app("same"), offering_app("same"))
 
 
 @pytest.mark.asyncio
-async def test_a_checked_start_refuses_apps_that_do_not_fit_before_anything_connects() -> None:
+async def test_a_checked_start_refuses_apps_that_do_not_fit_before_anything_connects() -> (
+    None
+):
     lab = App("lab", providers=[RekuestProvider()])
 
     @lab.declare(app="one")
@@ -375,29 +423,43 @@ async def test_a_checked_start_refuses_apps_that_do_not_fit_before_anything_conn
         """Has it shouted."""
         return one.shout("hello")
 
-    with pytest.raises(DependencyCheckError, match="'words' \\(STRING\\) is expected at 0"):
+    with pytest.raises(
+        DependencyCheckError, match="'words' \\(STRING\\) is expected at 0"
+    ):
         async with providing(offering_app("one"), lab, check=True):
             pytest.fail("the block was entered")
 
 
 @pytest.mark.asyncio
-async def test_running_apps_ask_the_server_whether_their_dependencies_would_bind(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_running_apps_ask_the_server_whether_their_dependencies_would_bind(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from types import SimpleNamespace
 
     from tests.fakes import FakeRekuest
 
     asked: list[str] = []
 
-    async def amy_implementation_at(self: FakeRekuest, interface: str) -> SimpleNamespace:
+    async def amy_implementation_at(
+        self: FakeRekuest, interface: str
+    ) -> SimpleNamespace:
         asked.append(interface)
         return SimpleNamespace(id="7")
 
-    async def adependency_tree(self: FakeRekuest, implementation: str) -> SimpleNamespace:
-        refused = SimpleNamespace(key="one", unmet="no agent of 'one' is connected", mapped_agents=[])
+    async def adependency_tree(
+        self: FakeRekuest, implementation: str
+    ) -> SimpleNamespace:
+        refused = SimpleNamespace(
+            key="one", unmet="no agent of 'one' is connected", mapped_agents=[]
+        )
         return SimpleNamespace(satisfied=False, dependencies=[refused])
 
-    monkeypatch.setattr(FakeRekuest, "amy_implementation_at", amy_implementation_at, raising=False)
-    monkeypatch.setattr(FakeRekuest, "adependency_tree", adependency_tree, raising=False)
+    monkeypatch.setattr(
+        FakeRekuest, "amy_implementation_at", amy_implementation_at, raising=False
+    )
+    monkeypatch.setattr(
+        FakeRekuest, "adependency_tree", adependency_tree, raising=False
+    )
 
     lab = App("lab", providers=[RekuestProvider()])
 

@@ -37,12 +37,18 @@ def test_prod_runs_the_targets_app_with_no_flags(app_dir, recorded_runs):
 
     assert result.exit_code == 0, result.output
     ((app, options),) = recorded_runs
-    assert (app.identifier, app.version, app.author) == ("com.test.app", "0.0.1", "tester")
+    assert (app.identifier, app.version, app.author) == (
+        "com.test.app",
+        "0.0.1",
+        "tester",
+    )
     # Unpassed flags stay unpassed: the runtime resolves them (env, defaults).
     assert options == {}
 
 
-def test_prod_force_mesh_hands_the_runner_a_forced_mesh(app_dir, recorded_runs, monkeypatch):
+def test_prod_force_mesh_hands_the_runner_a_forced_mesh(
+    app_dir, recorded_runs, monkeypatch
+):
     from fakts.mesh import MeshOptions
 
     monkeypatch.delenv("ARKITEKT_MESH_PROXY", raising=False)
@@ -53,25 +59,49 @@ def test_prod_force_mesh_hands_the_runner_a_forced_mesh(app_dir, recorded_runs, 
     assert options == {"mesh": MeshOptions(force=True)}
 
 
-def test_prod_reach_flags_hand_the_runner_an_alias_policy(app_dir, recorded_runs, monkeypatch):
+def test_prod_reach_flags_hand_the_runner_an_alias_policy(
+    app_dir, recorded_runs, monkeypatch
+):
     from fakts.models import AliasPolicy
 
     monkeypatch.setenv("FAKTS_ALIAS_EXCLUDE", "old-lab")
     monkeypatch.setenv("FAKTS_ALIAS_PREFER_REACH", "public")
     result = _invoke(
-        app_dir, "run", "prod", "app:app", "--prefer-reach", "loopback", "--prefer-reach", "lan", "--exclude-reach", "public"
+        app_dir,
+        "run",
+        "prod",
+        "app:app",
+        "--prefer-reach",
+        "loopback",
+        "--prefer-reach",
+        "lan",
+        "--exclude-reach",
+        "public",
     )
 
     assert result.exit_code == 0, result.output
     ((_, options),) = recorded_runs
     # The flags replace what the environment says of the same thing; the rest of it stays.
     assert options == {
-        "alias_policy": AliasPolicy(prefer_reach=["loopback", "lan"], exclude_reach=["public"], exclude_aliases=["old-lab"])
+        "alias_policy": AliasPolicy(
+            prefer_reach=["loopback", "lan"],
+            exclude_reach=["public"],
+            exclude_aliases=["old-lab"],
+        )
     }
 
 
 def test_prod_hands_the_supervisor_and_device_id_to_the_runner(app_dir, recorded_runs):
-    result = _invoke(app_dir, "run", "prod", "app:app", "--supervisor", "plugin_engine", "--device-id", "host:1")
+    result = _invoke(
+        app_dir,
+        "run",
+        "prod",
+        "app:app",
+        "--supervisor",
+        "plugin_engine",
+        "--device-id",
+        "host:1",
+    )
 
     assert result.exit_code == 0, result.output
     ((_, options),) = recorded_runs
@@ -80,11 +110,17 @@ def test_prod_hands_the_supervisor_and_device_id_to_the_runner(app_dir, recorded
 
 def test_prod_hands_only_the_explicit_flags_to_the_runner(app_dir, recorded_runs):
     result = _invoke(
-        app_dir, "run", "prod", "app:app",
-        "--url", "http://fakts.example",
-        "--token", "client:refresh",
+        app_dir,
+        "run",
+        "prod",
+        "app:app",
+        "--url",
+        "http://fakts.example",
+        "--token",
+        "client:refresh",
         "--headless",
-        "--log-level", "DEBUG",
+        "--log-level",
+        "DEBUG",
         "--skip-cache",
         "--reauth",
     )
@@ -139,7 +175,9 @@ def test_prod_shows_the_default_server_when_no_url_is_passed(
     assert options == {}
 
 
-def test_prod_shows_the_server_from_the_environment(app_dir, recorded_runs, monkeypatch):
+def test_prod_shows_the_server_from_the_environment(
+    app_dir, recorded_runs, monkeypatch
+):
     monkeypatch.setenv("FAKTS_URL", "http://env.example")
 
     result = _invoke(app_dir, "run", "prod")
@@ -183,7 +221,9 @@ def test_a_run_stopped_with_ctrl_c_says_it_is_stopping(app_dir, monkeypatch):
         signal.raise_signal(signal.SIGINT)
         await asyncio.Event().wait()
 
-    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], during=interrupted))
+    monkeypatch.setattr(
+        "arkitekt.runtime.connect", recording_connect([], during=interrupted)
+    )
 
     result = _invoke(app_dir, "run", "prod")
 
@@ -245,7 +285,9 @@ def test_a_run_on_a_saved_session_says_it_reused_it(app_dir, monkeypatch):
     monkeypatch.delenv("FAKTS_URL", raising=False)
     then = time.time() - 3 * 86400
     write_session("com.test.app", "0.0.1", DEFAULT_ARKITEKT_URL, logged_in_at=then)
-    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], fakts=_session(then)))
+    monkeypatch.setattr(
+        "arkitekt.runtime.connect", recording_connect([], fakts=_session(then))
+    )
 
     result = _invoke(app_dir, "run", "prod")
 
@@ -253,10 +295,14 @@ def test_a_run_on_a_saved_session_says_it_reused_it(app_dir, monkeypatch):
     assert "Session reused" in result.output and "3 days ago" in result.output
 
 
-def test_a_run_that_just_logged_in_does_not_claim_a_reused_session(app_dir, monkeypatch):
+def test_a_run_that_just_logged_in_does_not_claim_a_reused_session(
+    app_dir, monkeypatch
+):
     """The session it ends up with is newer than the one saved: it logged in again."""
     monkeypatch.delenv("FAKTS_URL", raising=False)
-    write_session("com.test.app", "0.0.1", DEFAULT_ARKITEKT_URL, logged_in_at=time.time() - 86400)
+    write_session(
+        "com.test.app", "0.0.1", DEFAULT_ARKITEKT_URL, logged_in_at=time.time() - 86400
+    )
     monkeypatch.setattr(
         "arkitekt.runtime.connect", recording_connect([], fakts=_session(time.time()))
     )
@@ -271,7 +317,9 @@ def test_a_run_asked_to_log_in_again_never_reuses(app_dir, monkeypatch):
     monkeypatch.delenv("FAKTS_URL", raising=False)
     then = time.time() - 86400
     write_session("com.test.app", "0.0.1", DEFAULT_ARKITEKT_URL, logged_in_at=then)
-    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], fakts=_session(then)))
+    monkeypatch.setattr(
+        "arkitekt.runtime.connect", recording_connect([], fakts=_session(then))
+    )
 
     result = _invoke(app_dir, "run", "prod", "--reauth")
 
@@ -297,7 +345,9 @@ def test_a_run_says_when_its_agent_is_registered_lost_and_back(app_dir, monkeypa
         await run.listener(ConnectionState.DISCONNECTED)
         await run.listener(ConnectionState.REGISTERED)
 
-    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], during=connection))
+    monkeypatch.setattr(
+        "arkitekt.runtime.connect", recording_connect([], during=connection)
+    )
 
     result = _invoke(app_dir, "run", "prod")
 
@@ -320,7 +370,9 @@ def test_a_run_says_its_hub_and_when_a_mesh_path_turns_direct(app_dir, monkeypat
     path = {"kind": "relay"}
 
     def mesh_path(key):
-        via = {"relay": "waw", "direct": "172.21.0.23:41641", "idle": None}[path["kind"]]
+        via = {"relay": "waw", "direct": "172.21.0.23:41641", "idle": None}[
+            path["kind"]
+        ]
         return SimpleNamespace(kind=path["kind"], via=via)
 
     proxy = "http://127.0.0.1:41234"
@@ -334,7 +386,9 @@ def test_a_run_says_its_hub_and_when_a_mesh_path_turns_direct(app_dir, monkeypat
         # Over a proxy that cannot tell its path: never green.
         "kraph": SimpleNamespace(host="other.mesh.internal", port=None, proxy=proxy),
     }
-    fakts.mesh_path = lambda key: mesh_path(key) if key in ("mikro", "rekuest") else None
+    fakts.mesh_path = lambda key: (
+        mesh_path(key) if key in ("mikro", "rekuest") else None
+    )
 
     async def during(run):
         for kind in paths:
@@ -354,14 +408,26 @@ def test_a_run_says_its_hub_and_when_a_mesh_path_turns_direct(app_dir, monkeypat
     assert "■ kraph other.mesh.internal · over the mesh, path unknown" in output
     # Relayed once, idle is no news, then direct once.
     assert output.count("mikro, rekuest") == 2
-    assert "□ mikro, rekuest relayed lab.mesh.internal:80, 8080 · via DERP waw" in output
-    assert "◆ mikro, rekuest direct lab.mesh.internal:80, 8080 · 172.21.0.23:41641" in output
+    assert (
+        "□ mikro, rekuest relayed lab.mesh.internal:80, 8080 · via DERP waw" in output
+    )
+    assert (
+        "◆ mikro, rekuest direct lab.mesh.internal:80, 8080 · 172.21.0.23:41641"
+        in output
+    )
 
 
-def test_a_run_says_which_service_is_outside_the_versions_the_app_wants(app_dir, monkeypatch):
+def test_a_run_says_which_service_is_outside_the_versions_the_app_wants(
+    app_dir, monkeypatch
+):
     fakts = _session(time.time())
     fakts.version_mismatches = lambda: [
-        SimpleNamespace(key="mikro", service="live.arkitekt.mikro", running="11.4.0", wanted=">=12.1")
+        SimpleNamespace(
+            key="mikro",
+            service="live.arkitekt.mikro",
+            running="11.4.0",
+            wanted=">=12.1",
+        )
     ]
     monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], fakts=fakts))
 
@@ -382,11 +448,31 @@ def _raising(error):
 def _agent_failures():
     errors = pytest.importorskip("rekuest.agents.transport.errors")
     return [
-        (errors.AgentIsAlreadyBusy("busy"), "Another instance of this app is already connected", "--force"),
-        (errors.AgentWasKicked("kicked"), "Another instance of this app took over", None),
-        (errors.DefiniteConnectionFail("Agent was kicked"), "Another instance of this app took over", None),
-        (errors.AgentWasBlocked("blocked"), "The server blocked this app's agent", None),
-        (errors.DefiniteConnectionFail("Exceeded Number of Retries"), "Lost the connection", None),
+        (
+            errors.AgentIsAlreadyBusy("busy"),
+            "Another instance of this app is already connected",
+            "--force",
+        ),
+        (
+            errors.AgentWasKicked("kicked"),
+            "Another instance of this app took over",
+            None,
+        ),
+        (
+            errors.DefiniteConnectionFail("Agent was kicked"),
+            "Another instance of this app took over",
+            None,
+        ),
+        (
+            errors.AgentWasBlocked("blocked"),
+            "The server blocked this app's agent",
+            None,
+        ),
+        (
+            errors.DefiniteConnectionFail("Exceeded Number of Retries"),
+            "Lost the connection",
+            None,
+        ),
     ]
 
 
@@ -396,15 +482,25 @@ def _login_failures():
 
     return [
         (errors.UserDeniedError("no"), "The login was declined", None),
-        (errors.DeviceCodeExpiredError("late"), "The login was not approved in time", None),
+        (
+            errors.DeviceCodeExpiredError("late"),
+            "The login was not approved in time",
+            None,
+        ),
         (errors.DiscoveryError("nowhere"), "Could not reach the server", "--url"),
-        (NeedsReauthenticationError("idle"), "The session is no longer valid", "arkitekt login --reauth"),
+        (
+            NeedsReauthenticationError("idle"),
+            "The session is no longer valid",
+            "arkitekt login --reauth",
+        ),
     ]
 
 
 @pytest.mark.parametrize("failures", [_agent_failures, _login_failures])
 @pytest.mark.parametrize("command", ["prod"])
-def test_a_failure_the_user_can_act_on_is_one_line(app_dir, monkeypatch, failures, command):
+def test_a_failure_the_user_can_act_on_is_one_line(
+    app_dir, monkeypatch, failures, command
+):
     for error, message, hint in failures():
         monkeypatch.setattr("arkitekt.runtime.connect", _raising(error))
 
@@ -420,7 +516,8 @@ def test_a_failure_the_user_can_act_on_is_one_line(app_dir, monkeypatch, failure
 def test_an_unknown_transport_failure_keeps_its_traceback(app_dir, monkeypatch):
     errors = pytest.importorskip("rekuest.agents.transport.errors")
     monkeypatch.setattr(
-        "arkitekt.runtime.connect", _raising(errors.DefiniteConnectionFail(ValueError("odd")))
+        "arkitekt.runtime.connect",
+        _raising(errors.DefiniteConnectionFail(ValueError("odd"))),
     )
 
     result = _invoke(app_dir, "run", "prod")
@@ -445,7 +542,9 @@ def test_call_args_are_read_as_json_when_they_parse():
         parse_call_args(["novalue"])
 
 
-def test_call_remote_connects_the_app_and_calls_through_its_rekuest(app_dir, monkeypatch):
+def test_call_remote_connects_the_app_and_calls_through_its_rekuest(
+    app_dir, monkeypatch
+):
     from rekuest.client.client import RekuestCaller
 
     seen = {}
@@ -569,8 +668,9 @@ def test_call_remote_needs_an_action(app_dir):
 def test_call_remote_finds_one_of_the_apps_actions_by_its_name(app_dir, monkeypatch):
     """The name becomes the hash of the definition, which is what the server knows it by."""
     pytest.importorskip("rekuest")
-    from arkitekt.cli.target import load_target
     from arkitekt_spec import definition_hash
+
+    from arkitekt.cli.target import load_target
 
     seen = {}
 
@@ -599,7 +699,9 @@ def test_call_remote_finds_one_of_the_apps_actions_by_its_name(app_dir, monkeypa
     # The app in the folder names the action; it is not who calls.
     assert seen["app"].identifier == "arkitekt-cli"
     app, _, _ = load_target("app", str(app_dir))
-    assert seen["hash"] == definition_hash(app.registry.implementations["append_world"].definition)
+    assert seen["hash"] == definition_hash(
+        app.registry.implementations["append_world"].definition
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -614,19 +716,25 @@ def test_call_local_runs_the_action_here_and_prints_its_result(app_dir):
     assert "hi World" in result.output
 
 
-def test_call_local_logs_in_to_nothing_for_an_app_without_services(app_dir, monkeypatch):
+def test_call_local_logs_in_to_nothing_for_an_app_without_services(
+    app_dir, monkeypatch
+):
     def never(manifest, options):
         raise AssertionError("a local call of an app without services built a fakts")
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
 
-    result = _invoke(app_dir, "call", "local", "append_world", "-a", "hello=hi", "--online")
+    result = _invoke(
+        app_dir, "call", "local", "append_world", "-a", "hello=hi", "--online"
+    )
 
     assert result.exit_code == 0, result.output
 
 
 def test_call_local_refuses_a_connection_flag_without_online(app_dir):
-    result = _invoke(app_dir, "call", "local", "append_world", "-a", "hello=hi", "--reauth")
+    result = _invoke(
+        app_dir, "call", "local", "append_world", "-a", "hello=hi", "--reauth"
+    )
 
     assert result.exit_code != 0
     assert "--reauth" in result.output
@@ -701,7 +809,9 @@ def test_inspect_implementations_lists_what_to_call(app_dir):
     assert "hello: STRING" in result.output
 
 
-def test_call_remote_of_what_is_neither_a_name_nor_a_hash_lists_the_apps_actions(app_dir):
+def test_call_remote_of_what_is_neither_a_name_nor_a_hash_lists_the_apps_actions(
+    app_dir,
+):
     result = _invoke(app_dir, "call", "remote", "apend_world")
 
     assert result.exit_code != 0

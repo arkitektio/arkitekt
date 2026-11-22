@@ -8,7 +8,6 @@ platformdirs, py-machineid, ...) are intentionally excluded.
 Names are the PyPI/distribution names (hyphenated).
 """
 
-
 ARKITEKT_PACKAGES: list[str] = [
     "arkitekt",
     "arkitekt-spec",

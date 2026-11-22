@@ -17,14 +17,14 @@ import pytest
 
 from arkitekt import App
 
-LIBRARY = '''
+LIBRARY = """
 from enum import Enum
 
 
 class ProjectionMode(Enum):
     MAX = "max"
     MEAN = "mean"
-'''
+"""
 
 APP = '''
 from enum import Enum
@@ -77,7 +77,9 @@ def files(tmp_path: Path) -> Iterator[Path]:
         ("other", "random_image_app", "random-image-generator"),
     ):
         (tmp_path / directory).mkdir()
-        _ = (tmp_path / directory / f"{name}.py").write_text(APP.format(identifier=identifier))
+        _ = (tmp_path / directory / f"{name}.py").write_text(
+            APP.format(identifier=identifier)
+        )
     sys.path.insert(0, str(tmp_path / "lib"))
     yield tmp_path
     sys.path[:] = path
@@ -90,7 +92,10 @@ def identifiers(module: Mapping[str, object]) -> dict[str, str]:
     app = module["app"]
     assert isinstance(app, App)
     definition = app.registry.implementations["segment"].definition
-    return {port.key: str(port.identifier) for port in (*definition.args, *definition.returns)}
+    return {
+        port.key: str(port.identifier)
+        for port in (*definition.args, *definition.returns)
+    }
 
 
 def test_an_app_gets_the_same_identifiers_run_or_imported(files: Path) -> None:
@@ -99,17 +104,25 @@ def test_an_app_gets_the_same_identifiers_run_or_imported(files: Path) -> None:
     sys.path.insert(0, str(script.parent))
     as_import = identifiers(vars(importlib.import_module("cluster_segment_path_app")))
 
-    assert as_main == as_import == {
-        "method": "@cluster-segment-path/thresholdmethod",
-        "mode": "@sharedlib.schema/projectionmode",
-        "settings": "@cluster-segment-path/settings",
-        "image": "@numpy/ndarray",
-        "return0": "@cluster-segment-path/blob",
-    }
+    assert (
+        as_main
+        == as_import
+        == {
+            "method": "@cluster-segment-path/thresholdmethod",
+            "mode": "@sharedlib.schema/projectionmode",
+            "settings": "@cluster-segment-path/settings",
+            "image": "@numpy/ndarray",
+            "return0": "@cluster-segment-path/blob",
+        }
+    )
 
 
 def test_a_library_type_is_the_same_in_two_apps(files: Path) -> None:
-    first = identifiers(runpy.run_path(str(files / "apps" / "cluster_segment_path_app.py"), run_name="__main__"))
+    first = identifiers(
+        runpy.run_path(
+            str(files / "apps" / "cluster_segment_path_app.py"), run_name="__main__"
+        )
+    )
     sys.path.insert(0, str(files / "other"))
     second = identifiers(vars(importlib.import_module("random_image_app")))
 

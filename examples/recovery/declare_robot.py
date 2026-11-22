@@ -45,8 +45,7 @@ def no_plate() -> Plate:
 
 @app.action
 def load_plate(plate: Plate, barcode: str) -> str:
-    """Records a new plate on the deck. Any guard on the old plate now fails.
-    """
+    """Records a new plate on the deck. Any guard on the old plate now fails."""
     plate.barcode = barcode
     plate.dispensed_ul = {}
     return barcode
@@ -54,19 +53,20 @@ def load_plate(plate: Plate, barcode: str) -> str:
 
 @app.action
 def dispense(plate: Plate, well: str, volume_ul: float, *, task: Task) -> float:
-    """Moves liquid into a well. Running it again puts twice the volume in the well.
-    """
+    """Moves liquid into a well. Running it again puts twice the volume in the well."""
     for step in range(10):
         task.progress((step + 1) * 10, f"Dispensing into {well}")
         koil.sleep(0.2)
-    plate.dispensed_ul = {**plate.dispensed_ul, well: plate.dispensed_ul.get(well, 0) + volume_ul}
+    plate.dispensed_ul = {
+        **plate.dispensed_ul,
+        well: plate.dispensed_ul.get(well, 0) + volume_ul,
+    }
     return volume_ul
 
 
 @app.action(effects=Effects.NONE)
 def read_absorbance(well: str) -> float:
-    """Reads the plate reader. Moves nothing, so it overrides the app's default.
-    """
+    """Reads the plate reader. Moves nothing, so it overrides the app's default."""
     return 0.42
 
 

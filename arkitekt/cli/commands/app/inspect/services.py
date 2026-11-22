@@ -2,19 +2,23 @@ import json
 from typing import Annotated, Any
 
 import typer
+from arkitekt_spec.declare.service import Service
 from rich.console import Group
 from rich.padding import Padding
 from rich.table import Table
 
-from arkitekt_spec.declare.service import Service
-
+from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.errors import cli_error
+from arkitekt.cli.options import (
+    JsonOption,
+    LogLevel,
+    LogLevelOption,
+    MachineReadableOption,
+)
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.ui import construct_section
-from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
 from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
-from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
-from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 
 
 def _describe_service(name: str, svc: Service[Any]) -> dict[str, Any]:
@@ -33,9 +37,7 @@ def _describe_service(name: str, svc: Service[Any]) -> dict[str, Any]:
     return {
         "name": name,
         "class": f"{type(svc).__module__}.{type(svc).__qualname__}",
-        "requirements": [
-            r.model_dump(by_alias=True) for r in svc.get_requirements()
-        ],
+        "requirements": [r.model_dump(by_alias=True) for r in svc.get_requirements()],
         "has_schema": schema is not None,
         "schema_bytes": len(schema) if schema is not None else 0,
         "has_turms_project": turms_project is not None,
@@ -85,10 +87,7 @@ def services(
         typer.echo((sdl or "").encode("utf-8"))
         return
 
-    records = [
-        _describe_service(name, svc)
-        for name, svc in service_builders.items()
-    ]
+    records = [_describe_service(name, svc) for name, svc in service_builders.items()]
 
     if machine_readable:
         emit_machine_readable("SERVICES", records)
@@ -109,6 +108,8 @@ def services(
         )
         table.add_row("GraphQL schema", "yes" if record["has_schema"] else "no")
         table.add_row("Turms project", "yes" if record["has_turms_project"] else "no")
-        renderables.append(Group(f"[bold cyan]{record['name']}[/]", Padding(table, (0, 0, 1, 2))))
+        renderables.append(
+            Group(f"[bold cyan]{record['name']}[/]", Padding(table, (0, 0, 1, 2)))
+        )
 
     console.print(construct_section("Registered services", Group(*renderables)))

@@ -14,13 +14,15 @@ from arkitekt import App, run
 
 app = App("my.app")
 
+
 @app.action
 def my_function() -> str:
     """Say hello."""
     return "Hello from my standalone app!"
 
+
 if __name__ == "__main__":
-    run(app)   # offers `my_function` until interrupted
+    run(app)  # offers `my_function` until interrupted
 ```
 
 ## Calling other apps
@@ -77,11 +79,11 @@ part of `"arg-env-default"` is a source, and `"discover"` — every option's
 default — is all of it:
 
 ```python
-run(app)                               # --supervisor, $ARKITEKT_SUPERVISOR, none
-run(app, supervisor="plugin_engine")   # this value
-run(app, supervisor=None)              # none, whatever the environment says
-run(app, token="env")                  # only $FAKTS_TOKEN
-run(app, device_id="default")          # the machine's id, ignoring the environment
+run(app)  # --supervisor, $ARKITEKT_SUPERVISOR, none
+run(app, supervisor="plugin_engine")  # this value
+run(app, supervisor=None)  # none, whatever the environment says
+run(app, token="env")  # only $FAKTS_TOKEN
+run(app, device_id="default")  # the machine's id, ignoring the environment
 ```
 
 A program with a life of its own (a GUI, a control program) does not call `run`,
@@ -111,7 +113,7 @@ from arkitekt import providing
 async with providing(robot_app, microscope_app, protocol_app, timeout=30) as running:
     rekuest = running[protocol_app].require(RekuestCaller)
     await rekuest.acall(process_slides, loaded_slides=slides)
-    await running.wait()   # go on serving until stopped
+    await running.wait()  # go on serving until stopped
 ```
 
 `running.wait()` returns once every app has stopped; without it the apps are

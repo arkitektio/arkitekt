@@ -12,8 +12,8 @@ granted and these must not: that fakts is offline.
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from collections.abc import Iterator
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -48,7 +48,7 @@ def _private_session_state(tmp_path_factory: pytest.TempPathFactory) -> Iterator
 
 
 @pytest.fixture(scope="session")
-def hub(konstruktor_hub) -> "Hub":  # noqa: ANN001 -- konstruktor's factory fixture
+def hub(konstruktor_hub) -> Hub:  # noqa: ANN001 -- konstruktor's factory fixture
     """One deployment for the whole session: rekuest and mikro.
 
     Made from the images the two client packages say host them, which is all

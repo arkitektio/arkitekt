@@ -14,9 +14,6 @@ from dataclasses import dataclass
 import numpy as np
 import pytest
 import xarray as xr
-from arkitekt.runtime import Runtime
-from arkitekt_spec.declare.blok.registry import resolved_locals
-
 from __ENTRYPOINT__ import (
     HISTORY_LENGTH,
     Analysis,
@@ -29,6 +26,9 @@ from __ENTRYPOINT__ import (
     label_objects,
     otsu_threshold,
 )
+from arkitekt_spec.declare.blok.registry import resolved_locals
+
+from arkitekt.runtime import Runtime
 
 # -- the analysis -----------------------------------------------------------------
 
@@ -42,7 +42,10 @@ def test_statistics_of_an_image():
 
 
 def test_a_histogram_is_a_share_of_its_fullest_bin():
-    assert intensity_histogram(np.array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0]), bins=2) == [100, 50]
+    assert intensity_histogram(np.array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0]), bins=2) == [
+        100,
+        50,
+    ]
     with pytest.raises(ValueError, match="at least one bin"):
         intensity_histogram(np.ones((2, 2)), bins=0)
 
@@ -139,7 +142,9 @@ def test_analysing_an_image_writes_what_it_found_to_the_state():
     # It ends where it started: not busy, and says so.
     assert (state.busy, state.status, state.progress) == (False, "Idle", 100)
     # The caller heard of every step, in order.
-    assert [percentage for percentage, _ in task.reported] == sorted(p for p, _ in task.reported)
+    assert [percentage for percentage, _ in task.reported] == sorted(
+        p for p, _ in task.reported
+    )
     assert task.reported[-1] == (100, "Idle")
 
 
@@ -150,13 +155,17 @@ def test_the_history_keeps_only_the_last_runs():
         analyse_image(four_squares(), state, SilentTask())
 
     assert len(state.history) == HISTORY_LENGTH
-    assert len(set(state.history)) == HISTORY_LENGTH  # the panel keys its list by the entry
+    assert (
+        len(set(state.history)) == HISTORY_LENGTH
+    )  # the panel keys its list by the entry
     assert state.analysed == HISTORY_LENGTH + 2
 
 
 def test_an_image_that_cannot_be_analysed_leaves_the_agent_free():
     state = Analysis()
-    volume = StoredImage("volume", xr.DataArray(np.zeros((2, 3, 3)), dims=("z", "y", "x")))
+    volume = StoredImage(
+        "volume", xr.DataArray(np.zeros((2, 3, 3)), dims=("z", "y", "x"))
+    )
 
     with pytest.raises(ValueError, match="two dimensions"):
         analyse_image(volume, state, SilentTask())
@@ -170,10 +179,17 @@ def test_an_image_that_cannot_be_analysed_leaves_the_agent_free():
 def test_the_app_starts_with_nothing_analysed(local_runtime: Runtime[None]):
     state = local_runtime.agent.states["Analysis"]
 
-    assert (state.status, state.busy, state.objects, state.history) == ("Idle", False, 0, [])
+    assert (state.status, state.busy, state.objects, state.history) == (
+        "Idle",
+        False,
+        0,
+        [],
+    )
 
 
-def test_clearing_the_history_reaches_the_state_the_panel_shows(local_runtime: Runtime[None]):
+def test_clearing_the_history_reaches_the_state_the_panel_shows(
+    local_runtime: Runtime[None],
+):
     state = local_runtime.agent.states["Analysis"]
     state.history, state.analysed = ["an image: 3 objects"], 1
 
@@ -200,10 +216,21 @@ def test_the_panel_is_declared_and_everything_it_names_exists():
         "clear_history",
     }
     # A preview has a placeholder for every field of the state it reads.
-    assert set(panel.demo.deps["self"]["Analysis"]) >= {"status", "progress", "objects", "histogram", "history"}
+    assert set(panel.demo.deps["self"]["Analysis"]) >= {
+        "status",
+        "progress",
+        "objects",
+        "histogram",
+        "history",
+    }
 
 
 def test_the_app_offers_its_actions():
     offered = set(app.registry.implementations)
 
-    assert {"generate_test_image", "analyse_image", "segment_image", "clear_history"} <= offered
+    assert {
+        "generate_test_image",
+        "analyse_image",
+        "segment_image",
+        "clear_history",
+    } <= offered

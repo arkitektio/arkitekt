@@ -188,7 +188,9 @@ class Testo(Protocol):
 
 
 @app.workflow
-async def shout_words(testo: Testo, text: str, *, task: Task) -> AsyncGenerator[str, None]:
+async def shout_words(
+    testo: Testo, text: str, *, task: Task
+) -> AsyncGenerator[str, None]:
     """Shout Words"""
     async for word in testo.stream_words(text=text):  # streams every yield
         yield word.upper()

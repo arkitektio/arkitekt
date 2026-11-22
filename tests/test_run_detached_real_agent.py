@@ -9,9 +9,9 @@ each step; and a cancel from the backend stops it where it asks.
 import asyncio
 import threading
 import time
+from collections.abc import AsyncIterator
 from types import TracebackType
 from typing import Annotated, Any
-from collections.abc import AsyncIterator
 
 import koil
 from arkitekt_runtime import messages
@@ -56,7 +56,9 @@ class Loopback(AgentTransport):
         self._queue = asyncio.Queue()
         self._connected = True
         handshake = await self._host.aget_handshake_params()
-        self._queue.put_nowait(messages.Init(agent="agent-1", hash=handshake.declaration.hash))
+        self._queue.put_nowait(
+            messages.Init(agent="agent-1", hash=handshake.declaration.hash)
+        )
 
     async def adisconnect(self) -> None:
         self._connected = False
@@ -157,7 +159,9 @@ def test_a_sync_action_runs_reports_and_is_cancelled_where_it_asks() -> None:
         events.append(event)
 
     pump = Pump()
-    running = run_detached(app, context=pump, connection_listener=on_state, task_listener=on_task)
+    running = run_detached(
+        app, context=pump, connection_listener=on_state, task_listener=on_task
+    )
     try:
         _until(lambda: running.state is ConnectionState.REGISTERED)
         (transport,) = transports
@@ -165,7 +169,9 @@ def test_a_sync_action_runs_reports_and_is_cancelled_where_it_asks() -> None:
         transport.feed(_assign("task-1", "dispense", volume=2.5))
         _until(lambda: pump.steps > 3)
         assert pump.running
-        assert pump.thread != threading.current_thread().name, "the action has a thread of its own"
+        assert pump.thread != threading.current_thread().name, (
+            "the action has a thread of its own"
+        )
 
         transport.feed(messages.Cancel(task="task-1"))
         _until(lambda: any(e.kind is TaskEventKind.CANCELLED for e in events))
@@ -179,8 +185,12 @@ def test_a_sync_action_runs_reports_and_is_cancelled_where_it_asks() -> None:
         ConnectionState.REGISTERED,
         ConnectionState.STOPPED,
     ]
-    assert events[0].kind is TaskEventKind.ASSIGNED and events[0].arguments == {"volume": 2.5}
+    assert events[0].kind is TaskEventKind.ASSIGNED and events[0].arguments == {
+        "volume": 2.5
+    }
     assert {e.action for e in events} == {"dispense"}
-    assert any(e.kind is TaskEventKind.PROGRESS and e.message == "2.5 ml" for e in events)
+    assert any(
+        e.kind is TaskEventKind.PROGRESS and e.message == "2.5 ml" for e in events
+    )
     assert events[-1].kind is TaskEventKind.CANCELLED
     assert not [e for e in events if e.kind is TaskEventKind.FAILED]

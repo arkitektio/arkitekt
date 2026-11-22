@@ -25,7 +25,12 @@ from rich.console import Console
 from typer.testing import CliRunner
 
 from arkitekt.cli.commands.plugin.registry import Repository
-from arkitekt.cli.commands.plugin.release import Resolved, check_identity, identify, resolve
+from arkitekt.cli.commands.plugin.release import (
+    Resolved,
+    check_identity,
+    identify,
+    resolve,
+)
 from arkitekt.cli.main import cli_app
 
 from .isolation import isolated_filesystem
@@ -66,7 +71,11 @@ def test_a_branch_commit_is_a_build_of_its_channel(checkout: Path):
 def test_the_commit_tagged_with_the_apps_version_is_that_release(checkout: Path):
     git(checkout, "tag", "v1.4.0")
     resolved = resolve("1.4.0", str(checkout))
-    assert (resolved.version, resolved.channel, resolved.tag) == ("1.4.0", None, "1.4.0")
+    assert (resolved.version, resolved.channel, resolved.tag) == (
+        "1.4.0",
+        None,
+        "1.4.0",
+    )
 
 
 def test_a_version_tag_the_app_does_not_declare_is_refused(checkout: Path, capsys):
@@ -100,7 +109,9 @@ def test_uncommitted_changes_are_refused(checkout: Path, capsys):
     assert resolve("1.4.0", str(checkout), allow_dirty=True).channel == "main"
 
 
-def test_the_ignore_files_arkitekt_tops_up_do_not_make_the_tree_dirty(checkout: Path, capsys):
+def test_the_ignore_files_arkitekt_tops_up_do_not_make_the_tree_dirty(
+    checkout: Path, capsys
+):
     """An app whose .arkitekt ignore files predate a pattern still releases once arkitekt adds it."""
     from arkitekt.utils import create_arkitekt_folder
 
@@ -125,7 +136,13 @@ def test_the_ignore_files_arkitekt_tops_up_do_not_make_the_tree_dirty(checkout: 
 
 
 def test_the_source_never_carries_the_remotes_credentials(checkout: Path):
-    git(checkout, "remote", "add", "origin", "https://bot:secret@example.com/org/app.git")
+    git(
+        checkout,
+        "remote",
+        "add",
+        "origin",
+        "https://bot:secret@example.com/org/app.git",
+    )
     assert resolve("1.4.0", str(checkout)).source == "https://example.com/org/app.git"
 
 
@@ -183,9 +200,11 @@ def identified(reports: dict[str, dict[str, str]]) -> AppManifest:
         assert target == "main:api"
         return {}, reports[probes[-1]]
 
-    with patch(f"{RELEASE_MODULE}.build_host_image", side_effect=build), patch(
-        f"{RELEASE_MODULE}.inspect_all", side_effect=inspect
-    ), patch(f"{RELEASE_MODULE}.subprocess.run") as run:
+    with (
+        patch(f"{RELEASE_MODULE}.build_host_image", side_effect=build),
+        patch(f"{RELEASE_MODULE}.inspect_all", side_effect=inspect),
+        patch(f"{RELEASE_MODULE}.subprocess.run") as run,
+    ):
         try:
             return identify(
                 {name: None for name in reports},  # pyright: ignore[reportArgumentType] -- only passed through
@@ -196,21 +215,29 @@ def identified(reports: dict[str, dict[str, str]]) -> AppManifest:
             )
         finally:
             # Every probe image is removed again, also when the flavours disagree.
-            removed = [call.args[0] for call in run.call_args_list if call.args[0][:2] == ["docker", "rmi"]]
+            removed = [
+                call.args[0]
+                for call in run.call_args_list
+                if call.args[0][:2] == ["docker", "rmi"]
+            ]
             assert len(removed) == len(probes)
 
 
 def test_the_release_is_the_app_its_images_say_they_are():
     image = {"identifier": "app", "version": "1.4.0", "entrypoint": "main:api"}
-    assert identified({"vanilla": image, "gpu": image}) == AppManifest.model_validate(image)
+    assert identified({"vanilla": image, "gpu": image}) == AppManifest.model_validate(
+        image
+    )
 
 
 def test_flavours_holding_different_apps_are_refused(capsys):
     with pytest.raises(typer.Exit):
-        identified({
-            "vanilla": {"identifier": "app", "version": "1.4.0"},
-            "gpu": {"identifier": "app", "version": "1.5.0"},
-        })
+        identified(
+            {
+                "vanilla": {"identifier": "app", "version": "1.4.0"},
+                "gpu": {"identifier": "app", "version": "1.5.0"},
+            }
+        )
     err = capsys.readouterr().err
     assert "vanilla and gpu" in err
     assert "version" in err
@@ -256,7 +283,8 @@ class _Registry(BaseHTTPRequestHandler):
         if self.headers.get("Authorization") != "Bearer letmein":
             realm = f"http://{self.headers['Host']}/token"
             return self._answer(
-                401, WWW_Authenticate=f'Bearer realm="{realm}",service="test",scope="x:pull,push"'
+                401,
+                WWW_Authenticate=f'Bearer realm="{realm}",service="test",scope="x:pull,push"',
             )
         kind, _, reference = path.removeprefix("/v2/org/app/").partition("/")
         store = self.manifests if kind == "manifests" else self.blobs
@@ -294,7 +322,9 @@ def a_release(**changes: object) -> ReleaseDescriptor:
             "manifest": MANIFEST,
             "flavours": [
                 ReleaseFlavour(
-                    name="vanilla", image=PINNED, inspection=Inspection(spec_version="8.0.0")
+                    name="vanilla",
+                    image=PINNED,
+                    inspection=Inspection(spec_version="8.0.0"),
                 )
             ],
             **changes,
@@ -335,7 +365,11 @@ def test_a_release_moves_its_majors_channel_to_the_same_image(repository: Reposi
 
     _Registry.manifests["4.0.5-vanilla"] = json.dumps({"manifests": []}).encode()
     digest = repository.tag("4.0.5-vanilla", "4-vanilla")
-    assert repository.manifest_digest("4-vanilla") == repository.manifest_digest("4.0.5-vanilla") == digest
+    assert (
+        repository.manifest_digest("4-vanilla")
+        == repository.manifest_digest("4.0.5-vanilla")
+        == digest
+    )
 
 
 # -- the command, against a real registry -----------------------------------------
@@ -350,9 +384,16 @@ def docker_registry() -> Iterator[str]:
         check=True,
     ).stdout.strip()
     try:
-        port = subprocess.run(
-            ["docker", "port", container, "5000/tcp"], stdout=subprocess.PIPE, text=True, check=True
-        ).stdout.strip().rsplit(":", 1)[1]
+        port = (
+            subprocess.run(
+                ["docker", "port", container, "5000/tcp"],
+                stdout=subprocess.PIPE,
+                text=True,
+                check=True,
+            )
+            .stdout.strip()
+            .rsplit(":", 1)[1]
+        )
         yield f"localhost:{port}/test/app"
     finally:
         subprocess.run(["docker", "rm", "-f", container], stdout=subprocess.DEVNULL)
@@ -376,14 +417,31 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
     def identity(image: str, url: str, target: str):
         assert image.startswith("arkitekt-identify-")
         # Built without the channel's version: it says what the source declares.
-        return {}, {"identifier": "com.test.app", "version": "0.0.1", "entrypoint": target}
+        return {}, {
+            "identifier": "com.test.app",
+            "version": "0.0.1",
+            "entrypoint": target,
+        }
 
     def release(*extra: str):
-        with patch("arkitekt.cli.commands.plugin.release.inspect_image", side_effect=canned), patch(
-            "arkitekt.cli.commands.plugin.release.inspect_all", side_effect=identity
+        with (
+            patch(
+                "arkitekt.cli.commands.plugin.release.inspect_image", side_effect=canned
+            ),
+            patch(
+                "arkitekt.cli.commands.plugin.release.inspect_all", side_effect=identity
+            ),
         ):
             return runner.invoke(
-                cli_app, ["plugin", "release", "--repository", docker_registry, "--no-test", *extra]
+                cli_app,
+                [
+                    "plugin",
+                    "release",
+                    "--repository",
+                    docker_registry,
+                    "--no-test",
+                    *extra,
+                ],
             )
 
     with isolated_filesystem() as directory:
@@ -443,7 +501,9 @@ def test_ci_github_writes_a_workflow_that_versions_and_then_calls_the_action():
         result = runner.invoke(cli_app, ["plugin", "ci", "github"])
         assert result.exit_code == 0, result.output
         assert "has no __version__" not in result.output
-        workflow = yaml.safe_load((Path(directory) / ".github" / "workflows" / "release.yaml").read_text())
+        workflow = yaml.safe_load(
+            (Path(directory) / ".github" / "workflows" / "release.yaml").read_text()
+        )
         # `on` is YAML for true. The tag is the job's own to make, not a push to wait for.
         assert workflow[True] == {"push": {"branches": ["main"]}}
         job = workflow["jobs"]["release"]
@@ -453,13 +513,21 @@ def test_ci_github_writes_a_workflow_that_versions_and_then_calls_the_action():
         assert test["run"] == "uv run pytest"
         assert version["run"].endswith("semantic-release version")
         assert release["uses"].startswith("arkitektio/arkitekt/ci/github@")
-        assert release["with"] == {"target": "app", "release": "${{ steps.version.outputs.released }}"}
+        assert release["with"] == {
+            "target": "app",
+            "release": "${{ steps.version.outputs.released }}",
+        }
         # After the release (which builds a clean tree), only where the README has a place.
         assert badge["continue-on-error"] is True
-        assert 'plugin badge --update --repository "ghcr.io/${{ github.repository }}"' in badge["run"]
+        assert (
+            'plugin badge --update --repository "ghcr.io/${{ github.repository }}"'
+            in badge["run"]
+        )
         assert "[skip ci]" in badge["run"]
 
-        configured = tomllib.loads((Path(directory) / "pyproject.toml").read_text())["tool"]["semantic_release"]
+        configured = tomllib.loads((Path(directory) / "pyproject.toml").read_text())[
+            "tool"
+        ]["semantic_release"]
         assert configured["version_variables"] == ["app.py:__version__"]
         assert configured["branches"]["release"]["match"] == "main"
 
@@ -472,12 +540,19 @@ def test_ci_github_follows_the_branch_and_the_file_the_app_is_in():
     runner = CliRunner()
     with isolated_filesystem() as directory:
         (Path(directory) / "main.py").write_text('__version__ = "0.0.1"\n')
-        result = runner.invoke(cli_app, ["plugin", "ci", "github", "--branch", "trunk", "--entrypoint", "main.py"])
+        result = runner.invoke(
+            cli_app,
+            ["plugin", "ci", "github", "--branch", "trunk", "--entrypoint", "main.py"],
+        )
         assert result.exit_code == 0, result.output
-        workflow = (Path(directory) / ".github" / "workflows" / "release.yaml").read_text()
+        workflow = (
+            Path(directory) / ".github" / "workflows" / "release.yaml"
+        ).read_text()
         assert "branches: [trunk]" in workflow
         assert "target: main" in workflow
-        configured = tomllib.loads((Path(directory) / "pyproject.toml").read_text())["tool"]["semantic_release"]
+        configured = tomllib.loads((Path(directory) / "pyproject.toml").read_text())[
+            "tool"
+        ]["semantic_release"]
         assert configured["version_variables"] == ["main.py:__version__"]
         assert configured["branches"]["release"]["match"] == "trunk"
 
@@ -509,15 +584,23 @@ def test_ci_gitlab_is_not_given_a_semantic_release_configuration():
         assert not (Path(directory) / "pyproject.toml").exists()
 
 
-@pytest.mark.skipif(sys.platform == "win32", reason="the action is a bash script, run on a Linux runner: Windows' `bash` is not one")
+@pytest.mark.skipif(
+    sys.platform == "win32",
+    reason="the action is a bash script, run on a Linux runner: Windows' `bash` is not one",
+)
 def test_the_action_releases_the_commit_the_job_tagged():
     """A push to a branch is a channel build, unless the job says it cut the release itself."""
     import yaml
 
-    action = yaml.safe_load((Path(__file__).parents[2] / "ci" / "github" / "action.yml").read_text())
+    action = yaml.safe_load(
+        (Path(__file__).parents[2] / "ci" / "github" / "action.yml").read_text()
+    )
     assert action["inputs"]["release"]["default"] == "false"
     script = next(step["run"] for step in action["runs"]["steps"] if "run" in step)
-    script = script.replace('$ARKITEKT plugin release "$TARGET" $ARGUMENTS', 'echo "channel=${ARKITEKT_CHANNEL:-}"')
+    script = script.replace(
+        '$ARKITEKT plugin release "$TARGET" $ARGUMENTS',
+        'echo "channel=${ARKITEKT_CHANNEL:-}"',
+    )
 
     def channel(ref_type: str, release: str) -> str:
         env = {
@@ -527,7 +610,9 @@ def test_the_action_releases_the_commit_the_job_tagged():
             "GITHUB_REF_NAME": "main",
             "RELEASE": release,
         }
-        ran = subprocess.run(["bash", "-c", script], env=env, capture_output=True, text=True, check=True)
+        ran = subprocess.run(
+            ["bash", "-c", script], env=env, capture_output=True, text=True, check=True
+        )
         return ran.stdout.strip()
 
     assert channel("branch", "false") == "channel=main"
@@ -540,7 +625,9 @@ def test_the_shipped_action_runs_nothing_but_the_release_command():
     """A forge integration is a shell: the day it grows logic, the CLI has lost some."""
     import yaml
 
-    action = yaml.safe_load((Path(__file__).parents[2] / "ci" / "github" / "action.yml").read_text())
+    action = yaml.safe_load(
+        (Path(__file__).parents[2] / "ci" / "github" / "action.yml").read_text()
+    )
     scripts = [step["run"] for step in action["runs"]["steps"] if "run" in step]
     assert len(scripts) == 1
     commands = [

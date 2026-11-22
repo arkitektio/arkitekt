@@ -34,7 +34,9 @@ app = App("segmentation", "0.1.0", services=[mikro_service])
 
 
 @app.action(effects=Effects.NONE)
-def count_cells(image: Annotated[SingleChannelImage, Description("The image to count in")]) -> int:
+def count_cells(
+    image: Annotated[SingleChannelImage, Description("The image to count in")],
+) -> int:
     """Reads the image and counts the objects in it. Changes nothing, so if its agent
     dies, it is simply run again (AT_LEAST_ONCE) unless the caller says otherwise.
     """

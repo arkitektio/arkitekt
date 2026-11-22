@@ -38,7 +38,9 @@ def test_serving_installs_a_lifespan_that_runs_the_app(tmp_path) -> None:  # noq
         assert agent.bound_app is runtime
         assert runtime.snapshot is not None, "the lifespan has entered the run"
         assert agent.app_registry is runtime.snapshot.registry
-        assert runtime.fakts is None, "an app with no requirements authenticates nothing"
+        assert runtime.fakts is None, (
+            "an app with no requirements authenticates nothing"
+        )
         assert "ping" in agent.app_registry.implementations
         assert fastapi_app.state.agent is agent
 
@@ -69,7 +71,9 @@ def test_a_served_app_with_services_builds_their_clients(tmp_path) -> None:  # n
     runtime = serve(app, fastapi_app, db_file=str(tmp_path / "clients.db"))
 
     with TestClient(fastapi_app):
-        assert runtime.fakts is not None, "a service with a requirement resolves through fakts"
+        assert runtime.fakts is not None, (
+            "a service with a requirement resolves through fakts"
+        )
         assert isinstance(runtime.get(PictureClient), PictureClient)
         assert runtime.agent is not None, "the lifespan has built the agent"
         assert runtime.agent.bound_app is runtime

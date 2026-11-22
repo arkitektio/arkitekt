@@ -1,22 +1,22 @@
+import json
 import logging
-import sys
-from typing import Annotated
-from arkitekt.cli.errors import cli_error
-from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument
-from arkitekt.cli.vars import get_console, get_work_dir
 import os
 import shlex
-from arkitekt.cli.ui import command_hint, done, escape, notice, step
 import subprocess
+import sys
 import uuid
+from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
-from arkitekt.cli.utils import configure_logging
+
 from arkitekt.cli.completion import complete_flavours
-import json
-from typing import TYPE_CHECKING, Any
-from arkitekt.constants import DEFAULT_ARKITEKT_URL
+from arkitekt.cli.errors import cli_error
 from arkitekt.cli.options import LogLevel, LogLevelOption, UrlOption
+from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument
+from arkitekt.cli.ui import command_hint, done, escape, notice, step
+from arkitekt.cli.utils import configure_logging
+from arkitekt.cli.vars import get_console, get_work_dir
+from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 if TYPE_CHECKING:
     from arkitekt_spec import AppManifest, Inspection
@@ -81,7 +81,9 @@ def build_flavour(
 
     build_id = str(uuid.uuid4())
     relative_dir = flavour_relative_dir(flavour_name)
-    wanted = list(dict.fromkeys(platforms if platforms is not None else flavour.platforms))
+    wanted = list(
+        dict.fromkeys(platforms if platforms is not None else flavour.platforms)
+    )
 
     if flavour.is_customized():
         # A hand-written command is run as written; this CLI has nowhere to put
@@ -94,7 +96,9 @@ def build_flavour(
                 f"for this machine only, but its platforms say {escape(', '.join(wanted))}",
                 "drop build_command from its config.yaml to build them all",
             )
-        build_host_image(build_id, flavour_name, flavour, work_dir, wanted, console=console)
+        build_host_image(
+            build_id, flavour_name, flavour, work_dir, wanted, console=console
+        )
         return build_id
 
     build_host_image(build_id, flavour_name, flavour, work_dir, wanted, console=console)
@@ -141,7 +145,9 @@ def build_host_image(
     relative_dir = flavour_relative_dir(flavour_name)
 
     if flavour.is_customized():
-        _run_build(flavour.generate_build_command(build_id, relative_dir), work_dir, "build")
+        _run_build(
+            flavour.generate_build_command(build_id, relative_dir), work_dir, "build"
+        )
         return
 
     host = host_platform()
@@ -194,7 +200,9 @@ def inspect_docker_container(build_id: str) -> tuple[int, int]:
             size = container_info[0]["Size"]
             size_root_fs = container_info[0]["Size"]
         except (IndexError, KeyError) as e:
-            raise InspectionError("Size information not found in container details") from e
+            raise InspectionError(
+                "Size information not found in container details"
+            ) from e
         return size, size_root_fs
     except subprocess.CalledProcessError as e:
         raise InspectionError(f"An error occurred: {e.stdout}{e.stderr}") from e
@@ -216,10 +224,21 @@ def inspect_all(
         # No ``-it``: a TTY is meaningless when stdout/stderr are piped and it
         # keeps the read from cleanly ending on container exit.
         process = subprocess.Popen(
-            " ".join([
-                "docker", "run", "--rm", "--network", "host",
-                build_id, "arkitekt", "inspect", "all", shlex.quote(target), "--machine-readable",
-            ]),
+            " ".join(
+                [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "--network",
+                    "host",
+                    build_id,
+                    "arkitekt",
+                    "inspect",
+                    "all",
+                    shlex.quote(target),
+                    "--machine-readable",
+                ]
+            ),
             shell=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -249,9 +268,7 @@ def inspect_all(
                 cli_error(
                     "Missing a module in the container. Make sure all dependencies are installed."
                 )
-            cli_error(
-                "Running `arkitekt inspect all` inside the container failed."
-            )
+            cli_error("Running `arkitekt inspect all` inside the container failed.")
 
         runtime = machine_readable(result, "AGENT")
         if runtime is None:
@@ -295,7 +312,9 @@ def inspect_build(
     size, size_root_fs = inspect_docker_container(build_id)
     runtime, manifest = inspect_all(build_id, url, target)
     logger.debug("Runtime inspection result: %s", runtime)
-    return read_inspection(runtime, size, build_id), AppManifest.model_validate(manifest)
+    return read_inspection(runtime, size, build_id), AppManifest.model_validate(
+        manifest
+    )
 
 
 def build(
@@ -362,7 +381,11 @@ def build(
     build_run = str(uuid.uuid4())
 
     for key, inspected_flavour in flavours.items():
-        step(console, f"Building flavour [bold]{escape(key)}[/bold]", "this may take a while...")
+        step(
+            console,
+            f"Building flavour [bold]{escape(key)}[/bold]",
+            "this may take a while...",
+        )
 
         platforms = list(platform) if platform else list(inspected_flavour.platforms)
 
@@ -381,7 +404,11 @@ def build(
             subprocess.run(["docker", "tag", build_tag, tag], check=True)
 
         if no_inspect:
-            done(console, f"Built flavour [bold]{escape(key)}[/bold]", f"image {build_tag}")
+            done(
+                console,
+                f"Built flavour [bold]{escape(key)}[/bold]",
+                f"image {build_tag}",
+            )
             notice(
                 console,
                 "Not recorded",

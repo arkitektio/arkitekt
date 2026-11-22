@@ -11,13 +11,13 @@ import json
 from unittest.mock import patch
 
 import yaml
+from arkitekt_spec import UNKNOWN_AUTHOR, AppManifest, Inspection, current_spec_version
 from typer.testing import CliRunner
 
 from arkitekt import App
 from arkitekt.app.spec import app_manifest
 from arkitekt.cli.commands.plugin.build import inspect_all
 from arkitekt.cli.commands.plugin.io import get_builds
-from arkitekt_spec import UNKNOWN_AUTHOR, AppManifest, Inspection, current_spec_version
 from arkitekt.cli.commands.plugin.types import Build
 from arkitekt.cli.main import cli_app
 from arkitekt.cli.target import infer_package_manager
@@ -36,7 +36,11 @@ def test_an_image_reports_the_apps_identity_and_target():
         entrypoint="main:api",
     )
 
-    assert (manifest.identifier, manifest.version, manifest.author) == ("com.x", "1.2.3", "me")
+    assert (manifest.identifier, manifest.version, manifest.author) == (
+        "com.x",
+        "1.2.3",
+        "me",
+    )
     assert manifest.scopes == ["mikro_read", "openid"]
     assert manifest.description == "What it is"
     assert manifest.logo == "http://l"
@@ -55,7 +59,13 @@ def test_a_staged_build_runs_the_recorded_target():
     )
 
     assert build.build_arkitekt_command("http://fakts") == [
-        "arkitekt", "run", "prod", "--headless", "main:api", "--url", "http://fakts",
+        "arkitekt",
+        "run",
+        "prod",
+        "--headless",
+        "main:api",
+        "--url",
+        "http://fakts",
     ]
 
 
@@ -64,15 +74,20 @@ class _OkProc:
 
     def communicate(self, timeout=None):
         return (
-            b"--START_AGENT--" + json.dumps({"implementations": []}).encode() + b"--END_AGENT--"
-            b"--START_MANIFEST--" + json.dumps({"identifier": "com.x", "version": "1"}).encode()
+            b"--START_AGENT--"
+            + json.dumps({"implementations": []}).encode()
+            + b"--END_AGENT--"
+            b"--START_MANIFEST--"
+            + json.dumps({"identifier": "com.x", "version": "1"}).encode()
             + b"--END_MANIFEST--",
             b"",
         )
 
 
 def test_the_image_is_inspected_on_the_built_target():
-    with patch("arkitekt.cli.commands.plugin.build.subprocess.Popen", return_value=_OkProc()) as popen:
+    with patch(
+        "arkitekt.cli.commands.plugin.build.subprocess.Popen", return_value=_OkProc()
+    ) as popen:
         inspect_all("image", "http://fakts", "main:api")
 
     command = popen.call_args[0][0]
@@ -82,20 +97,39 @@ def test_the_image_is_inspected_on_the_built_target():
 
 def _flavour_without_an_app(tmp_path):
     """A flavour, and no app module at all: the image is the only place the app is."""
-    result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "plugin", "flavour", "add", "--no-multi-arch", "--arkitekt-version", "0.0.1",
-    ], input="n\n")
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "plugin",
+            "flavour",
+            "add",
+            "--no-multi-arch",
+            "--arkitekt-version",
+            "0.0.1",
+        ],
+        input="n\n",
+    )
     assert result.exit_code == 0, result.output
 
 
 def test_a_build_records_who_the_image_says_it_is_without_importing_the_app(tmp_path):
     _flavour_without_an_app(tmp_path)
-    reported = AppManifest(identifier="from.the.image", version="9.9.9", entrypoint="main:api")
+    reported = AppManifest(
+        identifier="from.the.image", version="9.9.9", entrypoint="main:api"
+    )
 
-    with patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"), patch(
-        "arkitekt.cli.commands.plugin.build.inspect_build", return_value=(Inspection(spec_version="8.0.0"), reported)
-    ) as inspected:
-        result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "main:api"])
+    with (
+        patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"),
+        patch(
+            "arkitekt.cli.commands.plugin.build.inspect_build",
+            return_value=(Inspection(spec_version="8.0.0"), reported),
+        ) as inspected,
+    ):
+        result = CliRunner().invoke(
+            cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "main:api"]
+        )
 
     assert result.exit_code == 0, result.output
     assert inspected.call_args.args[2] == "main:api"
@@ -105,13 +139,20 @@ def test_a_build_records_who_the_image_says_it_is_without_importing_the_app(tmp_
 
 def test_builds_yaml_names_the_spec_that_wrote_it_and_the_one_the_image_used(tmp_path):
     _flavour_without_an_app(tmp_path)
-    reported = AppManifest(identifier="from.the.image", version="9.9.9", entrypoint="main:api")
+    reported = AppManifest(
+        identifier="from.the.image", version="9.9.9", entrypoint="main:api"
+    )
 
-    with patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"), patch(
-        "arkitekt.cli.commands.plugin.build.inspect_build",
-        return_value=(Inspection(spec_version="6.0.0"), reported),
+    with (
+        patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"),
+        patch(
+            "arkitekt.cli.commands.plugin.build.inspect_build",
+            return_value=(Inspection(spec_version="6.0.0"), reported),
+        ),
     ):
-        result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "main:api"])
+        result = CliRunner().invoke(
+            cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "main:api"]
+        )
 
     assert result.exit_code == 0, result.output
     written = yaml.safe_load((tmp_path / ".arkitekt" / "builds.yaml").read_text())
@@ -122,10 +163,13 @@ def test_builds_yaml_names_the_spec_that_wrote_it_and_the_one_the_image_used(tmp
 def test_a_build_that_is_not_inspected_is_not_recorded(tmp_path):
     _flavour_without_an_app(tmp_path)
 
-    with patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"), patch(
-        "arkitekt.cli.commands.plugin.build.inspect_build"
-    ) as inspected:
-        result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "--no-inspect"])
+    with (
+        patch("arkitekt.cli.commands.plugin.build.build_flavour", return_value="image"),
+        patch("arkitekt.cli.commands.plugin.build.inspect_build") as inspected,
+    ):
+        result = CliRunner().invoke(
+            cli_app, ["--work-dir", str(tmp_path), "plugin", "build", "--no-inspect"]
+        )
 
     assert result.exit_code == 0, result.output
     assert "Not recorded" in result.output
@@ -139,37 +183,75 @@ def test_the_package_manager_is_inferred_from_the_lockfile(tmp_path):
     assert infer_package_manager(str(tmp_path)) == "uv"
 
 
-def test_plugin_init_picks_the_uv_image_for_a_uv_project_without_loading_the_app(tmp_path):
+def test_plugin_init_picks_the_uv_image_for_a_uv_project_without_loading_the_app(
+    tmp_path,
+):
     """No app module here at all: only the devcontainer needs the app."""
     (tmp_path / "uv.lock").write_text("")
 
-    result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "plugin", "flavour", "add", "--arkitekt-version", "0.0.1",
-    ], input="n\n")
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "plugin",
+            "flavour",
+            "add",
+            "--arkitekt-version",
+            "0.0.1",
+        ],
+        input="n\n",
+    )
 
     assert result.exit_code == 0, result.output
-    dockerfile = (tmp_path / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile").read_text()
+    dockerfile = (
+        tmp_path / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile"
+    ).read_text()
     assert "uv sync" in dockerfile
 
 
 def test_plugin_init_names_the_devcontainer_after_the_app(app_dir, monkeypatch):
     monkeypatch.chdir(app_dir)  # the devcontainer is written relative to the cwd
 
-    result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(app_dir), "plugin", "flavour", "add", "--devcontainer", "--arkitekt-version", "0.0.1",
-    ])
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(app_dir),
+            "plugin",
+            "flavour",
+            "add",
+            "--devcontainer",
+            "--arkitekt-version",
+            "0.0.1",
+        ],
+    )
 
     assert result.exit_code == 0, result.output
-    devcontainer = json.loads((app_dir / ".devcontainer" / "vanilla" / "devcontainer.json").read_text())
+    devcontainer = json.loads(
+        (app_dir / ".devcontainer" / "vanilla" / "devcontainer.json").read_text()
+    )
     assert devcontainer["name"] == "com.test.app vanilla Devcontainer"
 
 
-def test_plugin_init_devcontainer_without_an_app_is_a_clean_error(tmp_path, monkeypatch):
+def test_plugin_init_devcontainer_without_an_app_is_a_clean_error(
+    tmp_path, monkeypatch
+):
     monkeypatch.chdir(tmp_path)
 
-    result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "plugin", "flavour", "add", "--devcontainer", "--arkitekt-version", "0.0.1",
-    ])
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "plugin",
+            "flavour",
+            "add",
+            "--devcontainer",
+            "--arkitekt-version",
+            "0.0.1",
+        ],
+    )
 
     assert result.exit_code != 0
     assert "Could not find the app module 'app'" in result.output
@@ -193,41 +275,80 @@ def test_an_app_asks_for_what_its_services_clients_need():
     app = App("com.x", "1.0", services=[mikro])
     assert app.scopes == ["mikro_read", "mikro_write", "openid"]
     assert app.manifest.scopes == ["mikro_read", "mikro_write", "openid"]
-    assert App("com.y", "1.0", services=[mikro], scopes=["kabinet_deploy"]).scopes == ["kabinet_deploy", "mikro_read", "mikro_write", "openid"]
+    assert App("com.y", "1.0", services=[mikro], scopes=["kabinet_deploy"]).scopes == [
+        "kabinet_deploy",
+        "mikro_read",
+        "mikro_write",
+        "openid",
+    ]
 
 
 def test_a_flavour_is_added_from_a_script_without_a_devcontainer(tmp_path, monkeypatch):
     """No terminal, no question: the flavour alone, not an abort."""
     monkeypatch.setattr("arkitekt.cli.tty.is_tty", lambda: False)
-    result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "plugin", "flavour", "add", "--flavour", "gpu",
-        "--no-multi-arch", "--arkitekt-version", "0.0.1",
-    ])
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "plugin",
+            "flavour",
+            "add",
+            "--flavour",
+            "gpu",
+            "--no-multi-arch",
+            "--arkitekt-version",
+            "0.0.1",
+        ],
+    )
 
     assert result.exit_code == 0, result.output
     assert not (tmp_path / ".devcontainer").exists()
-    config = yaml.safe_load((tmp_path / ".arkitekt" / "flavours" / "gpu" / "config.yaml").read_text())
-    assert config["description"] == "The gpu flavour", "named after the flavour, not 'vanilla'"
+    config = yaml.safe_load(
+        (tmp_path / ".arkitekt" / "flavours" / "gpu" / "config.yaml").read_text()
+    )
+    assert config["description"] == "The gpu flavour", (
+        "named after the flavour, not 'vanilla'"
+    )
 
 
 def _builds(*flavours):
     manifest = app_manifest(App("com.x"), entrypoint="app")
-    return {f"id-{f}": Build(build_run="run", build_id=f"id-{f}", flavour=f, manifest=manifest) for f in flavours}
+    return {
+        f"id-{f}": Build(
+            build_run="run", build_id=f"id-{f}", flavour=f, manifest=manifest
+        )
+        for f in flavours
+    }
 
 
 def test_stage_asks_which_flavour_when_the_build_made_several(tmp_path, monkeypatch):
-    monkeypatch.setattr("arkitekt.cli.commands.plugin.io.get_builds", lambda *a, **k: _builds("vanilla", "gpu"))
+    monkeypatch.setattr(
+        "arkitekt.cli.commands.plugin.io.get_builds",
+        lambda *a, **k: _builds("vanilla", "gpu"),
+    )
 
-    result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "stage"])
+    result = CliRunner().invoke(
+        cli_app, ["--work-dir", str(tmp_path), "plugin", "stage"]
+    )
 
     assert result.exit_code == 1
-    assert "several flavours (gpu, vanilla)" in result.output and "--flavour" in result.output
+    assert (
+        "several flavours (gpu, vanilla)" in result.output
+        and "--flavour" in result.output
+    )
 
 
 def test_stage_takes_the_only_flavour_or_the_one_named(tmp_path, monkeypatch):
-    monkeypatch.setattr("arkitekt.cli.commands.plugin.io.get_builds", lambda *a, **k: _builds("vanilla", "gpu"))
+    monkeypatch.setattr(
+        "arkitekt.cli.commands.plugin.io.get_builds",
+        lambda *a, **k: _builds("vanilla", "gpu"),
+    )
     with patch("arkitekt.cli.commands.plugin.stage.subprocess.run") as run:
-        result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "plugin", "stage", "--flavour", "gpu"])
+        result = CliRunner().invoke(
+            cli_app,
+            ["--work-dir", str(tmp_path), "plugin", "stage", "--flavour", "gpu"],
+        )
 
     assert "Staging build id-gpu (gpu)" in result.output
     assert "None" not in result.output

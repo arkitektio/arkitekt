@@ -36,7 +36,19 @@ _OWN_VERSION = arkitekt_version()
 #: What `--help` lists when the work dir holds an app, and when it does not. The
 #: CLI is about the app in the folder: with one there, running it and its session;
 #: without one, making one. Every command stays callable either way.
-APP_MENU = ("run", "call", "check", "login", "logout", "status", "inspect", "gen", "plugin", "mesh", "self")
+APP_MENU = (
+    "run",
+    "call",
+    "check",
+    "login",
+    "logout",
+    "status",
+    "inspect",
+    "gen",
+    "plugin",
+    "mesh",
+    "self",
+)
 BARE_MENU = ("create", "self")
 
 _WORK_DIR_FLAGS = ("-w", "--work-dir")
@@ -161,4 +173,3 @@ def main(
     from arkitekt.cli import updates
 
     updates.start(ctx)
-

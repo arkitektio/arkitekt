@@ -1,12 +1,17 @@
 import json
-from typing import Annotated, Any
+from typing import Any
 
 import typer
 from rich.table import Table
 
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE, snapshot_or_exit
+from arkitekt.cli.options import (
+    JsonOption,
+    LogLevel,
+    LogLevelOption,
+    MachineReadableOption,
+)
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
 from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
 

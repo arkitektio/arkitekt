@@ -5,7 +5,6 @@ This checks what the app itself decides: which services it uses, what its
 manifest says, and that declaring never connects anything.
 """
 
-
 import pytest
 from arkitekt_spec.declare.definition.errors import DefinitionError
 from arkitekt_spec.declare.structures.errors import StructureRegistryError
@@ -87,7 +86,9 @@ def test_a_registered_services_client_is_injected_not_a_port() -> None:
     app = App("inject", services=[PictureService(), OtherService()])
 
     @app.action
-    def show(picture: Picture, pictures: PictureClient, other: OtherClient | None) -> str:
+    def show(
+        picture: Picture, pictures: PictureClient, other: OtherClient | None
+    ) -> str:
         """Shows it."""
         return picture.id
 
@@ -294,4 +295,6 @@ def test_a_named_return_is_read_by_its_key() -> None:
         """Count"""
         return len(values)
 
-    assert [port.key for port in app.registry.implementations["count"].definition.returns] == ["count"]
+    assert [
+        port.key for port in app.registry.implementations["count"].definition.returns
+    ] == ["count"]

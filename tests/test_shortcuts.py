@@ -9,8 +9,7 @@ from typing import Any
 
 import pytest
 
-from arkitekt import App, Easy, aeasy, easy, interactive
-from arkitekt import shortcuts
+from arkitekt import App, Easy, aeasy, easy, interactive, shortcuts
 
 from .fakes import OtherClient, OtherService, PictureClient, PictureService
 
@@ -71,7 +70,9 @@ def test_each_entry_gets_its_own_runtime() -> None:
 
 
 def test_connection_options_reach_the_runtime_not_the_app() -> None:
-    shortcut = easy("opts", PICTURES, url="http://x", force=True, device_id="n", **options())
+    shortcut = easy(
+        "opts", PICTURES, url="http://x", force=True, device_id="n", **options()
+    )
     runtime = shortcut.runtime()
     assert (runtime.options.url, runtime.options.force, runtime.options.device_id) == (
         "http://x",

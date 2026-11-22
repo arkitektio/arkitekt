@@ -13,26 +13,26 @@ from rich.console import Console
 from rich.markup import escape
 
 from arkitekt import runtime
-from arkitekt.app.fakts import resolve_url
 from arkitekt.app import App
+from arkitekt.app.fakts import resolve_url
 from arkitekt.app.sessions import Session, read_session, session_path
+from arkitekt.app.terminal import force_qr
 from arkitekt.cli.commands.app.run.utils import explicit_options
 from arkitekt.cli.failures import report_failure
 from arkitekt.cli.options import (
-    JsonOption,
     HeadlessOption,
-    QrOption,
+    JsonOption,
     LogLevel,
     LogLevelOption,
-    ReauthOption,
     MandateKeyOption,
+    QrOption,
+    ReauthOption,
     TokenOption,
     UrlOption,
 )
 from arkitekt.cli.running import ago
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.ui import command_hint, construct_app_banner, done, notice
-from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging, human_console, json_stdout
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -41,7 +41,9 @@ from arkitekt.constants import DEFAULT_ARKITEKT_URL
 LOGIN_OPTIONS = ("url", "token", "mandate_key", "headless")
 
 
-def _usable_session(console: Console, app: App[Any], server: str, work_dir: str) -> Session | None:
+def _usable_session(
+    console: Console, app: App[Any], server: str, work_dir: str
+) -> Session | None:
     """The saved session a run of ``app`` against ``server`` would use, if any.
 
     One is saved per app, version and server, for the manifest it was approved
@@ -105,7 +107,11 @@ def login(
 
     if options.get("token") or options.get("mandate_key"):
         # An interactive login has said so itself, when it was approved.
-        done(console, f"Logged in to {escape(loaded.self.deployment_name)}", "with a token")
+        done(
+            console,
+            f"Logged in to {escape(loaded.self.deployment_name)}",
+            "with a token",
+        )
 
 
 def logout(
@@ -137,7 +143,9 @@ def logout(
         f"Logged out of {escape(server)}",
         f"{escape(app.identifier)} {escape(app.version)}",
     )
-    notice(console, "Stop running instances", "one still running saves its session back")
+    notice(
+        console, "Stop running instances", "one still running saves its session back"
+    )
 
 
 def status(
@@ -184,7 +192,11 @@ def status(
                 "the next run logs in again",
             )
             return
-        notice(console, "Not logged in", f"`{command_hint('login', get_work_dir(ctx))}`, or just run the app")
+        notice(
+            console,
+            "Not logged in",
+            f"`{command_hint('login', get_work_dir(ctx))}`, or just run the app",
+        )
         return
 
     since = f"{ago(session.logged_in_at)} · " if session.logged_in_at else ""

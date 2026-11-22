@@ -8,10 +8,10 @@ shared with a run started outside the CLI, and re-exported here.
 """
 
 import os
+from collections.abc import Callable, MutableSet
 from importlib.metadata import PackageNotFoundError, version
 from itertools import zip_longest
 from typing import Any
-from collections.abc import Callable, MutableSet
 
 from rich.console import Console, ConsoleOptions, Group, RenderableType, RenderResult
 from rich.markup import escape
@@ -67,7 +67,9 @@ class Adaptive:
     def __init__(self, build: Callable[[bool], RenderableType]) -> None:
         self.build = build
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
         yield self.build(options.ascii_only)
 
 
@@ -77,7 +79,9 @@ class Banner:
     def __init__(self, *lines: RenderableType) -> None:
         self.lines = lines
 
-    def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
+    def __rich_console__(
+        self, console: Console, options: ConsoleOptions
+    ) -> RenderResult:
         grid = Table.grid(padding=(0, GUTTER, 0, 0))
         grid.add_column(style="cyan", no_wrap=True)
         grid.add_column()

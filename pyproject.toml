@@ -105,13 +105,11 @@ arkitekt = "arkitekt.cli.main:cli"
 # checker without one. Only the typecheck job installs it (its arm64 wheels are
 # not a given), so the test matrix still skips the Qt tests.
 qt-binding = ["pyqt5>=5.15"]
-
-[tool.uv]
-dev-dependencies = [
+dev = [
     "autoflake>=1.7.7,<2",
-    "ruff>=0.8",
+    "ruff==0.17.6",
     "turms>=2.3.0",
-    "basedpyright>=1.21",
+    "basedpyright==1.40.2",
     "pytest>=9.0.3",
     "pytest-asyncio>=1.2",
     "pytest-cov>=6",
@@ -151,62 +149,6 @@ build-backend = "hatchling.build"
 source = "vcs"
 fallback-version = "0.0.0"
 
-[tool.basedpyright]
-# The gate is errors; the (many) warnings are advice, reported but not failing.
-failOnWarnings = false
-# tests/typing holds cases with deliberate errors; tests/test_typing.py checks them.
-exclude = [
-    "**/node_modules",
-    "**/__pycache__",
-    "**/.*",
-    "tests/typing",
-    # Rendered by string replacement (__APP_ARGUMENTS__), not importable modules.
-    "arkitekt/cli/templates",
-    # The first tests `create` writes into a project: they run there, not here.
-    "arkitekt/cli/starter_tests",
-]
-executionEnvironments = [
-    # The examples' own libraries (scipy, scikit-image, bioio, ...) are not
-    # dependencies of arkitekt, so CI does not install them.
-    { root = "examples", reportMissingImports = "none" },
-    { root = "." },
-]
-
-[tool.ruff]
-
-# Exclude a variety of commonly ignored directories.
-exclude = [
-    ".bzr",
-    ".direnv",
-    ".eggs",
-    ".git",
-    ".hg",
-    ".mypy_cache",
-    ".nox",
-    ".pants.d",
-    ".pytype",
-    ".ruff_cache",
-    ".svn",
-    ".tox",
-    ".venv",
-    "__pypackages__",
-    "_build",
-    "buck-out",
-    "build",
-    "dist",
-    "node_modules",
-    "venv",
-]
-
-# Same as Black.
-line-length = 100
-
-[tool.ruff.lint]
-# The top-level spellings of these two were deprecated and warned on every run.
-# ANN101 (missing type for `self`) was removed from ruff entirely.
-extend-select = ["ANN", "D1", "UP"]
-extend-ignore = ["ANN002", "ANN003", "UP037", "UP038", "UP042"]
-
 [tool.pytest.ini_options]
 markers = [
     "qt: marks tests that require a running qt application",
@@ -216,7 +158,6 @@ markers = [
     "mesh: marks the test that installs arkitekt into a container of its own and reaches a hub's services over its mesh (needs docker and konstruktor; .github/workflows/mesh.yaml)",
     "revokes: marks tests that serve their own revocation endpoint, so a logout may reach it",
 ]
-
 
 
 [tool.semantic_release]

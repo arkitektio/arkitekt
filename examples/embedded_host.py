@@ -57,11 +57,13 @@ class Instrument:
         self.flows = {name: 0.0 for name in pumps}
         self.has_dispenser = has_dispenser
         # The state the app publishes, once it runs: the host writes to it too.
-        self.published: "InstrumentState | None" = None
+        self.published: InstrumentState | None = None
 
     def set_flow(self, pump: str, ml_per_min: float) -> None:
         if pump not in self.flows:
-            raise ValueError(f"No pump named {pump!r}: this instrument has {', '.join(self.flows)}.")
+            raise ValueError(
+                f"No pump named {pump!r}: this instrument has {', '.join(self.flows)}."
+            )
         if not 0.0 <= ml_per_min <= 50.0:
             raise ValueError("A pump runs between 0 and 50 ml/min.")
         self.flows[pump] = ml_per_min  # here: the serial call to the real pump
@@ -88,7 +90,11 @@ def publish(instrument: Instrument) -> InstrumentState:
     return instrument.published
 
 
-Pump = Annotated[str, withStateChoices("self.instrument.pumps"), Description("One of this instrument's pumps")]
+Pump = Annotated[
+    str,
+    withStateChoices("self.instrument.pumps"),
+    Description("One of this instrument's pumps"),
+]
 
 
 @app.action(effects=Effects.REPEATABLE, locks=["instrument"])
@@ -133,13 +139,17 @@ class Host:
         self.instrument = instrument
         if instrument.has_dispenser:
             # Offered only on an instrument that can do it.
-            app.register_action(dispense, effects=Effects.IRREVERSIBLE, locks=["instrument"])
+            app.register_action(
+                dispense, effects=Effects.IRREVERSIBLE, locks=["instrument"]
+            )
 
     def show(self, line: str) -> None:
         print(f"[panel] {line}")
 
     async def on_code(self, challenge: DeviceCodeChallenge) -> None:
-        self.show(f"approve at {challenge.verification_uri_complete} (code {challenge.user_code})")
+        self.show(
+            f"approve at {challenge.verification_uri_complete} (code {challenge.user_code})"
+        )
 
     async def on_state(self, state: ConnectionState) -> None:
         self.show(f"arkitekt is {state.value}")
@@ -147,7 +157,11 @@ class Host:
     async def on_task(self, event: TaskEvent) -> None:
         if event.kind is TaskEventKind.ASSIGNED:
             self.show(f"called: {event.action} {event.arguments}")
-        elif event.kind in (TaskEventKind.DONE, TaskEventKind.FAILED, TaskEventKind.CANCELLED):
+        elif event.kind in (
+            TaskEventKind.DONE,
+            TaskEventKind.FAILED,
+            TaskEventKind.CANCELLED,
+        ):
             self.show(f"{event.action} {event.kind.value} {event.error or ''}".rstrip())
 
     def operate(self) -> None:

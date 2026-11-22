@@ -17,7 +17,9 @@ CASES = sorted((Path(__file__).parent / "typing").glob("*_cases.py"))
 
 @pytest.mark.parametrize("cases", CASES, ids=[c.stem for c in CASES])
 def test_the_cases_type_check_as_annotated(cases: Path, tmp_path: Path) -> None:
-    binary = shutil.which("basedpyright") or str(Path(sys.executable).parent / "basedpyright")
+    binary = shutil.which("basedpyright") or str(
+        Path(sys.executable).parent / "basedpyright"
+    )
     if not Path(binary).exists():
         pytest.skip("basedpyright is not installed")
 

@@ -141,14 +141,17 @@ A return is read by its key, so name the ones a blok reads. There are two spelli
 from typing import Annotated, NamedTuple
 from arkitekt import Key
 
+
 @app.action
 def count_cells(image: Image) -> Annotated[int, Key("count")]:
     """Count the cells"""
     ...
 
+
 class Measured(NamedTuple):
     count: int
     mean: float
+
 
 @app.action
 def measure(image: Image) -> Measured:
@@ -327,6 +330,7 @@ as `deps.<key>`, the action's dependency keys:
 ```python
 from arkitekt import ActionBlok
 
+
 @app.workflow(
     bloks=[
         """
@@ -407,8 +411,8 @@ not take, or children where none are drawn is reported with its place in the tre
 from arkitekt import default_view
 
 view = default_view()
-sorted(view.components)               # Accordion, Alert, Badge, Button, Card, ...
-view.component("Slider").props        # bind, min, max, step, onChange, ...
+sorted(view.components)  # Accordion, Alert, Badge, Button, Card, ...
+view.component("Slider").props  # bind, min, max, step, onChange, ...
 ```
 
 A catalog finding is a warning by default, since the client's copy may lag the renderer;
@@ -421,7 +425,9 @@ that name:
 
 ```python
 app.ui_catalog("electron", components=[ComponentSpec(name="Gauge", props=(...))])
-app.blok("dial", '<Blok kind="agent" context="panel" catalog="electron"><Gauge /></Blok>')
+app.blok(
+    "dial", '<Blok kind="agent" context="panel" catalog="electron"><Gauge /></Blok>'
+)
 ```
 
 One it only names (`catalog="somewhere-else"`) warns `catalog.unknown`: what it adds is not

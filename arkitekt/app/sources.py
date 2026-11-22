@@ -56,7 +56,9 @@ def cascade(source: Source) -> tuple[str, ...]:
     return ("arg", "env", "default") if source == DISCOVER else tuple(source.split("-"))
 
 
-def from_argv(flag: str, argv: Sequence[str] | None = None, *, boolean: bool = False) -> str | None:
+def from_argv(
+    flag: str, argv: Sequence[str] | None = None, *, boolean: bool = False
+) -> str | None:
     """The value of ``--flag`` on the command line (``--flag v`` or ``--flag=v``), else None.
 
     A boolean flag takes no separate value (``--reauth`` is ``""``, i.e. on; ``--reauth=0``
@@ -68,7 +70,9 @@ def from_argv(flag: str, argv: Sequence[str] | None = None, *, boolean: bool = F
     for index, arg in enumerate(args):
         if arg == name:
             following = args[index + 1] if index + 1 < len(args) else None
-            takes_next = not boolean and following is not None and not following.startswith("--")
+            takes_next = (
+                not boolean and following is not None and not following.startswith("--")
+            )
             found = following if takes_next else ""
         elif arg.startswith(name + "="):
             found = arg[len(name) + 1 :]

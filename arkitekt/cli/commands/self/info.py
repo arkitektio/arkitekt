@@ -8,7 +8,8 @@ Arkitekt CLI. Useful when filing a bug report or debugging a broken setup.
 import platform
 import shutil
 import sys
-from importlib.metadata import version as installed_version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as installed_version
 
 import typer
 from rich.table import Table
@@ -27,7 +28,11 @@ def _which_version(executable: str, args: list[str]) -> str:
         out = subprocess.run(
             [executable, *args], capture_output=True, text=True, timeout=5
         )
-        line = (out.stdout or out.stderr).strip().splitlines()[0] if (out.stdout or out.stderr) else ""
+        line = (
+            (out.stdout or out.stderr).strip().splitlines()[0]
+            if (out.stdout or out.stderr)
+            else ""
+        )
         return f"{path}{f' ([green]{line}[/green])' if line else ''}"
     except Exception:
         return path
@@ -54,11 +59,15 @@ def info(ctx: typer.Context) -> None:
     table.add_row("arkitekt", f"[green]{own}[/green]")
     table.add_row("Python", f"{platform.python_version()} ({sys.implementation.name})")
     table.add_row("Interpreter", sys.executable)
-    table.add_row("Platform", f"{platform.system()} {platform.release()} ({platform.machine()})")
+    table.add_row(
+        "Platform", f"{platform.system()} {platform.release()} ({platform.machine()})"
+    )
     table.add_row("uv", _which_version("uv", ["--version"]))
     table.add_row("pip", _which_version("pip", ["--version"]))
     # Docker is optional — only the `plugin build`/`publish` commands need it.
-    table.add_row("docker [dim](optional)[/dim]", _which_version("docker", ["--version"]))
+    table.add_row(
+        "docker [dim](optional)[/dim]", _which_version("docker", ["--version"])
+    )
     table.add_row("Working dir", get_work_dir(ctx))
 
     console.print(table)

@@ -27,12 +27,12 @@ def move(x: int) -> int:
 def test_an_action_registered_by_call_is_the_action_the_decorator_declares() -> None:
     decorated, called = _app(), _app()
     decorated.action(effects=Effects.IRREVERSIBLE, locks=["stage"])(move)
-    wrapped = called.register_action(move, effects=Effects.IRREVERSIBLE, locks=["stage"])
+    wrapped = called.register_action(
+        move, effects=Effects.IRREVERSIBLE, locks=["stage"]
+    )
 
     assert wrapped(3) == 3, "still callable as itself"
-    ours, theirs = (
-        app.registry.implementations["move"] for app in (called, decorated)
-    )
+    ours, theirs = (app.registry.implementations["move"] for app in (called, decorated))
     assert ours.definition == theirs.definition
     assert (ours.effects, ours.locks) == (theirs.effects, theirs.locks)
 
@@ -101,11 +101,16 @@ def test_a_model_travels_as_its_apps_own_by_default() -> None:
 
     app.register_model(Limits)
     declared = app.registry.structure_registry
-    assert declared.model_for(StagePosition).identifier == "@stage-control/stage_position"  # pyright: ignore[reportOptionalMemberAccess]
+    assert (
+        declared.model_for(StagePosition).identifier  # pyright: ignore[reportOptionalMemberAccess]
+        == "@stage-control/stage_position"
+    )
     assert declared.model_for(Limits).identifier == "@stage-control/limits"  # pyright: ignore[reportOptionalMemberAccess]
 
 
-def test_a_model_identifier_the_server_would_refuse_is_refused_where_it_is_written() -> None:
+def test_a_model_identifier_the_server_would_refuse_is_refused_where_it_is_written() -> (
+    None
+):
     app = _app()
 
     with pytest.raises(StructureDefinitionError, match="@package/key"):

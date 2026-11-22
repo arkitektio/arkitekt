@@ -71,7 +71,10 @@ class Easy(Generic[R]):
     """
 
     def __init__(
-        self, app: App[Any], services: tuple["Service[Any]", ...], connection: dict[str, Any]
+        self,
+        app: App[Any],
+        services: tuple["Service[Any]", ...],
+        connection: dict[str, Any],
     ) -> None:
         self.app = app
         self.services = services
@@ -274,7 +277,8 @@ def easy(
 @overload
 def easy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2],
+    s1: Service[T1],
+    s2: Service[T2],
     /,
     *,
     version: str = "0.0.1",
@@ -298,7 +302,9 @@ def easy(
 @overload
 def easy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
     /,
     *,
     version: str = "0.0.1",
@@ -322,7 +328,10 @@ def easy(
 @overload
 def easy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
     /,
     *,
     version: str = "0.0.1",
@@ -346,7 +355,11 @@ def easy(
 @overload
 def easy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
     /,
     *,
     version: str = "0.0.1",
@@ -370,7 +383,12 @@ def easy(
 @overload
 def easy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
     /,
     *,
     version: str = "0.0.1",
@@ -394,7 +412,13 @@ def easy(
 @overload
 def easy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6], s7: Service[T7],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
+    s7: Service[T7],
     /,
     *,
     version: str = "0.0.1",
@@ -418,7 +442,14 @@ def easy(
 @overload
 def easy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6], s7: Service[T7], s8: Service[T8],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
+    s7: Service[T7],
+    s8: Service[T8],
     /,
     *,
     version: str = "0.0.1",
@@ -575,7 +606,8 @@ def aeasy(
 @overload
 def aeasy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2],
+    s1: Service[T1],
+    s2: Service[T2],
     /,
     *,
     version: str = "0.0.1",
@@ -599,7 +631,9 @@ def aeasy(
 @overload
 def aeasy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
     /,
     *,
     version: str = "0.0.1",
@@ -623,7 +657,10 @@ def aeasy(
 @overload
 def aeasy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
     /,
     *,
     version: str = "0.0.1",
@@ -647,7 +684,11 @@ def aeasy(
 @overload
 def aeasy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
     /,
     *,
     version: str = "0.0.1",
@@ -671,7 +712,12 @@ def aeasy(
 @overload
 def aeasy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
     /,
     *,
     version: str = "0.0.1",
@@ -695,7 +741,13 @@ def aeasy(
 @overload
 def aeasy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6], s7: Service[T7],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
+    s7: Service[T7],
     /,
     *,
     version: str = "0.0.1",
@@ -719,7 +771,14 @@ def aeasy(
 @overload
 def aeasy(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6], s7: Service[T7], s8: Service[T8],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
+    s7: Service[T7],
+    s8: Service[T8],
     /,
     *,
     version: str = "0.0.1",
@@ -838,7 +897,11 @@ def _leave_interactive(identifier: str | None = None) -> None:
         identifier: The app whose runtime to leave. ``None`` leaves all of them,
             newest first, which is what happens when the process exits.
     """
-    names = [identifier] if identifier is not None else list(reversed(_interactive_runtimes))
+    names = (
+        [identifier]
+        if identifier is not None
+        else list(reversed(_interactive_runtimes))
+    )
     for name in names:
         runtime = _interactive_runtimes.pop(name, None)
         if runtime is None:
@@ -902,7 +965,8 @@ def interactive(
 @overload
 def interactive(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2],
+    s1: Service[T1],
+    s2: Service[T2],
     /,
     *,
     version: str = "0.0.1",
@@ -926,7 +990,9 @@ def interactive(
 @overload
 def interactive(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
     /,
     *,
     version: str = "0.0.1",
@@ -950,7 +1016,10 @@ def interactive(
 @overload
 def interactive(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
     /,
     *,
     version: str = "0.0.1",
@@ -974,7 +1043,11 @@ def interactive(
 @overload
 def interactive(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
     /,
     *,
     version: str = "0.0.1",
@@ -998,7 +1071,12 @@ def interactive(
 @overload
 def interactive(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
     /,
     *,
     version: str = "0.0.1",
@@ -1022,7 +1100,13 @@ def interactive(
 @overload
 def interactive(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6], s7: Service[T7],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
+    s7: Service[T7],
     /,
     *,
     version: str = "0.0.1",
@@ -1046,7 +1130,14 @@ def interactive(
 @overload
 def interactive(
     identifier: str | None,
-    s1: Service[T1], s2: Service[T2], s3: Service[T3], s4: Service[T4], s5: Service[T5], s6: Service[T6], s7: Service[T7], s8: Service[T8],
+    s1: Service[T1],
+    s2: Service[T2],
+    s3: Service[T3],
+    s4: Service[T4],
+    s5: Service[T5],
+    s6: Service[T6],
+    s7: Service[T7],
+    s8: Service[T8],
     /,
     *,
     version: str = "0.0.1",

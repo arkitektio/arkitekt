@@ -43,7 +43,10 @@ def test_the_banner_puts_its_lines_beside_the_mark():
     assert [line.split()[0] for line in lines] == list(MARK)
     assert [line.split()[-1] for line in lines] == ["one", "two", "three"]
     # One column: the text starts at the same cell on every row.
-    assert len({line.index(word) for line, word in zip(lines, ("one", "two", "three"))}) == 1
+    assert (
+        len({line.index(word) for line, word in zip(lines, ("one", "two", "three"))})
+        == 1
+    )
 
 
 def test_a_terminal_that_cannot_encode_the_mark_gets_the_ascii_one():

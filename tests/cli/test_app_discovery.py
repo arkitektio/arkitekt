@@ -47,6 +47,7 @@ if __name__ == "__main__":
     run(app)
 '''
 
+
 def _run_cli(work_dir, *args, env=None):
     return subprocess.run(
         [sys.executable, "-m", "arkitekt.cli.main", "--work-dir", str(work_dir), *args],
@@ -163,7 +164,10 @@ def test_named_attribute_must_be_an_app():
 
 
 def test_a_module_without_an_app_is_an_error_that_shows_the_new_api():
-    with pytest.raises(NoAppError, match=r"(?s)defines no arkitekt App.*App\(.*@app\.action.*run\(app\)"):
+    with pytest.raises(
+        NoAppError,
+        match=r"(?s)defines no arkitekt App.*App\(.*@app\.action.*run\(app\)",
+    ):
         require_app(module_with(something=1))
 
 
@@ -179,7 +183,11 @@ def test_load_target_imports_the_work_dirs_module(tmp_path, monkeypatch):
     app, module, target = load_target("myapp.py", str(tmp_path))
 
     assert module.__name__ == "myapp" and target.module == "myapp"
-    assert (app.identifier, app.version, app.author) == ("chosen-by-the-module", "1.2.3", "someone")
+    assert (app.identifier, app.version, app.author) == (
+        "chosen-by-the-module",
+        "1.2.3",
+        "someone",
+    )
 
 
 def test_load_target_prefers_the_work_dir_over_a_cached_module(tmp_path, monkeypatch):
@@ -187,7 +195,9 @@ def test_load_target_prefers_the_work_dir_over_a_cached_module(tmp_path, monkeyp
     first, second = tmp_path / "one", tmp_path / "two"
     for directory, identifier in ((first, "first"), (second, "second")):
         directory.mkdir()
-        (directory / "shadowed.py").write_text(f"from arkitekt import App\napp = App({identifier!r})\n")
+        (directory / "shadowed.py").write_text(
+            f"from arkitekt import App\napp = App({identifier!r})\n"
+        )
 
     monkeypatch.syspath_prepend(str(first))
     assert load_target("shadowed", str(first))[0].identifier == "first"
@@ -204,7 +214,16 @@ def test_load_target_prefers_the_work_dir_over_a_cached_module(tmp_path, monkeyp
 
 def _requirements_via_cli(work_dir, *args, **kwargs):
     result = CliRunner().invoke(
-        cli_app, ["--work-dir", str(work_dir), "inspect", "requirements", *args, "--machine-readable"], **kwargs
+        cli_app,
+        [
+            "--work-dir",
+            str(work_dir),
+            "inspect",
+            "requirements",
+            *args,
+            "--machine-readable",
+        ],
+        **kwargs,
     )
     return result
 
@@ -219,7 +238,9 @@ def test_every_target_form_reaches_the_same_app(app_dir, target):
 
 
 def test_the_target_can_come_from_the_environment(app_dir):
-    (app_dir / "other.py").write_text("from arkitekt import App\napi = App('from-env')\n")
+    (app_dir / "other.py").write_text(
+        "from arkitekt import App\napi = App('from-env')\n"
+    )
 
     ok = _requirements_via_cli(app_dir, env={"ARKITEKT_APP": "other:api"})
     missing = _requirements_via_cli(app_dir, env={"ARKITEKT_APP": "nowhere"})

@@ -23,7 +23,9 @@ def _settle(check: UpdateCheck) -> None:
         check._thread.join(timeout=5)  # noqa: SLF001
 
 
-def test_a_newer_release_is_said_with_how_to_get_it(tmp_path: Path, monkeypatch) -> None:
+def test_a_newer_release_is_said_with_how_to_get_it(
+    tmp_path: Path, monkeypatch
+) -> None:
     monkeypatch.setattr(updates, "fetch_latest", lambda: "13.7.0")
     monkeypatch.setattr(updates, "upgrade_hint", lambda work_dir: "uvx arkitekt@latest")
     check = UpdateCheck("13.6.0", cache_file=str(tmp_path / "latest.json"))
@@ -47,7 +49,9 @@ def test_the_running_release_says_nothing(tmp_path: Path, monkeypatch) -> None:
 def test_pypi_is_asked_at_most_once_a_day(tmp_path: Path, monkeypatch) -> None:
     cache = tmp_path / "latest.json"
     cache.write_text(json.dumps({"latest": "14.0.0", "checked_at": time.time() - 60}))
-    monkeypatch.setattr(updates, "fetch_latest", lambda: pytest.fail("asked again within a day"))
+    monkeypatch.setattr(
+        updates, "fetch_latest", lambda: pytest.fail("asked again within a day")
+    )
 
     check = UpdateCheck("13.6.0", cache_file=str(cache))
 
@@ -57,7 +61,11 @@ def test_pypi_is_asked_at_most_once_a_day(tmp_path: Path, monkeypatch) -> None:
 
 def test_a_day_old_answer_is_asked_again(tmp_path: Path, monkeypatch) -> None:
     cache = tmp_path / "latest.json"
-    cache.write_text(json.dumps({"latest": "13.6.0", "checked_at": time.time() - CHECK_EVERY_SECONDS - 1}))
+    cache.write_text(
+        json.dumps(
+            {"latest": "13.6.0", "checked_at": time.time() - CHECK_EVERY_SECONDS - 1}
+        )
+    )
     monkeypatch.setattr(updates, "fetch_latest", lambda: "13.8.0")
 
     check = UpdateCheck("13.6.0", cache_file=str(cache))
@@ -86,7 +94,9 @@ def test_an_answer_that_is_not_in_holds_nothing_up(tmp_path: Path, monkeypatch) 
     release.set()
 
 
-def test_an_answer_that_comes_in_after_the_command_is_kept_for_the_next(tmp_path: Path, monkeypatch) -> None:
+def test_an_answer_that_comes_in_after_the_command_is_kept_for_the_next(
+    tmp_path: Path, monkeypatch
+) -> None:
     import threading
 
     release = threading.Event()

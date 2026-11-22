@@ -1,50 +1,45 @@
-from functools import partial
-import sysconfig
-from types import ModuleType
 import asyncio
-from pathlib import Path
-
-from watchfiles import awatch
-from rich.console import Console
-from watchfiles.filters import PythonFilter
 import os
 import sys
-from typing import Annotated, Any
+import sysconfig
 from collections.abc import Iterable
+from functools import partial
+from pathlib import Path
+from types import ModuleType
+from typing import Annotated, Any
+
 import typer
+from rich.console import Console
+from watchfiles import awatch
+from watchfiles.filters import PythonFilter
+
+from arkitekt.app.app import App
 from arkitekt.app.fakts import resolve_url
+from arkitekt.app.terminal import force_qr
+from arkitekt.cli.commands.app.run.utils import runner_options
 from arkitekt.cli.context import load_context
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.failures import report_failure
-from arkitekt.cli.running import arun_app, interruptible
-from arkitekt.cli.ui import (
-    construct_app_banner,
-    construct_changes_group,
-    done,
-    escape,
-    fail,
-    notice,
-)
-from arkitekt.cli.commands.app.run.utils import runner_options
 from arkitekt.cli.options import (
     ContextFileOption,
     ContextOption,
-    LogLevel,
-    UrlOption,
-    TokenOption,
-    MandateKeyOption,
     DeviceIdOption,
     ExcludeReachOption,
     ForceMeshOption,
-    PreferReachOption,
-    SupervisorOption,
     ForceOption,
     HeadlessOption,
-    QrOption,
+    LogLevel,
     LogLevelOption,
+    MandateKeyOption,
+    PreferReachOption,
+    QrOption,
     ReauthOption,
     SkipCacheOption,
+    SupervisorOption,
+    TokenOption,
+    UrlOption,
 )
+from arkitekt.cli.running import arun_app, interruptible
 from arkitekt.cli.target import (
     DEFAULT_TARGET,
     Target,
@@ -55,13 +50,18 @@ from arkitekt.cli.target import (
     parse_target,
     require_app,
 )
-from arkitekt.app.app import App
-from arkitekt.runtime import _provider_for
-from arkitekt.constants import DEFAULT_ARKITEKT_URL
-from arkitekt.app.terminal import force_qr
+from arkitekt.cli.ui import (
+    construct_app_banner,
+    construct_changes_group,
+    done,
+    escape,
+    fail,
+    notice,
+)
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
-
+from arkitekt.constants import DEFAULT_ARKITEKT_URL
+from arkitekt.runtime import _provider_for
 
 #: A directory that holds an environment, not the project: its code is not the user's.
 _ENVIRONMENT_DIRS = {".venv", "venv", "site-packages", "node_modules", "__pycache__"}
@@ -143,7 +143,9 @@ def development_roots(work_dir: str, baseline: Iterable[str] = ()) -> list[str]:
         if "." in name:
             continue
         real = os.path.realpath(sys.modules[name].__file__ or "")
-        roots.add(os.path.dirname(real) if os.path.basename(real) == "__init__.py" else real)
+        roots.add(
+            os.path.dirname(real) if os.path.basename(real) == "__init__.py" else real
+        )
     return sorted(roots)
 
 
@@ -216,12 +218,18 @@ def load_candidate(
         Exception: Whatever is wrong. ``sys.modules`` is then as it was.
     """
     stale = list(stale)
-    saved = {name: sys.modules[name] for name in {*stale, target.module} if name in sys.modules}
+    saved = {
+        name: sys.modules[name]
+        for name in {*stale, target.module}
+        if name in sys.modules
+    }
     module = import_fresh(target, stale)
     try:
         app = require_app(module, target.attribute)
         app.snapshot(provider=_provider_for(app, required=False))
-        return Candidate(module, app, load_context(app, context, context_file, work_dir))
+        return Candidate(
+            module, app, load_context(app, context, context_file, work_dir)
+        )
     except BaseException:
         for name in {*stale, target.module}:
             sys.modules.pop(name, None)
@@ -229,9 +237,13 @@ def load_candidate(
         raise
 
 
-def report_broken(console: Console, error: BaseException, target: Target, work_dir: str) -> None:
+def report_broken(
+    console: Console, error: BaseException, target: Target, work_dir: str
+) -> None:
     """Say what is wrong with the code, where the user can fix it."""
-    console.print(escape(describe_import_failure(error, target.module, work_dir)), highlight=False)
+    console.print(
+        escape(describe_import_failure(error, target.module, work_dir)), highlight=False
+    )
 
 
 def callback(console: Console, work_dir: str | None, future: asyncio.Task[None]):
@@ -262,7 +274,14 @@ def _start(
     """Start running a loaded app, reporting on its connection and its tasks."""
     console.print(construct_app_banner(candidate.app, resolve_url(options.get("url"))))
     run = asyncio.create_task(
-        arun_app(console, candidate.app, options, context=candidate.context, tasks=True, work_dir=work_dir)
+        arun_app(
+            console,
+            candidate.app,
+            options,
+            context=candidate.context,
+            tasks=True,
+            work_dir=work_dir,
+        )
     )
     run.add_done_callback(partial(callback, console, work_dir))
     return run
@@ -331,12 +350,19 @@ async def run_dev(
     files: set[str] | None = None
     try:
         current_run = _start(
-            console, load_candidate(target, [], context, context_file, work_dir), options, work_dir
+            console,
+            load_candidate(target, [], context, context_file, work_dir),
+            options,
+            work_dir,
         )
         files = tracked()
     except Exception as e:
         report_broken(console, e, target, work_dir)
-        fail(console, "The app does not load", f"fix {escape(os.path.basename(target.file))} and save")
+        fail(
+            console,
+            "The app does not load",
+            f"fix {escape(os.path.basename(target.file))} and save",
+        )
 
     # What --deep follows is read off what the app imported, so it is known once
     # the app has loaded: a first import that failed leaves only the project.
@@ -344,20 +370,30 @@ async def run_dev(
 
     try:
         async for changes in awatch(
-            work_dir, *roots, watch_filter=PythonFilter(), debounce=BURST_MS, step=SETTLE_MS
+            work_dir,
+            *roots,
+            watch_filter=PythonFilter(),
+            debounce=BURST_MS,
+            step=SETTLE_MS,
         ):
             if not concerns(changes, files):
                 continue
             console.print(construct_changes_group(changes))
             try:
                 with console.status("Loading the change..."):
-                    candidate = load_candidate(target, loaded(), context, context_file, work_dir)
+                    candidate = load_candidate(
+                        target, loaded(), context, context_file, work_dir
+                    )
             except Exception as e:
                 report_broken(console, e, target, work_dir)
                 # The fix may be in a file the last working version never imported.
                 files = None
                 if _running(current_run):
-                    notice(console, "Not reloaded", "still running the last working version")
+                    notice(
+                        console,
+                        "Not reloaded",
+                        "still running the last working version",
+                    )
                 else:
                     fail(console, "The app does not load", "fix it and save")
                 continue

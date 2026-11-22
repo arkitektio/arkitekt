@@ -1,4 +1,4 @@
-""" Utility functions for the Qt UI. """
+"""Utility functions for the Qt UI."""
 
 import os
 

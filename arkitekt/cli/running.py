@@ -12,10 +12,10 @@ import os
 import sys
 import threading
 import time
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager, suppress
 from dataclasses import dataclass, field
 from typing import Any
-from collections.abc import AsyncIterator, Iterator
 
 from rich.console import Console
 from rich.markup import escape
@@ -63,8 +63,12 @@ class ConnectionReporter:
         else:
             self.registered_before = True
             offered = len(self.app.registry.get_implementations())
-            names = sorted(i.interface or "" for i in self.app.registry.get_implementations())
-            listed = ", ".join(names[:6]) + (f" and {len(names) - 6} more" if len(names) > 6 else "")
+            names = sorted(
+                i.interface or "" for i in self.app.registry.get_implementations()
+            )
+            listed = ", ".join(names[:6]) + (
+                f" and {len(names) - 6} more" if len(names) > 6 else ""
+            )
             done(
                 self.console,
                 "Registered",
@@ -91,7 +95,8 @@ class TaskReporter:
         if kind == "assigned":
             self.started[event.task_id] = time.monotonic()
             arguments = " ".join(
-                f"{key}={_short(value)}" for key, value in (event.arguments or {}).items()
+                f"{key}={_short(value)}"
+                for key, value in (event.arguments or {}).items()
             )
             step(self.console, action, escape(arguments) or None)
             return
@@ -117,7 +122,11 @@ def _elapsed(seconds: float) -> str:
 
 
 def report_session(
-    console: Console, rt: Any, before: float | None, options: dict[str, Any], work_dir: str | None = None
+    console: Console,
+    rt: Any,
+    before: float | None,
+    options: dict[str, Any],
+    work_dir: str | None = None,
 ) -> None:  # noqa: ANN401
     """Say how the run got its session, unless the login prompt already did.
 
@@ -136,7 +145,11 @@ def report_session(
             f"logged in {ago(started)} · `{command_hint('logout', work_dir)}` ends it",
         )
     elif options.get("token") or options.get("mandate_key"):
-        done(console, f"Logged in to {escape(loaded.self.deployment_name)}", "with a token")
+        done(
+            console,
+            f"Logged in to {escape(loaded.self.deployment_name)}",
+            "with a token",
+        )
 
 
 #: How often a providing run looks again at how its mesh hosts are reached.
@@ -204,7 +217,9 @@ def _report_path(console: Console, host: str, group: _Host, path: Any) -> None: 
         else:
             done(console, names, where)
     elif path.kind == "direct":
-        done(console, f"{names} [green]direct[/]", f"{where} · {escape(path.via or '')}")
+        done(
+            console, f"{names} [green]direct[/]", f"{where} · {escape(path.via or '')}"
+        )
     elif path.kind == "relay":
         relay = escape(path.via or "?")
         notice(console, f"{names} [yellow]relayed[/]", f"{where} · via DERP {relay}")
@@ -250,7 +265,11 @@ def report_versions(console: Console, rt: Any) -> None:  # noqa: ANN401
         )
 
 
-async def watch_paths(console: Console, rt: Any, reported: dict[str, str | None]) -> None:  # noqa: ANN401
+async def watch_paths(
+    console: Console,
+    rt: Any,  # noqa: ANN401
+    reported: dict[str, str | None],
+) -> None:
     """Say whenever a mesh host's path turns direct or falls back to the relay.
 
     A path starts out relayed and usually turns direct seconds later. Going idle
@@ -265,7 +284,11 @@ async def watch_paths(console: Console, rt: Any, reported: dict[str, str | None]
             await asyncio.sleep(PATH_POLL)
             for host, group in _hosts(fakts).items():
                 path = _path(fakts, group)
-                if path is None or path.kind == "idle" or reported.get(host) == path.kind:
+                if (
+                    path is None
+                    or path.kind == "idle"
+                    or reported.get(host) == path.kind
+                ):
                     continue
                 reported[host] = path.kind
                 _report_path(console, host, group, path)
@@ -310,7 +333,9 @@ async def connected(
         reported = report_connection(console, rt)
         report_versions(console, rt)
         # A providing run lasts: follow its paths. A call is over before they settle.
-        watcher = asyncio.create_task(watch_paths(console, rt, reported)) if provide else None
+        watcher = (
+            asyncio.create_task(watch_paths(console, rt, reported)) if provide else None
+        )
         try:
             yield rt
         finally:
@@ -342,7 +367,9 @@ async def connected_local(
     fresh = options.get("skip_cache") or options.get("reauth")
     before = None if fresh or offline else logged_in_at(app, url)
     # Through the module, so the connection stays replaceable (tests patch it).
-    async with runtime.connect_local(app, offline=offline, context=context, **options) as rt:
+    async with runtime.connect_local(
+        app, offline=offline, context=context, **options
+    ) as rt:
         if not offline:
             report_session(console, rt, before, options, work_dir)
         yield rt
@@ -361,7 +388,9 @@ async def arun_app(
     With ``tasks`` each task the app takes is reported too: what a developer
     watching the terminal wants, and noise in the log of a deployed app.
     """
-    async with connected(console, app, options, provide=True, tasks=tasks, work_dir=work_dir) as rt:
+    async with connected(
+        console, app, options, provide=True, tasks=tasks, work_dir=work_dir
+    ) as rt:
         await rt.arun(context=context)
 
 

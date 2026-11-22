@@ -1,7 +1,7 @@
 """The Qt app: a declaration whose actions may run in, or talk to, the Qt event loop."""
 
-from typing import Any, ParamSpec, TypeVar, cast, overload
 from collections.abc import Callable, Sequence
+from typing import Any, ParamSpec, TypeVar, cast, overload
 
 from arkitekt_spec.actions import AssignWidgetInput
 from arkitekt_spec.declare.actors.types import Actifier
@@ -124,7 +124,9 @@ class QtApp(App[Ctx]):
                 root=_app_root(constructed_in),
             )
         # The caller's source is the app's own, not this module's.
-        self.registry.structure_registry.namespace = _app_namespace(self.identifier, caller)
+        self.registry.structure_registry.namespace = _app_namespace(
+            self.identifier, caller
+        )
         self.parent = parent
 
     def _offer_with(
@@ -180,7 +182,14 @@ class QtApp(App[Ctx]):
         from arkitekt_runtime.qt.builders import qtinloopactifier
 
         return self._offer_with(
-            qtinloopactifier, function, name, description, interface, widgets, collections, locks
+            qtinloopactifier,
+            function,
+            name,
+            description,
+            interface,
+            widgets,
+            collections,
+            locks,
         )
 
     def register_with_qt_future(
@@ -220,7 +229,14 @@ class QtApp(App[Ctx]):
         from arkitekt_runtime.qt.builders import qtwithfutureactifier
 
         return self._offer_with(
-            qtwithfutureactifier, function, name, description, interface, widgets, collections, locks
+            qtwithfutureactifier,
+            function,
+            name,
+            description,
+            interface,
+            widgets,
+            collections,
+            locks,
         )
 
     def register_with_qt_generator(
@@ -254,7 +270,14 @@ class QtApp(App[Ctx]):
         from arkitekt_runtime.qt.builders import qtwithgeneratoractifier
 
         return self._offer_with(
-            qtwithgeneratoractifier, function, name, description, interface, widgets, collections, locks
+            qtwithgeneratoractifier,
+            function,
+            name,
+            description,
+            interface,
+            widgets,
+            collections,
+            locks,
         )
 
     def wrap(self, function: Callable[P, R]) -> async_to_qt[R, P]:

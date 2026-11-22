@@ -22,7 +22,10 @@ ENDPOINT = FaktsEndpoint(
 
 def _challenge(endpoint: FaktsEndpoint, link: str) -> DeviceCodeChallenge:
     return DeviceCodeChallenge(
-        endpoint=endpoint, user_code="ABCD-EFGH", verification_uri_complete=link, expires_in=300
+        endpoint=endpoint,
+        user_code="ABCD-EFGH",
+        verification_uri_complete=link,
+        expires_in=300,
     )
 
 
@@ -33,7 +36,9 @@ def _flat(output: str) -> str:
     return " ".join(output.split())
 
 
-def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(capsys, monkeypatch) -> None:
+def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(
+    capsys, monkeypatch
+) -> None:
     monkeypatch.delenv(QR_ENV, raising=False)
     asyncio.run(login_prompt(opened_browser=True)(APPROVE))  # pyright: ignore[reportArgumentType]
 
@@ -55,8 +60,12 @@ def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys, monkeypatch) -
     assert "█" in out, "approved on another device: the link is a QR code too"
 
 
-def test_a_forced_qr_code_is_drawn_even_for_a_local_page_that_opened(capsys, monkeypatch) -> None:
-    monkeypatch.delenv(QR_ENV, raising=False)  # restored after the test: force_qr sets it
+def test_a_forced_qr_code_is_drawn_even_for_a_local_page_that_opened(
+    capsys, monkeypatch
+) -> None:
+    monkeypatch.delenv(
+        QR_ENV, raising=False
+    )  # restored after the test: force_qr sets it
     force_qr()
     local = _challenge(ENDPOINT, "http://localhost:8000/f/device/?code=ABCD-EFGH")
 
@@ -70,7 +79,12 @@ LINK = "https://lab.example/f/device/?code=ABCD-EFGH"
 
 def _drawn(width: int, color_system: str | None = "standard") -> str:
     out = io.StringIO()
-    console = Console(file=out, force_terminal=True, color_system=color_system, width=width)  # pyright: ignore[reportArgumentType]
+    console = Console(
+        file=out,
+        force_terminal=True,
+        color_system=color_system,  # pyright: ignore[reportArgumentType]
+        width=width,
+    )
     _qr(console, LINK)
     return out.getvalue()
 
@@ -78,7 +92,10 @@ def _drawn(width: int, color_system: str | None = "standard") -> str:
 def _modules(border: int = 4) -> list[list[bool]]:
     import segno
 
-    return [[bool(m) for m in row] for row in segno.make_qr(LINK, error="l").matrix_iter(border=border)]
+    return [
+        [bool(m) for m in row]
+        for row in segno.make_qr(LINK, error="l").matrix_iter(border=border)
+    ]
 
 
 def test_a_qr_code_is_painted_with_backgrounds_two_spaces_a_module() -> None:
@@ -88,7 +105,11 @@ def test_a_qr_code_is_painted_with_backgrounds_two_spaces_a_module() -> None:
     assert not set(drawn) & set("▀▄█")
     # Dark modules black, light ones bright white (not white: a grey in many themes).
     grid = [
-        [code == "40" for code, spaces in re.findall(r"\x1b\[(\d+)m( +)", line) for _ in range(len(spaces) // 2)]
+        [
+            code == "40"
+            for code, spaces in re.findall(r"\x1b\[(\d+)m( +)", line)
+            for _ in range(len(spaces) // 2)
+        ]
         for line in drawn.splitlines()
     ]
     assert set(re.findall(r"\x1b\[(\d+)m ", drawn)) == {"40", "107"}
@@ -97,7 +118,9 @@ def test_a_qr_code_is_painted_with_backgrounds_two_spaces_a_module() -> None:
 
 def test_a_narrow_terminal_gets_half_blocks_coloured_above_and_below() -> None:
     modules = _modules()
-    drawn = _drawn(width=2 * len(modules[0]))  # one column short of two a module, with the indent
+    drawn = _drawn(
+        width=2 * len(modules[0])
+    )  # one column short of two a module, with the indent
 
     assert "▀" in drawn and "▄" not in drawn and "█" not in drawn
     cells = [re.findall(r"\x1b\[(\d+);(\d+)m(▀+)", line) for line in drawn.splitlines()]
@@ -114,7 +137,9 @@ def test_without_colours_a_qr_code_draws_its_light_modules() -> None:
     assert "█" in drawn
 
 
-def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(capsys) -> None:
+def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(
+    capsys,
+) -> None:
     bare = FaktsEndpoint(base_url="https://lab.example/f/", name="Lab")
 
     asyncio.run(login_prompt()(_challenge(bare, bare.base_url)))  # pyright: ignore[reportArgumentType]

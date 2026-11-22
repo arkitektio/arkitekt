@@ -17,8 +17,8 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from arkitekt.cli.main import cli_app
 from arkitekt.cli.commands.mesh.main import TAILSCALE_UP_TIMEOUT_SECONDS
+from arkitekt.cli.main import cli_app
 
 _ANSI = re.compile(r"\x1b\[[0-9;]*m")
 
@@ -32,6 +32,7 @@ def _plain(output: str) -> str:
     the raw output passes locally and fails there.
     """
     return _ANSI.sub("", output)
+
 
 MESH = "arkitekt.cli.commands.mesh.main"
 
@@ -95,12 +96,23 @@ def test_join_help_has_device_code_options_and_no_force_reauth():
 def test_join_runs_full_device_code_flow():
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
-    with p_fetch, p_start as mock_start, p_poll as mock_poll, patch(
-        f"{MESH}.subprocess.run", return_value=_ok()
-    ) as mock_run:
+    with (
+        p_fetch,
+        p_start as mock_start,
+        p_poll as mock_poll,
+        patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run,
+    ):
         result = runner.invoke(
             cli_app,
-            ["mesh", "join", "-u", "http://fakts.example", "--headless", "-n", "req-name"],
+            [
+                "mesh",
+                "join",
+                "-u",
+                "http://fakts.example",
+                "--headless",
+                "-n",
+                "req-name",
+            ],
         )
 
     assert result.exit_code == 0, result.output
@@ -125,9 +137,13 @@ def test_join_runs_full_device_code_flow():
 def test_join_defaults_name_to_hostname():
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
-    with p_fetch, p_start as mock_start, p_poll, patch(
-        f"{MESH}.socket.gethostname", return_value="host42"
-    ), patch(f"{MESH}.subprocess.run", return_value=_ok()):
+    with (
+        p_fetch,
+        p_start as mock_start,
+        p_poll,
+        patch(f"{MESH}.socket.gethostname", return_value="host42"),
+        patch(f"{MESH}.subprocess.run", return_value=_ok()),
+    ):
         result = runner.invoke(
             cli_app, ["mesh", "join", "-u", "http://fakts.example", "--headless"]
         )
@@ -152,15 +168,29 @@ def test_join_redacts_authkey_in_output():
 def test_join_uses_hint_options_in_payload():
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
-    with p_fetch, p_start as mock_start, p_poll, patch(
-        f"{MESH}.subprocess.run", return_value=_ok()
+    with (
+        p_fetch,
+        p_start as mock_start,
+        p_poll,
+        patch(f"{MESH}.subprocess.run", return_value=_ok()),
     ):
         result = runner.invoke(
             cli_app,
             [
-                "mesh", "join", "-u", "http://fakts.example", "--headless",
-                "--description", "gpu box", "--ephemeral",
-                "--tag", "tag:a", "--tag", "tag:b", "--expiration", "120",
+                "mesh",
+                "join",
+                "-u",
+                "http://fakts.example",
+                "--headless",
+                "--description",
+                "gpu box",
+                "--ephemeral",
+                "--tag",
+                "tag:a",
+                "--tag",
+                "tag:b",
+                "--expiration",
+                "120",
             ],
         )
 
@@ -176,9 +206,12 @@ def test_join_falls_back_to_wellknown_coord_when_poll_omits_it():
     runner = CliRunner()
     granted = {k: v for k, v in GRANTED.items() if k != "ionscale_coord_url"}
     p_fetch, p_start, p_poll = _patch_flow(granted=granted)
-    with p_fetch, p_start, p_poll, patch(
-        f"{MESH}.subprocess.run", return_value=_ok()
-    ) as mock_run:
+    with (
+        p_fetch,
+        p_start,
+        p_poll,
+        patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run,
+    ):
         result = runner.invoke(
             cli_app, ["mesh", "join", "-u", "http://fakts.example", "--headless"]
         )
@@ -189,9 +222,10 @@ def test_join_falls_back_to_wellknown_coord_when_poll_omits_it():
 
 def test_join_errors_when_deployment_lacks_mesh_endpoints():
     runner = CliRunner()
-    with patch(f"{MESH}._fetch_well_known", return_value={"name": "F"}), patch(
-        f"{MESH}.subprocess.run"
-    ) as mock_run:
+    with (
+        patch(f"{MESH}._fetch_well_known", return_value={"name": "F"}),
+        patch(f"{MESH}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(cli_app, ["mesh", "join", "-u", "http://fakts.example"])
 
     assert result.exit_code != 0
@@ -202,9 +236,11 @@ def test_join_errors_when_deployment_lacks_mesh_endpoints():
 
 def test_join_not_installed_guides_install():
     runner = CliRunner()
-    with patch(f"{MESH}.shutil.which", return_value=None), patch(
-        f"{MESH}._fetch_well_known"
-    ) as mock_fetch, patch(f"{MESH}.subprocess.run") as mock_run:
+    with (
+        patch(f"{MESH}.shutil.which", return_value=None),
+        patch(f"{MESH}._fetch_well_known") as mock_fetch,
+        patch(f"{MESH}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(cli_app, ["mesh", "join", "-u", "http://fakts.example"])
 
     assert result.exit_code != 0
@@ -220,7 +256,9 @@ def test_cert_self_fqdn():
         result = runner.invoke(cli_app, ["mesh", "cert"])
 
     assert result.exit_code == 0, result.output
-    mock_run.assert_called_once_with(["tailscale", "cert"], timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
+    mock_run.assert_called_once_with(
+        ["tailscale", "cert"], timeout=TAILSCALE_UP_TIMEOUT_SECONDS
+    )
 
 
 def test_cert_explicit_domain():
@@ -236,9 +274,10 @@ def test_cert_explicit_domain():
 
 def test_cert_not_installed_guides_install():
     runner = CliRunner()
-    with patch(f"{MESH}.shutil.which", return_value=None), patch(
-        f"{MESH}.subprocess.run"
-    ) as mock_run:
+    with (
+        patch(f"{MESH}.shutil.which", return_value=None),
+        patch(f"{MESH}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(cli_app, ["mesh", "cert"])
 
     assert result.exit_code != 0
@@ -248,9 +287,7 @@ def test_cert_not_installed_guides_install():
 
 def test_tailscale_sudo_fallback_on_nonzero_exit():
     runner = CliRunner()
-    with patch(
-        f"{MESH}.subprocess.run", side_effect=[_ok(1), _ok(0)]
-    ) as mock_run:
+    with patch(f"{MESH}.subprocess.run", side_effect=[_ok(1), _ok(0)]) as mock_run:
         result = runner.invoke(cli_app, ["mesh", "cert"])
 
     assert result.exit_code == 0, result.output
@@ -279,7 +316,9 @@ def test_leave_yes_runs_logout():
         result = runner.invoke(cli_app, ["mesh", "leave", "--yes"])
 
     assert result.exit_code == 0, result.output
-    mock_run.assert_called_once_with(["tailscale", "logout"], timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
+    mock_run.assert_called_once_with(
+        ["tailscale", "logout"], timeout=TAILSCALE_UP_TIMEOUT_SECONDS
+    )
 
 
 def test_leave_without_yes_aborts_on_no():
@@ -293,9 +332,10 @@ def test_leave_without_yes_aborts_on_no():
 
 def test_leave_not_installed_guides_install():
     runner = CliRunner()
-    with patch(f"{MESH}.shutil.which", return_value=None), patch(
-        f"{MESH}.subprocess.run"
-    ) as mock_run:
+    with (
+        patch(f"{MESH}.shutil.which", return_value=None),
+        patch(f"{MESH}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(cli_app, ["mesh", "leave", "--yes"])
 
     assert result.exit_code != 0
@@ -334,11 +374,14 @@ def test_proxy_starts_daemon_and_brings_up(_tailscaled_found):
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     fake_proc = _FakeProc()
-    with p_fetch, p_start, p_poll, patch(
-        f"{MESH}.subprocess.Popen", return_value=fake_proc
-    ) as mock_popen, patch(
-        f"{MESH}.subprocess.run", return_value=_ok()
-    ) as mock_run, patch(f"{MESH}.time.sleep"):
+    with (
+        p_fetch,
+        p_start,
+        p_poll,
+        patch(f"{MESH}.subprocess.Popen", return_value=fake_proc) as mock_popen,
+        patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run,
+        patch(f"{MESH}.time.sleep"),
+    ):
         result = runner.invoke(
             cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--headless"]
         )
@@ -369,16 +412,24 @@ def test_proxy_starts_daemon_and_brings_up(_tailscaled_found):
 def test_proxy_socks5_listen_adds_flag(_tailscaled_found):
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
-    with p_fetch, p_start, p_poll, patch(
-        f"{MESH}.subprocess.Popen", return_value=_FakeProc()
-    ) as mock_popen, patch(f"{MESH}.subprocess.run", return_value=_ok()), patch(
-        f"{MESH}.time.sleep"
+    with (
+        p_fetch,
+        p_start,
+        p_poll,
+        patch(f"{MESH}.subprocess.Popen", return_value=_FakeProc()) as mock_popen,
+        patch(f"{MESH}.subprocess.run", return_value=_ok()),
+        patch(f"{MESH}.time.sleep"),
     ):
         result = runner.invoke(
             cli_app,
             [
-                "mesh", "proxy", "-u", "http://fakts.example", "--headless",
-                "--socks5-listen", "localhost:1080",
+                "mesh",
+                "proxy",
+                "-u",
+                "http://fakts.example",
+                "--headless",
+                "--socks5-listen",
+                "localhost:1080",
             ],
         )
 
@@ -390,16 +441,24 @@ def test_proxy_socks5_listen_adds_flag(_tailscaled_found):
 def test_proxy_custom_listen(_tailscaled_found):
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
-    with p_fetch, p_start, p_poll, patch(
-        f"{MESH}.subprocess.Popen", return_value=_FakeProc()
-    ) as mock_popen, patch(f"{MESH}.subprocess.run", return_value=_ok()), patch(
-        f"{MESH}.time.sleep"
+    with (
+        p_fetch,
+        p_start,
+        p_poll,
+        patch(f"{MESH}.subprocess.Popen", return_value=_FakeProc()) as mock_popen,
+        patch(f"{MESH}.subprocess.run", return_value=_ok()),
+        patch(f"{MESH}.time.sleep"),
     ):
         result = runner.invoke(
             cli_app,
             [
-                "mesh", "proxy", "-u", "http://fakts.example", "--headless",
-                "--listen", "0.0.0.0:8080",
+                "mesh",
+                "proxy",
+                "-u",
+                "http://fakts.example",
+                "--headless",
+                "--listen",
+                "0.0.0.0:8080",
             ],
         )
 
@@ -411,9 +470,11 @@ def test_proxy_custom_listen(_tailscaled_found):
 
 def test_proxy_tailscaled_missing_guides_install():
     runner = CliRunner()
-    with patch(f"{MESH}._find_tailscaled", return_value=None), patch(
-        f"{MESH}._fetch_well_known"
-    ) as mock_fetch, patch(f"{MESH}.subprocess.Popen") as mock_popen:
+    with (
+        patch(f"{MESH}._find_tailscaled", return_value=None),
+        patch(f"{MESH}._fetch_well_known") as mock_fetch,
+        patch(f"{MESH}.subprocess.Popen") as mock_popen,
+    ):
         result = runner.invoke(
             cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--headless"]
         )
@@ -429,10 +490,13 @@ def test_proxy_bringup_failure_raises(_tailscaled_found):
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     fake_proc = _FakeProc()
-    with p_fetch, p_start, p_poll, patch(
-        f"{MESH}.subprocess.Popen", return_value=fake_proc
-    ), patch(f"{MESH}.subprocess.run", return_value=_ok(1)), patch(
-        f"{MESH}.time.sleep"
+    with (
+        p_fetch,
+        p_start,
+        p_poll,
+        patch(f"{MESH}.subprocess.Popen", return_value=fake_proc),
+        patch(f"{MESH}.subprocess.run", return_value=_ok(1)),
+        patch(f"{MESH}.time.sleep"),
     ):
         result = runner.invoke(
             cli_app, ["mesh", "proxy", "-u", "http://fakts.example", "--headless"]
@@ -495,8 +559,11 @@ def test_mesh_poll_times_out_when_never_authorized(capsys):
     # calls, and each step (100s) dwarfs the 1s timeout so the first 'pending'
     # check bails immediately -- deterministic, no real waiting.
     clock = itertools.count(0.0, 100.0)
-    with patch(f"{MESH}.time.monotonic", side_effect=lambda: next(clock)), patch(
-        "aiohttp.ClientSession", return_value=_FakeSession({"status": "pending"})
+    with (
+        patch(f"{MESH}.time.monotonic", side_effect=lambda: next(clock)),
+        patch(
+            "aiohttp.ClientSession", return_value=_FakeSession({"status": "pending"})
+        ),
     ):
         # cli_error prints to stderr, then raises typer.Exit(1).
         with pytest.raises(typer.Exit):
@@ -510,7 +577,9 @@ def test_tailscale_up_timeout_surfaces_clean_error():
     runner = CliRunner()
     with patch(
         f"{MESH}.subprocess.run",
-        side_effect=subprocess.TimeoutExpired(cmd="tailscale", timeout=TAILSCALE_UP_TIMEOUT_SECONDS),
+        side_effect=subprocess.TimeoutExpired(
+            cmd="tailscale", timeout=TAILSCALE_UP_TIMEOUT_SECONDS
+        ),
     ):
         result = runner.invoke(cli_app, ["mesh", "cert"])
 
@@ -560,7 +629,12 @@ class _FakeRelayNode:
     async def relay(self, port, endpoints=None):
         self.relays.append((port, list(endpoints or [])))
         return SimpleNamespace(
-            port=port, addresses=["203.0.113.7:40000"], sessions=0, bound=0, packets=0, bytes=0
+            port=port,
+            addresses=["203.0.113.7:40000"],
+            sessions=0,
+            bound=0,
+            packets=0,
+            bytes=0,
         )
 
     async def relay_status(self):
@@ -569,7 +643,12 @@ class _FakeRelayNode:
         if self.polls > 1:
             return None
         return SimpleNamespace(
-            port=40000, addresses=["203.0.113.7:40000"], sessions=1, bound=1, packets=9, bytes=4096
+            port=40000,
+            addresses=["203.0.113.7:40000"],
+            sessions=1,
+            bound=1,
+            packets=9,
+            bytes=4096,
         )
 
     async def control_changed(self):
@@ -594,17 +673,28 @@ def test_relay_asks_to_be_one_and_runs_the_node_in_process(tmp_path):
     runner = CliRunner()
     p_fetch, p_start, _ = _patch_flow()
     granted = {**GRANTED, "relay": True}
-    with p_fetch, p_start as mock_start, patch(
-        f"{MESH}._mesh_poll", return_value=granted
-    ), patch(f"{MESH}._relay_bindings", return_value=_fake_relay_bindings()), patch(
-        f"{MESH}.RELAY_STATUS_INTERVAL_SECONDS", 0
-    ), patch(f"{MESH}.subprocess.run") as mock_run:
+    with (
+        p_fetch,
+        p_start as mock_start,
+        patch(f"{MESH}._mesh_poll", return_value=granted),
+        patch(f"{MESH}._relay_bindings", return_value=_fake_relay_bindings()),
+        patch(f"{MESH}.RELAY_STATUS_INTERVAL_SECONDS", 0),
+        patch(f"{MESH}.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(
             cli_app,
             [
-                "mesh", "relay", "-u", "http://fakts.example", "--headless",
-                "--port", "41000", "--endpoint", "198.51.100.4:41000",
-                "--state-dir", str(tmp_path),
+                "mesh",
+                "relay",
+                "-u",
+                "http://fakts.example",
+                "--headless",
+                "--port",
+                "41000",
+                "--endpoint",
+                "198.51.100.4:41000",
+                "--state-dir",
+                str(tmp_path),
             ],
         )
 
@@ -630,8 +720,11 @@ def test_relay_refuses_to_run_as_a_plain_machine():
     # key is a plain machine's, and a relay nobody may ask relays nothing.
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
-    with p_fetch, p_start, p_poll, patch(
-        f"{MESH}._relay_bindings", return_value=_fake_relay_bindings()
+    with (
+        p_fetch,
+        p_start,
+        p_poll,
+        patch(f"{MESH}._relay_bindings", return_value=_fake_relay_bindings()),
     ):
         result = runner.invoke(
             cli_app, ["mesh", "relay", "-u", "http://fakts.example", "--headless"]
@@ -644,9 +737,14 @@ def test_relay_refuses_to_run_as_a_plain_machine():
 
 def test_relay_that_joined_before_starts_without_asking_again(tmp_path):
     runner = CliRunner()
-    with patch(f"{MESH}._fetch_well_known") as mock_fetch, patch(
-        f"{MESH}._relay_bindings", return_value=_fake_relay_bindings(joined_before=True)
-    ), patch(f"{MESH}.RELAY_STATUS_INTERVAL_SECONDS", 0):
+    with (
+        patch(f"{MESH}._fetch_well_known") as mock_fetch,
+        patch(
+            f"{MESH}._relay_bindings",
+            return_value=_fake_relay_bindings(joined_before=True),
+        ),
+        patch(f"{MESH}.RELAY_STATUS_INTERVAL_SECONDS", 0),
+    ):
         result = runner.invoke(cli_app, ["mesh", "relay", "--state-dir", str(tmp_path)])
 
     assert result.exit_code == 0, result.output

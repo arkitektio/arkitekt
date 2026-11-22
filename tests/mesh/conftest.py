@@ -27,7 +27,9 @@ def _offline_fakts() -> None:
 @pytest.fixture(scope="session")
 def hub() -> Iterator[Hub]:
     """mikro and lovekit (with its media server), on a hub with a mesh of its own."""
-    konstruktor = pytest.importorskip("konstruktor", reason="builds the hub the apps log in to")
+    konstruktor = pytest.importorskip(
+        "konstruktor", reason="builds the hub the apps log in to"
+    )
     mikro = pytest.importorskip("mikro", reason="a service the apps call")
     lovekit = pytest.importorskip("lovekit", reason="a service the apps call")
 

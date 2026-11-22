@@ -38,8 +38,12 @@ def _run_cli(work_dir, *args):
     """
     result = subprocess.run(
         [
-            sys.executable, "-m", "arkitekt.cli.main",
-            "--work-dir", str(work_dir), *args,
+            sys.executable,
+            "-m",
+            "arkitekt.cli.main",
+            "--work-dir",
+            str(work_dir),
+            *args,
         ],
         capture_output=True,
         encoding="utf-8",
@@ -59,6 +63,7 @@ def _between(text, start, end):
 # ---------------------------------------------------------------------------
 # inspect variables
 # ---------------------------------------------------------------------------
+
 
 def test_inspect_variables_clean_app(app_dir):
     """The default `simple` template has no leaking globals."""
@@ -123,7 +128,14 @@ def test_inspect_all(app_dir):
 
     agent = _between(result.stdout, "--START_AGENT--", "--END_AGENT--")
     assert isinstance(agent, dict)
-    for key in ("states", "implementations", "locks", "requirements", "bloks", "assets"):
+    for key in (
+        "states",
+        "implementations",
+        "locks",
+        "requirements",
+        "bloks",
+        "assets",
+    ):
         assert key in agent
     assert len(agent["implementations"]) >= 3
     for name in _SIMPLE_FUNCS:
@@ -166,7 +178,7 @@ def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
                 inspection=inspection,
                 image=DockerImage(imageString="me/a:1"),
             )
-        ]
+        ],
     )
     assert load_deployments(dump_deployments(file)) == file
 
@@ -195,7 +207,9 @@ def test_inspect_services(app_dir):
     records = _between(result.stdout, "--START_SERVICES--", "--END_SERVICES--")
     assert isinstance(records, list)
     names = [r["name"] for r in records]
-    assert "rekuest" in names  # a run of an app that offers something is served by rekuest
+    assert (
+        "rekuest" in names
+    )  # a run of an app that offers something is served by rekuest
     for record in records:
         for key in ("name", "class", "requirements", "has_schema", "has_turms_project"):
             assert key in record
@@ -238,7 +252,9 @@ def test_gen_init_writes_a_project_for_each_service(app_dir):
     assert "documents" not in turms
     # the sibling project it names lives in rekuest's repo, not in this config
     assert all(e["from_project"] is None for e in turms["external_modules"])
-    assert "type" in (app_dir / "schemas" / "rekuest.graphql").read_text(encoding="utf-8")
+    assert "type" in (app_dir / "schemas" / "rekuest.graphql").read_text(
+        encoding="utf-8"
+    )
     assert (app_dir / "graphql" / "rekuest").is_dir()
 
 
@@ -246,7 +262,9 @@ def test_gen_init_keeps_existing_projects(app_dir):
     import yaml
 
     (app_dir / "graphql.config.yaml").write_text(
-        yaml.safe_dump({"projects": {"rekuest": {"schema": "mine"}, "other": {"schema": "x"}}})
+        yaml.safe_dump(
+            {"projects": {"rekuest": {"schema": "mine"}, "other": {"schema": "x"}}}
+        )
     )
     result = _run_cli(app_dir, "gen", "init")
     assert result.returncode != 0  # nothing new to write
@@ -262,7 +280,9 @@ def test_gen_init_keeps_existing_projects(app_dir):
 def test_gen_init_unknown_service(app_dir):
     result = _run_cli(app_dir, "gen", "init", "--service", "nope")
     assert result.returncode != 0
-    assert "declares no service nope" in " ".join((result.stdout + result.stderr).split())
+    assert "declares no service nope" in " ".join(
+        (result.stdout + result.stderr).split()
+    )
 
 
 def test_gen_points_at_turms():
@@ -286,18 +306,30 @@ def test_inspect_lifecycle(app_dir):
 # kabinet validate
 # ---------------------------------------------------------------------------
 
+
 def test_kabinet_validate(app_dir):
     """After scaffolding a flavour, validate reports it as valid."""
     # Flavours are scaffolded with `plugin flavour add`.
     init_result = CliRunner().invoke(
         cli_app,
-        ["--work-dir", str(app_dir), "plugin", "flavour", "add",
-         "--flavour", "vanilla", "--arkitekt-version", "0.0.1"],
+        [
+            "--work-dir",
+            str(app_dir),
+            "plugin",
+            "flavour",
+            "add",
+            "--flavour",
+            "vanilla",
+            "--arkitekt-version",
+            "0.0.1",
+        ],
         input="n\n",  # decline the devcontainer prompt
     )
     assert init_result.exit_code == 0, init_result.output
 
-    result = CliRunner().invoke(cli_app, ["--work-dir", str(app_dir), "plugin", "validate"])
+    result = CliRunner().invoke(
+        cli_app, ["--work-dir", str(app_dir), "plugin", "validate"]
+    )
     assert result.exit_code == 0
     assert "vanilla" in result.output
     assert "All flavours are valid" in result.output
@@ -305,7 +337,9 @@ def test_kabinet_validate(app_dir):
 
 def test_kabinet_validate_without_flavours_errors(app_dir):
     """validate fails cleanly when no flavours folder exists yet."""
-    result = CliRunner().invoke(cli_app, ["--work-dir", str(app_dir), "plugin", "validate"])
+    result = CliRunner().invoke(
+        cli_app, ["--work-dir", str(app_dir), "plugin", "validate"]
+    )
     assert result.exit_code != 0
     assert "plugin flavour add" in result.output
 
@@ -313,6 +347,7 @@ def test_kabinet_validate_without_flavours_errors(app_dir):
 # ---------------------------------------------------------------------------
 # --help smoke tests — every command group exposes its help text
 # ---------------------------------------------------------------------------
+
 
 @pytest.mark.parametrize(
     "args",
@@ -389,7 +424,15 @@ def no_connecting(monkeypatch):
 
 @pytest.mark.parametrize(
     "command",
-    ["all", "requirements", "implementations", "services", "structures", "lifecycle", "variables"],
+    [
+        "all",
+        "requirements",
+        "implementations",
+        "services",
+        "structures",
+        "lifecycle",
+        "variables",
+    ],
 )
 def test_inspect_never_connects(app_dir, no_connecting, command):
     result = _invoke(app_dir, "inspect", command, "--machine-readable")
@@ -403,7 +446,9 @@ def test_inspect_requirements_are_the_apps(app_dir, no_connecting):
     result = _invoke(app_dir, "inspect", "requirements", "--machine-readable")
 
     assert result.exit_code == 0, result.output
-    requirements = _between(result.output, "--START_REQUIREMENTS--", "--END_REQUIREMENTS--")
+    requirements = _between(
+        result.output, "--START_REQUIREMENTS--", "--END_REQUIREMENTS--"
+    )
     assert {"rekuest", "extra"} <= {item["key"] for item in requirements}
 
 
@@ -418,7 +463,9 @@ def test_inspect_all_carries_the_apps_requirements_and_actions(app_dir, no_conne
     assert "extra" in {item["key"] for item in agent["requirements"]}
 
 
-def test_the_manifest_an_image_says_asks_for_what_a_run_asks_for(app_dir, no_connecting):
+def test_the_manifest_an_image_says_asks_for_what_a_run_asks_for(
+    app_dir, no_connecting
+):
     """A mandate key is pinned to the MANIFEST a build reads: it must carry the scopes a run asks
     for, the rekuest provider's among them, or the running container cannot log in."""
     from rekuest.arkitekt import rekuest_service

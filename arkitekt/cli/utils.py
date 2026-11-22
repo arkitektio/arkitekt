@@ -1,12 +1,12 @@
 import contextlib
+import json
+import logging
+import os
 import sys
 from collections.abc import Callable, Iterator
 from typing import Any
-import json
 
 from rich.console import Console
-import logging
-import os
 
 
 def emit_machine_readable(kind: str, data: Any) -> None:

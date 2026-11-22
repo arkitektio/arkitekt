@@ -27,7 +27,6 @@ from arkitekt_spec.actions import (
     ActionDependencyInput,
     AgentDependencyInput,
     ArgPortInput,
-    ReturnPortInput,
     AssetKind,
     BlokDemoInput,
     BlokLocalInput,
@@ -42,12 +41,30 @@ from arkitekt_spec.actions import (
     PortGroupInput,
     PortKind,
     PortMatchInput,
+    ReturnPortInput,
     StateDemandInput,
     StateDependencyInput,
     TestTargetInput,
     UtilCallInput,
     ValidatorInput,
 )
+from arkitekt_spec.blok.bsx import parse_bsx, parse_bsx_with_spans
+from arkitekt_spec.blok.catalogs import (
+    ORKESTRATOR_CATALOG_ID,
+    BlokView,
+    base_catalog,
+    blok_view,
+    checking_catalogs,
+    default_view,
+    orkestrator_catalog,
+    orkestrator_view,
+)
+from arkitekt_spec.blok.prompt import (
+    blok_prompt,
+    component_signature,
+    function_signature,
+)
+from arkitekt_spec.blok.vocabulary import BlokError, Finding, Function, load_vocabulary
 from arkitekt_spec.declare.actors.policy import (
     CancelOnDisconnect,
     DisconnectPolicy,
@@ -65,20 +82,19 @@ from arkitekt_spec.declare.agents.errors import NoCallerError
 from arkitekt_spec.declare.annotations import (
     Default,
     Description,
+    Fits,
     Key,
     Provides,
-    Fits,
     Requires,
     Units,
 )
 from arkitekt_spec.declare.app import AppRegistry
-from arkitekt_spec.declare.interactions import AskMethod, InformMethod, ask, inform
+from arkitekt_spec.declare.blok.action import ActionBlok
 from arkitekt_spec.declare.blok.from_svg import (
     SvgConversionError,
     SvgConversionWarning,
     from_svg,
 )
-from arkitekt_spec.declare.blok.action import ActionBlok
 from arkitekt_spec.declare.blok.parser import bsx, parse_util_call
 from arkitekt_spec.declare.blok.unparse import to_bsx
 from arkitekt_spec.declare.blok.validate import (
@@ -87,23 +103,6 @@ from arkitekt_spec.declare.blok.validate import (
     validate_blok,
     validate_bsx,
 )
-from arkitekt_spec.blok.bsx import parse_bsx, parse_bsx_with_spans
-from arkitekt_spec.blok.prompt import (
-    blok_prompt,
-    component_signature,
-    function_signature,
-)
-from arkitekt_spec.blok.catalogs import (
-    ORKESTRATOR_CATALOG_ID,
-    BlokView,
-    base_catalog,
-    blok_view,
-    checking_catalogs,
-    default_view,
-    orkestrator_catalog,
-    orkestrator_view,
-)
-from arkitekt_spec.blok.vocabulary import BlokError, Finding, Function, load_vocabulary
 from arkitekt_spec.declare.catalogs import (
     BLOK_ARGS_ROOT,
     BlokCheckMode,
@@ -115,6 +114,7 @@ from arkitekt_spec.declare.catalogs import (
     parse_ui_catalog,
 )
 from arkitekt_spec.declare.coercible_types import ToOptimisticProtocol
+from arkitekt_spec.declare.definition.policy import CallPolicy, policy
 from arkitekt_spec.declare.errors import (
     AgentLost,
     DeniedError,
@@ -125,12 +125,12 @@ from arkitekt_spec.declare.errors import (
     StateChanged,
     StatePreconditionFailed,
 )
+from arkitekt_spec.declare.interactions import AskMethod, InformMethod, ask, inform
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.service import Service
 from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
-from arkitekt_spec.declare.definition.policy import CallPolicy, policy
 from arkitekt_spec.declare.task import (
     AssignmentHook,
     AssignPrompt,

@@ -3,9 +3,10 @@
 import os
 import time
 
+from fakts.session import REFRESH_CHAIN_MAX_AGE, REFRESH_TOKEN_MAX_AGE
+
 from arkitekt.app import sessions
 from arkitekt.app.sessions import forget, list_sessions, read_session, session_path
-from fakts.session import REFRESH_CHAIN_MAX_AGE, REFRESH_TOKEN_MAX_AGE
 
 from .fakes import write_session
 
@@ -20,13 +21,19 @@ def test_a_session_says_where_and_when_it_was_logged_in() -> None:
     session = read_session(path)
 
     assert session is not None
-    assert (session.name, session.url, session.deployment) == ("my-app-0.1.0", LAB, "Lab")
+    assert (session.name, session.url, session.deployment) == (
+        "my-app-0.1.0",
+        LAB,
+        "Lab",
+    )
     assert session.logged_in_at == then
     assert session.state() == "active"
 
 
 def test_a_session_is_for_the_manifest_it_was_approved_with() -> None:
-    session = read_session(write_session("my-app", "0.1.0", LAB, manifest_hash="a" * 64))
+    session = read_session(
+        write_session("my-app", "0.1.0", LAB, manifest_hash="a" * 64)
+    )
 
     assert session is not None
     assert session.is_for("a" * 64)
@@ -41,7 +48,9 @@ def test_a_session_keeps_its_tokens_to_itself() -> None:
 
 def test_a_session_unused_for_too_long_is_idle_and_one_too_old_is_expired() -> None:
     now = time.time()
-    idle = write_session("idle", "1", LAB, refreshed_at=now - REFRESH_TOKEN_MAX_AGE - DAY)
+    idle = write_session(
+        "idle", "1", LAB, refreshed_at=now - REFRESH_TOKEN_MAX_AGE - DAY
+    )
     old = write_session("old", "1", LAB, logged_in_at=now - REFRESH_CHAIN_MAX_AGE - DAY)
 
     idle_session, old_session = read_session(idle), read_session(old)
@@ -59,7 +68,9 @@ def test_no_session_and_an_unreadable_one_are_both_none(tmp_path) -> None:
 
 
 def test_one_app_on_two_servers_has_two_sessions() -> None:
-    assert session_path("app", "1", LAB) != session_path("app", "1", "http://localhost:8000")
+    assert session_path("app", "1", LAB) != session_path(
+        "app", "1", "http://localhost:8000"
+    )
 
 
 def test_listing_shows_only_our_sessions() -> None:
@@ -71,7 +82,10 @@ def test_listing_shows_only_our_sessions() -> None:
         with open(name, "w") as file:
             file.write("{}")
 
-    assert [session.name for session in list_sessions()] == ["my-app-0.1.0", "other-app-2.0.0-rc1"]
+    assert [session.name for session in list_sessions()] == [
+        "my-app-0.1.0",
+        "other-app-2.0.0-rc1",
+    ]
 
     assert forget(path) is True
     assert forget(path) is False

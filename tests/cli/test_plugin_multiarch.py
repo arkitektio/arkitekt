@@ -48,7 +48,16 @@ def _config(tmp_path, flavour="vanilla"):
 def _init(tmp_path, *extra):
     return CliRunner().invoke(
         cli_app,
-        ["--work-dir", str(tmp_path), "plugin", "flavour", "add", "--arkitekt-version", "0.0.1", *extra],
+        [
+            "--work-dir",
+            str(tmp_path),
+            "plugin",
+            "flavour",
+            "add",
+            "--arkitekt-version",
+            "0.0.1",
+            *extra,
+        ],
         input="n\n",
     )
 
@@ -62,7 +71,9 @@ def test_a_new_flavour_builds_both_architectures(tmp_path):
     result = _init(tmp_path)
 
     assert result.exit_code == 0, result.output
-    assert yaml.safe_load(_config(tmp_path).read_text())["platforms"] == DEFAULT_PLATFORMS
+    assert (
+        yaml.safe_load(_config(tmp_path).read_text())["platforms"] == DEFAULT_PLATFORMS
+    )
 
 
 def test_no_multi_arch_builds_only_this_machine(tmp_path):
@@ -110,7 +121,17 @@ def test_a_hand_written_build_command_is_left_alone(tmp_path):
     _init(tmp_path)
     config = _config(tmp_path)
     custom = yaml.safe_load(config.read_text())
-    custom["build_command"] = ["docker", "build", "--build-arg", "X=1", "-t", "{tag}", "-f", "{dockerfile}", "."]
+    custom["build_command"] = [
+        "docker",
+        "build",
+        "--build-arg",
+        "X=1",
+        "-t",
+        "{tag}",
+        "-f",
+        "{dockerfile}",
+        ".",
+    ]
     config.write_text(yaml.dump(custom))
 
     loaded = get_flavours(base_dir=str(tmp_path))["vanilla"]
@@ -121,7 +142,9 @@ def test_a_hand_written_build_command_is_left_alone(tmp_path):
 
 def test_an_unloadable_config_names_the_file_and_the_reason(tmp_path):
     _init(tmp_path)
-    _config(tmp_path).write_text(yaml.dump({"selectors": [], "platforms": "linux/amd64"}))
+    _config(tmp_path).write_text(
+        yaml.dump({"selectors": [], "platforms": "linux/amd64"})
+    )
 
     with pytest.raises(typer.Exit):
         get_flavours(base_dir=str(tmp_path))
@@ -134,12 +157,14 @@ def test_an_unloadable_config_names_the_file_and_the_reason(tmp_path):
 
 def _build(flavour, platforms=None, host="linux/amd64"):
     """Run build_flavour against a mocked docker, returning the argv lists."""
-    with patch.object(buildx, "host_platform", return_value=host), patch.object(
-        buildx, "ensure_builder", return_value="arkitekt"
-    ), patch(
-        "arkitekt.cli.commands.plugin.build.subprocess.run",
-        return_value=subprocess.CompletedProcess([], 0),
-    ) as run:
+    with (
+        patch.object(buildx, "host_platform", return_value=host),
+        patch.object(buildx, "ensure_builder", return_value="arkitekt"),
+        patch(
+            "arkitekt.cli.commands.plugin.build.subprocess.run",
+            return_value=subprocess.CompletedProcess([], 0),
+        ) as run,
+    ):
         build_id = build_flavour("vanilla", flavour, "/work", platforms=platforms)
     return build_id, [call.args[0] for call in run.call_args_list]
 
@@ -182,7 +207,17 @@ def test_building_nothing_this_machine_can_load_is_refused():
 def test_a_customized_command_is_run_verbatim():
     flavour = Flavour(
         selectors=[],
-        build_command=["docker", "build", "--build-arg", "X=1", "-t", "{tag}", "-f", "{dockerfile}", "."],
+        build_command=[
+            "docker",
+            "build",
+            "--build-arg",
+            "X=1",
+            "-t",
+            "{tag}",
+            "-f",
+            "{dockerfile}",
+            ".",
+        ],
     )
 
     _, commands = _build(flavour)
@@ -221,9 +256,11 @@ def test_a_variant_covers_the_platform_that_was_asked_for():
 
 
 def test_a_missing_architecture_names_both_the_remedy_and_the_way_out(capsys):
-    with patch.object(buildx, "host_platform", return_value="linux/amd64"), patch.object(
-        buildx, "_builder_exists", return_value=True
-    ), patch.object(buildx, "builder_platforms", return_value=["linux/amd64"]):
+    with (
+        patch.object(buildx, "host_platform", return_value="linux/amd64"),
+        patch.object(buildx, "_builder_exists", return_value=True),
+        patch.object(buildx, "builder_platforms", return_value=["linux/amd64"]),
+    ):
         with pytest.raises(typer.Exit):
             buildx.ensure_builder(["linux/amd64", "linux/arm64"])
 
@@ -234,9 +271,10 @@ def test_a_missing_architecture_names_both_the_remedy_and_the_way_out(capsys):
 
 
 def test_building_only_for_this_machine_creates_no_builder():
-    with patch.object(buildx, "host_platform", return_value="linux/amd64"), patch.object(
-        buildx, "_builder_exists"
-    ) as exists:
+    with (
+        patch.object(buildx, "host_platform", return_value="linux/amd64"),
+        patch.object(buildx, "_builder_exists") as exists,
+    ):
         assert buildx.ensure_builder(["linux/amd64"]) is None
 
     exists.assert_not_called()
@@ -257,10 +295,13 @@ def test_publishing_a_multi_arch_build_pushes_one_image(tmp_path):
         manifest=_manifest(),
     )
 
-    with patch.object(buildx, "ensure_builder", return_value="arkitekt"), patch(
-        "arkitekt.cli.commands.plugin.publish.subprocess.run",
-        return_value=subprocess.CompletedProcess([], 0),
-    ) as run:
+    with (
+        patch.object(buildx, "ensure_builder", return_value="arkitekt"),
+        patch(
+            "arkitekt.cli.commands.plugin.publish.subprocess.run",
+            return_value=subprocess.CompletedProcess([], 0),
+        ) as run,
+    ):
         push_multi_arch(build, "me/x:1", str(tmp_path), _Console())
 
     command = run.call_args.args[0]
@@ -281,7 +322,9 @@ class _Console:
         pass
 
 
-def test_publishing_an_uninspected_build_is_refused_before_it_is_pushed(tmp_path, monkeypatch):
+def test_publishing_an_uninspected_build_is_refused_before_it_is_pushed(
+    tmp_path, monkeypatch
+):
     """The push is the expensive, irreversible half; the record needs the inspection."""
     _init(tmp_path)
     monkeypatch.chdir(tmp_path)
@@ -293,11 +336,13 @@ def test_publishing_an_uninspected_build_is_refused_before_it_is_pushed(tmp_path
         manifest=_manifest(),
     )
 
-    with patch(
-        "arkitekt.cli.commands.plugin.io.get_builds", return_value={"image": build}
-    ), patch("subprocess.check_output", return_value=b"Username: me"), patch(
-        "arkitekt.cli.commands.plugin.publish.subprocess.run"
-    ) as run:
+    with (
+        patch(
+            "arkitekt.cli.commands.plugin.io.get_builds", return_value={"image": build}
+        ),
+        patch("subprocess.check_output", return_value=b"Username: me"),
+        patch("arkitekt.cli.commands.plugin.publish.subprocess.run") as run,
+    ):
         result = CliRunner().invoke(
             cli_app,
             ["--work-dir", str(tmp_path), "plugin", "publish", "--tag", "me/x:1"],

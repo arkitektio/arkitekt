@@ -53,20 +53,32 @@ def normalize_reference(raw: str) -> str:
     lowercased: a repository path is lowercase, a GitHub owner's name need not be.
     Mirrors kabinet's ``parse_reference`` and orkestrator's ``parseOciReference``.
     """
-    reference = raw.strip().lower().removeprefix("oci://").removeprefix("https://").rstrip("/")
-    if not reference or len(reference) > 255 or not re.fullmatch(r"[a-z0-9._:/-]+", reference):
-        raise ValueError(f"'{raw}' is not a package: name the repository alone, e.g. ghcr.io/owner/app.")
+    reference = (
+        raw.strip().lower().removeprefix("oci://").removeprefix("https://").rstrip("/")
+    )
+    if (
+        not reference
+        or len(reference) > 255
+        or not re.fullmatch(r"[a-z0-9._:/-]+", reference)
+    ):
+        raise ValueError(
+            f"'{raw}' is not a package: name the repository alone, e.g. ghcr.io/owner/app."
+        )
     head, _, rest = reference.partition("/")
     is_host = "." in head or ":" in head or head == "localhost"
     path = rest.split("/") if rest and is_host else reference.split("/")
     if not all(_SEGMENT.fullmatch(segment) for segment in path):
-        raise ValueError(f"'{raw}' is not a package: name the repository alone, without a tag or a digest.")
+        raise ValueError(
+            f"'{raw}' is not a package: name the repository alone, without a tag or a digest."
+        )
     return reference
 
 
 def install_path(reference: str) -> str:
     """The Orkestrator path of the install intent for one package."""
-    return f"/do/v{INTENT_VERSION}/{INTENT}?" + urlencode({"source": f"oci:{reference}"})
+    return f"/do/v{INTENT_VERSION}/{INTENT}?" + urlencode(
+        {"source": f"oci:{reference}"}
+    )
 
 
 #: What ``encodeURIComponent`` leaves as it is, besides letters, digits and ``-_.~``
@@ -84,7 +96,10 @@ def install_badge(reference: str) -> str:
     return f"[![Open in Arkitekt]({BADGE_IMAGE_URL})]({install_link(reference)})"
 
 
-_GITHUB_REMOTE = re.compile(r"^(?:[a-z+]+://)?(?:[^@/]+@)?github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?/?$", re.IGNORECASE)
+_GITHUB_REMOTE = re.compile(
+    r"^(?:[a-z+]+://)?(?:[^@/]+@)?github\.com[:/]([^/]+)/([^/]+?)(?:\.git)?/?$",
+    re.IGNORECASE,
+)
 
 
 def package_for_remote(url: str | None) -> str | None:
@@ -123,14 +138,18 @@ def write_badge(readme: str, content: str, insert: bool = True) -> bool:
         return False
     else:
         lines = existing.splitlines(keepends=True)
-        heading = next((index for index, line in enumerate(lines) if line.startswith("# ")), None)
+        heading = next(
+            (index for index, line in enumerate(lines) if line.startswith("# ")), None
+        )
         if heading is None:
             updated = _block(content) + "\n" + ("\n" + existing if existing else "")
         else:
             before = "".join(lines[: heading + 1])
             if not before.endswith("\n"):
                 before += "\n"
-            updated = before + "\n" + _block(content) + "\n" + "".join(lines[heading + 1 :])
+            updated = (
+                before + "\n" + _block(content) + "\n" + "".join(lines[heading + 1 :])
+            )
 
     if updated == existing:
         return False
@@ -147,11 +166,17 @@ def badge(
         help="The package the badge installs, e.g. ghcr.io/owner/app. Default: the one the release "
         "workflow publishes for this checkout's GitHub remote.",
     ),
-    write: bool = typer.Option(False, "--write", help="Put it in the README, adding its place there if needed."),
-    update: bool = typer.Option(
-        False, "--update", help="Put it in the README only where its place already is (what the workflow runs)."
+    write: bool = typer.Option(
+        False, "--write", help="Put it in the README, adding its place there if needed."
     ),
-    readme: str = typer.Option("README.md", "--readme", help="The README, relative to the app."),
+    update: bool = typer.Option(
+        False,
+        "--update",
+        help="Put it in the README only where its place already is (what the workflow runs).",
+    ),
+    readme: str = typer.Option(
+        "README.md", "--readme", help="The README, relative to the app."
+    ),
 ) -> None:
     """Print the 'Open in Arkitekt' README badge that installs this app, or write it into the README"""
     work_dir = get_work_dir(ctx)
@@ -173,11 +198,21 @@ def badge(
 
     console = get_console(ctx)
     if write_badge(os.path.join(work_dir, readme), markdown, insert=write):
-        done(console, f"{escape(readme)} has the badge for [bold]{escape(reference)}[/bold]")
+        done(
+            console,
+            f"{escape(readme)} has the badge for [bold]{escape(reference)}[/bold]",
+        )
     elif update and START not in _read(os.path.join(work_dir, readme)):
-        notice(console, f"{escape(readme)} has no place for the badge", "left as it is; add it with --write")
+        notice(
+            console,
+            f"{escape(readme)} has no place for the badge",
+            "left as it is; add it with --write",
+        )
     else:
-        done(console, f"{escape(readme)} already has the badge for [bold]{escape(reference)}[/bold]")
+        done(
+            console,
+            f"{escape(readme)} already has the badge for [bold]{escape(reference)}[/bold]",
+        )
 
 
 def _read(path: str) -> str:

@@ -1,16 +1,10 @@
 import datetime
-import uuid
-from arkitekt.utils import create_arkitekt_folder
+import json
 import os
+import uuid
 from typing import NoReturn
 
-from .types import (
-    DEFAULT_BUILD_COMMAND,
-    LEGACY_BUILD_COMMANDS,
-    Build,
-    BuildsConfigFile,
-    Flavour,
-)
+import yaml
 from arkitekt_spec import (
     AppImage,
     AppManifest,
@@ -21,15 +15,24 @@ from arkitekt_spec import (
     dump_deployments,
     load_deployments,
 )
-
-import yaml
-import json
 from pydantic import ValidationError
+
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.ui import command_hint
+from arkitekt.utils import create_arkitekt_folder
+
+from .types import (
+    DEFAULT_BUILD_COMMAND,
+    LEGACY_BUILD_COMMANDS,
+    Build,
+    BuildsConfigFile,
+    Flavour,
+)
 
 
-def get_flavours(base_dir: str | None = None, select: str | None = None) -> dict[str, Flavour]:
+def get_flavours(
+    base_dir: str | None = None, select: str | None = None
+) -> dict[str, Flavour]:
     """Loads and validates all flavours from the .arkitekt/flavours directory."""
     arkitekt_folder = create_arkitekt_folder(base_dir=base_dir)
     flavours_folder = os.path.join(arkitekt_folder, "flavours")
@@ -50,9 +53,7 @@ def get_flavours(base_dir: str | None = None, select: str | None = None) -> dict
 
         config_path = os.path.join(dir_path, "config.yaml")
         if not os.path.exists(config_path):
-            cli_error(
-                f"Flavour {dir_name} is invalid: no config.yaml found"
-            )
+            cli_error(f"Flavour {dir_name} is invalid: no config.yaml found")
 
         with open(config_path) as f:
             valued = yaml.load(f, Loader=yaml.SafeLoader)
@@ -94,7 +95,9 @@ def _read_builds(config_file: str) -> BuildsConfigFile:
             _unreadable(config_file, error)
 
 
-def get_builds(selected_run: str | None = None, base_dir: str | None = None) -> dict[str, Build]:
+def get_builds(
+    selected_run: str | None = None, base_dir: str | None = None
+) -> dict[str, Build]:
     """Loads the builds.yaml file and returns a dictionary of builds keyed by build_id."""
     path = create_arkitekt_folder(base_dir=base_dir)
     config_file = os.path.join(path, "builds.yaml")
@@ -147,7 +150,9 @@ def generate_build(
         config.spec_version = current_spec_version()
     else:
         config = BuildsConfigFile(
-            spec_version=current_spec_version(), builds=[build], latest_build_run=build_run
+            spec_version=current_spec_version(),
+            builds=[build],
+            latest_build_run=build_run,
         )
 
     with open(config_file, "w") as file:
@@ -185,7 +190,9 @@ def generate_deployment(
 ) -> AppImage:
     """Generates a deployment record from a build and appends it to deployments.yaml."""
     if build.inspection is None:
-        cli_error(f"Build {build.build_id} was never inspected, so it cannot be deployed")
+        cli_error(
+            f"Build {build.build_id} was never inspected, so it cannot be deployed"
+        )
 
     path = create_arkitekt_folder(base_dir=base_dir)
     config_file = os.path.join(path, "deployments.yaml")

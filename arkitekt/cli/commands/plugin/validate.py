@@ -1,5 +1,7 @@
 from typing import Annotated
+
 import typer
+
 from arkitekt.cli.completion import complete_flavours
 from arkitekt.cli.ui import done, escape, notice
 from arkitekt.cli.vars import get_console, get_work_dir
@@ -9,7 +11,12 @@ def validate(
     ctx: typer.Context,
     flavour: Annotated[
         str | None,
-        typer.Option("--flavour", "-f", help="Validate only this flavour", autocompletion=complete_flavours),
+        typer.Option(
+            "--flavour",
+            "-f",
+            help="Validate only this flavour",
+            autocompletion=complete_flavours,
+        ),
     ] = None,
 ) -> None:
     """Validate every Dockerfile and flavour config of this app"""

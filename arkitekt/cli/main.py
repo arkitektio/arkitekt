@@ -10,6 +10,16 @@ except ImportError:
     sys.exit(1)
 
 from arkitekt.cli.app import cli_app
+from arkitekt.cli.commands.app.call.main import call
+from arkitekt.cli.commands.app.check import check
+from arkitekt.cli.commands.app.create.main import create_command
+from arkitekt.cli.commands.app.gen.main import gen
+from arkitekt.cli.commands.app.inspect.main import inspect
+from arkitekt.cli.commands.app.run.main import run
+from arkitekt.cli.commands.mesh.main import mesh
+from arkitekt.cli.commands.plugin.main import plugin
+from arkitekt.cli.commands.self.main import self_group
+from arkitekt.cli.commands.session.main import login, logout, status
 from arkitekt.cli.docs import (
     CALL_DOCS,
     CREATE_DOCS,
@@ -22,16 +32,6 @@ from arkitekt.cli.docs import (
     SESSION_DOCS,
     help_epilog,
 )
-from arkitekt.cli.commands.app.call.main import call
-from arkitekt.cli.commands.app.gen.main import gen
-from arkitekt.cli.commands.app.create.main import create_command
-from arkitekt.cli.commands.app.inspect.main import inspect
-from arkitekt.cli.commands.app.run.main import run
-from arkitekt.cli.commands.app.check import check
-from arkitekt.cli.commands.mesh.main import mesh
-from arkitekt.cli.commands.self.main import self_group
-from arkitekt.cli.commands.session.main import login, logout, status
-from arkitekt.cli.commands.plugin.main import plugin
 
 # Mount every group onto the Typer root, then build the public click entry point
 # (project.scripts -> arkitekt.cli.main:cli). The root callback in cli/app.py seeds

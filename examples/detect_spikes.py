@@ -20,11 +20,11 @@ from typing import Annotated
 
 import numpy as np
 import xarray as xr
+from elektro import Elektro, elektro_service
+from elektro.specs import SingleChannelTrace, carried_axes
 from scipy.signal import find_peaks
 
 from arkitekt import App, Description, Task, run
-from elektro import Elektro, elektro_service
-from elektro.specs import SingleChannelTrace, carried_axes
 
 app = App("detect-spikes", "0.1.0")
 app.service(elektro_service)
@@ -39,8 +39,7 @@ def detect_spikes(
     elektro: Elektro,
     task: Task,
 ) -> SingleChannelTrace:
-    """Finds threshold crossings and stores them as a trace of the same length.
-    """
+    """Finds threshold crossings and stores them as a trace of the same length."""
     source = trace.data
     values = np.asarray(source).squeeze()
     task.progress(30, f"Searching {values.size} samples")

@@ -4,7 +4,6 @@ A run that fails in one of these ways needs no traceback: it needs to be told
 what happened and what to do next. Anything else is a bug and keeps its traceback.
 """
 
-
 from collections.abc import Callable
 
 from rich.console import Console
@@ -32,7 +31,9 @@ _KNOWN: dict[str, tuple[str, Hint]] = {
     "DeviceCodeTimeoutError": ("The login was not approved in time", "run it again"),
     "NeedsReauthenticationError": (
         "The session is no longer valid",
-        lambda work_dir: f"log in again with `{command_hint('login --reauth', work_dir)}`",
+        lambda work_dir: (
+            f"log in again with `{command_hint('login --reauth', work_dir)}`"
+        ),
     ),
     "DiscoveryError": ("Could not reach the server", "check --url"),
     "StatefulNeedsAgent": (
@@ -42,7 +43,9 @@ _KNOWN: dict[str, tuple[str, Hint]] = {
 }
 
 
-def explain(error: BaseException, work_dir: str | None = None) -> tuple[str, str | None] | None:
+def explain(
+    error: BaseException, work_dir: str | None = None
+) -> tuple[str, str | None] | None:
     """What to say about ``error``, and the hint to give, if it is a known failure."""
     names = [cls.__name__ for cls in type(error).__mro__]
     if "RuntimeNotInstalledError" in names:
@@ -64,7 +67,9 @@ def explain(error: BaseException, work_dir: str | None = None) -> tuple[str, str
     return None
 
 
-def report_failure(console: Console, error: BaseException, work_dir: str | None = None) -> bool:
+def report_failure(
+    console: Console, error: BaseException, work_dir: str | None = None
+) -> bool:
     """Print the line for ``error`` if it is a known failure. Returns whether it was."""
     known = explain(error, work_dir)
     if known is None:

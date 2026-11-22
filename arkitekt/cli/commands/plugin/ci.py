@@ -117,7 +117,9 @@ CI_FILES = {
 def render_ci(forge: str, branch: str = "main", entrypoint: str = "app") -> str:
     """The configuration that has a forge release the app on every push."""
     template = {"github": _GITHUB, "gitlab": _GITLAB}[forge]
-    return template.format(branch=branch, ref=_ref(), module=entrypoint, semantic_release=SEMANTIC_RELEASE)
+    return template.format(
+        branch=branch, ref=_ref(), module=entrypoint, semantic_release=SEMANTIC_RELEASE
+    )
 
 
 def render_semantic_release(branch: str = "main", entrypoint: str = "app") -> str:
@@ -125,7 +127,9 @@ def render_semantic_release(branch: str = "main", entrypoint: str = "app") -> st
     return _SEMANTIC_RELEASE.format(branch=branch, module=entrypoint)
 
 
-def write_semantic_release(work_dir: str, branch: str = "main", entrypoint: str = "app") -> bool:
+def write_semantic_release(
+    work_dir: str, branch: str = "main", entrypoint: str = "app"
+) -> bool:
     """Tell semantic-release where the app's version is, unless the project already does.
 
     Returns:
@@ -153,7 +157,11 @@ def declares_version_variable(work_dir: str, entrypoint: str = "app") -> bool:
 
 
 def write_ci(
-    work_dir: str, forge: str, branch: str = "main", overwrite: bool = False, entrypoint: str = "app"
+    work_dir: str,
+    forge: str,
+    branch: str = "main",
+    overwrite: bool = False,
+    entrypoint: str = "app",
 ) -> str:
     """Write a forge's release configuration into a project; return its relative path.
 
@@ -187,16 +195,27 @@ def github(
     ctx: typer.Context,
     branch: str = typer.Option("main", help="The branch whose pushes are published."),
     entrypoint: str = typer.Option(
-        "app", "--entrypoint", "-e", help="The python file the app is in, without the .py ending."
+        "app",
+        "--entrypoint",
+        "-e",
+        help="The python file the app is in, without the .py ending.",
     ),
-    overwrite: bool = typer.Option(False, "--overwrite", help="Replace an existing workflow."),
+    overwrite: bool = typer.Option(
+        False, "--overwrite", help="Replace an existing workflow."
+    ),
 ) -> None:
     """Write a GitHub Actions workflow that versions the app with semantic-release and publishes it to ghcr.io"""
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)
     entrypoint = entrypoint.removesuffix(".py")
-    relative = write_ci(work_dir, "github", branch=branch, overwrite=overwrite, entrypoint=entrypoint)
-    done(console, f"Wrote [bold]{escape(relative)}[/bold]", "commit it to release on every push")
+    relative = write_ci(
+        work_dir, "github", branch=branch, overwrite=overwrite, entrypoint=entrypoint
+    )
+    done(
+        console,
+        f"Wrote [bold]{escape(relative)}[/bold]",
+        "commit it to release on every push",
+    )
     notice(
         console,
         "semantic-release raises the version",
@@ -215,8 +234,14 @@ def github(
 @ci.command("gitlab")
 def gitlab(
     ctx: typer.Context,
-    overwrite: bool = typer.Option(False, "--overwrite", help="Replace an existing .gitlab-ci.yml."),
+    overwrite: bool = typer.Option(
+        False, "--overwrite", help="Replace an existing .gitlab-ci.yml."
+    ),
 ) -> None:
     """Write a GitLab CI configuration that publishes to the project's registry"""
     relative = write_ci(get_work_dir(ctx), "gitlab", overwrite=overwrite)
-    done(get_console(ctx), f"Wrote [bold]{escape(relative)}[/bold]", "commit it to release on every push")
+    done(
+        get_console(ctx),
+        f"Wrote [bold]{escape(relative)}[/bold]",
+        "commit it to release on every push",
+    )

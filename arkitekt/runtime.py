@@ -15,6 +15,7 @@ How to connect (url, tokens, ...) is an argument of the run, not part of the app
 import asyncio
 import logging
 import threading
+from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
 from contextlib import asynccontextmanager
 from types import TracebackType
 from typing import (
@@ -26,13 +27,15 @@ from typing import (
     cast,
     overload,
 )
-from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
 
 from arkitekt_spec.declare.agents.connection import ConnectionState
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.service import Service
 from fakts import Fakts, oauth2
-from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge, DeviceCodeHook
+from fakts.grants.remote.authorizers.device_code import (
+    DeviceCodeChallenge,
+    DeviceCodeHook,
+)
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts.grants.remote.models import SSLContextModel
 from fakts.mesh import MeshOptions, MeshProxy
@@ -44,19 +47,18 @@ from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from arkitekt.app.app import App, Ctx
 from arkitekt.app.fakts import build_fakts, resolve_insecure_transport, resolve_url
-from arkitekt.app.sources import resolve
 from arkitekt.app.options import ConnectionOptions
-from arkitekt.app.sources import DISCOVER, Source
 from arkitekt.app.sessions import forget, read_credentials, read_session, session_path
 from arkitekt.app.snapshot import RunSnapshot
+from arkitekt.app.sources import DISCOVER, Source, resolve
 from arkitekt.device_id import resolve_device_id
 
 if TYPE_CHECKING:
     from arkitekt_spec.declare.agents.connection import ConnectionListener, TaskListener
-
-    from arkitekt.checks import UnmetDependency
     from fakts.models import ActiveFakts, AuthFakt, Manifest
     from koil import KoilFuture
+
+    from arkitekt.checks import UnmetDependency
 
 
 logger = logging.getLogger(__name__)
@@ -258,7 +260,9 @@ class Runtime(KoiledModel, Generic[Ctx]):
         """The client a local run was handed in place of the one ``service`` builds."""
         if self.local is None:
             return None
-        return next((c for c in self.local.clients if isinstance(c, service.returns)), None)
+        return next(
+            (c for c in self.local.clients if isinstance(c, service.returns)), None
+        )
 
     def _needs_fakts(self, snapshot: RunSnapshot) -> bool:
         """Whether anything this run builds resolves through fakts."""
@@ -316,7 +320,13 @@ class Runtime(KoiledModel, Generic[Ctx]):
         agent.force = self.options.force
         # Whoever started this process (e.g. the plugin engine) names itself here; the
         # agent states it on every Register, as a hint pickers narrow on.
-        supervisor = resolve(self.options.supervisor, flag="supervisor", env=SUPERVISOR_ENV, default=lambda: None, parse=str)
+        supervisor = resolve(
+            self.options.supervisor,
+            flag="supervisor",
+            env=SUPERVISOR_ENV,
+            default=lambda: None,
+            parse=str,
+        )
         if supervisor:
             try:
                 agent.supervisor = supervisor
@@ -433,7 +443,9 @@ class Runtime(KoiledModel, Generic[Ctx]):
         return self.agent
 
     def _require_context(self, context: Any) -> None:  # noqa: ANN401
-        self.app.registry.require_app_context(context, whose=f"App {self.app.identifier!r}")
+        self.app.registry.require_app_context(
+            context, whose=f"App {self.app.identifier!r}"
+        )
 
     @overload
     async def arun(self: "Runtime[None]", context: None = None) -> None: ...
@@ -460,11 +472,15 @@ class Runtime(KoiledModel, Generic[Ctx]):
         await self._require_agent().aprovide(context=context)
 
     @overload
-    async def astart(self: "Runtime[None]", context: None = None, *, timeout: float | None = None) -> None: ...
+    async def astart(
+        self: "Runtime[None]", context: None = None, *, timeout: float | None = None
+    ) -> None: ...
     @overload
     async def astart(self, context: Ctx, *, timeout: float | None = None) -> None: ...
 
-    async def astart(self, context: Ctx | None = None, *, timeout: float | None = None) -> None:
+    async def astart(
+        self, context: Ctx | None = None, *, timeout: float | None = None
+    ) -> None:
         """Start the app and register its agent: the first half of :meth:`arun`.
 
         Returns once the server has acknowledged the agent, so what follows may
@@ -515,7 +531,9 @@ class Runtime(KoiledModel, Generic[Ctx]):
         unkoil(self._aprovide, context)
 
     @overload
-    def run_detached(self: "Runtime[None]", context: None = None) -> "KoilFuture[None]": ...
+    def run_detached(
+        self: "Runtime[None]", context: None = None
+    ) -> "KoilFuture[None]": ...
     @overload
     def run_detached(self, context: Ctx) -> "KoilFuture[None]": ...
 
@@ -574,7 +592,12 @@ class Runtime(KoiledModel, Generic[Ctx]):
         agent, interface = self._local_call(action)
         return await acall_local(agent, interface, *args, **kwargs)
 
-    async def aiterate_local(self, action: Any, *args: Any, **kwargs: Any) -> AsyncIterator[Any]:  # noqa: ANN401
+    async def aiterate_local(
+        self,
+        action: Any,  # noqa: ANN401
+        *args: Any,
+        **kwargs: Any,
+    ) -> AsyncIterator[Any]:
         """Call one of the app's own actions in-process and yield each of its results.
 
         See :meth:`acall_local`.
@@ -585,7 +608,11 @@ class Runtime(KoiledModel, Generic[Ctx]):
         async for result in aiterate_local(agent, interface, *args, **kwargs):
             yield result
 
-    async def aiterate_local_raw(self, action: Any, args: dict[str, Any]) -> AsyncIterator[Any]:  # noqa: ANN401
+    async def aiterate_local_raw(
+        self,
+        action: Any,  # noqa: ANN401
+        args: dict[str, Any],
+    ) -> AsyncIterator[Any]:
         """Call one of the app's own actions with arguments as they travel, and yield
         each result as it would travel back: what a server sends and receives.
 
@@ -635,7 +662,8 @@ def _local_agent(snapshot: RunSnapshot) -> Any:  # noqa: ANN401
             "installed: pip install 'arkitekt[rekuest]'."
         ) from e
     return local_agent(
-        snapshot.registry, name=f"{snapshot.manifest.identifier}:{snapshot.manifest.version}"
+        snapshot.registry,
+        name=f"{snapshot.manifest.identifier}:{snapshot.manifest.version}",
     )
 
 
@@ -1158,7 +1186,9 @@ def _labelled_login_prompt(identifier: str, headless: bool) -> DeviceCodeHook:
     prompt = login_prompt(opened_browser=not headless)
 
     async def hook(challenge: DeviceCodeChallenge) -> None:
-        Console().print(f"[bold]{escape(identifier)}[/bold] asks to log in", highlight=False)
+        Console().print(
+            f"[bold]{escape(identifier)}[/bold] asks to log in", highlight=False
+        )
         await prompt(challenge)
 
     return hook
@@ -1177,7 +1207,11 @@ class RunningApps(Mapping[str, "Runtime[Any]"]):
     looking a runtime up by the app itself keeps the type of its context.
     """
 
-    def __init__(self, runtimes: Mapping[str, "Runtime[Any]"], serving: Sequence["asyncio.Task[None]"]) -> None:
+    def __init__(
+        self,
+        runtimes: Mapping[str, "Runtime[Any]"],
+        serving: Sequence["asyncio.Task[None]"],
+    ) -> None:
         """Hold the started runtimes and the tasks serving them."""
         self._runtimes = runtimes
         self._serving = serving
@@ -1197,7 +1231,9 @@ class RunningApps(Mapping[str, "Runtime[Any]"]):
             return self._runtimes[app]
         runtime = self._runtimes.get(app.identifier)
         if runtime is None or runtime.app is not app:
-            raise KeyError(f"App {app.identifier!r} is not one of the apps provided here: {sorted(self._runtimes)}.")
+            raise KeyError(
+                f"App {app.identifier!r} is not one of the apps provided here: {sorted(self._runtimes)}."
+            )
         return runtime
 
     def __iter__(self) -> Iterator[str]:
@@ -1329,9 +1365,13 @@ async def providing(
     contexts = contexts or {}
     unknown = sorted(set(contexts) - set(identifiers))
     if unknown:
-        raise ValueError(f"`contexts` names apps that are not run: {unknown}. Running: {identifiers}.")
+        raise ValueError(
+            f"`contexts` names apps that are not run: {unknown}. Running: {identifiers}."
+        )
     for app in apps:
-        app.registry.require_app_context(contexts.get(app.identifier), whose=f"App {app.identifier!r}")
+        app.registry.require_app_context(
+            contexts.get(app.identifier), whose=f"App {app.identifier!r}"
+        )
     if check:
         from arkitekt.checks import DependencyCheckError, check_apps
 
@@ -1373,7 +1413,9 @@ async def providing(
 
     try:
         async with asyncio.TaskGroup() as group:
-            serving = [group.create_task(provide(app), name=app.identifier) for app in apps]
+            serving = [
+                group.create_task(provide(app), name=app.identifier) for app in apps
+            ]
             # An app failing to start cancels this wait, and the others, through the group.
             await asyncio.gather(*(event.wait() for event in started.values()))
             try:
@@ -1534,7 +1576,9 @@ def run_all(
     )
 
 
-def run_manifest(app: App[Any], device_id: str | Source | None = DISCOVER) -> "Manifest":
+def run_manifest(
+    app: App[Any], device_id: str | Source | None = DISCOVER
+) -> "Manifest":
     """The manifest a run of ``app`` sends: what the server is asked to approve.
 
     A session is saved for exactly this manifest: an app declared differently
@@ -1645,7 +1689,7 @@ class DetachedRun(Generic[Ctx]):
         self._error: BaseException | None = None
         self._thread: threading.Thread | None = None
         self._loop: asyncio.AbstractEventLoop | None = None
-        self._task: "asyncio.Task[None] | None" = None
+        self._task: asyncio.Task[None] | None = None
         self._guard = threading.Lock()
 
     @property
@@ -1670,7 +1714,11 @@ class DetachedRun(Generic[Ctx]):
         """
         with self._guard:
             ended = self._state in (ConnectionState.FAILED, ConnectionState.STOPPED)
-            if ended and self._thread is not None and self._thread is not threading.current_thread():
+            if (
+                ended
+                and self._thread is not None
+                and self._thread is not threading.current_thread()
+            ):
                 # It says it ended a moment before its thread is through tearing down.
                 self._thread.join(timeout=5)
             if self._thread is not None and self._thread.is_alive():
@@ -1744,7 +1792,9 @@ class DetachedRun(Generic[Ctx]):
         except asyncio.CancelledError:
             await self._set(ConnectionState.STOPPED)
         except Exception as e:
-            logger.warning("The detached run of %r failed", self.app.identifier, exc_info=True)
+            logger.warning(
+                "The detached run of %r failed", self.app.identifier, exc_info=True
+            )
             self._error = e
             await self._set(ConnectionState.FAILED)
         else:
@@ -1758,7 +1808,9 @@ class DetachedRun(Generic[Ctx]):
         try:
             await listener(state)
         except Exception:
-            logger.warning("The connection listener failed on %s", state.value, exc_info=True)
+            logger.warning(
+                "The connection listener failed on %s", state.value, exc_info=True
+            )
 
     async def _on_device_code(self, challenge: "DeviceCodeChallenge") -> None:
         hook = self._options.device_code_hook
@@ -1905,7 +1957,10 @@ def run_detached(
 
 
 def has_stored_login(
-    app: App[Any], *, url: str | Source = DISCOVER, device_id: str | Source | None = DISCOVER
+    app: App[Any],
+    *,
+    url: str | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
 ) -> bool:
     """Whether a run of ``app`` would find a login on this machine and need no approval.
 
@@ -1925,10 +1980,15 @@ def has_stored_login(
     session = read_session(session_path(app.identifier, app.version, resolve_url(url)))
     if session is None:
         return False
-    return session.is_for(run_manifest(app, device_id).hash()) and session.state() == "active"
+    return (
+        session.is_for(run_manifest(app, device_id).hash())
+        and session.state() == "active"
+    )
 
 
-async def _arevoke_stored(auth: "AuthFakt", server: str, allow_insecure_transport: bool) -> None:
+async def _arevoke_stored(
+    auth: "AuthFakt", server: str, allow_insecure_transport: bool
+) -> None:
     """Revoke a stored session at its server, where the server says how."""
     refresh_token = auth.refresh_token
     if not refresh_token:
@@ -1953,7 +2013,10 @@ async def _arevoke_stored(auth: "AuthFakt", server: str, allow_insecure_transpor
 
 
 def logout(
-    app: App[Any], *, url: str | Source = DISCOVER, allow_insecure_transport: bool | Source = DISCOVER
+    app: App[Any],
+    *,
+    url: str | Source = DISCOVER,
+    allow_insecure_transport: bool | Source = DISCOVER,
 ) -> bool:
     """Revoke ``app``'s login on its server and forget it on this machine.
 
@@ -1983,7 +2046,13 @@ def logout(
 
         def revoke() -> None:
             try:
-                asyncio.run(_arevoke_stored(auth, server, resolve_insecure_transport(allow_insecure_transport)))
+                asyncio.run(
+                    _arevoke_stored(
+                        auth,
+                        server,
+                        resolve_insecure_transport(allow_insecure_transport),
+                    )
+                )
             except Exception as e:  # noqa: BLE001 -- a logout must still forget the session
                 failure.append(e)
 

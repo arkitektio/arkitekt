@@ -11,7 +11,11 @@ login nobody approved), and the run would be tied to the thread that started it.
 
 ```python
 from arkitekt import (
-    App, ConnectionState, DeviceCodeChallenge, TaskEvent, run_detached,
+    App,
+    ConnectionState,
+    DeviceCodeChallenge,
+    TaskEvent,
+    run_detached,
 )
 
 app = App("my-instrument", "1.0.0", app_context=Instrument)
@@ -20,8 +24,10 @@ app = App("my-instrument", "1.0.0", app_context=Instrument)
 async def on_code(challenge: DeviceCodeChallenge) -> None:
     panel.ask_to_open(challenge.verification_uri_complete, challenge.user_code)
 
+
 async def on_state(state: ConnectionState) -> None:
     panel.show_connection(state.value)
+
 
 async def on_task(event: TaskEvent) -> None:
     panel.log(event.action, event.kind.value, event.arguments)
@@ -29,16 +35,16 @@ async def on_task(event: TaskEvent) -> None:
 
 running = run_detached(
     app,
-    context=instrument,            # your own object, handed to every action that asks
+    context=instrument,  # your own object, handed to every action that asks
     url="https://lab.example",
-    headless=True,                 # the host shows the login; nothing is printed or opened
+    headless=True,  # the host shows the login; nothing is printed or opened
     device_code_hook=on_code,
     connection_listener=on_state,
     task_listener=on_task,
 )
 ...
-running.cancel()                   # on shutdown, or when the user disconnects
-running.start()                    # and connects again, with the same settings
+running.cancel()  # on shutdown, or when the user disconnects
+running.start()  # and connects again, with the same settings
 ```
 
 ## The run
@@ -69,8 +75,8 @@ printed to the terminal.
 ```python
 from arkitekt import has_stored_login, logout
 
-has_stored_login(app, url=url)     # would a run need an approval? Nothing connects.
-logout(app, url=url)               # revoke the login on the server and forget it here
+has_stored_login(app, url=url)  # would a run need an approval? Nothing connects.
+logout(app, url=url)  # revoke the login on the server and forget it here
 ```
 
 A login is stored per app identifier, version and server, for the app as it is

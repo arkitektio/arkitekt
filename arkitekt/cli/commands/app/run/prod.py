@@ -3,6 +3,7 @@ import asyncio
 import typer
 
 from arkitekt.app.fakts import resolve_url
+from arkitekt.app.terminal import force_qr
 from arkitekt.cli.context import load_context
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.failures import report_failure
@@ -12,23 +13,22 @@ from arkitekt.cli.options import (
     DeviceIdOption,
     ExcludeReachOption,
     ForceMeshOption,
-    PreferReachOption,
-    SupervisorOption,
     ForceOption,
     HeadlessOption,
-    QrOption,
     LogLevel,
     LogLevelOption,
+    MandateKeyOption,
+    PreferReachOption,
+    QrOption,
     ReauthOption,
     SkipCacheOption,
-    MandateKeyOption,
+    SupervisorOption,
     TokenOption,
     UrlOption,
 )
 from arkitekt.cli.running import arun_app, interruptible
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.ui import construct_app_banner, notice
-from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -77,7 +77,9 @@ def prod(
 
     async def until_stopped() -> None:
         try:
-            await arun_app(console, app, options, context=loaded, work_dir=get_work_dir(ctx))
+            await arun_app(
+                console, app, options, context=loaded, work_dir=get_work_dir(ctx)
+            )
         except asyncio.CancelledError:
             # Said before the teardown that follows, which may take a moment.
             notice(console, "Stopping", "Ctrl+C again to force")

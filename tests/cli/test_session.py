@@ -87,7 +87,9 @@ def test_status_json_of_an_app_that_never_logged_in(app_dir):
     assert json.loads(result.stdout)["session"] is None
 
 
-def test_status_says_a_known_failure_of_the_manifest_in_one_line(app_dir, saved, monkeypatch):
+def test_status_says_a_known_failure_of_the_manifest_in_one_line(
+    app_dir, saved, monkeypatch
+):
     """Checking the saved session builds the run's manifest; a failure there is one line."""
     saved(logged_in_at=time.time() - DAY)
 
@@ -193,7 +195,9 @@ def logins(monkeypatch):
         from fakts.cache.file import CacheFile
 
         asked.append((app, options))
-        path = write_session(app.identifier, app.version, options.get("url", DEFAULT_ARKITEKT_URL))
+        path = write_session(
+            app.identifier, app.version, options.get("url", DEFAULT_ARKITEKT_URL)
+        )
         with open(path, encoding="utf-8") as file:
             return CacheFile.model_validate_json(file.read()).fakts
 
@@ -212,7 +216,9 @@ def test_login_logs_in_and_saves_the_session(app_dir, logins):
     assert os.path.exists(session_path(*APP, DEFAULT_ARKITEKT_URL))
 
 
-def test_login_qr_shows_the_link_as_a_qr_code_whatever_the_login(app_dir, logins, monkeypatch):
+def test_login_qr_shows_the_link_as_a_qr_code_whatever_the_login(
+    app_dir, logins, monkeypatch
+):
     from arkitekt.app.terminal import QR_ENV
 
     monkeypatch.delenv(QR_ENV, raising=False)  # restored after the test: --qr sets it
@@ -301,7 +307,9 @@ def test_a_login_is_for_the_manifest_the_run_sends(app_dir, monkeypatch):
 
     def recording(manifest, options):
         sent.append(manifest.hash())
-        return build_testing_fakts(aliases={r.key: f"http://{r.key}.test" for r in manifest.requirements})
+        return build_testing_fakts(
+            aliases={r.key: f"http://{r.key}.test" for r in manifest.requirements}
+        )
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", recording)
 
@@ -328,14 +336,18 @@ def test_logging_in_for_real_goes_through_fakts_and_nothing_else(app_dir):
 
 
 def test_self_sessions_lists_every_login_on_the_machine(tmp_path):
-    write_session("my-app", "0.1.0", DEFAULT_ARKITEKT_URL, logged_in_at=time.time() - 2 * DAY)
+    write_session(
+        "my-app", "0.1.0", DEFAULT_ARKITEKT_URL, logged_in_at=time.time() - 2 * DAY
+    )
     write_session("other-app", "1.0.0", "http://localhost:8000")
 
     result = _invoke(tmp_path, "self", "sessions")
 
     assert result.exit_code == 0, result.output
     assert "my-app-0.1.0" in result.output and "2 days ago" in result.output
-    assert "other-app-1.0.0" in result.output and "http://localhost:8000" in result.output
+    assert (
+        "other-app-1.0.0" in result.output and "http://localhost:8000" in result.output
+    )
     assert "SECRET" not in result.output
 
 

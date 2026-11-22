@@ -25,11 +25,11 @@ from typing import Annotated
 
 import numpy as np
 import xarray as xr
+from mikro import Mikro, mikro_service
+from mikro.arkitekt.specs import Volume
 from scipy import ndimage
 
 from arkitekt import App, Description, Task, run
-from mikro import Mikro, mikro_service
-from mikro.arkitekt.specs import Volume
 
 app = App("denoise-volume", "0.1.0", services=[mikro_service])
 
@@ -38,7 +38,9 @@ app = App("denoise-volume", "0.1.0", services=[mikro_service])
 def denoise(
     mikro: Mikro,  # The mikro service is needed to create the result dataset (arkitekt injects it automatically)
     task: Task,  # The task is needed to report progress (arkitekt injects it automatically)
-    volume: Annotated[Volume, Description("The stack to smooth")],  # The input volume to denoise
+    volume: Annotated[
+        Volume, Description("The stack to smooth")
+    ],  # The input volume to denoise
     sigma: Annotated[float, Description("Gaussian width, in pixels")] = 1.5,
 ) -> Volume:
     """Smooths a stack with a gaussian and stores the result on the same grid."""

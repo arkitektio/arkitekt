@@ -27,11 +27,10 @@ from unittest.mock import patch
 import pytest
 from typer.testing import CliRunner
 
-from arkitekt.cli.main import cli_app
 from arkitekt.cli.commands.plugin.io import get_builds, get_deployments
+from arkitekt.cli.main import cli_app
 
 from .isolation import isolated_filesystem
-
 
 pytestmark = pytest.mark.needs_docker
 
@@ -52,17 +51,25 @@ _FAKE_MANIFEST = {"identifier": "com.test.app", "version": "0.0.1", "entrypoint"
 # helpers
 # ---------------------------------------------------------------------------
 
+
 def _scaffold(runner: CliRunner, version: str = "0.0.1") -> None:
     """Create an app (`init`) and a vanilla flavour (`kabinet init`) in the CWD."""
     result = runner.invoke(
         cli_app,
         [
-            "create", "--template", "bare",
-            "--identifier", "com.test.app",
-            "--version", version,
-            "--author", "me",
-            "--entrypoint", "app",
-            "--package-manager", "pip",
+            "create",
+            "--template",
+            "bare",
+            "--identifier",
+            "com.test.app",
+            "--version",
+            version,
+            "--author",
+            "me",
+            "--entrypoint",
+            "app",
+            "--package-manager",
+            "pip",
         ],
     )
     assert result.exit_code == 0, result.output
@@ -70,9 +77,13 @@ def _scaffold(runner: CliRunner, version: str = "0.0.1") -> None:
     result = runner.invoke(
         cli_app,
         [
-            "plugin", "flavour", "add",
-            "--flavour", "vanilla",
-            "--arkitekt-version", "0.0.1",
+            "plugin",
+            "flavour",
+            "add",
+            "--flavour",
+            "vanilla",
+            "--arkitekt-version",
+            "0.0.1",
             # One architecture: cross-building the other needs QEMU on the host,
             # which CI has no reason to install. The multi-platform argv is
             # asserted without docker in test_plugin_multiarch.py.
@@ -134,6 +145,7 @@ def _patched_push():
 # build
 # ---------------------------------------------------------------------------
 
+
 def test_kabinet_build_no_inspect():
     """`kabinet build --no-inspect` runs a real docker build, and records nothing.
 
@@ -151,11 +163,20 @@ def test_kabinet_build_no_inspect():
                 print(result.exception)
             assert result.exit_code == 0
             assert image is not None
-            assert subprocess.run(["docker", "image", "inspect", image.group(1)], capture_output=True).returncode == 0
-            assert not os.path.exists(os.path.join(directory, ".arkitekt", "builds.yaml"))
+            assert (
+                subprocess.run(
+                    ["docker", "image", "inspect", image.group(1)], capture_output=True
+                ).returncode
+                == 0
+            )
+            assert not os.path.exists(
+                os.path.join(directory, ".arkitekt", "builds.yaml")
+            )
         finally:
             if image is not None:
-                subprocess.run(["docker", "rmi", "-f", image.group(1)], capture_output=True)
+                subprocess.run(
+                    ["docker", "rmi", "-f", image.group(1)], capture_output=True
+                )
 
 
 def test_kabinet_build_with_inspect():
@@ -177,7 +198,7 @@ def test_kabinet_build_with_inspect():
 
             builds = get_builds()
             assert len(builds) == 1
-            (_, build), = builds.items()
+            ((_, build),) = builds.items()
             assert build.flavour == "vanilla"
             assert build.inspection is not None
             assert build.inspection.size is not None  # real `docker inspect` size
@@ -188,6 +209,7 @@ def test_kabinet_build_with_inspect():
 # ---------------------------------------------------------------------------
 # publish (init -> build -> publish, tag only)
 # ---------------------------------------------------------------------------
+
 
 def test_kabinet_full_lifecycle():
     """init -> kabinet init -> build -> publish: the full flow, push patched out."""

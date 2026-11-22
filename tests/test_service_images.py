@@ -30,7 +30,9 @@ def hosted(image: str | None = "example/pictures:3"):  # noqa: ANN201 -- a Servi
 
 
 def test_an_apps_services_name_the_images_of_its_hub() -> None:
-    assert service_images(App("images", "0.1.0", services=[hosted()])) == ["example/pictures:3"]
+    assert service_images(App("images", "0.1.0", services=[hosted()])) == [
+        "example/pictures:3"
+    ]
 
 
 def test_an_app_that_offers_something_needs_what_serves_it_too() -> None:

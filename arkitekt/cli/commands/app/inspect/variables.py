@@ -1,13 +1,17 @@
 import inspect as pyinspect
 import json
-from typing import Annotated
 
 import typer
 
-from arkitekt.cli.ui import construct_leaking_group, done
-from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
-from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
+from arkitekt.cli.options import (
+    JsonOption,
+    LogLevel,
+    LogLevelOption,
+    MachineReadableOption,
+)
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, import_target_or_exit
+from arkitekt.cli.ui import construct_leaking_group, done
+from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
 
 

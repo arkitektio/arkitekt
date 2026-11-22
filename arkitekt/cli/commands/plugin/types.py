@@ -1,13 +1,11 @@
-from pydantic import BaseModel, Field, field_validator
 import datetime
-from collections.abc import Sequence
-
-
-from string import Formatter
 import os
 import shlex
+from collections.abc import Sequence
+from string import Formatter
 
 from arkitekt_spec import AppManifest, Capability, Inspection, Selector
+from pydantic import BaseModel, Field, field_validator
 
 ALLOWED_BUILDER_KEYS = [
     "tag",
@@ -43,13 +41,12 @@ DEFAULT_BUILD_COMMAND = [
 #: customised — it is just spelled the way the single-arch CLI spelled it — so it
 #: is migrated to :data:`DEFAULT_BUILD_COMMAND` on load rather than treated as a
 #: user's own command (see ``io.get_flavours``).
-LEGACY_BUILD_COMMANDS = (
-    ["docker", "build", "-t", "{tag}", "-f", "{dockerfile}", "."],
-)
+LEGACY_BUILD_COMMANDS = (["docker", "build", "-t", "{tag}", "-f", "{dockerfile}", "."],)
 
 
 class Flavour(BaseModel):
-    """ Flavour is a pydantic model that represents a flavour of an app image"""
+    """Flavour is a pydantic model that represents a flavour of an app image"""
+
     selectors: list[Selector]
     #: What the flavour must be granted where it runs: the container engine's socket, a
     #: device, a folder of the host. Copied into the build, the deployments file and the
@@ -58,7 +55,9 @@ class Flavour(BaseModel):
     description: str = Field(default="")
     dockerfile: str = Field(default="Dockerfile")
     platforms: list[str] = Field(default_factory=lambda: list(DEFAULT_PLATFORMS))
-    build_command: list[str] = Field(default_factory=lambda: list(DEFAULT_BUILD_COMMAND))
+    build_command: list[str] = Field(
+        default_factory=lambda: list(DEFAULT_BUILD_COMMAND)
+    )
 
     @field_validator("build_command", mode="before")
     def check_valid_template_name(cls, value):
@@ -69,9 +68,9 @@ class Flavour(BaseModel):
                 v
             ):
                 if field_name is not None:
-                    assert (
-                        field_name in ALLOWED_BUILDER_KEYS
-                    ), f"Invalid template key {field_name}. Allowed keys are {ALLOWED_BUILDER_KEYS}"
+                    assert field_name in ALLOWED_BUILDER_KEYS, (
+                        f"Invalid template key {field_name}. Allowed keys are {ALLOWED_BUILDER_KEYS}"
+                    )
 
         return value
 

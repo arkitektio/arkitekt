@@ -1,13 +1,21 @@
-from typing import Annotated
+import json
+
 import typer
 
 from arkitekt.app.spec import app_declaration
-from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE, run_snapshot_or_exit
+from arkitekt.cli.commands.app.inspect.utils import (
+    NOTHING_TO_PROVIDE,
+    run_snapshot_or_exit,
+)
+from arkitekt.cli.options import (
+    JsonOption,
+    LogLevel,
+    LogLevelOption,
+    MachineReadableOption,
+)
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
 from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
-import json
 
 
 def all(
@@ -40,7 +48,9 @@ def all(
     # The spec's Inspection, which the build on the host reads back with the same
     # model. The action language inside it is validated by rekuest on the way out.
     declaration = app_declaration(app, run, entrypoint=target)
-    agent = declaration.to_inspection().model_dump(mode="json", by_alias=True, exclude_none=True)
+    agent = declaration.to_inspection().model_dump(
+        mode="json", by_alias=True, exclude_none=True
+    )
 
     if machine_readable:
         emit_machine_readable("AGENT", agent)

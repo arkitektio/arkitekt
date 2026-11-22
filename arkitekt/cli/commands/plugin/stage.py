@@ -1,12 +1,14 @@
+import subprocess
 from typing import Annotated
+
 import typer
+
 from arkitekt.cli.completion import complete_flavours
 from arkitekt.cli.errors import cli_error
-import subprocess
-from arkitekt.constants import DEFAULT_ARKITEKT_URL
 from arkitekt.cli.options import UrlOption
 from arkitekt.cli.ui import command_hint, escape, step
 from arkitekt.cli.vars import get_console, get_work_dir
+from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 
 def stage(
@@ -38,12 +40,16 @@ def stage(
     work_dir = get_work_dir(ctx)
     builds = list(get_builds(build, base_dir=work_dir).values())
     if not builds:
-        cli_error(f"Could not find any builds. Build one first: `{command_hint('plugin build', work_dir)}`")
+        cli_error(
+            f"Could not find any builds. Build one first: `{command_hint('plugin build', work_dir)}`"
+        )
 
     if flavour is None:
         if len(builds) > 1:
             made = ", ".join(sorted(b.flavour for b in builds))
-            cli_error(f"The build made several flavours ({made}): name one with --flavour.")
+            cli_error(
+                f"The build made several flavours ({made}): name one with --flavour."
+            )
         build_model = builds[0]
     else:
         matching = [b for b in builds if b.flavour == flavour]
@@ -54,7 +60,9 @@ def stage(
             )
         build_model = matching[-1]
 
-    command = build_model.build_docker_command() + build_model.build_arkitekt_command(url)
+    command = build_model.build_docker_command() + build_model.build_arkitekt_command(
+        url
+    )
 
     step(
         console,

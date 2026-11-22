@@ -31,7 +31,12 @@ def asks_for_mesh_key(fakts: Fakts) -> bool:
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch: pytest.MonkeyPatch) -> None:
-    for name in ("ARKITEKT_MESH", "ARKITEKT_MESH_PROXY", "FAKTS_TOKEN", "FAKTS_MANDATE_KEY"):
+    for name in (
+        "ARKITEKT_MESH",
+        "ARKITEKT_MESH_PROXY",
+        "FAKTS_TOKEN",
+        "FAKTS_MANDATE_KEY",
+    ):
         monkeypatch.delenv(name, raising=False)
 
 
@@ -92,7 +97,9 @@ def test_the_device_code_run_asks_for_a_key_only_for_its_own_node(
     assert asks_for_mesh_key(fakts) is True
 
     proxy = MeshProxy(url=PROXY)
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mesh=proxy))
+    fakts = build_fakts(
+        MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mesh=proxy)
+    )
     assert fakts.mesh == proxy, "what is passed wins over the environment"
     assert asks_for_mesh_key(fakts) is False
 
@@ -106,7 +113,9 @@ def test_a_mandate_key_login_asks_for_a_key_for_its_own_node(
     such app was refused the mesh however its key allowed it.
     """
     monkeypatch.setenv("ARKITEKT_MESH", "1")
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mandate_key="key-me"))
+    fakts = build_fakts(
+        MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mandate_key="key-me")
+    )
     assert isinstance(fakts.grant, RemoteGrant)
     assert isinstance(fakts.grant.authorizer, MandateKeyAuthorizer)
     assert fakts.grant.authorizer.request_auth_key is True
@@ -148,5 +157,7 @@ def test_a_bool_turns_it_on_or_off_whatever_the_environment_says(
     monkeypatch: pytest.MonkeyPatch, passed: bool, expected: MeshOptions | None
 ) -> None:
     monkeypatch.setenv("ARKITEKT_MESH", "0" if passed else "1")
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mesh=passed))
+    fakts = build_fakts(
+        MANIFEST, ConnectionOptions(url=URL, skip_cache=True, mesh=passed)
+    )
     assert fakts.mesh == expected

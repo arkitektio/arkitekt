@@ -1,12 +1,17 @@
-from typing import Annotated
+import json
+
 import typer
 
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
+from arkitekt.cli.options import (
+    JsonOption,
+    LogLevel,
+    LogLevelOption,
+    MachineReadableOption,
+)
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption, MachineReadableOption
 from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_stdout
 from arkitekt.cli.vars import get_console
-import json
 
 
 def requirements(

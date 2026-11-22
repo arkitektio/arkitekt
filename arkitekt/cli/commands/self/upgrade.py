@@ -6,25 +6,27 @@ and upgrades the outdated ones using the project's package manager (``uv`` or
 """
 
 import enum
-import sys
 import json
 import shutil
 import subprocess
+import sys
 import urllib.error
 import urllib.request
-from importlib.metadata import version as installed_version, PackageNotFoundError
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as installed_version
 from typing import Annotated
 
-import typer
 import semver
+import typer
 from rich.table import Table
 
+from arkitekt.cli.commands.app.create.main import get_default_package_manager
 from arkitekt.cli.errors import cli_error, confirm_or_abort
+from arkitekt.cli.target import infer_package_manager
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import done, escape, notice, step
 from arkitekt.cli.vars import get_console, get_work_dir
-from arkitekt.cli.commands.app.create.main import get_default_package_manager
-from arkitekt.cli.target import infer_package_manager
+
 from .constants import ARKITEKT_PACKAGES
 
 PYPI_JSON_URL = "https://pypi.org/pypi/{name}/json"
@@ -105,7 +107,10 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
                 "uv is not installed. Please install uv or choose --package-manager pip."
             )
         if not yes:
-            require_tty("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
+            require_tty(
+                "Confirming the upgrade",
+                hint="Pass --yes to upgrade non-interactively.",
+            )
             confirm_or_abort(
                 "Upgrade ALL project dependencies with `uv sync --upgrade`?",
             )
@@ -134,9 +139,13 @@ def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
         done(console, "Everything is up to date")
         return
 
-    console.print(f"{len(outdated_names)} outdated package(s): {', '.join(outdated_names)}")
+    console.print(
+        f"{len(outdated_names)} outdated package(s): {', '.join(outdated_names)}"
+    )
     if not yes:
-        require_tty("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
+        require_tty(
+            "Confirming the upgrade", hint="Pass --yes to upgrade non-interactively."
+        )
         confirm_or_abort(f"Upgrade all {len(outdated_names)} package(s) with pip?")
 
     command = [sys.executable, "-m", "pip", "install", "--upgrade", *outdated_names]
@@ -207,7 +216,11 @@ def upgrade(
 
         latest = _fetch_latest_version(name, pre)
         if latest is None:
-            notice(console, f"Could not fetch the latest version of {escape(name)}", "skipped")
+            notice(
+                console,
+                f"Could not fetch the latest version of {escape(name)}",
+                "skipped",
+            )
             continue
 
         if _is_newer(latest, current):
@@ -228,7 +241,9 @@ def upgrade(
     manager = _resolve_package_manager(ctx, package_manager)
 
     if not yes:
-        require_tty("Confirming the upgrade", hint="Pass --yes to upgrade non-interactively.")
+        require_tty(
+            "Confirming the upgrade", hint="Pass --yes to upgrade non-interactively."
+        )
         confirm_or_abort(
             f"Upgrade {len(outdated)} package(s) using {manager}?",
         )
@@ -250,8 +265,6 @@ def upgrade(
     try:
         subprocess.run(command, check=True, cwd=cwd)
     except subprocess.CalledProcessError as e:
-        cli_error(
-            f"Failed to upgrade packages (exit code {e.returncode})."
-        )
+        cli_error(f"Failed to upgrade packages (exit code {e.returncode}).")
 
     done(console, "Upgraded the Arkitekt packages")

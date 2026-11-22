@@ -17,17 +17,17 @@ import socket
 import subprocess
 import time
 import webbrowser
-from pathlib import Path
 from collections.abc import Sequence
+from pathlib import Path
 from typing import Annotated, Any
 
 import typer
 
+from arkitekt.app.terminal import force_qr, show_qr
 from arkitekt.cli.errors import cli_error, confirm_or_abort
+from arkitekt.cli.options import HeadlessOption, QrOption, UrlOption
 from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import done, escape, fail, notice, step
-from arkitekt.app.terminal import force_qr, show_qr
-from arkitekt.cli.options import HeadlessOption, QrOption, UrlOption
 from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
@@ -157,7 +157,9 @@ async def _mesh_start(start_url: str, payload: dict[str, Any]) -> tuple[str, str
     return result["code"], result["challenge"]
 
 
-async def _mesh_poll(challenge_url: str, challenge: str, timeout: int) -> dict[str, Any]:
+async def _mesh_poll(
+    challenge_url: str, challenge: str, timeout: int
+) -> dict[str, Any]:
     """Poll the mesh challenge endpoint until it is granted, denied, or times out.
 
     Returns the granted payload (``ionscale_auth_key`` / ``ionscale_coord_url`` /
@@ -194,13 +196,9 @@ async def _mesh_poll(challenge_url: str, challenge: str, timeout: int) -> dict[s
                 await asyncio.sleep(POLL_INTERVAL_SECONDS)
                 continue
             if status == "denied":
-                cli_error(
-                    "The mesh join request was denied by the authorizer."
-                )
+                cli_error("The mesh join request was denied by the authorizer.")
             if status == "expired":
-                cli_error(
-                    "The mesh join request expired before it was authorized."
-                )
+                cli_error("The mesh join request expired before it was authorized.")
             if status == "error":
                 cli_error(
                     "The mesh challenge reported an error: "
@@ -233,9 +231,15 @@ def _display_configure_prompt(
         step(
             console,
             "An organization member must authorize this machine to join the mesh",
-            "opened in your browser" if open_browser else "open this link to approve it",
+            "opened in your browser"
+            if open_browser
+            else "open this link to approve it",
         )
-        console.print(f"  [link={configure_url}]{escape(configure_url)}[/link]", highlight=False, soft_wrap=True)
+        console.print(
+            f"  [link={configure_url}]{escape(configure_url)}[/link]",
+            highlight=False,
+            soft_wrap=True,
+        )
         console.print(f"  code [bold]{escape(code)}[/bold]", highlight=False)
         # A mesh is joined from headless boxes: the page is approved from a phone.
         show_qr(console, configure_url, open_browser)
@@ -262,7 +266,9 @@ def _run_mesh_device_code(
     configure_url = _build_configure_url(endpoints.get("configure_url"), code)
     _display_configure_prompt(console, configure_url, code, open_browser)
 
-    with console.status("Waiting for an organization member to authorize this machine..."):
+    with console.status(
+        "Waiting for an organization member to authorize this machine..."
+    ):
         return asyncio.run(_mesh_poll(challenge_url, challenge, timeout))
 
 
@@ -322,14 +328,16 @@ def _run_tailscale(console, args: list[str]) -> None:
 
     # Most tailscale operations need root; retry once with sudo.
     sudo_command = ["sudo", *command]
-    notice(console, f"'{escape(' '.join(_redact(command)))}' exited with {result.returncode}", "retrying with sudo")
+    notice(
+        console,
+        f"'{escape(' '.join(_redact(command)))}' exited with {result.returncode}",
+        "retrying with sudo",
+    )
     step(console, "Running", escape(" ".join(_redact(sudo_command))))
     try:
         sudo_result = subprocess.run(sudo_command, timeout=TAILSCALE_UP_TIMEOUT_SECONDS)
     except FileNotFoundError:
-        cli_error(
-            "Could not find the 'sudo' binary to retry with elevated privileges."
-        )
+        cli_error("Could not find the 'sudo' binary to retry with elevated privileges.")
     except subprocess.TimeoutExpired:
         cli_error(
             f"'{' '.join(_redact(sudo_command))}' did not finish within "
@@ -366,9 +374,7 @@ def _ensure_tailscaled_installed(console) -> str:
         f"[link={TAILSCALE_INSTALL_URL}]{TAILSCALE_INSTALL_URL}[/link] — the "
         "`tailscaled` daemon is required for `mesh proxy`."
     )
-    cli_error(
-        f"tailscaled is required for `mesh proxy`. See {TAILSCALE_INSTALL_URL}."
-    )
+    cli_error(f"tailscaled is required for `mesh proxy`. See {TAILSCALE_INSTALL_URL}.")
 
 
 def _userspace_daemon_command(
@@ -485,7 +491,9 @@ def _device_code_join(
     if relay:
         payload["relay"] = True
 
-    granted = _run_mesh_device_code(console, endpoints, payload, open_browser, expiration)
+    granted = _run_mesh_device_code(
+        console, endpoints, payload, open_browser, expiration
+    )
 
     if relay and not granted.get("relay"):
         # A server that does not know of relays, or an approver who did not
@@ -499,9 +507,7 @@ def _device_code_join(
 
     key = granted.get("ionscale_auth_key")
     if not key:
-        cli_error(
-            "The mesh server authorized the join but returned no auth key."
-        )
+        cli_error("The mesh server authorized the join but returned no auth key.")
     coord = granted.get("ionscale_coord_url") or endpoints.get("coord_url")
     if not coord:
         cli_error(
@@ -572,7 +578,14 @@ def join(
     _ensure_tailscale_installed(console)
 
     key, coord, hostname = _device_code_join(
-        console, url, machine_name, description, ephemeral, tags, expiration, not headless
+        console,
+        url,
+        machine_name,
+        description,
+        ephemeral,
+        tags,
+        expiration,
+        not headless,
     )
 
     step(console, f"Authorized as {escape(hostname)}", "joining the mesh")
@@ -604,7 +617,9 @@ def leave(
     _ensure_tailscale_installed(console)
 
     if not yes:
-        require_tty("Confirming the mesh logout", hint="Pass --yes to leave non-interactively.")
+        require_tty(
+            "Confirming the mesh logout", hint="Pass --yes to leave non-interactively."
+        )
         console.print(
             "[bold yellow]Warning:[/bold yellow] this deregisters the node from the "
             "mesh; reconnecting requires a fresh `mesh join` authorization."
@@ -688,7 +703,14 @@ def proxy(
     tailscaled_path = _ensure_tailscaled_installed(console)
 
     key, coord, hostname = _device_code_join(
-        console, url, machine_name, description, ephemeral, tags, expiration, not headless
+        console,
+        url,
+        machine_name,
+        description,
+        ephemeral,
+        tags,
+        expiration,
+        not headless,
     )
 
     TAILSCALED_STATE_DIR.mkdir(parents=True, exist_ok=True)
@@ -701,9 +723,7 @@ def proxy(
     try:
         proc = subprocess.Popen(daemon_command)
     except FileNotFoundError:
-        cli_error(
-            f"Could not launch 'tailscaled' at {tailscaled_path}."
-        )
+        cli_error(f"Could not launch 'tailscaled' at {tailscaled_path}.")
 
     try:
         _bring_up_via_socket(
@@ -809,7 +829,9 @@ async def _serve_relay(
         done(console, f"Relaying on the mesh as [green]{escape(hostname)}[/green]")
         console.print(f"  UDP port [green]{status.port}[/green]", highlight=False)
         for address in status.addresses:
-            console.print(f"  reached at [green]{escape(address)}[/green]", highlight=False)
+            console.print(
+                f"  reached at [green]{escape(address)}[/green]", highlight=False
+            )
         console.print(
             "  Both peers of a pair have to reach that port: open it in the firewall, "
             "forward it on the router\n"
@@ -824,7 +846,9 @@ async def _serve_relay(
                 if control.state == "connected":
                     step(console, "Connected to the mesh's coordination server again")
                 elif control.state == "reconnecting":
-                    notice(console, "Lost the mesh's coordination server", "reconnecting")
+                    notice(
+                        console, "Lost the mesh's coordination server", "reconnecting"
+                    )
                 else:
                     fail(
                         console,
@@ -950,7 +974,8 @@ def relay(
             console,
             url,
             machine_name,
-            description or "A peer relay: forwards UDP for nodes that find no direct path",
+            description
+            or "A peer relay: forwards UDP for nodes that find no direct path",
             False,
             [],
             expiration,
@@ -963,7 +988,9 @@ def relay(
 
     try:
         asyncio.run(
-            _serve_relay(console, bindings, state_dir, hostname, coord, key, port, endpoints)
+            _serve_relay(
+                console, bindings, state_dir, hostname, coord, key, port, endpoints
+            )
         )
     except KeyboardInterrupt:
         console.print()
@@ -974,7 +1001,9 @@ def cert(
     ctx: typer.Context,
     domain: Annotated[
         str | None,
-        typer.Argument(help="The name to certify. Default: this node's own MagicDNS name"),
+        typer.Argument(
+            help="The name to certify. Default: this node's own MagicDNS name"
+        ),
     ] = None,
 ) -> None:
     """Fetch a TLS certificate for this node via `tailscale cert`

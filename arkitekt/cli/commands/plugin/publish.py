@@ -1,17 +1,21 @@
-from typing import TYPE_CHECKING, Annotated
-import typer
 import subprocess
+import uuid
+from typing import TYPE_CHECKING, Annotated
+
+import typer
+
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
-from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.cli.ui import command_hint, done, escape, notice, step
-import uuid
+from arkitekt.cli.vars import get_console, get_work_dir
 
 if TYPE_CHECKING:
     from .types import Build
 
 
-def check_if_build_already_deployed(build: "Build", work_dir: str | None = None) -> None:
+def check_if_build_already_deployed(
+    build: "Build", work_dir: str | None = None
+) -> None:
     """Checks if a build has already been deployed; aborts via cli_error if so."""
     from .io import get_deployments
 
@@ -24,7 +28,7 @@ def check_if_build_already_deployed(build: "Build", work_dir: str | None = None)
         ):
             cli_error(
                 f"Deployment of {build.manifest.identifier}/{build.manifest.version} in the {build.flavour} flavour already exists."
-                + " You cannot deploy a build twice for the same version and flavour"
+                " You cannot deploy a build twice for the same version and flavour"
             )
 
 
@@ -65,7 +69,9 @@ def push_multi_arch(build_model: "Build", tag: str, work_dir: str, console) -> N
     )
     docker_run = subprocess.run(command, cwd=work_dir)
     if docker_run.returncode != 0:
-        cli_error(f"Could not push the multi-platform image (`{' '.join(command)}` failed)")
+        cli_error(
+            f"Could not push the multi-platform image (`{' '.join(command)}` failed)"
+        )
 
 
 def publish(
@@ -80,8 +86,8 @@ def publish(
     ] = None,
 ) -> None:
     """Push a previous build to Docker Hub"""
+    from .io import generate_deployment, get_builds
     from .utils import search_username_in_docker_info
-    from .io import get_builds, generate_deployment
 
     console = get_console(ctx)
     work_dir = get_work_dir(ctx)

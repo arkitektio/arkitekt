@@ -28,6 +28,7 @@ concurrently: each run takes its own snapshot of the registry.
 import inspect
 import logging
 import os
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import (
     Any,
@@ -40,7 +41,6 @@ from typing import (
     dataclass_transform,
     overload,
 )
-from collections.abc import Callable, Iterable, Mapping, Sequence
 
 from arkitekt_spec.actions import (
     AssetKind,
@@ -118,7 +118,11 @@ def _scopes_of(registry: AppRegistry, asked: Iterable[str] = ()) -> list[str]:
         {
             *BASE_SCOPES,
             *asked,
-            *(scope for builder in registry.services.values() for scope in builder.get_scopes()),
+            *(
+                scope
+                for builder in registry.services.values()
+                for scope in builder.get_scopes()
+            ),
             *registry.get_scopes(),
         }
     )
@@ -146,7 +150,9 @@ def _app_namespace(identifier: str, caller: tuple[Path, str | None]) -> AppNames
     """The namespace of an app named ``identifier`` constructed by ``caller`` (from
     :func:`_caller`): what counts as the app's own source."""
     constructed_in, module = caller
-    return AppNamespace(identifier=identifier, root=source_root(constructed_in), module=module)
+    return AppNamespace(
+        identifier=identifier, root=source_root(constructed_in), module=module
+    )
 
 
 def _app_root(constructed_in: Path) -> Path:
@@ -305,7 +311,9 @@ class App(Generic[Ctx]):
         # name when it is imported. Library classes keep their module's.
         # A wrapper constructing the app for its caller (QtApp, easy()) sets it again
         # from that caller.
-        self.registry.structure_registry.namespace = _app_namespace(self.identifier, caller)
+        self.registry.structure_registry.namespace = _app_namespace(
+            self.identifier, caller
+        )
         if root is not None:
             self.registry.root = Path(root).resolve()
         elif self.registry.root is None:
@@ -359,7 +367,9 @@ class App(Generic[Ctx]):
         """
         for declared in services:
             if not isinstance(declared, Service):
-                shown = declared.__name__ if isinstance(declared, type) else repr(declared)
+                shown = (
+                    declared.__name__ if isinstance(declared, type) else repr(declared)
+                )
                 raise TypeError(
                     f"{shown} is not a service. Pass the service object the package "
                     f"exports, e.g. `from mikro import mikro_service`; there is no "
@@ -381,7 +391,9 @@ class App(Generic[Ctx]):
         """
         for declared in providers:
             if not isinstance(declared, Provider):
-                shown = declared.__name__ if isinstance(declared, type) else repr(declared)
+                shown = (
+                    declared.__name__ if isinstance(declared, type) else repr(declared)
+                )
                 raise TypeError(
                     f"{shown} is not a provider. Pass the provider object the package "
                     "exports, e.g. `from rekuest.arkitekt import rekuest_provider`."
@@ -476,7 +488,10 @@ class App(Generic[Ctx]):
             registry.register_provider(provider)
 
         manifest = self.manifest.model_copy(
-            update={"requirements": _requirements_of(registry), "scopes": _scopes_of(registry, self.asked_scopes)}
+            update={
+                "requirements": _requirements_of(registry),
+                "scopes": _scopes_of(registry, self.asked_scopes),
+            }
         )
         if device_id is not None:
             manifest = manifest.model_copy(update={"device_id": device_id})
@@ -1093,7 +1108,9 @@ class App(Generic[Ctx]):
         Returns:
             The class.
         """
-        self.registry.state(cls, name=name, required_locks=required_locks, persist=persist)
+        self.registry.state(
+            cls, name=name, required_locks=required_locks, persist=persist
+        )
         return cls
 
     @overload
@@ -1147,7 +1164,12 @@ class App(Generic[Ctx]):
 
     @overload
     def model(
-        self, cls: C, /, *, identifier: str | None = None, description: str | None = None
+        self,
+        cls: C,
+        /,
+        *,
+        identifier: str | None = None,
+        description: str | None = None,
     ) -> C: ...
 
     @overload
@@ -1184,7 +1206,9 @@ class App(Generic[Ctx]):
         """
 
         def declare(cls: C) -> C:
-            return self.register_model(cls, identifier=identifier, description=description)
+            return self.register_model(
+                cls, identifier=identifier, description=description
+            )
 
         if cls is not None:
             return declare(cls)
@@ -1719,4 +1743,6 @@ class App(Generic[Ctx]):
                 module (``numpy.ndarray`` -> ``@numpy/ndarray``).
             description: What it is, for the UI.
         """
-        self.registry.register_memory_structure(cls, identifier=identifier, description=description)
+        self.registry.register_memory_structure(
+            cls, identifier=identifier, description=description
+        )

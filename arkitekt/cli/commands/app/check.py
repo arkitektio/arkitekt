@@ -10,10 +10,10 @@ from typing import Annotated, Any
 
 import typer
 from arkitekt_spec.actions import ComponentContext
-from arkitekt_spec.declare.agents.dependency import prepare_dependency_variables
 from arkitekt_spec.blok.catalogs import checking_catalogs
 from arkitekt_spec.blok.catalogs.fetch import CatalogUnavailable, resolve_catalog
 from arkitekt_spec.blok.vocabulary import BlokError
+from arkitekt_spec.declare.agents.dependency import prepare_dependency_variables
 from arkitekt_spec.declare.blok.action import action_blok_id
 from arkitekt_spec.declare.catalogs import CatalogWarning
 from arkitekt_spec.declare.demands import DemandFinding, check_demands
@@ -24,7 +24,12 @@ from arkitekt.app.terminal import done, fail, notice
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 from arkitekt.cli.offline import offline
 from arkitekt.cli.options import JsonOption, LogLevel, LogLevelOption
-from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit, project_frame
+from arkitekt.cli.target import (
+    DEFAULT_TARGET,
+    TargetArgument,
+    load_app_or_exit,
+    project_frame,
+)
 from arkitekt.cli.utils import configure_logging, human_console, json_stdout
 from arkitekt.cli.vars import get_console, get_work_dir
 
@@ -83,9 +88,16 @@ def error_record(error: BaseException, work_dir: str) -> dict[str, Any]:
     a syntax error is placed where Python says. Anything else is placed at the deepest frame of
     the user's own code (:func:`~arkitekt.cli.target.project_frame`).
     """
-    record: dict[str, Any] = {"level": "error", "message": f"{type(error).__name__}: {error}"}
+    record: dict[str, Any] = {
+        "level": "error",
+        "message": f"{type(error).__name__}: {error}",
+    }
     if isinstance(error, SyntaxError) and error.filename:
-        record.update(file=os.path.abspath(error.filename), call_line=error.lineno, message=f"SyntaxError: {error.msg}")
+        record.update(
+            file=os.path.abspath(error.filename),
+            call_line=error.lineno,
+            message=f"SyntaxError: {error.msg}",
+        )
         return record
     if isinstance(error, BlokError):
         record.update(
@@ -109,7 +121,9 @@ def _dumped(models: Iterable[Any]) -> list[dict[str, Any]]:
 def _declared_at(obj: Any) -> tuple[str | None, int | None]:  # noqa: ANN401
     """The file and first line (its first decorator's) of a function or class, if it has source."""
     try:
-        target = inspect.unwrap(obj) if callable(obj) and not isinstance(obj, type) else obj
+        target = (
+            inspect.unwrap(obj) if callable(obj) and not isinstance(obj, type) else obj
+        )
         file = inspect.getsourcefile(target)
         _, line = inspect.getsourcelines(target)
     except (OSError, TypeError):
@@ -171,7 +185,9 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
                     "file": os.path.abspath(at.filename) if at is not None else None,
                     "call_line": at.lineno if at is not None else None,
                     "scope": scope_record(
-                        kinds=("agent", "action") if context == ComponentContext.LOGO.value else ("agent",),
+                        kinds=("agent", "action")
+                        if context == ComponentContext.LOGO.value
+                        else ("agent",),
                         dependencies=blok.dependencies if blok is not None else (),
                         args=[port.key for port in declaration.args],
                         catalog=declaration.catalog,
@@ -182,7 +198,9 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
         )
     for interface, implementation in registry.implementations.items():
         declared = registry.declared_implementations.get(interface)
-        file, line = _declared_at(declared.function) if declared is not None else (None, None)
+        file, line = (
+            _declared_at(declared.function) if declared is not None else (None, None)
+        )
         for blok in implementation.definition.bloks or ():
             context = ComponentContext(blok.context).value
             kind = "assign" if blok.phase == "ASSIGN" else "action"
@@ -197,7 +215,10 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
                         "scope": scope_record(
                             kinds=("action", "assign"),
                             dependencies=implementation.dependencies,
-                            args=[port.key for port in implementation.definition.args or ()],
+                            args=[
+                                port.key
+                                for port in implementation.definition.args or ()
+                            ],
                             catalog=blok.catalog,
                         ),
                     }
@@ -219,10 +240,21 @@ def structure_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     ):
         for identifier, fullfilled in known.items():
             cls = fullfilled.cls
-            name, module = getattr(cls, "__qualname__", None), getattr(cls, "__module__", None)
+            name, module = (
+                getattr(cls, "__qualname__", None),
+                getattr(cls, "__module__", None),
+            )
             if isinstance(name, str) and isinstance(module, str) and "." not in name:
                 records.append(
-                    _compact({"identifier": identifier, "kind": kind, "name": name, "module": module, "file": _declared_at(cls)[0]})
+                    _compact(
+                        {
+                            "identifier": identifier,
+                            "kind": kind,
+                            "name": name,
+                            "module": module,
+                            "file": _declared_at(cls)[0],
+                        }
+                    )
                 )
     return records
 
@@ -235,7 +267,9 @@ def action_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     records: list[dict[str, Any]] = []
     for interface, implementation in registry.implementations.items():
         declared = registry.declared_implementations.get(interface)
-        file, line = _declared_at(declared.function) if declared is not None else (None, None)
+        file, line = (
+            _declared_at(declared.function) if declared is not None else (None, None)
+        )
         records.append(
             _compact(
                 {
@@ -261,7 +295,9 @@ def protocol_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     used: dict[Any, list[dict[str, str]]] = {}
     for interface, declared in registry.declared_implementations.items():
         try:
-            variables = prepare_dependency_variables(declared.function, structures).dependency_variables
+            variables = prepare_dependency_variables(
+                declared.function, structures
+            ).dependency_variables
         except Exception:  # noqa: BLE001 - registering it already said what is wrong
             continue
         for key, cls in variables.items():
@@ -276,9 +312,9 @@ def protocol_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
                     "interface": protocol.interface,
                     "file": file,
                     "line": line,
-                    "dependency": protocol.to_dependency_input(protocol.interface).model_dump(
-                        mode="json", exclude_none=True
-                    ),
+                    "dependency": protocol.to_dependency_input(
+                        protocol.interface
+                    ).model_dump(mode="json", exclude_none=True),
                     "used_by": used.get(cls, []),
                 }
             )
@@ -383,7 +419,16 @@ def check(
     configure_logging(log_level.value)
     console = human_console(get_console(ctx), as_json)
     with json_stdout(as_json) as emit:
-        _check(ctx, target, json_out, console, emit, with_ or [], catalog or [], pull=not offline_catalogs)
+        _check(
+            ctx,
+            target,
+            json_out,
+            console,
+            emit,
+            with_ or [],
+            catalog or [],
+            pull=not offline_catalogs,
+        )
 
 
 def _check(
@@ -418,7 +463,10 @@ def _check(
         try:
             resolve_catalog(address, fetch=pull, refresh=pull)
         except CatalogUnavailable as error:
-            notice(console, escape(f"{error}: what it adds to the base catalog is not checked"))
+            notice(
+                console,
+                escape(f"{error}: what it adds to the base catalog is not checked"),
+            )
     with warnings.catch_warnings(record=True) as caught, checking_catalogs():
         warnings.simplefilter("always", CatalogWarning)
         try:
@@ -426,16 +474,27 @@ def _check(
                 app = load_app_or_exit(ctx, target)
                 report["app"] = {"identifier": app.identifier, "version": app.version}
                 snapshot = run_snapshot_or_exit(app)
-                providers = {other.identifier: other.registry for other in (load_app_or_exit(ctx, o) for o in others)}
+                providers = {
+                    other.identifier: other.registry
+                    for other in (load_app_or_exit(ctx, o) for o in others)
+                }
         except typer.Exit as exit_:
             # cli_error raised the exit while handling what went wrong: that is its context.
-            findings = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
+            findings = [
+                warning
+                for warning in caught
+                if issubclass(warning.category, CatalogWarning)
+            ]
             report["diagnostics"] = [warning_record(warning) for warning in findings]
             if exit_.__context__ is not None:
-                report["diagnostics"].append(error_record(exit_.__context__, get_work_dir(ctx)))
+                report["diagnostics"].append(
+                    error_record(exit_.__context__, get_work_dir(ctx))
+                )
             report_to(report)
             raise
-    findings = [warning for warning in caught if issubclass(warning.category, CatalogWarning)]
+    findings = [
+        warning for warning in caught if issubclass(warning.category, CatalogWarning)
+    ]
     for warning in findings:
         notice(console, escape(str(warning.message)))
     report.update(

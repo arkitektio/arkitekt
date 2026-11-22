@@ -20,7 +20,9 @@ def _listed(output: str) -> list[str]:
     return names
 
 
-@pytest.mark.parametrize("order", [("--work-dir", "{}", "--help"), ("--help", "--work-dir", "{}")])
+@pytest.mark.parametrize(
+    "order", [("--work-dir", "{}", "--help"), ("--help", "--work-dir", "{}")]
+)
 def test_a_folder_with_an_app_lists_its_commands(app_dir, order):
     result = CliRunner().invoke(cli_app, [part.format(app_dir) for part in order])
 
@@ -29,7 +31,9 @@ def test_a_folder_with_an_app_lists_its_commands(app_dir, order):
     assert "app.py in this folder" in result.output
 
 
-@pytest.mark.parametrize("order", [("--work-dir", "{}", "--help"), ("--help", "--work-dir", "{}")])
+@pytest.mark.parametrize(
+    "order", [("--work-dir", "{}", "--help"), ("--help", "--work-dir", "{}")]
+)
 def test_a_folder_without_an_app_lists_create(tmp_path, order):
     result = CliRunner().invoke(cli_app, [part.format(tmp_path) for part in order])
 
@@ -76,7 +80,9 @@ def test_a_command_off_the_menu_still_runs_and_says_what_is_missing(tmp_path):
 
 
 def test_create_is_off_the_app_menu_but_still_there(app_dir):
-    result = CliRunner().invoke(cli_app, ["--work-dir", str(app_dir), "create", "--help"])
+    result = CliRunner().invoke(
+        cli_app, ["--work-dir", str(app_dir), "create", "--help"]
+    )
 
     assert result.exit_code == 0, result.output
 

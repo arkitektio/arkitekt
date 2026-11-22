@@ -3,22 +3,22 @@ import json
 from typing import Annotated, Any
 
 import typer
-from arkitekt.cli.completion import complete_actions
-
 from rich.console import Console
 
 from arkitekt.app.app import App
 from arkitekt.app.fakts import resolve_url
+from arkitekt.app.terminal import force_qr
 from arkitekt.cli.commands.app.run.utils import runner_options
+from arkitekt.cli.completion import complete_actions
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.failures import report_failure
 from arkitekt.cli.options import (
     HeadlessOption,
-    QrOption,
     LogLevel,
     LogLevelOption,
-    ReauthOption,
     MandateKeyOption,
+    QrOption,
+    ReauthOption,
     SkipCacheOption,
     TokenOption,
     UrlOption,
@@ -26,7 +26,6 @@ from arkitekt.cli.options import (
 from arkitekt.cli.running import connected
 from arkitekt.cli.target import DEFAULT_TARGET, TARGET_ENVVAR, has_app, load_app_or_exit
 from arkitekt.cli.ui import construct_app_banner
-from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -216,7 +215,11 @@ def remote(
         offered = sorted(named.registry.implementations) if named is not None else []
         cli_error(
             f"'{action}' is neither an action of "
-            + (f"the app '{named.identifier}' " if named is not None else "an app in this folder ")
+            + (
+                f"the app '{named.identifier}' "
+                if named is not None
+                else "an app in this folder "
+            )
             + "nor the hash of one on the server."
             + (f" The app has: {', '.join(offered)}." if offered else "")
         )
@@ -229,7 +232,9 @@ def remote(
 
     try:
         result = asyncio.run(
-            call_app(console, app, hash, kwargs, options, get_work_dir(ctx), agent=agent)
+            call_app(
+                console, app, hash, kwargs, options, get_work_dir(ctx), agent=agent
+            )
         )
     except LookupError as e:
         cli_error(str(e))

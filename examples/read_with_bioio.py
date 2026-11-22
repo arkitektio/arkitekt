@@ -32,10 +32,10 @@ import numpy as np
 import tifffile
 import xarray as xr
 from bioio import BioImage
-
-from arkitekt import easy
 from mikro import mikro_service
 from mikro.api.schema import CoordinateAnchorInput
+
+from arkitekt import easy
 
 
 def synthesise(path: Path) -> Path:

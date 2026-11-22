@@ -4,7 +4,7 @@ An action that only reads something back is an antipattern:
 
 ```python
 @app.action
-def get_position() -> Position:      # don't
+def get_position() -> Position:  # don't
     return stage.position()
 ```
 
@@ -20,6 +20,7 @@ reacts to it, and nobody asks.
 @app.state
 class Stage:
     """Where the stage is, in micrometers."""
+
     x_um: float = 0.0
     y_um: float = 0.0
     moving: bool = False

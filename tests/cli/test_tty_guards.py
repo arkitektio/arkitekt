@@ -13,8 +13,8 @@ import pytest
 import typer
 from typer.testing import CliRunner
 
-from arkitekt.cli.tty import require_tty
 from arkitekt.cli.main import cli_app
+from arkitekt.cli.tty import require_tty
 
 INTERACTIVE = "arkitekt.cli.tty.is_tty"
 
@@ -38,9 +38,14 @@ def test_require_tty_raises_when_not_tty(capsys):
 def test_mesh_leave_aborts_without_tty_and_without_yes():
     """`mesh leave` without --yes must not block on the confirm in a non-TTY."""
     runner = CliRunner()
-    with patch("arkitekt.cli.commands.mesh.main.shutil.which", return_value="/usr/bin/tailscale"), \
-         patch(INTERACTIVE, return_value=False), \
-         patch("arkitekt.cli.commands.mesh.main.subprocess.run") as mock_run:
+    with (
+        patch(
+            "arkitekt.cli.commands.mesh.main.shutil.which",
+            return_value="/usr/bin/tailscale",
+        ),
+        patch(INTERACTIVE, return_value=False),
+        patch("arkitekt.cli.commands.mesh.main.subprocess.run") as mock_run,
+    ):
         result = runner.invoke(cli_app, ["mesh", "leave"])
 
     assert result.exit_code != 0

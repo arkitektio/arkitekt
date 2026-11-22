@@ -15,7 +15,10 @@ from rich.markup import escape
 from rich.text import Text
 
 if TYPE_CHECKING:
-    from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge, DeviceCodeHook
+    from fakts.grants.remote.authorizers.device_code import (
+        DeviceCodeChallenge,
+        DeviceCodeHook,
+    )
     from fakts.grants.remote.models import FaktsEndpoint
 
 #: The glyph leading each kind of status line, and what a terminal that cannot
@@ -65,7 +68,12 @@ def fail(console: Console, message: str, detail: str | None = None) -> None:
 #: fakts' own prompt reads too.
 QR_ENV = "FAKTS_QR"
 
-_HALF_BLOCKS = {(False, False): " ", (True, False): "▀", (False, True): "▄", (True, True): "█"}
+_HALF_BLOCKS = {
+    (False, False): " ",
+    (True, False): "▀",
+    (False, True): "▄",
+    (True, True): "█",
+}
 
 #: The modules of quiet zone around a code: the four the standard asks for.
 _QR_BORDER = 4
@@ -121,10 +129,19 @@ def _qr(console: Console, link: str) -> None:
 
     # make_qr, not make: a short link would otherwise become a Micro QR code,
     # which phone cameras do not read.
-    rows = [[bool(module) for module in row] for row in segno.make_qr(link, error="l").matrix_iter(border=_QR_BORDER)]
-    if console.color_system is not None and len(_QR_INDENT) + 2 * len(rows[0]) <= console.width:
+    rows = [
+        [bool(module) for module in row]
+        for row in segno.make_qr(link, error="l").matrix_iter(border=_QR_BORDER)
+    ]
+    if (
+        console.color_system is not None
+        and len(_QR_INDENT) + 2 * len(rows[0]) <= console.width
+    ):
         for row in rows:
-            _qr_line(console, Text.assemble(*((" " * 2, f"on {_paint(dark)}") for dark in row)))
+            _qr_line(
+                console,
+                Text.assemble(*((" " * 2, f"on {_paint(dark)}") for dark in row)),
+            )
         return
     if console.options.ascii_only and not _forced_qr():
         # Half blocks are not ASCII: drawn only when the code is asked for by name.
@@ -134,12 +151,19 @@ def _qr(console: Console, link: str) -> None:
     for top, bottom in zip(rows[::2], rows[1::2], strict=True):
         if console.color_system is None:
             # Light on the terminal's dark background: what is drawn is the light.
-            pairs = zip((not dark for dark in top), (not dark for dark in bottom), strict=True)
+            pairs = zip(
+                (not dark for dark in top), (not dark for dark in bottom), strict=True
+            )
             _qr_line(console, Text("".join(_HALF_BLOCKS[pair] for pair in pairs)))
         else:
             _qr_line(
                 console,
-                Text.assemble(*(("▀", f"{_paint(up)} on {_paint(down)}") for up, down in zip(top, bottom, strict=True))),
+                Text.assemble(
+                    *(
+                        ("▀", f"{_paint(up)} on {_paint(down)}")
+                        for up, down in zip(top, bottom, strict=True)
+                    )
+                ),
             )
 
 
@@ -148,7 +172,9 @@ def _paint(dark: bool) -> str:
 
 
 def _qr_line(console: Console, line: Text) -> None:
-    console.print(Text.assemble(_QR_INDENT, line), no_wrap=True, crop=False, highlight=False)
+    console.print(
+        Text.assemble(_QR_INDENT, line), no_wrap=True, crop=False, highlight=False
+    )
 
 
 def show_qr(console: Console, link: str, opened_browser: bool) -> None:
@@ -179,9 +205,13 @@ def login_prompt(opened_browser: bool = True) -> "DeviceCodeHook":
         step(
             console,
             f"Log in to {escape(challenge.endpoint.name)}",
-            "opened in your browser" if opened_browser else "open this link to approve the app",
+            "opened in your browser"
+            if opened_browser
+            else "open this link to approve the app",
         )
-        console.print(f"  [link={link}]{escape(link)}[/link]", highlight=False, soft_wrap=True)
+        console.print(
+            f"  [link={link}]{escape(link)}[/link]", highlight=False, soft_wrap=True
+        )
         console.print(f"  code [bold]{escape(code)}[/bold]", highlight=False)
         show_qr(console, link, opened_browser)
 

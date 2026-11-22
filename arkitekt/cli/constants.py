@@ -1,5 +1,6 @@
-from .utils import build_relative_dir
 import os
+
+from .utils import build_relative_dir
 
 
 def compile_dockerfiles() -> list[str]:
@@ -18,4 +19,3 @@ def compile_templates() -> list[str]:
         for f in os.listdir(z)
         if os.path.isfile(os.path.join(z, f))
     ]
-

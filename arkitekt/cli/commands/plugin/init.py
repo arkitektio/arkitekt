@@ -1,12 +1,15 @@
 """The ``arkitekt plugin flavour add`` command: scaffold a plugin flavour."""
 
+import os
+import re
+import sys
 from importlib.metadata import version
 from typing import Annotated
-from arkitekt.cli.validators import validate_dockerfile
-from arkitekt.cli.errors import cli_error
-from arkitekt.cli import tty
-from arkitekt.cli.utils import build_relative_dir, configure_logging
+
 import typer
+
+from arkitekt.cli import tty
+from arkitekt.cli.errors import cli_error
 from arkitekt.cli.options import LogLevel, LogLevelOption
 from arkitekt.cli.target import (
     DEFAULT_TARGET,
@@ -14,13 +17,11 @@ from arkitekt.cli.target import (
     infer_package_manager,
     load_app_or_exit,
 )
+from arkitekt.cli.ui import done, escape, notice
+from arkitekt.cli.utils import build_relative_dir, configure_logging
+from arkitekt.cli.validators import validate_dockerfile
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.utils import create_arkitekt_folder, create_devcontainer_file
-from arkitekt.cli.ui import done, escape, notice
-
-import os
-import re
-import sys
 
 
 def _detect_python_version(work_dir: str) -> str:
@@ -128,6 +129,7 @@ def write_flavour(
         overwrite: Replace a flavour that exists.
     """
     import yaml
+
     from arkitekt.cli.commands.plugin.types import DEFAULT_PLATFORMS, Flavour
 
     arkitekt_folder = create_arkitekt_folder(base_dir=work_dir)
@@ -167,10 +169,12 @@ def write_flavour(
         dockerfile_content = f.read()
 
     with open(dockerfile, "w") as f:
-        f.write(dockerfile_content.format(
-            __arkitekt_version__=package_version,
-            __python_version__=_detect_python_version(work_dir),
-        ))
+        f.write(
+            dockerfile_content.format(
+                __arkitekt_version__=package_version,
+                __python_version__=_detect_python_version(work_dir),
+            )
+        )
 
     return dockerfile
 
@@ -184,13 +188,16 @@ def init(
     description: Annotated[
         str | None,
         typer.Option(
-            "--description", "-d", help="What sets this flavour apart. Default: 'The <flavour> flavour'"
+            "--description",
+            "-d",
+            help="What sets this flavour apart. Default: 'The <flavour> flavour'",
         ),
     ] = None,
     overwrite: Annotated[
         bool,
         typer.Option(
-            "--overwrite", help="Replace the flavour's Dockerfile and config if they exist"
+            "--overwrite",
+            help="Replace the flavour's Dockerfile and config if they exist",
         ),
     ] = False,
     template: Annotated[
@@ -271,12 +278,17 @@ def init(
 
     if devcontainer is None:
         # Asked only where someone can answer: a script gets the flavour alone.
-        devcontainer = tty.is_tty() and typer.confirm("Also write a devcontainer.json?", default=False)
+        devcontainer = tty.is_tty() and typer.confirm(
+            "Also write a devcontainer.json?", default=False
+        )
     if devcontainer:
         # Only the devcontainer is named after the app, so only it loads the app.
         app = load_app_or_exit(ctx, target)
         create_devcontainer_file(
-            app, flavour, dockerfile, devcontainer_path=os.path.join(work_dir, ".devcontainer")
+            app,
+            flavour,
+            dockerfile,
+            devcontainer_path=os.path.join(work_dir, ".devcontainer"),
         )
 
     console = get_console(ctx)
@@ -285,7 +297,10 @@ def init(
         f"Created new flavour [bold]{escape(flavour)}[/bold]",
         f"builds for {escape(', '.join(platforms))} (change `platforms:` in its config.yaml)",
     )
-    notice(console, "You can now edit the Dockerfile and add selectors to the config.yaml file")
+    notice(
+        console,
+        "You can now edit the Dockerfile and add selectors to the config.yaml file",
+    )
     notice(
         console,
         "To learn more about selectors and how flavours work, please visit "

@@ -1,8 +1,6 @@
 import logging
 import os
 
-from pydantic import SecretStr
-
 from fakts.cache.file import FileCache, ensure_private_dir
 from fakts.cache.nocache import NoCache
 from fakts.fakts import Fakts
@@ -17,13 +15,21 @@ from fakts.grants.remote.authorizers.static import StaticAuthorizer
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
 from fakts.grants.remote.models import FaktsEndpoint
 from fakts.mesh import MeshOptions, MeshProxy
-from fakts.models import AliasPolicy
-from fakts.models import ActiveFakts, Manifest
+from fakts.models import ActiveFakts, AliasPolicy, Manifest
 from fakts.protocols import FaktsCache
+from pydantic import SecretStr
 
 from arkitekt.app.options import ConnectionOptions
-from arkitekt.app.sources import DISCOVER, Source, as_bool, cascade, from_argv, is_source, resolve
 from arkitekt.app.sessions import session_path
+from arkitekt.app.sources import (
+    DISCOVER,
+    Source,
+    as_bool,
+    cascade,
+    from_argv,
+    is_source,
+    resolve,
+)
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 
 logger = logging.getLogger(__name__)
@@ -107,7 +113,10 @@ def build_device_code_fakts(
         # its own interface never needs.
         from arkitekt.app.terminal import logged_in, login_prompt
 
-        device_code_hook, granted_hook = login_prompt(opened_browser=not headless), logged_in
+        device_code_hook, granted_hook = (
+            login_prompt(opened_browser=not headless),
+            logged_in,
+        )
     else:
         # Whoever shows the login says how it went: nothing is printed for them.
         granted_hook = _granted_quietly
@@ -132,7 +141,9 @@ def build_device_code_fakts(
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
         # None: what $FAKTS_ALIAS_* say.
-        alias_policy=alias_policy if alias_policy is not None else AliasPolicy.from_env(),
+        alias_policy=alias_policy
+        if alias_policy is not None
+        else AliasPolicy.from_env(),
     )
 
 
@@ -173,7 +184,9 @@ def build_mandate_key_fakts(
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
         # None: what $FAKTS_ALIAS_* say.
-        alias_policy=alias_policy if alias_policy is not None else AliasPolicy.from_env(),
+        alias_policy=alias_policy
+        if alias_policy is not None
+        else AliasPolicy.from_env(),
     )
 
 
@@ -210,7 +223,9 @@ def build_token_fakts(
         allow_insecure_transport=allow_insecure_transport,
         mesh=mesh,
         # None: what $FAKTS_ALIAS_* say.
-        alias_policy=alias_policy if alias_policy is not None else AliasPolicy.from_env(),
+        alias_policy=alias_policy
+        if alias_policy is not None
+        else AliasPolicy.from_env(),
     )
 
 
@@ -239,7 +254,9 @@ def mesh_from_env() -> MeshOptions | MeshProxy | None:
     return parse_mesh(os.getenv("ARKITEKT_MESH", ""), os.getenv("ARKITEKT_MESH_PROXY"))
 
 
-def parse_mesh(text: str, proxy: str | None = None, *, what: str = "ARKITEKT_MESH") -> MeshOptions | MeshProxy | None:
+def parse_mesh(
+    text: str, proxy: str | None = None, *, what: str = "ARKITEKT_MESH"
+) -> MeshOptions | MeshProxy | None:
     """A mesh mode as ``ARKITEKT_MESH`` (or ``--mesh``) spells it; ``proxy`` wins when given.
 
     ``--mesh`` may also name a running proxy itself (anything with ``://``).
@@ -272,7 +289,9 @@ def forced_mesh() -> MeshOptions | MeshProxy:
     return MeshProxy(url=proxy, force=True) if proxy else MeshOptions(force=True)
 
 
-def resolve_mesh(mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER) -> MeshOptions | MeshProxy | None:
+def resolve_mesh(
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+) -> MeshOptions | MeshProxy | None:
     """The mesh a run uses.
 
     A value wins (``True`` is ``MeshOptions()``; ``False`` and ``None`` are off). A source
@@ -291,7 +310,9 @@ def resolve_mesh(mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER
             if text is not None:
                 return parse_mesh(text, what="--mesh")
         elif source == "env":
-            if os.getenv("ARKITEKT_MESH", "").strip() or os.getenv("ARKITEKT_MESH_PROXY"):
+            if os.getenv("ARKITEKT_MESH", "").strip() or os.getenv(
+                "ARKITEKT_MESH_PROXY"
+            ):
                 return mesh_from_env()
         elif source == "default":
             return MeshOptions(auto=True)
@@ -334,7 +355,13 @@ def resolve_url(url: str | Source | None = DISCOVER) -> str:
     Raises:
         ValueError: The source names no default and found no URL.
     """
-    found = resolve(DISCOVER if url is None else url, flag="url", env="FAKTS_URL", default=lambda: DEFAULT_ARKITEKT_URL, parse=str)
+    found = resolve(
+        DISCOVER if url is None else url,
+        flag="url",
+        env="FAKTS_URL",
+        default=lambda: DEFAULT_ARKITEKT_URL,
+        parse=str,
+    )
     if not found:
         raise ValueError(f"No fakts server: nothing at {url!r} (--url, $FAKTS_URL).")
     return found.strip().rstrip("/")
@@ -342,17 +369,38 @@ def resolve_url(url: str | Source | None = DISCOVER) -> str:
 
 def resolve_token(token: str | Source | None = DISCOVER) -> str | None:
     """A previously issued credential: as given, or ``--token`` / ``$FAKTS_TOKEN``."""
-    return resolve(token, flag="token", env="FAKTS_TOKEN", default=lambda: None, parse=str) or None
+    return (
+        resolve(token, flag="token", env="FAKTS_TOKEN", default=lambda: None, parse=str)
+        or None
+    )
 
 
 def resolve_mandate_key(mandate_key: str | Source | None = DISCOVER) -> str | None:
     """A token to provision with: as given, or ``--mandate-key`` / ``$FAKTS_MANDATE_KEY``."""
-    return resolve(mandate_key, flag="mandate-key", env="FAKTS_MANDATE_KEY", default=lambda: None, parse=str) or None
+    return (
+        resolve(
+            mandate_key,
+            flag="mandate-key",
+            env="FAKTS_MANDATE_KEY",
+            default=lambda: None,
+            parse=str,
+        )
+        or None
+    )
 
 
 def resolve_reauth(reauth: bool | Source = DISCOVER) -> bool:
     """Whether to log in again: as given, or ``--reauth`` / ``$ARKITEKT_REAUTH`` / off."""
-    return bool(resolve(reauth, flag="reauth", env="ARKITEKT_REAUTH", default=lambda: False, parse=lambda text: as_bool(text, what="ARKITEKT_REAUTH (or --reauth)"), boolean=True))
+    return bool(
+        resolve(
+            reauth,
+            flag="reauth",
+            env="ARKITEKT_REAUTH",
+            default=lambda: False,
+            parse=lambda text: as_bool(text, what="ARKITEKT_REAUTH (or --reauth)"),
+            boolean=True,
+        )
+    )
 
 
 INSECURE_TRANSPORT_ENV = "FAKTS_ALLOW_INSECURE_TRANSPORT"
@@ -365,7 +413,17 @@ def resolve_insecure_transport(allow: bool | Source = DISCOVER) -> bool:
     fakts itself still honours the variable as an opt-in, whatever is passed here.
     """
     return bool(
-        resolve(allow, flag="allow-insecure-transport", env=INSECURE_TRANSPORT_ENV, default=lambda: False, parse=lambda text: as_bool(text, what="FAKTS_ALLOW_INSECURE_TRANSPORT (or --allow-insecure-transport)"), boolean=True)
+        resolve(
+            allow,
+            flag="allow-insecure-transport",
+            env=INSECURE_TRANSPORT_ENV,
+            default=lambda: False,
+            parse=lambda text: as_bool(
+                text,
+                what="FAKTS_ALLOW_INSECURE_TRANSPORT (or --allow-insecure-transport)",
+            ),
+            boolean=True,
+        )
     )
 
 
@@ -389,7 +447,9 @@ def build_fakts(manifest: Manifest, options: ConnectionOptions) -> Fakts:
     mandate_key = resolve_mandate_key(options.mandate_key)
     mesh = resolve_mesh(options.mesh)
     reauth = resolve_reauth(options.reauth)
-    allow_insecure_transport = resolve_insecure_transport(options.allow_insecure_transport)
+    allow_insecure_transport = resolve_insecure_transport(
+        options.allow_insecure_transport
+    )
 
     if token:
         return build_token_fakts(

@@ -24,11 +24,11 @@ can show it without loading the whole volume.
 
 import numpy as np
 import xarray as xr
+from mikro import dataset_arrays, mikro_service
+from mikro.api.schema import CoordinateAnchorInput
 from skimage import data
 
 from arkitekt import easy
-from mikro import dataset_arrays, mikro_service
-from mikro.api.schema import CoordinateAnchorInput
 
 
 def main() -> None:

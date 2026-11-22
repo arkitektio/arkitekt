@@ -16,7 +16,14 @@ from arkitekt.app.fakts import (
     resolve_token,
     resolve_url,
 )
-from arkitekt.app.sources import DISCOVER, SOURCES, cascade, from_argv, is_source, resolve
+from arkitekt.app.sources import (
+    DISCOVER,
+    SOURCES,
+    cascade,
+    from_argv,
+    is_source,
+    resolve,
+)
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
 from arkitekt.device_id import resolve_device_id
 
@@ -42,13 +49,30 @@ def clean(monkeypatch: pytest.MonkeyPatch) -> pytest.MonkeyPatch:
 
 
 def supervisor(value: object) -> object:
-    return resolve(value, flag="supervisor", env="ARKITEKT_SUPERVISOR", default=lambda: "built-in", parse=str)
+    return resolve(
+        value,
+        flag="supervisor",
+        env="ARKITEKT_SUPERVISOR",
+        default=lambda: "built-in",
+        parse=str,
+    )
 
 
 def test_the_eight_spellings_are_sources_and_anything_else_is_a_value() -> None:
-    assert SOURCES == {"discover", "arg", "env", "default", "arg-env", "arg-default", "env-default", "arg-env-default"}
+    assert SOURCES == {
+        "discover",
+        "arg",
+        "env",
+        "default",
+        "arg-env",
+        "arg-default",
+        "env-default",
+        "arg-env-default",
+    }
     assert cascade(DISCOVER) == cascade("arg-env-default") == ("arg", "env", "default")
-    assert not is_source("plugin_engine") and not is_source(None) and not is_source(True)
+    assert (
+        not is_source("plugin_engine") and not is_source(None) and not is_source(True)
+    )
 
 
 def test_a_value_is_used_and_none_is_none(clean: pytest.MonkeyPatch) -> None:
@@ -59,9 +83,13 @@ def test_a_value_is_used_and_none_is_none(clean: pytest.MonkeyPatch) -> None:
     assert supervisor(None) is None
 
 
-def test_the_cascade_is_tried_in_order_and_the_first_hit_wins(clean: pytest.MonkeyPatch) -> None:
+def test_the_cascade_is_tried_in_order_and_the_first_hit_wins(
+    clean: pytest.MonkeyPatch,
+) -> None:
     assert supervisor("discover") == "built-in"
-    assert supervisor("arg-env") is None  # no default in the cascade: nothing found is none
+    assert (
+        supervisor("arg-env") is None
+    )  # no default in the cascade: nothing found is none
 
     clean.setenv("ARKITEKT_SUPERVISOR", "from-env")
     assert supervisor("discover") == "from-env"
@@ -88,7 +116,9 @@ def test_an_empty_variable_is_unset(clean: pytest.MonkeyPatch) -> None:
     assert supervisor("env-default") == "built-in"
 
 
-def test_a_typo_raises_only_when_its_source_is_consulted(clean: pytest.MonkeyPatch) -> None:
+def test_a_typo_raises_only_when_its_source_is_consulted(
+    clean: pytest.MonkeyPatch,
+) -> None:
     clean.setenv("ARKITEKT_REAUTH", "yes please")
     assert resolve_reauth("default") is False
     assert resolve_reauth(True) is True

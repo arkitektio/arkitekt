@@ -1,9 +1,9 @@
 import typer
 
-from .upgrade import upgrade
-from .version import version
 from .info import info
 from .sessions import sessions
+from .upgrade import upgrade
+from .version import version
 
 self_group = typer.Typer(
     no_args_is_help=True,

@@ -1,7 +1,6 @@
-""" Calling functions in your arkitekt app"""
+"""Calling functions in your arkitekt app"""
 
 import typer
-
 
 call = typer.Typer(
     no_args_is_help=True,

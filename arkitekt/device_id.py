@@ -30,7 +30,16 @@ def get_or_set_device_id() -> str | None:
 def resolve_device_id(device_id: str | Source | None = DISCOVER) -> str | None:
     """The device id a run states: as given (``None`` is none), or from its source
     (``"discover"``: ``--device-id``, then ``$ARKITEKT_DEVICE_ID``, then the machine's)."""
-    return resolve(device_id, flag="device-id", env="ARKITEKT_DEVICE_ID", default=machine_device_id, parse=str) or None
+    return (
+        resolve(
+            device_id,
+            flag="device-id",
+            env="ARKITEKT_DEVICE_ID",
+            default=machine_device_id,
+            parse=str,
+        )
+        or None
+    )
 
 
 def machine_device_id() -> str | None:

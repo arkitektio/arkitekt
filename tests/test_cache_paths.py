@@ -10,13 +10,14 @@ from __future__ import annotations
 
 import os
 import stat
-from pathlib import Path
 from collections.abc import Iterator
+from pathlib import Path
 
 import pytest
+from fakts.models import Manifest
+
 from arkitekt.app.fakts import _cache_path
 from arkitekt.utils import create_arkitekt_folder
-from fakts.models import Manifest
 
 
 def make_manifest(identifier: str = "room-assistant") -> Manifest:

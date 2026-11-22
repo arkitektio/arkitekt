@@ -1,16 +1,15 @@
 import asyncio
-from pathlib import Path
 from typing import Annotated, Any
 
 import typer
-from arkitekt.cli.completion import complete_actions
 from rich.console import Console
 from rich.markup import escape
 
 from arkitekt.app.app import App
-from arkitekt.app.terminal import fail
+from arkitekt.app.terminal import fail, force_qr
 from arkitekt.cli.commands.app.call.remote import parse_call_args, print_result
 from arkitekt.cli.commands.app.run.utils import explicit_options
+from arkitekt.cli.completion import complete_actions
 from arkitekt.cli.context import load_context
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.failures import report_failure
@@ -18,18 +17,17 @@ from arkitekt.cli.options import (
     ContextFileOption,
     ContextOption,
     HeadlessOption,
-    QrOption,
     LogLevel,
     LogLevelOption,
-    ReauthOption,
     MandateKeyOption,
+    QrOption,
+    ReauthOption,
     SkipCacheOption,
     TokenOption,
     UrlOption,
 )
 from arkitekt.cli.running import connected_local
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
-from arkitekt.app.terminal import force_qr
 from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -73,7 +71,9 @@ def require_arguments(app: App[Any], action: str, kwargs: dict[str, Any]) -> Non
     """
     ports = app.registry.implementations[action].definition.args
     known = {port.key for port in ports}
-    required = {port.key for port in ports if not port.nullable and port.default is None}
+    required = {
+        port.key for port in ports if not port.nullable and port.default is None
+    }
     unknown = sorted(set(kwargs) - known)
     missing = sorted(required - set(kwargs))
     if not unknown and not missing:
@@ -103,9 +103,13 @@ async def call_locally(
     Each result is as it travels (JSON), without the port keys a server sees: the
     one value of an action returning one, a list of an action returning several.
     """
-    keys = [port.key for port in app.registry.implementations[action].definition.returns]
+    keys = [
+        port.key for port in app.registry.implementations[action].definition.returns
+    ]
     results: list[Any] = []
-    async with connected_local(console, app, options, offline=offline, context=context, work_dir=work_dir) as rt:
+    async with connected_local(
+        console, app, options, offline=offline, context=context, work_dir=work_dir
+    ) as rt:
         async for returns in rt.aiterate_local_raw(action, kwargs):
             values = [returns.get(key) for key in keys]
             results.append(values[0] if len(values) == 1 else values or None)

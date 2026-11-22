@@ -17,9 +17,9 @@ import subprocess
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
-from collections.abc import Mapping
 
 from arkitekt_spec.release import (
     OCI_MANIFEST_MEDIA_TYPE,
@@ -103,7 +103,9 @@ def docker_credentials(registry: str) -> tuple[str, str] | None:
                 return found
         entry = (config.get("auths") or {}).get(name) or {}
         if entry.get("auth"):
-            username, _, secret = base64.b64decode(entry["auth"]).decode().partition(":")
+            username, _, secret = (
+                base64.b64decode(entry["auth"]).decode().partition(":")
+            )
             return username, secret
     return None
 
@@ -178,7 +180,9 @@ class Repository:
             return None
         blob = self._checked("GET", f"blobs/{digest}", expect=(200,)).body
         if digest_of(blob) != digest:
-            raise RegistryError(f"{self.name} returned other bytes than {digest} names.")
+            raise RegistryError(
+                f"{self.name} returned other bytes than {digest} names."
+            )
         return load_descriptor(blob)
 
     # -- writing ------------------------------------------------------------
@@ -202,8 +206,12 @@ class Repository:
         under a second name, nothing pushed but the manifest. Returns that digest."""
         found = self._manifest_request("GET", reference)
         if found.status == 404:
-            raise RegistryError(f"{self.name}:{reference} does not exist, so it cannot be tagged {tag}.")
-        media_type = found.headers.get("content-type") or json.loads(found.body).get("mediaType")
+            raise RegistryError(
+                f"{self.name}:{reference} does not exist, so it cannot be tagged {tag}."
+            )
+        media_type = found.headers.get("content-type") or json.loads(found.body).get(
+            "mediaType"
+        )
         response = self._checked(
             "PUT",
             f"manifests/{tag}",
@@ -220,7 +228,9 @@ class Repository:
         started = self._checked("POST", "blobs/uploads/", expect=(202,))
         location = started.headers.get("location")
         if not location:
-            raise RegistryError(f"{self.name} opened an upload without saying where to send it.")
+            raise RegistryError(
+                f"{self.name} opened an upload without saying where to send it."
+            )
         location = urllib.parse.urljoin(self._url(""), location)
         separator = "&" if "?" in location else "?"
         self._checked(
@@ -234,12 +244,16 @@ class Repository:
     # -- transport ----------------------------------------------------------
 
     def _manifest_request(self, method: str, reference: str) -> Response:
-        response = self._request(method, f"manifests/{reference}", headers={"Accept": MANIFEST_TYPES})
+        response = self._request(
+            method, f"manifests/{reference}", headers={"Accept": MANIFEST_TYPES}
+        )
         if response.status not in (200, 404):
             raise self._refused(method, f"manifests/{reference}", response)
         return response
 
-    def _checked(self, method: str, path: str, *, expect: tuple[int, ...], **kwargs: Any) -> Response:
+    def _checked(
+        self, method: str, path: str, *, expect: tuple[int, ...], **kwargs: Any
+    ) -> Response:
         response = self._request(method, path, **kwargs)
         if response.status not in expect:
             raise self._refused(method, path, response)
@@ -276,14 +290,22 @@ class Repository:
     ) -> Response:
         url = path if "://" in path else self._url(path)
         response = self._send(method, url, body, headers)
-        if response.status == 401 and self._authorize(response.headers.get("www-authenticate", "")):
+        if response.status == 401 and self._authorize(
+            response.headers.get("www-authenticate", "")
+        ):
             response = self._send(method, url, body, headers)
         return response
 
     def _send(
-        self, method: str, url: str, body: bytes | None, headers: Mapping[str, str] | None
+        self,
+        method: str,
+        url: str,
+        body: bytes | None,
+        headers: Mapping[str, str] | None,
     ) -> Response:
-        request = urllib.request.Request(url, data=body, method=method, headers=dict(headers or {}))
+        request = urllib.request.Request(
+            url, data=body, method=method, headers=dict(headers or {})
+        )
         if self._authorization:
             request.add_header("Authorization", self._authorization)
         opener = urllib.request.build_opener(_KeepAuthorizationHome)
@@ -309,8 +331,12 @@ class Repository:
         if scheme.lower() != "bearer" or "realm" not in parameters:
             return False
 
-        query = {key: parameters[key] for key in ("service", "scope") if key in parameters}
-        request = urllib.request.Request(parameters["realm"] + "?" + urllib.parse.urlencode(query))
+        query = {
+            key: parameters[key] for key in ("service", "scope") if key in parameters
+        }
+        request = urllib.request.Request(
+            parameters["realm"] + "?" + urllib.parse.urlencode(query)
+        )
         if self.credentials is not None:
             request.add_header("Authorization", "Basic " + _basic(self.credentials))
         try:

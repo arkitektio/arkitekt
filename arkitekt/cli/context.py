@@ -74,11 +74,15 @@ def _from_target(app: App[Any], declared: type, context: str, work_dir: str) -> 
     try:
         value = getattr(module, target.attribute)
     except AttributeError:
-        cli_error(f"--context: {module.__name__} has no attribute {target.attribute!r}.")
+        cli_error(
+            f"--context: {module.__name__} has no attribute {target.attribute!r}."
+        )
     if not isinstance(value, declared) and callable(value):
         value = value()
         if inspect.isawaitable(value):
-            cli_error("--context: a factory must return the app context, not a coroutine.")
+            cli_error(
+                "--context: a factory must return the app context, not a coroutine."
+            )
     if not isinstance(value, declared):
         cli_error(
             f"--context: {context} is a {type(value).__name__}, but App {app.identifier!r} "
@@ -101,9 +105,13 @@ def _from_file(app: App[Any], declared: type, path: Path) -> Any:  # noqa: ANN40
     elif path.suffix.lower() == ".json":
         data = json.loads(text)
     else:
-        cli_error(f"--context-file: {path} is neither YAML (.yaml/.yml) nor JSON (.json).")
+        cli_error(
+            f"--context-file: {path} is neither YAML (.yaml/.yml) nor JSON (.json)."
+        )
     if not isinstance(data, dict):
-        cli_error(f"--context-file: {path} must hold a mapping of {declared.__name__}'s fields.")
+        cli_error(
+            f"--context-file: {path} must hold a mapping of {declared.__name__}'s fields."
+        )
     try:
         return declared.model_validate(data)
     except Exception as e:  # pydantic's ValidationError, spelled out for the prompt

@@ -2,15 +2,15 @@ import os
 from typing import Annotated, Any
 
 import typer
-from arkitekt.cli.utils import configure_logging
-from arkitekt.cli.options import LogLevel, LogLevelOption
-from arkitekt.cli.completion import complete_services
 import yaml
 
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
+from arkitekt.cli.completion import complete_services
 from arkitekt.cli.errors import cli_error
+from arkitekt.cli.options import LogLevel, LogLevelOption
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
 from arkitekt.cli.ui import escape, notice
+from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 
 GEN_HINT = "Generate the code with [b]uvx --with <service packages> turms gen[/b] (or [b]turms watch[/b])."
@@ -23,7 +23,9 @@ def gen_hint(packages: list[str]) -> str:
     so the isolated uvx environment needs the service packages next to turms.
     """
     withs = " ".join(f"--with {package}" for package in packages)
-    return f"Generate the code with [b]uvx {withs} turms gen[/b] (or [b]turms watch[/b])."
+    return (
+        f"Generate the code with [b]uvx {withs} turms gen[/b] (or [b]turms watch[/b])."
+    )
 
 
 def _app_project(name: str, project: dict[str, Any], api: str) -> dict[str, Any]:
@@ -68,7 +70,9 @@ def init(
     ] = None,
     api: Annotated[
         str,
-        typer.Option("--api", help="Where turms writes the generated code, relative to the app"),
+        typer.Option(
+            "--api", help="Where turms writes the generated code, relative to the app"
+        ),
     ] = "api",
     config: Annotated[
         str,
@@ -115,12 +119,20 @@ def init(
             console.print(f"[dim]{name}: ships no schema or turms project, skipped[/]")
             continue
         if name in projects and not overwrite:
-            notice(console, f"{escape(name)} is already in {escape(config)}", "kept; pass --overwrite to replace it")
+            notice(
+                console,
+                f"{escape(name)} is already in {escape(config)}",
+                "kept; pass --overwrite to replace it",
+            )
             continue
 
         os.makedirs(os.path.join(app_directory, "schemas"), exist_ok=True)
         os.makedirs(os.path.join(app_directory, "graphql", name), exist_ok=True)
-        with open(os.path.join(app_directory, "schemas", f"{name}.graphql"), "w", encoding="utf-8") as f:
+        with open(
+            os.path.join(app_directory, "schemas", f"{name}.graphql"),
+            "w",
+            encoding="utf-8",
+        ) as f:
             f.write(schema)
         projects[name] = _app_project(name, project, api)
         written.append(name)

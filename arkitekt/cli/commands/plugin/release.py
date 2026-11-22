@@ -27,8 +27,6 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
-from arkitekt.cli.utils import configure_logging
-from arkitekt.cli.options import LogLevel, LogLevelOption
 from arkitekt_spec import (
     AppManifest,
     Inspection,
@@ -40,8 +38,10 @@ from arkitekt_spec.release import channel_tag, channel_version, image_tag, relea
 
 from arkitekt.app.app import VERSION_ENV
 from arkitekt.cli.errors import cli_error
+from arkitekt.cli.options import LogLevel, LogLevelOption
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument
 from arkitekt.cli.ui import command_hint, done, escape, notice, step
+from arkitekt.cli.utils import configure_logging
 from arkitekt.cli.vars import get_console, get_work_dir
 
 from .build import (
@@ -54,7 +54,7 @@ from .build import (
     machine_readable,
     read_inspection,
 )
-from .registry import Repository, RegistryError
+from .registry import RegistryError, Repository
 
 if TYPE_CHECKING:
     from .types import Flavour
@@ -106,7 +106,11 @@ def _source(work_dir: str) -> str | None:
 #: arkitekt keeps itself. Any command tops an older one up with patterns it lacks
 #: (`arkitekt.utils.ensure_ignored`) -- in CI, this one -- and that changes nothing a
 #: release is built from.
-_TRACKED_SOURCE = (":/", ":(exclude).arkitekt/.gitignore", ":(exclude).arkitekt/.dockerignore")
+_TRACKED_SOURCE = (
+    ":/",
+    ":(exclude).arkitekt/.gitignore",
+    ":(exclude).arkitekt/.dockerignore",
+)
 
 
 def check_checkout(work_dir: str, allow_dirty: bool = False) -> str:
@@ -120,7 +124,14 @@ def check_checkout(work_dir: str, allow_dirty: bool = False) -> str:
             "A release is made from a git commit, and this folder is not in a git "
             "repository (or has no commit yet)."
         )
-    if not allow_dirty and _git(work_dir, "status", "--porcelain", "--untracked-files=no", "--", *_TRACKED_SOURCE):
+    if not allow_dirty and _git(
+        work_dir,
+        "status",
+        "--porcelain",
+        "--untracked-files=no",
+        "--",
+        *_TRACKED_SOURCE,
+    ):
         cli_error(
             "The work tree has uncommitted changes, so the commit a release names would not "
             "be what was built. Commit them, or pass --allow-dirty."
@@ -129,7 +140,10 @@ def check_checkout(work_dir: str, allow_dirty: bool = False) -> str:
 
 
 def resolve(
-    declared_version: str, work_dir: str, channel: str | None = None, allow_dirty: bool = False
+    declared_version: str,
+    work_dir: str,
+    channel: str | None = None,
+    allow_dirty: bool = False,
 ) -> Resolved:
     """Decide what this checkout releases.
 
@@ -165,7 +179,9 @@ def resolve(
                 "branch it is a build of. Pass --channel (CI knows the branch name)."
             )
 
-    return Resolved(channel_version(declared_version, revision), channel, revision, source)
+    return Resolved(
+        channel_version(declared_version, revision), channel, revision, source
+    )
 
 
 def major_tag(version: str, flavour: str) -> str | None:
@@ -207,15 +223,25 @@ def identify(
     """
     reported: dict[str, AppManifest] = {}
     for name, flavour in flavours.items():
-        step(console, f"Identifying flavour [bold]{escape(name)}[/bold]", "building it for this machine")
+        step(
+            console,
+            f"Identifying flavour [bold]{escape(name)}[/bold]",
+            "building it for this machine",
+        )
         probe = f"arkitekt-identify-{uuid.uuid4()}"
-        build_host_image(probe, name, flavour, work_dir, platforms[name], console=console)
+        build_host_image(
+            probe, name, flavour, work_dir, platforms[name], console=console
+        )
         try:
             _, manifest = inspect_all(probe, "", target)
         except InspectionError as error:
             cli_error(str(error))
         finally:
-            subprocess.run(["docker", "rmi", "-f", probe], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            subprocess.run(
+                ["docker", "rmi", "-f", probe],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
         reported[name] = AppManifest.model_validate(manifest)
 
     (first, declared), *others = reported.items()
@@ -250,9 +276,16 @@ def push_flavour(
     if flavour.is_customized():
         # Run as written. Such a command has no place for the platform list or a
         # build argument, so it yields this machine's image and the source's version.
-        commands = [flavour.generate_build_command(reference, relative_dir), ["docker", "push", reference]]
+        commands = [
+            flavour.generate_build_command(reference, relative_dir),
+            ["docker", "push", reference],
+        ]
     else:
-        extra = ["--build-arg", f"{VERSION_ENV}={resolved.version}"] if resolved.channel else []
+        extra = (
+            ["--build-arg", f"{VERSION_ENV}={resolved.version}"]
+            if resolved.channel
+            else []
+        )
         commands = [
             flavour.generate_build_command(
                 reference,
@@ -266,7 +299,9 @@ def push_flavour(
 
     for command in commands:
         if subprocess.run(command, cwd=work_dir).returncode != 0:
-            cli_error(f"Could not build and push flavour {name} (`{' '.join(command)}` failed)")
+            cli_error(
+                f"Could not build and push flavour {name} (`{' '.join(command)}` failed)"
+            )
 
 
 def inspect_image(
@@ -345,7 +380,9 @@ def check_identity(
 
 def offered(inspection: Inspection) -> list[str]:
     """The interfaces an image offers, for comparing two platforms of one flavour."""
-    return sorted(implementation.interface or "" for implementation in inspection.implementations)
+    return sorted(
+        implementation.interface or "" for implementation in inspection.implementations
+    )
 
 
 def release(
@@ -371,10 +408,13 @@ def release(
     test_command: Annotated[
         str | None,
         typer.Option(
-            "--test-command", help="How to run the app's tests. Default: pytest, if there is a tests folder."
+            "--test-command",
+            help="How to run the app's tests. Default: pytest, if there is a tests folder.",
         ),
     ] = None,
-    no_test: Annotated[bool, typer.Option("--no-test", help="Do not run the app's tests.")] = False,
+    no_test: Annotated[
+        bool, typer.Option("--no-test", help="Do not run the app's tests.")
+    ] = False,
     platform: Annotated[
         list[str] | None,
         typer.Option(
@@ -408,7 +448,9 @@ def release(
     work_dir = get_work_dir(ctx)
 
     if not repository:
-        cli_error("Name the repository to publish to: --repository ghcr.io/you/your-app.")
+        cli_error(
+            "Name the repository to publish to: --repository ghcr.io/you/your-app."
+        )
     try:
         registry = Repository.of(repository)
     except ValueError as error:
@@ -416,7 +458,9 @@ def release(
 
     flavours = get_flavours(base_dir=work_dir)
     if not flavours:
-        cli_error(f"There is no flavour to release. Add one first: `{command_hint('plugin flavour add', work_dir)}`.")
+        cli_error(
+            f"There is no flavour to release. Add one first: `{command_hint('plugin flavour add', work_dir)}`."
+        )
     # What git alone can refuse, it refuses before anything is built.
     check_checkout(work_dir, allow_dirty)
 
@@ -428,7 +472,9 @@ def release(
     declared = identify(flavours, platforms, work_dir, target, console)
 
     try:
-        resolved = resolve(declared.version, work_dir, channel=channel, allow_dirty=allow_dirty)
+        resolved = resolve(
+            declared.version, work_dir, channel=channel, allow_dirty=allow_dirty
+        )
         tags = {name: image_tag(resolved.version, name) for name in flavours}
         descriptor_tag = resolved.tag
     except ValueError as error:
@@ -455,9 +501,17 @@ def release(
             cli_error(str(error))
 
     if not no_test:
-        tests = shlex.split(test_command) if test_command else default_test_command(work_dir)
+        tests = (
+            shlex.split(test_command)
+            if test_command
+            else default_test_command(work_dir)
+        )
         if tests is None:
-            notice(console, "No tests to run", "there is no tests folder; pass --test-command")
+            notice(
+                console,
+                "No tests to run",
+                "there is no tests folder; pass --test-command",
+            )
         else:
             step(console, "Running the tests", escape(" ".join(tests)))
             if subprocess.run(tests, cwd=work_dir).returncode != 0:
@@ -468,8 +522,14 @@ def release(
     for name, flavour in flavours.items():
         reference = f"{registry.name}:{tags[name]}"
 
-        step(console, f"Building flavour [bold]{escape(name)}[/bold]", escape(", ".join(platforms[name])))
-        push_flavour(name, flavour, reference, resolved, work_dir, platforms[name], console)
+        step(
+            console,
+            f"Building flavour [bold]{escape(name)}[/bold]",
+            escape(", ".join(platforms[name])),
+        )
+        push_flavour(
+            name, flavour, reference, resolved, work_dir, platforms[name], console
+        )
 
         try:
             pushed = registry.manifest_digest(tags[name])
@@ -488,7 +548,11 @@ def release(
             for other in platforms[name]:
                 if other == host:
                     continue
-                step(console, f"Inspecting flavour [bold]{escape(name)}[/bold]", escape(other))
+                step(
+                    console,
+                    f"Inspecting flavour [bold]{escape(name)}[/bold]",
+                    escape(other),
+                )
                 elsewhere, _ = inspect_image(image, declared.entrypoint, platform=other)
                 if offered(elsewhere) != offered(inspection):
                     cli_error(
@@ -532,7 +596,11 @@ def release(
                 registry.tag(digest, moving)
             except RegistryError as error:
                 cli_error(str(error))
-            step(console, f"Moved [bold]{escape(moving)}[/bold]", escape(f"to {tags[name]}"))
+            step(
+                console,
+                f"Moved [bold]{escape(moving)}[/bold]",
+                escape(f"to {tags[name]}"),
+            )
 
     done(
         console,

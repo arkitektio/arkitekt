@@ -9,8 +9,9 @@ What needs no server is tested in `test___ENTRYPOINT__.py`.
 """
 
 import pytest
-from arkitekt.testing import TestStack
 from mikro import Mikro
+
+from arkitekt.testing import TestStack
 
 # Every test in this file runs against a hub.
 pytestmark = pytest.mark.hub
@@ -36,7 +37,9 @@ def test_analysing_a_stored_image_updates_the_state(teststack: TestStack[None]):
     assert (state.busy, state.status) == (False, "Idle")
 
 
-def test_the_objects_of_an_image_are_stored_as_an_image_of_their_own(teststack: TestStack[None]):
+def test_the_objects_of_an_image_are_stored_as_an_image_of_their_own(
+    teststack: TestStack[None],
+):
     image = teststack.call("generate_test_image", objects=4, size=64)
 
     objects = teststack.call("segment_image", image=image)

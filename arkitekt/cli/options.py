@@ -16,7 +16,6 @@ from typing import Annotated
 
 import typer
 
-
 #: The panels `--help` groups the connection options into: where, as whom, with
 #: which saved session, and how the agent registers.
 SERVER_PANEL = "Server"

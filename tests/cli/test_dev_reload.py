@@ -12,6 +12,8 @@ import signal
 import sys
 
 import pytest
+from arkitekt_spec.declare.agents.connection import TaskEvent, TaskEventKind
+from rich.console import Console
 
 from arkitekt.cli.commands.app.run import dev as dev_module
 from arkitekt.cli.commands.app.run.dev import (
@@ -26,8 +28,6 @@ from arkitekt.cli.commands.app.run.dev import (
 )
 from arkitekt.cli.running import TaskReporter
 from arkitekt.cli.target import parse_target
-from arkitekt_spec.declare.agents.connection import TaskEvent, TaskEventKind
-from rich.console import Console
 
 from ..fakes import recording_connect
 
@@ -67,7 +67,11 @@ def test_a_reload_runs_the_new_app_with_the_same_connection_flags(project, monke
         await _start(console, load_candidate(target, []), {"url": "http://x"})
         # A different length, so the bytecode cache cannot mistake it for the old file.
         _declare(entry, "after the change")
-        await _start(console, load_candidate(target, project_modules(str(project))), {"url": "http://x"})
+        await _start(
+            console,
+            load_candidate(target, project_modules(str(project))),
+            {"url": "http://x"},
+        )
 
     asyncio.run(scenario())
 
@@ -96,7 +100,10 @@ def test_a_change_in_a_helper_reaches_the_app_that_imports_it(project):
     ("broken", "said"),
     [
         ("from arkitekt import App\napp = App('x'\n", "never closed"),
-        ("from arkitekt import App\napp = App('x')\n@app.action\ndef f(x) -> int:\n    return 1\n", "type hint"),
+        (
+            "from arkitekt import App\napp = App('x')\n@app.action\ndef f(x) -> int:\n    return 1\n",
+            "type hint",
+        ),
         ("import nothing_of_that_name\n", "nothing_of_that_name"),
         ("x = 1\n", "App"),
     ],
@@ -133,7 +140,9 @@ def test_the_project_is_what_lives_in_the_folder_outside_an_environment(project)
     assert "pytest" not in mine
 
 
-def test_deep_follows_packages_that_live_outside_the_project_and_any_environment(project, tmp_path_factory):
+def test_deep_follows_packages_that_live_outside_the_project_and_any_environment(
+    project, tmp_path_factory
+):
     elsewhere = tmp_path_factory.mktemp("checkout")
     (elsewhere / "devlinked").mkdir()
     (elsewhere / "devlinked" / "__init__.py").write_text("X = 1\n")
@@ -199,7 +208,9 @@ def test_a_broken_save_keeps_the_last_working_version_running(project, monkeypat
             stopped.append(run.app.identifier)
             raise
 
-    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect(runs, during=forever))
+    monkeypatch.setattr(
+        "arkitekt.runtime.connect", recording_connect(runs, during=forever)
+    )
     entry = project / "devkept.py"
     _declare(entry, "first")
     target = parse_target("devkept", str(project))
@@ -215,7 +226,9 @@ def test_a_broken_save_keeps_the_last_working_version_running(project, monkeypat
         assert stopped == []
         _declare(entry, "third, fixed")
 
-    monkeypatch.setattr(dev_module, "awatch", _watching(break_it, fix_it, changed=[entry]))
+    monkeypatch.setattr(
+        dev_module, "awatch", _watching(break_it, fix_it, changed=[entry])
+    )
 
     async def scenario():
         await run_dev(Console(file=out, width=200), target, str(project))
@@ -250,7 +263,9 @@ def test_ctrl_c_stops_the_app_before_the_dev_run_ends(project, monkeypatch):
         await asyncio.Event().wait()
         yield set()
 
-    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], during=forever))
+    monkeypatch.setattr(
+        "arkitekt.runtime.connect", recording_connect([], during=forever)
+    )
     monkeypatch.setattr(dev_module, "awatch", awatch)
     _declare(project / "devstopped.py", "stopped")
     target = parse_target("devstopped", str(project))
@@ -277,7 +292,9 @@ def test_an_app_that_never_loaded_starts_once_it_does(project, monkeypatch):
     target = parse_target("devlate", str(project))
     out = io.StringIO()
     monkeypatch.setattr(
-        dev_module, "awatch", _watching(lambda: _declare(entry, "at last"), changed=[entry])
+        dev_module,
+        "awatch",
+        _watching(lambda: _declare(entry, "at last"), changed=[entry]),
     )
 
     async def scenario():
@@ -319,11 +336,17 @@ def test_a_task_is_one_line_when_it_arrives_and_one_when_it_ends():
     reporter = TaskReporter(Console(file=out, width=200))
 
     async def scenario():
-        await reporter(TaskEvent("t1", "add", TaskEventKind.ASSIGNED, arguments={"a": 1, "b": "x" * 80}))
+        await reporter(
+            TaskEvent(
+                "t1", "add", TaskEventKind.ASSIGNED, arguments={"a": 1, "b": "x" * 80}
+            )
+        )
         await reporter(TaskEvent("t1", "add", TaskEventKind.PROGRESS, progress=50))
         await reporter(TaskEvent("t1", "add", TaskEventKind.DONE))
         await reporter(TaskEvent("t2", "boom", TaskEventKind.ASSIGNED))
-        await reporter(TaskEvent("t2", "boom", TaskEventKind.FAILED, error="nope [really]"))
+        await reporter(
+            TaskEvent("t2", "boom", TaskEventKind.FAILED, error="nope [really]")
+        )
 
     asyncio.run(scenario())
 
@@ -334,7 +357,9 @@ def test_a_task_is_one_line_when_it_arrives_and_one_when_it_ends():
     assert "boom failed" in lines[3] and "nope [really]" in lines[3]
 
 
-def test_a_failure_the_user_can_act_on_is_one_line_in_the_dev_loop(project, monkeypatch):
+def test_a_failure_the_user_can_act_on_is_one_line_in_the_dev_loop(
+    project, monkeypatch
+):
     errors = pytest.importorskip("rekuest.agents.transport.errors")
 
     async def busy(run):
@@ -374,14 +399,39 @@ def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
 
     seen = {}
 
-    async def fake_run_dev(console, target, work_dir, options=None, deep=False, context=None, context_file=None):
-        seen.update(target=target, work_dir=work_dir, options=options, deep=deep, context=context)
+    async def fake_run_dev(
+        console,
+        target,
+        work_dir,
+        options=None,
+        deep=False,
+        context=None,
+        context_file=None,
+    ):
+        seen.update(
+            target=target,
+            work_dir=work_dir,
+            options=options,
+            deep=deep,
+            context=context,
+        )
 
     monkeypatch.setattr(dev_module, "run_dev", fake_run_dev)
 
     result = CliRunner().invoke(
         cli_app,
-        ["--work-dir", str(app_dir), "run", "dev", "app.py", "--url", "http://u", "--reauth", "-l", "INFO"],
+        [
+            "--work-dir",
+            str(app_dir),
+            "run",
+            "dev",
+            "app.py",
+            "--url",
+            "http://u",
+            "--reauth",
+            "-l",
+            "INFO",
+        ],
     )
 
     assert result.exit_code == 0, result.output
@@ -391,7 +441,9 @@ def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
     assert seen["context"] is None
 
 
-def test_dev_force_mesh_reaches_the_runner_as_the_mesh_it_stands_for(app_dir, monkeypatch):
+def test_dev_force_mesh_reaches_the_runner_as_the_mesh_it_stands_for(
+    app_dir, monkeypatch
+):
     """--force-mesh is no connection keyword of its own: the runner gets the
     mesh configuration it means -- a node of our own, or the proxy the
     environment names -- with nothing else to fall back to."""
@@ -437,20 +489,26 @@ def test_the_run_commands_no_longer_override_the_version(app_dir, flag):
         assert "No such option" in result.output
 
 
-def test_a_save_to_a_file_the_app_does_not_import_restarts_nothing(project, monkeypatch):
+def test_a_save_to_a_file_the_app_does_not_import_restarts_nothing(
+    project, monkeypatch
+):
     runs = []
 
     async def forever(run):
         await asyncio.Event().wait()
 
-    monkeypatch.setattr("arkitekt.runtime.connect", recording_connect(runs, during=forever))
+    monkeypatch.setattr(
+        "arkitekt.runtime.connect", recording_connect(runs, during=forever)
+    )
     _declare(project / "devfocused.py", "focused")
     other = project / "devunrelated.py"
     other.write_text("X = 1\n")
     target = parse_target("devfocused", str(project))
     out = io.StringIO()
     monkeypatch.setattr(
-        dev_module, "awatch", _watching(lambda: other.write_text("X = 2\n"), changed=[other])
+        dev_module,
+        "awatch",
+        _watching(lambda: other.write_text("X = 2\n"), changed=[other]),
     )
 
     async def scenario():

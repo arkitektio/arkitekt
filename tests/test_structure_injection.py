@@ -30,7 +30,11 @@ async def expand_thing(id: str, pictures: PictureClient) -> Thing:
 
 def picture_app(*services: Service[Any]) -> App[None]:
     """An app using the pictures service (and a fake rekuest), and any others given."""
-    return App("structures", services=[PictureService(), *services], providers=[RekuestProvider()])
+    return App(
+        "structures",
+        services=[PictureService(), *services],
+        providers=[RekuestProvider()],
+    )
 
 
 def bare_app() -> App[None]:
@@ -136,7 +140,9 @@ def test_a_client_no_registered_service_returns_is_refused_at_registration() -> 
     """The service has to come first: it is what makes ``PictureClient`` a client."""
     app = bare_app()  # the pictures service exists, but this app never registered it
 
-    with pytest.raises(StructureDefinitionError, match="no registered service returns one"):
+    with pytest.raises(
+        StructureDefinitionError, match="no registered service returns one"
+    ):
         app.register_structure(Thing, "@lib/thing", expand=expand_thing)
 
     assert "@lib/thing" not in app.registry.structure_registry.identifier_structure_map

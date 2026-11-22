@@ -90,8 +90,7 @@ def stain_and_measure(
     *,
     task: Task,
 ) -> float:
-    """Counts the cells in the well's image, doses dye in proportion, then reads the well.
-    """
+    """Counts the cells in the well's image, doses dye in proportion, then reads the well."""
     started = task.now()  # recorded: a resumed run sees the same start time
 
     # count_cells changes nothing: if its agent dies, just try again, even after it
@@ -104,7 +103,9 @@ def stain_and_measure(
     try:
         segmentation.segment(image)
     except AgentLost as lost:
-        task.log(f"segmentation lost ({lost.last_progress}%), continuing without labels")
+        task.log(
+            f"segmentation lost ({lost.last_progress}%), continuing without labels"
+        )
 
     volume = 0.5 * cells
     try:
@@ -124,8 +125,12 @@ def stain_and_measure(
                         lost=lost,  # its effects and last progress, in front of the person
                     )
                     if not decision.approved:
-                        raise RuntimeError(f"Abandoned at {well}: {decision.answer or 'denied'}")
-            absorbance = task.retry(handler.read_absorbance, well, attempts=3, if_started=True)
+                        raise RuntimeError(
+                            f"Abandoned at {well}: {decision.answer or 'denied'}"
+                        )
+            absorbance = task.retry(
+                handler.read_absorbance, well, attempts=3, if_started=True
+            )
     except StateChanged as changed:
         # The plate was swapped while this workflow was down: whatever comes next
         # would land in the wrong plate.

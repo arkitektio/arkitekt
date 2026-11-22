@@ -27,10 +27,10 @@ from pathlib import Path
 import nibabel as nib
 import numpy as np
 import xarray as xr
-
-from arkitekt import easy
 from mikro import mikro_service
 from mikro.api.schema import CoordinateAnchorInput
+
+from arkitekt import easy
 
 
 def synthesise(path: Path) -> Path:

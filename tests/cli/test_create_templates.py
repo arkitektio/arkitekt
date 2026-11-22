@@ -1,8 +1,8 @@
 """``arkitekt create``: what a template sets up, and that every part of it can be changed."""
 
 import json
-import shutil
 import os
+import shutil
 import subprocess
 import sys
 import tomllib
@@ -20,7 +20,9 @@ needs_uv = pytest.mark.skipif(shutil.which("uv") is None, reason="uv is not inst
 
 
 def create(tmp_path: Path, *arguments: str, input: str | None = None):
-    return CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "create", *arguments], input=input)
+    return CliRunner().invoke(
+        cli_app, ["--work-dir", str(tmp_path), "create", *arguments], input=input
+    )
 
 
 @pytest.fixture
@@ -39,7 +41,9 @@ def fake_uv(monkeypatch):
             Path(kwargs["cwd"], "pyproject.toml").write_text('[project]\nname = "x"\n')
             Path(kwargs["cwd"], ".python-version").write_text("3.12\n")
             if not Path(kwargs["cwd"], "main.py").exists():
-                Path(kwargs["cwd"], "main.py").write_text('def main():\n    print("Hello from x!")\n')
+                Path(kwargs["cwd"], "main.py").write_text(
+                    'def main():\n    print("Hello from x!")\n'
+                )
             return subprocess.CompletedProcess(command, 0)
         if list(command[:2]) == ["uv", "add"]:
             Path(kwargs["cwd"], "uv.lock").write_text("")
@@ -60,7 +64,9 @@ def test_the_default_is_a_project_in_a_new_folder(tmp_path: Path, fake_uv):
     assert (project / "pyproject.toml").exists()
 
     # A flavour that installs from the project's lockfile...
-    dockerfile = (project / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile").read_text()
+    dockerfile = (
+        project / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile"
+    ).read_text()
     assert "uv sync --frozen" in dockerfile
     # ...from a build context that leaves the host's environment out.
     assert ".venv/" in (project / ".dockerignore").read_text().splitlines()
@@ -68,7 +74,9 @@ def test_the_default_is_a_project_in_a_new_folder(tmp_path: Path, fake_uv):
     assert "ARG ARKITEKT_APP_VERSION" in dockerfile
 
     # ...and a workflow that has semantic-release cut the version, then calls the action.
-    workflow = yaml.safe_load((project / ".github" / "workflows" / "release.yaml").read_text())
+    workflow = yaml.safe_load(
+        (project / ".github" / "workflows" / "release.yaml").read_text()
+    )
     steps = workflow["jobs"]["release"]["steps"]
     assert steps[-3]["run"].endswith("semantic-release version")
     assert steps[-2]["uses"].startswith("arkitektio/arkitekt/ci/github@")
@@ -93,12 +101,17 @@ def test_the_default_app_makes_a_random_image_and_blurs_one(tmp_path: Path, fake
 
     source = (tmp_path / "my-app" / "app.py").read_text()
     assert '__version__ = "0.0.1"' in source
-    assert "App('com.test.app', __version__, author='me', services=[mikro_service])" in source
+    assert (
+        "App('com.test.app', __version__, author='me', services=[mikro_service])"
+        in source
+    )
     assert "def generate_random_image(" in source and "def blur_image(" in source
 
 
 def test_the_bare_template_keeps_the_starter_that_needs_no_service(tmp_path: Path):
-    result = create(tmp_path, "--template", "bare", "--package-manager", "pip", *IDENTITY)
+    result = create(
+        tmp_path, "--template", "bare", "--package-manager", "pip", *IDENTITY
+    )
     assert result.exit_code == 0, result.output
     source = (tmp_path / "app.py").read_text()
     assert "def append_world(" in source and "mikro" not in source
@@ -118,18 +131,26 @@ def test_a_starter_can_be_named_for_either_template(tmp_path: Path, fake_uv):
     [
         ([], "arkitekt[all]"),
         (["--with-extra", "rekuest"], "arkitekt[rekuest,mikro]"),
-        (["--with-extra", "rekuest", "--with-extra", "mikro"], "arkitekt[rekuest,mikro]"),
+        (
+            ["--with-extra", "rekuest", "--with-extra", "mikro"],
+            "arkitekt[rekuest,mikro]",
+        ),
         (["--with-extra", "rekuest", "--starter", "simple"], "arkitekt[rekuest]"),
         # `all` brings the clients, not the Qt integration.
         (["--template", "qt"], "arkitekt[all,qt]"),
         (["--template", "qt", "--with-extra", "rekuest"], "arkitekt[rekuest,qt]"),
-        (["--template", "qt", "--with-extra", "rekuest", "--with-extra", "qt"], "arkitekt[rekuest,qt]"),
+        (
+            ["--template", "qt", "--with-extra", "rekuest", "--with-extra", "qt"],
+            "arkitekt[rekuest,qt]",
+        ),
         (["--starter", "qt"], "arkitekt[all,qt]"),
         (["--template", "blok"], "arkitekt[all]"),
         (["--template", "blok", "--with-extra", "rekuest"], "arkitekt[rekuest,mikro]"),
     ],
 )
-def test_the_image_starter_brings_the_client_it_imports(tmp_path: Path, monkeypatch, extras, installed):
+def test_the_image_starter_brings_the_client_it_imports(
+    tmp_path: Path, monkeypatch, extras, installed
+):
     commands = []
 
     def run(command, *args, **kwargs):
@@ -145,8 +166,12 @@ def test_the_image_starter_brings_the_client_it_imports(tmp_path: Path, monkeypa
     assert ["uv", "add", installed] in commands
 
 
-def test_a_project_in_a_folder_that_is_not_empty_asks_for_its_name(tmp_path: Path, fake_uv, monkeypatch):
-    monkeypatch.setattr("arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None)
+def test_a_project_in_a_folder_that_is_not_empty_asks_for_its_name(
+    tmp_path: Path, fake_uv, monkeypatch
+):
+    monkeypatch.setattr(
+        "arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None
+    )
     (tmp_path / "notes.txt").write_text("mine\n")
     result = create(tmp_path, *IDENTITY, input="n\nasked-app\n")
     assert result.exit_code == 0, result.output
@@ -155,8 +180,12 @@ def test_a_project_in_a_folder_that_is_not_empty_asks_for_its_name(tmp_path: Pat
     assert not (tmp_path / "app.py").exists()
 
 
-def test_a_folder_that_is_not_empty_can_be_used_anyway(tmp_path: Path, fake_uv, monkeypatch):
-    monkeypatch.setattr("arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None)
+def test_a_folder_that_is_not_empty_can_be_used_anyway(
+    tmp_path: Path, fake_uv, monkeypatch
+):
+    monkeypatch.setattr(
+        "arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None
+    )
     (tmp_path / "notes.txt").write_text("mine\n")
     result = create(tmp_path, *IDENTITY, input="y\n")
     assert result.exit_code == 0, result.output
@@ -186,7 +215,9 @@ def test_a_freshly_initialised_repository_counts_as_empty(tmp_path: Path, fake_u
 
 
 def test_a_folder_with_a_flavour_is_not_empty(tmp_path: Path, fake_uv, monkeypatch):
-    monkeypatch.setattr("arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None
+    )
     (tmp_path / ".arkitekt").mkdir()
     result = create(tmp_path, *IDENTITY, input="n\nasked-app\n")
     assert result.exit_code == 0, result.output
@@ -195,7 +226,9 @@ def test_a_folder_with_a_flavour_is_not_empty(tmp_path: Path, fake_uv, monkeypat
 
 def _answering(monkeypatch) -> None:
     """Let `create` ask its questions of the test's input."""
-    monkeypatch.setattr("arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None)
+    monkeypatch.setattr(
+        "arkitekt.cli.commands.app.create.main.require_tty", lambda *a, **k: None
+    )
 
 
 @pytest.mark.parametrize(
@@ -206,7 +239,9 @@ def _answering(monkeypatch) -> None:
         "com.test.app\nme\n",  # ...at the app file
     ],
 )
-def test_a_wizard_that_is_left_halfway_makes_no_folder(tmp_path: Path, fake_uv, monkeypatch, answers: str):
+def test_a_wizard_that_is_left_halfway_makes_no_folder(
+    tmp_path: Path, fake_uv, monkeypatch, answers: str
+):
     _answering(monkeypatch)
     # The first question is the template; Enter takes the default.
     result = create(tmp_path, "my-app", input="\n" + answers)
@@ -214,14 +249,20 @@ def test_a_wizard_that_is_left_halfway_makes_no_folder(tmp_path: Path, fake_uv, 
     assert list(tmp_path.iterdir()) == []
 
 
-def test_a_wizard_left_at_the_version_makes_no_folder(tmp_path: Path, fake_uv, monkeypatch):
+def test_a_wizard_left_at_the_version_makes_no_folder(
+    tmp_path: Path, fake_uv, monkeypatch
+):
     _answering(monkeypatch)
-    result = create(tmp_path, "my-app", "--version", "not-a-version", *IDENTITY, input="")
+    result = create(
+        tmp_path, "my-app", "--version", "not-a-version", *IDENTITY, input=""
+    )
     assert result.exit_code != 0
     assert list(tmp_path.iterdir()) == []
 
 
-def test_the_folder_is_made_when_the_wizard_is_through(tmp_path: Path, fake_uv, monkeypatch):
+def test_the_folder_is_made_when_the_wizard_is_through(
+    tmp_path: Path, fake_uv, monkeypatch
+):
     _answering(monkeypatch)
     result = create(tmp_path, "my-app", input="\ncom.test.app\nme\napp\n")
     assert result.exit_code == 0, result.output
@@ -237,13 +278,17 @@ def test_the_folder_is_made_when_the_wizard_is_through(tmp_path: Path, fake_uv, 
         ["--starter", "nope", "--yes"],
     ],
 )
-def test_a_project_that_is_refused_makes_no_folder(tmp_path: Path, fake_uv, options: list[str]):
+def test_a_project_that_is_refused_makes_no_folder(
+    tmp_path: Path, fake_uv, options: list[str]
+):
     result = create(tmp_path, "my-app", *options)
     assert result.exit_code != 0
     assert list(tmp_path.iterdir()) == []
 
 
-def test_without_uv_a_uv_project_is_refused_before_its_folder_is_made(tmp_path: Path, monkeypatch):
+def test_without_uv_a_uv_project_is_refused_before_its_folder_is_made(
+    tmp_path: Path, monkeypatch
+):
     monkeypatch.setattr("shutil.which", lambda name: None)
     result = create(tmp_path, "my-app", "--package-manager", "uv", *IDENTITY)
     assert result.exit_code != 0
@@ -251,7 +296,9 @@ def test_without_uv_a_uv_project_is_refused_before_its_folder_is_made(tmp_path: 
     assert list(tmp_path.iterdir()) == []
 
 
-def test_an_app_file_that_is_kept_is_asked_about_before_anything_is_made(tmp_path: Path, fake_uv, monkeypatch):
+def test_an_app_file_that_is_kept_is_asked_about_before_anything_is_made(
+    tmp_path: Path, fake_uv, monkeypatch
+):
     _answering(monkeypatch)
     (tmp_path / "app.py").write_text("mine\n")
     result = create(tmp_path, ".", *IDENTITY, input="n\n")
@@ -263,7 +310,9 @@ def test_an_app_file_that_is_kept_is_asked_about_before_anything_is_made(tmp_pat
     assert "generate_random_image" in (tmp_path / "app.py").read_text()
 
 
-def test_a_project_without_a_name_cannot_be_assumed_in_a_folder_that_is_not_empty(tmp_path: Path, fake_uv):
+def test_a_project_without_a_name_cannot_be_assumed_in_a_folder_that_is_not_empty(
+    tmp_path: Path, fake_uv
+):
     (tmp_path / "notes.txt").write_text("mine\n")
     result = create(tmp_path, "--yes")
     assert result.exit_code == 1
@@ -297,7 +346,16 @@ def test_a_main_py_that_was_there_before_is_left_alone(tmp_path: Path, fake_uv):
 
 
 def test_an_app_in_main_py_keeps_the_name(tmp_path: Path, fake_uv):
-    result = create(tmp_path, "my-app", "--identifier", "com.test.app", "--author", "me", "--entrypoint", "main")
+    result = create(
+        tmp_path,
+        "my-app",
+        "--identifier",
+        "com.test.app",
+        "--author",
+        "me",
+        "--entrypoint",
+        "main",
+    )
     assert result.exit_code == 0, result.output
 
     assert "App(" in (tmp_path / "my-app" / "main.py").read_text()
@@ -331,7 +389,9 @@ def test_a_project_can_be_created_in_this_folder(tmp_path: Path, fake_uv):
 
 
 def test_the_bare_template_writes_only_the_app_file(tmp_path: Path):
-    result = create(tmp_path, "--template", "bare", "--package-manager", "pip", *IDENTITY)
+    result = create(
+        tmp_path, "--template", "bare", "--package-manager", "pip", *IDENTITY
+    )
     assert result.exit_code == 0, result.output
     assert sorted(p.name for p in tmp_path.iterdir()) == ["app.py"]
 
@@ -342,11 +402,29 @@ def test_the_bare_template_writes_only_the_app_file(tmp_path: Path):
         (["--ci", "none"], True, False, False),
         (["--ci", "gitlab"], True, False, True),
         (["--no-flavour"], False, False, False),
-        (["--template", "bare", "--package-manager", "uv", "--flavour", "--ci", "github"], True, True, False),
+        (
+            [
+                "--template",
+                "bare",
+                "--package-manager",
+                "uv",
+                "--flavour",
+                "--ci",
+                "github",
+            ],
+            True,
+            True,
+            False,
+        ),
     ],
 )
 def test_every_part_of_a_template_has_its_own_option(
-    tmp_path: Path, fake_uv, options: list[str], flavour: bool, github: bool, gitlab: bool
+    tmp_path: Path,
+    fake_uv,
+    options: list[str],
+    flavour: bool,
+    github: bool,
+    gitlab: bool,
 ):
     result = create(tmp_path, ".", *options, *IDENTITY)
     assert result.exit_code == 0, result.output
@@ -355,23 +433,39 @@ def test_every_part_of_a_template_has_its_own_option(
     assert (tmp_path / ".gitlab-ci.yml").exists() is gitlab
 
 
-def test_a_project_released_from_github_gets_a_place_for_its_install_badge(tmp_path: Path, fake_uv):
+def test_a_project_released_from_github_gets_a_place_for_its_install_badge(
+    tmp_path: Path, fake_uv
+):
     from arkitekt.cli.commands.plugin.badge import END, PLACEHOLDER, START
 
     (tmp_path / "README.md").write_text("# my app\n")
     result = create(
-        tmp_path, ".", "--template", "bare", "--package-manager", "uv", "--flavour", "--ci", "github", *IDENTITY
+        tmp_path,
+        ".",
+        "--template",
+        "bare",
+        "--package-manager",
+        "uv",
+        "--flavour",
+        "--ci",
+        "github",
+        *IDENTITY,
     )
     assert result.exit_code == 0, result.output
     # No remote yet: the release workflow fills it in on its first run.
-    assert (tmp_path / "README.md").read_text() == f"# my app\n\n{START}\n{PLACEHOLDER}\n{END}\n"
+    assert (
+        tmp_path / "README.md"
+    ).read_text() == f"# my app\n\n{START}\n{PLACEHOLDER}\n{END}\n"
 
 
 def test_a_project_on_pip_gets_the_pip_image_and_no_workflow(tmp_path: Path):
     result = create(tmp_path, "my-app", "--package-manager", "pip", *IDENTITY)
     assert result.exit_code == 0, result.output
     project = tmp_path / "my-app"
-    assert "pip install" in (project / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile").read_text()
+    assert (
+        "pip install"
+        in (project / ".arkitekt" / "flavours" / "vanilla" / "Dockerfile").read_text()
+    )
     assert not (project / ".github").exists()
 
 
@@ -392,7 +486,9 @@ def test_without_uv_a_project_falls_back_to_a_plain_app(tmp_path: Path, monkeypa
         (["--template", "nope"], "is not one of project, blok, qt, bare."),
     ],
 )
-def test_parts_that_cannot_go_together_are_refused(tmp_path: Path, fake_uv, options: list[str], message: str):
+def test_parts_that_cannot_go_together_are_refused(
+    tmp_path: Path, fake_uv, options: list[str], message: str
+):
     result = create(tmp_path, "my-app", *options, *IDENTITY)
     assert result.exit_code != 0
     # The message is boxed, and wrapped where the box ends.
@@ -410,7 +506,9 @@ def test_an_existing_workflow_is_left_alone(tmp_path: Path, fake_uv):
 
 @needs_uv
 @pytest.mark.needs_docker  # not docker itself: the same machines that have a network
-def test_a_real_project_is_one_its_own_workflow_can_release(tmp_path: Path, monkeypatch):
+def test_a_real_project_is_one_its_own_workflow_can_release(
+    tmp_path: Path, monkeypatch
+):
     """With the real uv: the project resolves, and git is on `main` whatever git starts on."""
     gitconfig = tmp_path / "gitconfig"
     gitconfig.write_text("[init]\n\tdefaultBranch = master\n")
@@ -420,9 +518,14 @@ def test_a_real_project_is_one_its_own_workflow_can_release(tmp_path: Path, monk
     project = tmp_path / "real-app"
     assert (project / "uv.lock").exists()
     branch = subprocess.run(
-        ["git", "symbolic-ref", "--short", "HEAD"], cwd=project, stdout=subprocess.PIPE, text=True
+        ["git", "symbolic-ref", "--short", "HEAD"],
+        cwd=project,
+        stdout=subprocess.PIPE,
+        text=True,
     ).stdout.strip()
-    workflow = yaml.safe_load((project / ".github" / "workflows" / "release.yaml").read_text())
+    workflow = yaml.safe_load(
+        (project / ".github" / "workflows" / "release.yaml").read_text()
+    )
     assert branch == "main"
     assert workflow[True]["push"]["branches"] == ["main"]
     # An app, not a package, and nothing of uv's example beside it.
@@ -436,7 +539,9 @@ def test_a_real_project_is_one_its_own_workflow_can_release(tmp_path: Path, monk
 # ---------------------------------------------------------------------------
 
 
-def test_the_blok_template_is_a_whole_project_around_a_blok_agent(tmp_path: Path, fake_uv):
+def test_the_blok_template_is_a_whole_project_around_a_blok_agent(
+    tmp_path: Path, fake_uv
+):
     result = create(tmp_path, "analyst", "--template", "blok", *IDENTITY)
     assert result.exit_code == 0, result.output
 
@@ -446,40 +551,69 @@ def test_the_blok_template_is_a_whole_project_around_a_blok_agent(tmp_path: Path
     assert (project / ".github" / "workflows" / "release.yaml").exists()
     configured = tomllib.loads((project / "pyproject.toml").read_text())["tool"]
     assert configured["semantic_release"]["version_variables"] == ["app.py:__version__"]
-    assert sorted(p.name for p in (project / "tests").glob("*.py")) == ["conftest.py", "test_app.py", "test_app_hub.py"]
+    assert sorted(p.name for p in (project / "tests").glob("*.py")) == [
+        "conftest.py",
+        "test_app.py",
+        "test_app_hub.py",
+    ]
 
     source = (project / "app.py").read_text()
     assert '__version__ = "0.0.1"' in source
-    assert "App('com.test.app', __version__, author='me', services=[mikro_service])" in source
+    assert (
+        "App('com.test.app', __version__, author='me', services=[mikro_service])"
+        in source
+    )
     assert "@app.state" in source and 'app.blok(\n    "analysis",' in source
     output = " ".join(result.output.split())
     assert f"{HUB_TEST} tests it against a hub" in output
     assert "cd analyst && uv run arkitekt run dev" in output
 
 
-def test_a_blok_agent_declares_its_panel_its_state_and_its_actions(tmp_path: Path, fake_uv):
+def test_a_blok_agent_declares_its_panel_its_state_and_its_actions(
+    tmp_path: Path, fake_uv
+):
     """What a deployment is told of the app: read off the declaration, as `inspect all` prints it."""
     pytest.importorskip("mikro")
     assert create(tmp_path, "analyst", "--template", "blok", *IDENTITY).exit_code == 0
 
-    result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path / "analyst"), "inspect", "all", "--machine-readable"])
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path / "analyst"),
+            "inspect",
+            "all",
+            "--machine-readable",
+        ],
+    )
     assert result.exit_code == 0, result.output
-    declared = json.loads(result.output.split("--START_AGENT--")[1].split("--END_AGENT--")[0])
+    declared = json.loads(
+        result.output.split("--START_AGENT--")[1].split("--END_AGENT--")[0]
+    )
 
     assert [blok["key"] for blok in declared["bloks"]] == ["analysis"]
     assert "Analysis" in json.dumps(declared["states"])
     interfaces = json.dumps(declared["implementations"])
-    for action in ("generate_test_image", "analyse_image", "segment_image", "clear_history"):
+    for action in (
+        "generate_test_image",
+        "analyse_image",
+        "segment_image",
+        "clear_history",
+    ):
         assert action in interfaces
 
 
-def test_a_panel_that_names_what_the_app_does_not_have_fails_its_tests(tmp_path: Path, fake_uv):
+def test_a_panel_that_names_what_the_app_does_not_have_fails_its_tests(
+    tmp_path: Path, fake_uv
+):
     """The project's own tests are what catches a typo in the panel, before a deployment does."""
     pytest.importorskip("mikro")
     assert create(tmp_path, "analyst", "--template", "blok", *IDENTITY).exit_code == 0
     project = tmp_path / "analyst"
     app_file = project / "app.py"
-    app_file.write_text(app_file.read_text().replace("{self.Analysis.status}", "{self.Analysis.statuz}"))
+    app_file.write_text(
+        app_file.read_text().replace("{self.Analysis.status}", "{self.Analysis.statuz}")
+    )
 
     ran = _pytest_in(project, "-q", "-k", "panel_is_declared")
 
@@ -505,22 +639,36 @@ def test_the_qt_template_is_a_project_without_an_image(tmp_path: Path, fake_uv):
     assert result.exit_code == 0, result.output
 
     project = tmp_path / "viewer"
-    assert sorted(p.name for p in project.iterdir()) == [".python-version", "app.py", "pyproject.toml", "tests", "uv.lock"]
-    assert sorted(p.name for p in (project / "tests").glob("*.py")) == ["conftest.py", "test_app.py"]
+    assert sorted(p.name for p in project.iterdir()) == [
+        ".python-version",
+        "app.py",
+        "pyproject.toml",
+        "tests",
+        "uv.lock",
+    ]
+    assert sorted(p.name for p in (project / "tests").glob("*.py")) == [
+        "conftest.py",
+        "test_app.py",
+    ]
     assert "semantic_release" not in (project / "pyproject.toml").read_text()
 
     source = (project / "app.py").read_text()
     compile(source, "app.py", "exec")
     assert '__version__ = "0.0.1"' in source
     # The window is the app's context: an action asks for it by its class.
-    assert "app = QtApp('com.test.app', __version__, author='me', app_context=Window)" in source
+    assert (
+        "app = QtApp('com.test.app', __version__, author='me', app_context=Window)"
+        in source
+    )
     assert "MagicBar(self.runtime, context=self)" in source
     assert "def show_message(text: str, window: Window) -> str:" in source
     assert "app_context=Window" in source
 
 
 def test_the_qt_template_says_what_is_left_to_do(tmp_path: Path, fake_uv):
-    output = " ".join(create(tmp_path, "viewer", "--template", "qt", *IDENTITY).output.split())
+    output = " ".join(
+        create(tmp_path, "viewer", "--template", "qt", *IDENTITY).output.split()
+    )
     assert "A Qt app needs a Qt binding" in output and "uv add pyqt6" in output
     assert "cd viewer && uv run python app.py" in output
     assert "arkitekt run dev" not in output
@@ -529,44 +677,82 @@ def test_the_qt_template_says_what_is_left_to_do(tmp_path: Path, fake_uv):
 
 def test_a_qt_app_on_pip_is_started_and_completed_with_pip(tmp_path: Path):
     output = " ".join(
-        create(tmp_path, "viewer", "--template", "qt", "--package-manager", "pip", "--entrypoint", "main", "--identifier", "x", "--author", "me").output.split()
+        create(
+            tmp_path,
+            "viewer",
+            "--template",
+            "qt",
+            "--package-manager",
+            "pip",
+            "--entrypoint",
+            "main",
+            "--identifier",
+            "x",
+            "--author",
+            "me",
+        ).output.split()
     )
     assert "pip install pyqt6" in output
     assert "cd viewer && python main.py" in output
 
 
-def test_a_qt_project_can_still_be_given_an_image_and_a_workflow(tmp_path: Path, fake_uv):
+def test_a_qt_project_can_still_be_given_an_image_and_a_workflow(
+    tmp_path: Path, fake_uv
+):
     refused = create(tmp_path, "one", "--template", "qt", "--ci", "github", *IDENTITY)
     assert refused.exit_code != 0 and "nothing to release" in refused.output
     assert not (tmp_path / "one").exists()
 
-    result = create(tmp_path, "two", "--template", "qt", "--flavour", "--ci", "github", *IDENTITY)
+    result = create(
+        tmp_path, "two", "--template", "qt", "--flavour", "--ci", "github", *IDENTITY
+    )
     assert result.exit_code == 0, result.output
     assert (tmp_path / "two" / ".arkitekt" / "flavours" / "vanilla").exists()
     assert (tmp_path / "two" / ".github" / "workflows" / "release.yaml").exists()
 
 
 def test_the_templates_are_all_in_the_help():
-    output = " ".join(CliRunner().invoke(cli_app, ["create", "--help"], terminal_width=200).output.split())
+    output = " ".join(
+        CliRunner()
+        .invoke(cli_app, ["create", "--help"], terminal_width=200)
+        .output.split()
+    )
     for name in ("'project':", "'blok':", "'qt':", "'bare':"):
         assert name in output
 
 
 @pytest.mark.skipif(_has_qt_binding(), reason="a Qt binding is installed")
-def test_without_a_binding_the_qt_tests_are_skipped_and_say_why(tmp_path: Path, fake_uv):
+def test_without_a_binding_the_qt_tests_are_skipped_and_say_why(
+    tmp_path: Path, fake_uv
+):
     assert create(tmp_path, "viewer", "--template", "qt", *IDENTITY).exit_code == 0
 
     ran = _pytest_in(tmp_path / "viewer", "-q", "-rs")
 
-    assert ran.returncode in (0, 5), ran.stdout + ran.stderr  # 5: nothing but skips was collected
+    assert ran.returncode in (0, 5), (
+        ran.stdout + ran.stderr
+    )  # 5: nothing but skips was collected
     assert "1 skipped" in ran.stdout
     assert "No Qt binding is installed: `uv add pyqt6`" in ran.stdout
 
 
 @pytest.mark.skipif(not _has_qt_binding(), reason="no Qt binding is installed")
 @pytest.mark.parametrize("entrypoint", ["app", "main"])
-def test_with_a_binding_the_qt_tests_pass_without_a_screen(tmp_path: Path, fake_uv, entrypoint: str):
-    result = create(tmp_path, "viewer", "--template", "qt", "--identifier", "com.test.app", "--author", "me", "--entrypoint", entrypoint)
+def test_with_a_binding_the_qt_tests_pass_without_a_screen(
+    tmp_path: Path, fake_uv, entrypoint: str
+):
+    result = create(
+        tmp_path,
+        "viewer",
+        "--template",
+        "qt",
+        "--identifier",
+        "com.test.app",
+        "--author",
+        "me",
+        "--entrypoint",
+        entrypoint,
+    )
     assert result.exit_code == 0, result.output
 
     ran = _pytest_in(tmp_path / "viewer", "-q")
@@ -578,7 +764,11 @@ def test_with_a_binding_the_qt_tests_pass_without_a_screen(tmp_path: Path, fake_
 def _git(project: Path, *arguments: str) -> str:
     identity = ["-c", "user.name=tester", "-c", "user.email=tester@example.com"]
     return subprocess.run(
-        ["git", *identity, *arguments], cwd=project, check=True, stdout=subprocess.PIPE, text=True
+        ["git", *identity, *arguments],
+        cwd=project,
+        check=True,
+        stdout=subprocess.PIPE,
+        text=True,
     ).stdout.strip()
 
 
@@ -588,11 +778,22 @@ def _semantic_release(project: Path, output: Path) -> None:
         **os.environ,
         "GITHUB_ACTIONS": "true",
         "GITHUB_OUTPUT": str(output),
-        **{f"GIT_{who}_{what}": value for who in ("AUTHOR", "COMMITTER") for what, value in (("NAME", "t"), ("EMAIL", "t@example.com"))},
+        **{
+            f"GIT_{who}_{what}": value
+            for who in ("AUTHOR", "COMMITTER")
+            for what, value in (("NAME", "t"), ("EMAIL", "t@example.com"))
+        },
     }
     env.pop("GH_TOKEN", None)
     ran = subprocess.run(
-        [sys.executable, "-m", "semantic_release", "version", "--no-push", "--no-vcs-release"],
+        [
+            sys.executable,
+            "-m",
+            "semantic_release",
+            "version",
+            "--no-push",
+            "--no-vcs-release",
+        ],
         cwd=project,
         env=env,
         capture_output=True,
@@ -603,13 +804,26 @@ def _semantic_release(project: Path, output: Path) -> None:
 
 
 @pytest.mark.parametrize("entrypoint", ["app", "main"])
-def test_what_semantic_release_tags_is_a_release_the_app_declares(tmp_path: Path, fake_uv, entrypoint: str):
+def test_what_semantic_release_tags_is_a_release_the_app_declares(
+    tmp_path: Path, fake_uv, entrypoint: str
+):
     """The whole loop of the workflow, locally: a `feat:` raises the version in the app
     file, and the commit it tags is one `plugin release` takes for that release."""
     pytest.importorskip("semantic_release")
     from arkitekt.cli.commands.plugin.release import resolve
 
-    result = create(tmp_path, "released", "--starter", "simple", "--identifier", "com.test.app", "--author", "me", "--entrypoint", entrypoint)
+    result = create(
+        tmp_path,
+        "released",
+        "--starter",
+        "simple",
+        "--identifier",
+        "com.test.app",
+        "--author",
+        "me",
+        "--entrypoint",
+        entrypoint,
+    )
     assert result.exit_code == 0, result.output
     project = tmp_path / "released"
     (project / ".gitignore").write_text("__pycache__/\n")
@@ -624,9 +838,15 @@ def test_what_semantic_release_tags_is_a_release_the_app_declares(tmp_path: Path
 
     _semantic_release(project, output)
 
-    outputs = dict(line.split("=", 1) for line in output.read_text().splitlines() if "=" in line)
-    assert (outputs["released"], outputs["version"], outputs["tag"]) == ("true", "0.1.0", "v0.1.0")
-    assert f'__version__ = "0.1.0"' in (project / f"{entrypoint}.py").read_text()
+    outputs = dict(
+        line.split("=", 1) for line in output.read_text().splitlines() if "=" in line
+    )
+    assert (outputs["released"], outputs["version"], outputs["tag"]) == (
+        "true",
+        "0.1.0",
+        "v0.1.0",
+    )
+    assert '__version__ = "0.1.0"' in (project / f"{entrypoint}.py").read_text()
     assert _git(project, "tag", "--points-at", "HEAD") == "v0.1.0"
     # Nothing left over: a release is not made from a tree that changed.
     assert _git(project, "status", "--porcelain") == ""
@@ -660,8 +880,12 @@ def _run_the_projects_tests(project: Path) -> subprocess.CompletedProcess[str]:
     )
 
 
-@pytest.mark.parametrize(("starter", "passing"), [("image", 7), ("blok", 15), ("simple", 2), ("filter", 3)])
-def test_a_project_comes_with_tests_that_pass_offline(tmp_path: Path, fake_uv, starter: str, passing: int):
+@pytest.mark.parametrize(
+    ("starter", "passing"), [("image", 7), ("blok", 15), ("simple", 2), ("filter", 3)]
+)
+def test_a_project_comes_with_tests_that_pass_offline(
+    tmp_path: Path, fake_uv, starter: str, passing: int
+):
     if starter in ("image", "blok"):
         pytest.importorskip("mikro")
     result = create(tmp_path, "tested", "--starter", starter, *IDENTITY)
@@ -681,13 +905,18 @@ def test_a_project_comes_with_tests_that_pass_offline(tmp_path: Path, fake_uv, s
 # ---------------------------------------------------------------------------
 
 
-def _pytest_in(project: Path, *arguments: str, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+def _pytest_in(
+    project: Path, *arguments: str, cwd: Path | None = None
+) -> subprocess.CompletedProcess[str]:
     """Run pytest on a created project the way `uv run pytest` does: as the script, not `python -m`.
 
     The difference is the one the conftest is there for: `python -m pytest` puts the
     folder it runs in on the path, and the script does not.
     """
-    env = {**os.environ, "PYTHONPATH": os.pathsep.join(p for p in sys.path if p and Path(p) != project)}
+    env = {
+        **os.environ,
+        "PYTHONPATH": os.pathsep.join(p for p in sys.path if p and Path(p) != project),
+    }
     env.pop("ARKITEKT_APP", None)
     script = "import sys, pytest; sys.path[:] = [p for p in sys.path if p]; sys.exit(pytest.main(sys.argv[1:]))"
     return subprocess.run(
@@ -707,11 +936,20 @@ def image_project(tmp_path: Path, fake_uv) -> Path:
     return tmp_path / "tested"
 
 
-def test_a_project_has_one_test_file_with_no_server_and_one_against_a_hub(image_project: Path, tmp_path: Path):
+def test_a_project_has_one_test_file_with_no_server_and_one_against_a_hub(
+    image_project: Path, tmp_path: Path
+):
     tests = image_project / "tests"
-    assert sorted(p.name for p in tests.glob("*.py")) == ["conftest.py", "test_app.py", "test_app_hub.py"]
+    assert sorted(p.name for p in tests.glob("*.py")) == [
+        "conftest.py",
+        "test_app.py",
+        "test_app_hub.py",
+    ]
 
-    offline, hub = (tests / "test_app.py").read_text(), (tests / "test_app_hub.py").read_text()
+    offline, hub = (
+        (tests / "test_app.py").read_text(),
+        (tests / "test_app_hub.py").read_text(),
+    )
     # Nothing of a hub in the one, and nothing but a hub in the other.
     assert "teststack" not in offline and "pytest.mark.hub" not in offline
     assert "pytestmark = pytest.mark.hub" in hub
@@ -722,9 +960,14 @@ def test_a_project_has_one_test_file_with_no_server_and_one_against_a_hub(image_
     # Each file is one suite: the first all runs, the second is all the hub's.
     first = _pytest_in(image_project, "-q", "tests/test_app.py")
     assert "7 passed" in first.stdout and "deselected" not in first.stdout
-    second = _pytest_in(image_project, "-q", "-m", "hub", "--collect-only", "tests/test_app_hub.py")
+    second = _pytest_in(
+        image_project, "-q", "-m", "hub", "--collect-only", "tests/test_app_hub.py"
+    )
     assert "2 tests collected" in second.stdout, second.stdout
-    assert "2 deselected" in _pytest_in(image_project, "-q", "tests/test_app_hub.py").stdout
+    assert (
+        "2 deselected"
+        in _pytest_in(image_project, "-q", "tests/test_app_hub.py").stdout
+    )
 
 
 # A created file is named the way the platform names it: `tests\test_app.py` on Windows.
@@ -735,14 +978,22 @@ HUB_TEST = str(Path("tests") / "test_app_hub.py")
 def test_create_says_how_to_run_each_of_them(tmp_path: Path, fake_uv):
     output = " ".join(create(tmp_path, "tested", *IDENTITY).output.split())
     assert f"{APP_TEST} tests it" in output and "uv run pytest`" in output
-    assert f"{HUB_TEST} tests it against a hub" in output and "uv run pytest -m hub" in output
+    assert (
+        f"{HUB_TEST} tests it against a hub" in output
+        and "uv run pytest -m hub" in output
+    )
 
 
 @pytest.mark.parametrize("starter", ["simple", "filter"])
-def test_a_starter_without_a_service_has_no_hub_tests(tmp_path: Path, fake_uv, starter: str):
+def test_a_starter_without_a_service_has_no_hub_tests(
+    tmp_path: Path, fake_uv, starter: str
+):
     result = create(tmp_path, "tested", "--starter", starter, *IDENTITY)
     assert result.exit_code == 0, result.output
-    assert sorted(p.name for p in (tmp_path / "tested" / "tests").glob("*.py")) == ["conftest.py", "test_app.py"]
+    assert sorted(p.name for p in (tmp_path / "tested" / "tests").glob("*.py")) == [
+        "conftest.py",
+        "test_app.py",
+    ]
     assert "against a hub" not in result.output
 
 
@@ -753,7 +1004,11 @@ def test_the_conftest_is_what_lets_a_test_import_the_app(image_project: Path):
     assert "7 passed" in ran.stdout
 
     conftest = image_project / "tests" / "conftest.py"
-    conftest.write_text("\n".join(line for line in conftest.read_text().splitlines() if "sys.path" not in line))
+    conftest.write_text(
+        "\n".join(
+            line for line in conftest.read_text().splitlines() if "sys.path" not in line
+        )
+    )
     without = _pytest_in(image_project, "-q")
     assert without.returncode != 0
     assert "No module named 'app'" in without.stdout + without.stderr
@@ -762,7 +1017,14 @@ def test_the_conftest_is_what_lets_a_test_import_the_app(image_project: Path):
 def test_the_projects_tests_run_from_any_folder(image_project: Path, tmp_path: Path):
     elsewhere = tmp_path / "elsewhere"
     elsewhere.mkdir()
-    ran = _pytest_in(image_project, "-q", "--rootdir", str(image_project), str(image_project), cwd=elsewhere)
+    ran = _pytest_in(
+        image_project,
+        "-q",
+        "--rootdir",
+        str(image_project),
+        str(image_project),
+        cwd=elsewhere,
+    )
     assert ran.returncode == 0, ran.stdout + ran.stderr
     assert "7 passed" in ran.stdout
 
@@ -770,12 +1032,21 @@ def test_the_projects_tests_run_from_any_folder(image_project: Path, tmp_path: P
 def test_the_conftest_loads_every_fixture_the_tests_ask_for(image_project: Path):
     ran = _pytest_in(image_project, "--fixtures", "-q")
     assert ran.returncode == 0, ran.stdout + ran.stderr
-    for fixture in ("call", "local_runtime", "arkitekt_app", "arkitekt_clients", "teststack", "hub_call"):
+    for fixture in (
+        "call",
+        "local_runtime",
+        "arkitekt_app",
+        "arkitekt_clients",
+        "teststack",
+        "hub_call",
+    ):
         assert f"\n{fixture} " in ran.stdout, fixture
     assert "hub: end to end" in _pytest_in(image_project, "--markers").stdout
 
 
-def test_a_bare_pytest_leaves_the_hub_tests_out_and_m_hub_selects_them(image_project: Path):
+def test_a_bare_pytest_leaves_the_hub_tests_out_and_m_hub_selects_them(
+    image_project: Path,
+):
     # `fake_uv` writes a pyproject without a build of its own: pytest reads it all the same.
     assert "2 deselected" in _pytest_in(image_project, "-q").stdout
 
@@ -786,7 +1057,9 @@ def test_a_bare_pytest_leaves_the_hub_tests_out_and_m_hub_selects_them(image_pro
     assert "7 deselected" in collected.stdout
 
 
-def test_the_hub_tests_are_skipped_not_failed_where_no_hub_can_be_made(image_project: Path, tmp_path: Path):
+def test_the_hub_tests_are_skipped_not_failed_where_no_hub_can_be_made(
+    image_project: Path, tmp_path: Path
+):
     """konstruktor is hidden from the run, so this holds wherever the suite runs.
 
     Where it is installed it also announces a pytest plugin, which pytest would load
@@ -795,11 +1068,25 @@ def test_the_hub_tests_are_skipped_not_failed_where_no_hub_can_be_made(image_pro
     """
     hidden = tmp_path / "hidden"
     (hidden / "konstruktor").mkdir(parents=True)
-    (hidden / "konstruktor" / "__init__.py").write_text("raise ImportError('hidden for the test')\n")
+    (hidden / "konstruktor" / "__init__.py").write_text(
+        "raise ImportError('hidden for the test')\n"
+    )
     (hidden / "sitecustomize.py").write_text("")
     env_path = os.pathsep.join([str(hidden), *(p for p in sys.path if p)])
     ran = subprocess.run(
-        [sys.executable, "-m", "pytest", "-q", "-rs", "-p", "no:cacheprovider", "-p", "no:konstruktor", "-m", "hub"],
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            "-q",
+            "-rs",
+            "-p",
+            "no:cacheprovider",
+            "-p",
+            "no:konstruktor",
+            "-m",
+            "hub",
+        ],
         cwd=image_project,
         env={**os.environ, "PYTHONPATH": env_path},
         capture_output=True,
@@ -813,11 +1100,29 @@ def test_the_hub_tests_are_skipped_not_failed_where_no_hub_can_be_made(image_pro
 
 def test_the_tests_of_an_app_in_another_file_import_that_file(tmp_path: Path, fake_uv):
     pytest.importorskip("mikro")
-    assert create(tmp_path, "tested", "--identifier", "com.test.app", "--author", "me", "--entrypoint", "main").exit_code == 0
+    assert (
+        create(
+            tmp_path,
+            "tested",
+            "--identifier",
+            "com.test.app",
+            "--author",
+            "me",
+            "--entrypoint",
+            "main",
+        ).exit_code
+        == 0
+    )
     project = tmp_path / "tested"
-    assert "from main import app, blur_pixels, random_pixels" in (project / "tests" / "test_main.py").read_text()
+    assert (
+        "from main import app, blur_pixels, random_pixels"
+        in (project / "tests" / "test_main.py").read_text()
+    )
     assert (project / "tests" / "test_main_hub.py").exists()
-    assert 'os.environ.setdefault("ARKITEKT_APP", "main")' in (project / "tests" / "conftest.py").read_text()
+    assert (
+        'os.environ.setdefault("ARKITEKT_APP", "main")'
+        in (project / "tests" / "conftest.py").read_text()
+    )
 
     ran = _pytest_in(project, "-q")
 
@@ -828,7 +1133,9 @@ def test_the_tests_of_an_app_in_another_file_import_that_file(tmp_path: Path, fa
 def test_pytest_options_that_are_there_are_left_alone(tmp_path: Path):
     from arkitekt.cli.commands.app.create.main import write_pytest_options
 
-    assert write_pytest_options(str(tmp_path)) is False  # no pyproject: nothing to write to
+    assert (
+        write_pytest_options(str(tmp_path)) is False
+    )  # no pyproject: nothing to write to
     mine = '[tool.pytest.ini_options]\naddopts = "-x"\n'
     (tmp_path / "pyproject.toml").write_text(mine)
     assert write_pytest_options(str(tmp_path)) is False
@@ -836,7 +1143,16 @@ def test_pytest_options_that_are_there_are_left_alone(tmp_path: Path):
 
 
 def test_the_tests_find_an_app_that_is_not_in_app_py(tmp_path: Path, fake_uv):
-    result = create(tmp_path, "tested", "--identifier", "com.test.app", "--author", "me", "--entrypoint", "main")
+    result = create(
+        tmp_path,
+        "tested",
+        "--identifier",
+        "com.test.app",
+        "--author",
+        "me",
+        "--entrypoint",
+        "main",
+    )
     assert result.exit_code == 0, result.output
     project = tmp_path / "tested"
     assert (project / "tests" / "test_main.py").exists()
@@ -854,7 +1170,9 @@ def test_pytest_becomes_a_dev_dependency_of_a_uv_project(tmp_path: Path, monkeyp
         if command[0] == "uv":
             commands.append(list(command))
             if command[1] == "init":
-                Path(kwargs["cwd"], "pyproject.toml").write_text('[project]\nname = "x"\n')
+                Path(kwargs["cwd"], "pyproject.toml").write_text(
+                    '[project]\nname = "x"\n'
+                )
             return subprocess.CompletedProcess(command, 0)
         return real_run(command, *args, **kwargs)
 
@@ -895,12 +1213,23 @@ def test_a_wizard_asks_for_the_template_first(tmp_path: Path, fake_uv, monkeypat
     assert "QtApp(" in (tmp_path / "my-viewer" / "app.py").read_text()
 
 
-@pytest.mark.parametrize("named", [["--template", "project"], ["--identifier", "com.test.app"], ["--yes"]])
+@pytest.mark.parametrize(
+    "named", [["--template", "project"], ["--identifier", "com.test.app"], ["--yes"]]
+)
 def test_a_command_line_that_says_what_to_make_is_not_asked_for_a_template(
     tmp_path: Path, fake_uv, monkeypatch, named: list[str]
 ):
     _answering(monkeypatch)
-    result = create(tmp_path, "my-app", *named, "--author", "me", "--entrypoint", "app", input="com.test.app\n")
+    result = create(
+        tmp_path,
+        "my-app",
+        *named,
+        "--author",
+        "me",
+        "--entrypoint",
+        "app",
+        input="com.test.app\n",
+    )
 
     assert result.exit_code == 0, result.output
     assert "What should be set up?" not in result.output

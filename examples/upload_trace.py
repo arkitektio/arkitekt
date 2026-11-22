@@ -17,12 +17,12 @@ The trace here is a synthetic one second of membrane potential at 20 kHz.
 """
 
 import numpy as np
-from numpy.typing import NDArray
-from kanne.scalars import Duration, Frequency, Unit
-
-from arkitekt import easy
 from elektro import elektro_service
 from elektro.api.schema import CoordinateAnchorInput, SamplingInput, ValueUnitInput
+from kanne.scalars import Duration, Frequency, Unit
+from numpy.typing import NDArray
+
+from arkitekt import easy
 
 RATE_HZ = 20_000.0
 SECONDS = 1.0

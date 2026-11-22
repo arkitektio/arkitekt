@@ -23,7 +23,9 @@ def main() -> None:
         # The alias the call went through: a mesh alias, carrying the node's proxy.
         assert runtime.fakts is not None, "a run with a service builds its fakts"
         alias = runtime.fakts.get_alias("mikro")
-    print(json.dumps({"folder": str(folder.id), "kind": alias.kind, "proxy": alias.proxy}))
+    print(
+        json.dumps({"folder": str(folder.id), "kind": alias.kind, "proxy": alias.proxy})
+    )
 
 
 if __name__ == "__main__":

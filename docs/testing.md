@@ -60,6 +60,7 @@ and raises `arkitekt.testing.LocalCallError` when the action raises:
 import pytest
 from arkitekt.testing import LocalCallError
 
+
 def test_refuses_an_empty_window(call):
     with pytest.raises(LocalCallError, match="at least 1"):
         call("moving_average", values=[1.0], window=0)
@@ -89,6 +90,7 @@ To prove the action against the service itself, ask for `hub_call` in place of
 import pytest
 from mikro import Mikro
 
+
 @pytest.mark.hub
 def test_it_stores_the_result(hub_call, hub_runtime):
     folder = hub_call("make_folder", name="results")
@@ -105,6 +107,7 @@ knows the rest:
 import pytest
 from arkitekt.testing import TestStack
 from mikro import Mikro
+
 
 @pytest.mark.hub
 def test_it_stores_the_result(teststack: TestStack[None]):
@@ -203,10 +206,11 @@ from konstruktor import testing_hub
 with testing_hub(service_images=service_images(app)) as hub:
     hub.up()
     hub.wait_ready()
-    with connect_local(app, offline=False, url=hub.fakts_url,
-                       mandate_key=hub.mandate_key("my-app")) as rt:
+    with connect_local(
+        app, offline=False, url=hub.fakts_url, mandate_key=hub.mandate_key("my-app")
+    ) as rt:
         rt.call_local("make_folder", name="results")
-    hub.logs("mikro")   # the service's side of it, while the hub is there
+    hub.logs("mikro")  # the service's side of it, while the hub is there
 ```
 
 The hub is gone, with its data, when the block is left. The same `hub` is what the

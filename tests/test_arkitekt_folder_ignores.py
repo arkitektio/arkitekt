@@ -12,6 +12,7 @@ import subprocess
 from pathlib import Path
 
 import pytest
+
 from arkitekt.cli.commands.plugin.init import BUILD_CONTEXT_IGNORE
 from arkitekt.utils import create_arkitekt_folder
 
@@ -49,7 +50,9 @@ def test_an_older_ignore_file_learns_what_it_lacks(project: Path) -> None:
     folder = project / ".arkitekt"
     folder.mkdir()
     # What arkitekt wrote before it knew of the journal, without a final newline.
-    older = "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/\nservers/"
+    older = (
+        "# Hiding Arkitekt Credential files from git\n*.json\n*.temp\ncache/\nservers/"
+    )
     (folder / ".gitignore").write_text(older)
 
     create_arkitekt_folder(base_dir=str(project))

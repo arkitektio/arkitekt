@@ -76,7 +76,13 @@ from koil import unkoil
 from koil.bridge import unkoil_task
 
 from arkitekt.app.app import App, Ctx
-from arkitekt.runtime import Runtime, _interface_of, _provider_for, connect, connect_local
+from arkitekt.runtime import (
+    Runtime,
+    _interface_of,
+    _provider_for,
+    connect,
+    connect_local,
+)
 
 if TYPE_CHECKING:
     from konstruktor import Hub  # pyright: ignore[reportMissingImports]
@@ -91,10 +97,20 @@ REGISTRATION_TIMEOUT = 120.0
 
 def call_through_rekuest_requested() -> bool:
     """Whether ``$ARKITEKT_CALL_THROUGH_REKUEST`` asks for calls through rekuest (1, true, yes, on)."""
-    return os.environ.get(THROUGH_REKUEST_ENVVAR, "").strip().lower() in ("1", "true", "yes", "on")
+    return os.environ.get(THROUGH_REKUEST_ENVVAR, "").strip().lower() in (
+        "1",
+        "true",
+        "yes",
+        "on",
+    )
 
 
-def call_through_rekuest(runtime: Runtime[Any], action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+def call_through_rekuest(
+    runtime: Runtime[Any],
+    action: Any,  # noqa: ANN401
+    *args: Any,
+    **kwargs: Any,
+) -> Any:  # noqa: ANN401
     """Call one of the app's own actions as a task rekuest assigns to it, and return its result.
 
     ``runtime`` is a run of the app that provides it (``connect(app, provide=True)``,
@@ -108,9 +124,13 @@ def call_through_rekuest(runtime: Runtime[Any], action: Any, *args: Any, **kwarg
 
     agent = runtime.agent
     if agent is None:
-        raise LookupError("Only a run that provides the app is called through rekuest: `connect(app, provide=True)`.")
+        raise LookupError(
+            "Only a run that provides the app is called through rekuest: `connect(app, provide=True)`."
+        )
     rekuest = runtime.require(RekuestCaller)
-    implementation = rekuest.my_implementation_at(interface=_interface_of(agent, action))
+    implementation = rekuest.my_implementation_at(
+        interface=_interface_of(agent, action)
+    )
     return rekuest.call(implementation, *args, policy=TaskPolicy.AUTO, **kwargs)
 
 
@@ -165,7 +185,9 @@ def served_app(
     from rekuest.arkitekt import rekuest_caller_service
 
     app.service(rekuest_caller_service)
-    with connect(app, provide=True, url=url, mandate_key=mandate_key, headless=True) as runtime:
+    with connect(
+        app, provide=True, url=url, mandate_key=mandate_key, headless=True
+    ) as runtime:
         # Started, then served: the start returns once rekuest acknowledged the agent, and
         # raises what kept it from registering.
         unkoil(runtime.astart, cast(Ctx, context), timeout=timeout)
@@ -259,7 +281,6 @@ if pytest is not None:
         app, _, _ = load_target(os.environ.get(TARGET_ENVVAR) or DEFAULT_TARGET, root)
         return app
 
-
     @pytest.fixture()
     def arkitekt_clients() -> Sequence[Any]:
         """The clients the app's actions are handed in place of its services' own.
@@ -270,12 +291,10 @@ if pytest is not None:
         """
         return ()
 
-
     @pytest.fixture()
     def arkitekt_context() -> Any:  # noqa: ANN401
         """The app context the app under test is started with. Override it for an app that declares one."""
         return None
-
 
     @pytest.fixture()
     def local_runtime(
@@ -284,22 +303,22 @@ if pytest is not None:
         arkitekt_context: Any,  # noqa: ANN401
     ) -> Iterator[Runtime[Any]]:
         """The app under test, started with no server, for the length of one test."""
-        with local_app(arkitekt_app, clients=arkitekt_clients, context=arkitekt_context) as runtime:
+        with local_app(
+            arkitekt_app, clients=arkitekt_clients, context=arkitekt_context
+        ) as runtime:
             yield runtime
-
 
     @pytest.fixture()
     def call(local_runtime: Runtime[Any]) -> Callable[..., Any]:
         """Call one of the app's actions: ``call("add", 1, b=2)`` or ``call(add, 1, b=2)``."""
         return local_runtime.call_local
 
-
     def pytest_configure(config: Any) -> None:  # noqa: ANN401 -- a pytest.Config
         """Register the marker for tests that run against a hub."""
         config.addinivalue_line(
-            "markers", "hub: end to end, against a hub made for the tests (needs Docker; not for the dev loop)."
+            "markers",
+            "hub: end to end, against a hub made for the tests (needs Docker; not for the dev loop).",
         )
-
 
     @pytest.fixture(scope="session")
     def arkitekt_hub_apps() -> int:
@@ -309,7 +328,6 @@ if pytest is not None:
         connects beside it (``arkitekt_hub.mandate_key("other")``).
         """
         return 8
-
 
     @pytest.fixture(scope="session")
     def arkitekt_hub(
@@ -332,9 +350,13 @@ if pytest is not None:
             import konstruktor
             from konstruktor.pytest_plugin import docker_available
         except ImportError:
-            pytest.skip("A hub is made with konstruktor, which is not installed: pip install konstruktor.")
+            pytest.skip(
+                "A hub is made with konstruktor, which is not installed: pip install konstruktor."
+            )
         if not hasattr(konstruktor, "testing_hub"):
-            pytest.skip("A hub is made with konstruktor 0.17 or newer, and an older one is installed: pip install -U konstruktor.")
+            pytest.skip(
+                "A hub is made with konstruktor 0.17 or newer, and an older one is installed: pip install -U konstruktor."
+            )
         if not docker_available():
             pytest.skip("A hub runs in Docker, which is not running here.")
 
@@ -343,11 +365,12 @@ if pytest is not None:
         )
         with pytest.MonkeyPatch.context() as patch:
             # A hub has a new address on every run: its logins are this session's alone.
-            patch.setenv("XDG_STATE_HOME", str(tmp_path_factory.mktemp("arkitekt-state")))
+            patch.setenv(
+                "XDG_STATE_HOME", str(tmp_path_factory.mktemp("arkitekt-state"))
+            )
             # It has no mesh either, so there is none to look for.
             patch.setenv("ARKITEKT_MESH", "0")
             yield hub
-
 
     @pytest.fixture(scope="session")
     def arkitekt_call_through_rekuest() -> bool:
@@ -357,7 +380,6 @@ if pytest is not None:
         :func:`call_through_rekuest_requested`); override it to pin a suite to one way.
         """
         return call_through_rekuest_requested()
-
 
     @pytest.fixture()
     def hub_runtime(
@@ -394,17 +416,21 @@ if pytest is not None:
                 "rekuest, the app is a real agent and is handed its real services. Unset "
                 f"${THROUGH_REKUEST_ENVVAR} for this suite, or drop the replacement clients."
             )
-        with served_app(arkitekt_app, url=url, mandate_key=mandate_key, context=arkitekt_context) as runtime:
+        with served_app(
+            arkitekt_app, url=url, mandate_key=mandate_key, context=arkitekt_context
+        ) as runtime:
             yield runtime
 
-
     @pytest.fixture()
-    def hub_call(hub_runtime: Runtime[Any], arkitekt_call_through_rekuest: bool) -> Callable[..., Any]:
+    def hub_call(
+        hub_runtime: Runtime[Any], arkitekt_call_through_rekuest: bool
+    ) -> Callable[..., Any]:
         """Call one of the app's actions, with its services real: ``hub_call("segment", image)``."""
         if arkitekt_call_through_rekuest:
-            return lambda action, *args, **kwargs: call_through_rekuest(hub_runtime, action, *args, **kwargs)
+            return lambda action, *args, **kwargs: call_through_rekuest(
+                hub_runtime, action, *args, **kwargs
+            )
         return hub_runtime.call_local
-
 
     @pytest.fixture()
     def teststack(

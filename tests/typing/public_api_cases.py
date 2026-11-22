@@ -42,7 +42,9 @@ class Point:
 
 
 @app.action
-def add(a: Annotated[int, Description("first")], b: Annotated[int, Default(2)], task: Task) -> int:
+def add(
+    a: Annotated[int, Description("first")], b: Annotated[int, Default(2)], task: Task
+) -> int:
     """Adds, reporting as it goes."""
     task.log("adding", LogLevel.INFO)
     task.progress(50, "half")
@@ -55,7 +57,10 @@ def add(a: Annotated[int, Description("first")], b: Annotated[int, Default(2)], 
 wrapped: WrappedFunction[..., int] = add
 
 
-@app.action(policy=CancelOnDisconnect(grace=5.0), port_groups=[PortGroupInput(key="g", ports=("n",))])
+@app.action(
+    policy=CancelOnDisconnect(grace=5.0),
+    port_groups=[PortGroupInput(key="g", ports=("n",))],
+)
 def stream(n: int, task: Task) -> Generator[int, None, None]:
     """Streams."""
     yield from range(n)

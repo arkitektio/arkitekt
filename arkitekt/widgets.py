@@ -1,6 +1,6 @@
 """The widgets an action's ports may declare, and the widget models they build.
 
-    from arkitekt.widgets import SearchWidget, withStateChoices
+from arkitekt.widgets import SearchWidget, withStateChoices
 """
 
 from arkitekt_spec.actions import (

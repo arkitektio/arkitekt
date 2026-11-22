@@ -69,7 +69,9 @@ def test_a_plain_run_reads_and_writes_the_file() -> None:
 
 
 def test_skip_cache_keeps_the_session_in_memory() -> None:
-    fakts = build_fakts(MANIFEST, ConnectionOptions(url=URL, skip_cache=True, reauth=True))
+    fakts = build_fakts(
+        MANIFEST, ConnectionOptions(url=URL, skip_cache=True, reauth=True)
+    )
     assert isinstance(fakts.cache, NoCache)
 
 

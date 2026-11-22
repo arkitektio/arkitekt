@@ -14,10 +14,10 @@ from arkitekt.cli.utils import build_relative_dir
 
 from .isolation import isolated_filesystem
 
-
 # ---------------------------------------------------------------------------
 # init command — using isolated_filesystem (legacy style, still valid)
 # ---------------------------------------------------------------------------
+
 
 def test_init_uv():
     runner = CliRunner()
@@ -25,15 +25,46 @@ def test_init_uv():
         with patch("shutil.which") as mock_which, patch("subprocess.run") as mock_run:
             mock_which.return_value = "/usr/bin/uv"
 
-            result = runner.invoke(cli_app, ["create", "--template", "bare", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+            result = runner.invoke(
+                cli_app,
+                [
+                    "create",
+                    "--template",
+                    "bare",
+                    "--package-manager",
+                    "uv",
+                    "--identifier",
+                    "com.test.app",
+                    "--version",
+                    "0.0.1",
+                    "--author",
+                    "me",
+                    "--entrypoint",
+                    "app",
+                ],
+            )
             if result.exit_code != 0:
                 print(result.output)
                 print(result.exception)
             assert result.exit_code == 0
 
             assert mock_run.call_count == 2
-            mock_run.assert_any_call(["uv", "init", "--app", "--no-package", "--name", "com.test.app", "--no-workspace"], check=True, cwd=os.getcwd())
-            mock_run.assert_any_call(["uv", "add", "arkitekt[all]"], check=True, cwd=os.getcwd())
+            mock_run.assert_any_call(
+                [
+                    "uv",
+                    "init",
+                    "--app",
+                    "--no-package",
+                    "--name",
+                    "com.test.app",
+                    "--no-workspace",
+                ],
+                check=True,
+                cwd=os.getcwd(),
+            )
+            mock_run.assert_any_call(
+                ["uv", "add", "arkitekt[all]"], check=True, cwd=os.getcwd()
+            )
 
             assert os.path.exists("app.py")
             assert not os.path.exists(".arkitekt/manifest.yaml")
@@ -42,7 +73,10 @@ def test_init_uv():
 def test_init_yes():
     runner = CliRunner()
     with isolated_filesystem():
-        result = runner.invoke(cli_app, ["create", "--template", "bare", "--yes", "--package-manager", "pip"])
+        result = runner.invoke(
+            cli_app,
+            ["create", "--template", "bare", "--yes", "--package-manager", "pip"],
+        )
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -55,14 +89,33 @@ def test_init_path():
     runner = CliRunner()
     with isolated_filesystem():
         original_cwd = os.getcwd()
-        result = runner.invoke(cli_app, ["create", "--template", "bare", "myapp", "--package-manager", "pip", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"], input="\n")
+        result = runner.invoke(
+            cli_app,
+            [
+                "create",
+                "--template",
+                "bare",
+                "myapp",
+                "--package-manager",
+                "pip",
+                "--version",
+                "0.0.1",
+                "--author",
+                "me",
+                "--entrypoint",
+                "app",
+            ],
+            input="\n",
+        )
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
         assert result.exit_code == 0
 
         assert os.path.exists(os.path.join(original_cwd, "myapp", "app.py"))
-        assert not os.path.exists(os.path.join(original_cwd, "myapp", ".arkitekt", "manifest.yaml"))
+        assert not os.path.exists(
+            os.path.join(original_cwd, "myapp", ".arkitekt", "manifest.yaml")
+        )
 
         # The identifier prompt defaults to the directory name, and lands in the App.
         with open(os.path.join(original_cwd, "myapp", "app.py")) as f:
@@ -77,11 +130,38 @@ def test_init_default_uv():
         with patch("shutil.which") as mock_which, patch("subprocess.run") as mock_run:
             mock_which.return_value = "/usr/bin/uv"
 
-            result = runner.invoke(cli_app, ["create", "--template", "bare", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+            result = runner.invoke(
+                cli_app,
+                [
+                    "create",
+                    "--template",
+                    "bare",
+                    "--identifier",
+                    "com.test.app",
+                    "--version",
+                    "0.0.1",
+                    "--author",
+                    "me",
+                    "--entrypoint",
+                    "app",
+                ],
+            )
 
             assert result.exit_code == 0
             assert mock_run.call_count == 2
-            mock_run.assert_any_call(["uv", "init", "--app", "--no-package", "--name", "com.test.app", "--no-workspace"], check=True, cwd=os.getcwd())
+            mock_run.assert_any_call(
+                [
+                    "uv",
+                    "init",
+                    "--app",
+                    "--no-package",
+                    "--name",
+                    "com.test.app",
+                    "--no-workspace",
+                ],
+                check=True,
+                cwd=os.getcwd(),
+            )
 
 
 def test_init_default_pip():
@@ -90,7 +170,22 @@ def test_init_default_pip():
         with patch("shutil.which") as mock_which:
             mock_which.return_value = None
 
-            result = runner.invoke(cli_app, ["create", "--template", "bare", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+            result = runner.invoke(
+                cli_app,
+                [
+                    "create",
+                    "--template",
+                    "bare",
+                    "--identifier",
+                    "com.test.app",
+                    "--version",
+                    "0.0.1",
+                    "--author",
+                    "me",
+                    "--entrypoint",
+                    "app",
+                ],
+            )
 
             assert result.exit_code == 0
             assert os.path.exists("app.py")
@@ -103,7 +198,24 @@ def test_init_uv_not_installed():
         with patch("shutil.which") as mock_which:
             mock_which.return_value = None
 
-            result = runner.invoke(cli_app, ["create", "--template", "bare", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+            result = runner.invoke(
+                cli_app,
+                [
+                    "create",
+                    "--template",
+                    "bare",
+                    "--package-manager",
+                    "uv",
+                    "--identifier",
+                    "com.test.app",
+                    "--version",
+                    "0.0.1",
+                    "--author",
+                    "me",
+                    "--entrypoint",
+                    "app",
+                ],
+            )
             assert result.exit_code != 0
             assert "uv is not installed" in result.output
 
@@ -112,20 +224,32 @@ def test_init_uv_not_installed():
 # init command — using --work-dir (new style, no os.chdir side effects)
 # ---------------------------------------------------------------------------
 
+
 def test_init_work_dir(tmp_path):
     """init with --work-dir writes to tmp_path without touching process CWD."""
     original_cwd = os.getcwd()
     runner = CliRunner()
 
-    result = runner.invoke(cli_app, [
-        "--work-dir", str(tmp_path),
-        "create", "--template", "bare",
-        "--identifier", "com.workdir.app",
-        "--version", "0.1.0",
-        "--author", "tester",
-        "--entrypoint", "app",
-        "--package-manager", "pip",
-    ])
+    result = runner.invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "create",
+            "--template",
+            "bare",
+            "--identifier",
+            "com.workdir.app",
+            "--version",
+            "0.1.0",
+            "--author",
+            "tester",
+            "--entrypoint",
+            "app",
+            "--package-manager",
+            "pip",
+        ],
+    )
     if result.exit_code != 0:
         print(result.output)
         print(result.exception)
@@ -147,15 +271,27 @@ def test_init_subdir_work_dir(tmp_path):
     original_cwd = os.getcwd()
     runner = CliRunner()
 
-    result = runner.invoke(cli_app, [
-        "--work-dir", str(tmp_path),
-        "create", "--template", "bare", "mysubapp",
-        "--identifier", "com.sub.app",
-        "--version", "0.1.0",
-        "--author", "tester",
-        "--entrypoint", "app",
-        "--package-manager", "pip",
-    ])
+    result = runner.invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "create",
+            "--template",
+            "bare",
+            "mysubapp",
+            "--identifier",
+            "com.sub.app",
+            "--version",
+            "0.1.0",
+            "--author",
+            "tester",
+            "--entrypoint",
+            "app",
+            "--package-manager",
+            "pip",
+        ],
+    )
     if result.exit_code != 0:
         print(result.output)
         print(result.exception)
@@ -170,12 +306,40 @@ def test_init_subdir_work_dir(tmp_path):
 # kabinet commands — rely on app_runner fixture (--work-dir based)
 # ---------------------------------------------------------------------------
 
+
 def test_kabinet_init():
     runner = CliRunner()
     with isolated_filesystem():
-        runner.invoke(cli_app, ["create", "--template", "bare", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+        runner.invoke(
+            cli_app,
+            [
+                "create",
+                "--template",
+                "bare",
+                "--identifier",
+                "com.test.app",
+                "--version",
+                "0.0.1",
+                "--author",
+                "me",
+                "--entrypoint",
+                "app",
+            ],
+        )
 
-        result = runner.invoke(cli_app, ["plugin", "flavour", "add", "--flavour", "vanilla", "--devcontainer", "--arkitekt-version", "0.0.1"])
+        result = runner.invoke(
+            cli_app,
+            [
+                "plugin",
+                "flavour",
+                "add",
+                "--flavour",
+                "vanilla",
+                "--devcontainer",
+                "--arkitekt-version",
+                "0.0.1",
+            ],
+        )
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -191,9 +355,38 @@ def test_kabinet_init():
 def test_kabinet_init_uv():
     runner = CliRunner()
     with isolated_filesystem():
-        runner.invoke(cli_app, ["create", "--template", "bare", "--package-manager", "uv", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+        runner.invoke(
+            cli_app,
+            [
+                "create",
+                "--template",
+                "bare",
+                "--package-manager",
+                "uv",
+                "--identifier",
+                "com.test.app",
+                "--version",
+                "0.0.1",
+                "--author",
+                "me",
+                "--entrypoint",
+                "app",
+            ],
+        )
 
-        result = runner.invoke(cli_app, ["plugin", "flavour", "add", "--flavour", "uv_flavour", "--devcontainer", "--arkitekt-version", "0.0.1"])
+        result = runner.invoke(
+            cli_app,
+            [
+                "plugin",
+                "flavour",
+                "add",
+                "--flavour",
+                "uv_flavour",
+                "--devcontainer",
+                "--arkitekt-version",
+                "0.0.1",
+            ],
+        )
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -208,16 +401,46 @@ def test_kabinet_init_uv():
 def test_kabinet_flavour_commands():
     runner = CliRunner()
     with isolated_filesystem():
-        runner.invoke(cli_app, ["create", "--template", "bare", "--identifier", "com.test.app", "--version", "0.0.1", "--author", "me", "--entrypoint", "app"])
+        runner.invoke(
+            cli_app,
+            [
+                "create",
+                "--template",
+                "bare",
+                "--identifier",
+                "com.test.app",
+                "--version",
+                "0.0.1",
+                "--author",
+                "me",
+                "--entrypoint",
+                "app",
+            ],
+        )
 
-        result = runner.invoke(cli_app, ["plugin", "flavour", "add", "--flavour", "gpu", "--description", "GPU flavour"], input="n\n")
+        result = runner.invoke(
+            cli_app,
+            [
+                "plugin",
+                "flavour",
+                "add",
+                "--flavour",
+                "gpu",
+                "--description",
+                "GPU flavour",
+            ],
+            input="n\n",
+        )
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
         assert result.exit_code == 0
         assert os.path.exists(".arkitekt/flavours/gpu/config.yaml")
 
-        result = runner.invoke(cli_app, ["plugin", "selector", "add", "gpu", "--kind", "cuda", "--vram", "8000"])
+        result = runner.invoke(
+            cli_app,
+            ["plugin", "selector", "add", "gpu", "--kind", "cuda", "--vram", "8000"],
+        )
         if result.exit_code != 0:
             print(result.output)
             print(result.exception)
@@ -233,28 +456,48 @@ def test_kabinet_flavour_commands():
 # kabinet commands — work-dir style
 # ---------------------------------------------------------------------------
 
+
 def test_kabinet_init_work_dir(tmp_path):
     """kabinet init via --work-dir, no os.chdir."""
     original_cwd = os.getcwd()
     runner = CliRunner()
 
-    runner.invoke(cli_app, [
-        "--work-dir", str(tmp_path),
-        "create", "--template", "bare",
-        "--identifier", "com.test.app",
-        "--version", "0.0.1",
-        "--author", "me",
-        "--entrypoint", "app",
-        "--package-manager", "pip",
-    ])
+    runner.invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "create",
+            "--template",
+            "bare",
+            "--identifier",
+            "com.test.app",
+            "--version",
+            "0.0.1",
+            "--author",
+            "me",
+            "--entrypoint",
+            "app",
+            "--package-manager",
+            "pip",
+        ],
+    )
 
-    result = runner.invoke(cli_app, [
-        "--work-dir", str(tmp_path),
-        "plugin", "flavour", "add",
-        "--flavour", "vanilla",
-        "--devcontainer",
-        "--arkitekt-version", "0.0.1",
-    ])
+    result = runner.invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "plugin",
+            "flavour",
+            "add",
+            "--flavour",
+            "vanilla",
+            "--devcontainer",
+            "--arkitekt-version",
+            "0.0.1",
+        ],
+    )
     if result.exit_code != 0:
         print(result.output)
         print(result.exception)
@@ -269,9 +512,12 @@ def test_kabinet_init_work_dir(tmp_path):
 # init writes the App's identity into the entrypoint
 # ---------------------------------------------------------------------------
 
+
 def _import_file(path, name):
     spec = importlib.util.spec_from_file_location(name, path)
-    assert spec is not None and spec.loader is not None, f"{path} is not an importable file"
+    assert spec is not None and spec.loader is not None, (
+        f"{path} is not an importable file"
+    )
     module = importlib.util.module_from_spec(spec)
     sys.modules[name] = module
     try:
@@ -289,18 +535,32 @@ def test_every_template_scaffolds_an_importable_app(tmp_path, template):
             from qtpy import QtWidgets  # noqa: F401
         except Exception as error:
             pytest.skip(f"no Qt binding is installed: {error}")
-    result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path),
-        "create", "--template", "bare",
-        "--identifier", "com.example.thing",
-        "--version", "1.2.3",
-        "--author", "Jane O'Neil",
-        "--scopes", "kabinet_deploy",
-        "--logo", "https://example.com/logo.png",
-        "--starter", template,
-        "--entrypoint", "main",
-        "--package-manager", "pip",
-    ])
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "create",
+            "--template",
+            "bare",
+            "--identifier",
+            "com.example.thing",
+            "--version",
+            "1.2.3",
+            "--author",
+            "Jane O'Neil",
+            "--scopes",
+            "kabinet_deploy",
+            "--logo",
+            "https://example.com/logo.png",
+            "--starter",
+            template,
+            "--entrypoint",
+            "main",
+            "--package-manager",
+            "pip",
+        ],
+    )
     assert result.exit_code == 0, result.output
     assert sorted(p.name for p in tmp_path.iterdir()) == ["main.py"]
 
@@ -308,7 +568,11 @@ def test_every_template_scaffolds_an_importable_app(tmp_path, template):
 
     app = module.app
     assert isinstance(app, App)
-    assert (app.identifier, app.version, app.author) == ("com.example.thing", "1.2.3", "Jane O'Neil")
+    assert (app.identifier, app.version, app.author) == (
+        "com.example.thing",
+        "1.2.3",
+        "Jane O'Neil",
+    )
     # What it asked for, beside what its services' clients need and the login itself.
     assert "kabinet_deploy" in app.scopes and "openid" in app.scopes
     assert app.logo == "https://example.com/logo.png"
@@ -317,13 +581,33 @@ def test_every_template_scaffolds_an_importable_app(tmp_path, template):
 
 
 def test_the_scaffolded_app_is_what_the_commands_find(tmp_path):
-    result = CliRunner().invoke(cli_app, [
-        "--work-dir", str(tmp_path), "create", "--template", "bare", "--yes", "--identifier", "com.found.app",
-        "--package-manager", "pip",
-    ])
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "create",
+            "--template",
+            "bare",
+            "--yes",
+            "--identifier",
+            "com.found.app",
+            "--package-manager",
+            "pip",
+        ],
+    )
     assert result.exit_code == 0, result.output
 
-    result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "inspect", "implementations", "--machine-readable"])
+    result = CliRunner().invoke(
+        cli_app,
+        [
+            "--work-dir",
+            str(tmp_path),
+            "inspect",
+            "implementations",
+            "--machine-readable",
+        ],
+    )
     assert result.exit_code == 0, result.output
     assert "generate_n_string" in result.output
 
@@ -334,7 +618,9 @@ def test_a_rendered_template_is_python_source():
         source = f.read()
 
     rendered = render_template(
-        source, render_app_arguments("x", "0.0.1", version_variable="__version__"), version="0.0.1"
+        source,
+        render_app_arguments("x", "0.0.1", version_variable="__version__"),
+        version="0.0.1",
     )
 
     assert "{{" not in rendered and "__APP_" not in rendered
@@ -343,14 +629,19 @@ def test_a_rendered_template_is_python_source():
 
 
 def test_a_template_without_a_version_of_its_own_is_declared_with_it_written_out():
-    rendered = render_template("app = App(__APP_ARGUMENTS__)", render_app_arguments("x", "0.0.1"))
+    rendered = render_template(
+        "app = App(__APP_ARGUMENTS__)", render_app_arguments("x", "0.0.1")
+    )
 
     assert rendered == "app = App('x', '0.0.1')"
 
 
 def test_a_template_that_keeps_its_version_needs_one():
     with pytest.raises(ValueError, match="no version was given"):
-        render_template("__version__ = __APP_VERSION__\napp = App(__APP_ARGUMENTS__)", "'x', __version__")
+        render_template(
+            "__version__ = __APP_VERSION__\napp = App(__APP_ARGUMENTS__)",
+            "'x', __version__",
+        )
 
 
 def test_app_arguments_quote_anything():
@@ -400,13 +691,20 @@ def test_a_short_flag_means_one_thing_everywhere():
         longs = [o for o in param.opts if o.startswith("--")]
         for short in (o for o in param.opts if not o.startswith("--")):
             meanings.setdefault(short, set()).update(longs)
-    clashes = {short: sorted(longs) for short, longs in meanings.items() if len(longs) > 1}
+    clashes = {
+        short: sorted(longs) for short, longs in meanings.items() if len(longs) > 1
+    }
     assert not clashes, f"a short flag names different options: {clashes}"
 
 
 def test_short_flags_are_one_letter():
     long_shorts = sorted(
-        {f"{where}: {o}" for where, param in _options() for o in param.opts if not o.startswith("--") and len(o) > 2}
+        {
+            f"{where}: {o}"
+            for where, param in _options()
+            for o in param.opts
+            if not o.startswith("--") and len(o) > 2
+        }
     )
     assert not long_shorts, f"multi-letter short flags: {long_shorts}"
 
@@ -416,11 +714,16 @@ def test_every_argument_says_what_it_is():
         f"{' '.join(path)} {param.name}"
         for path, command in _every_command()
         for param in command.params
-        if type(param).__name__.endswith("Argument") and not getattr(param, "help", None)
+        if type(param).__name__.endswith("Argument")
+        and not getattr(param, "help", None)
     ]
     assert not unexplained, f"arguments without help: {unexplained}"
 
 
 def test_every_url_option_reads_fakts_url():
-    off = [where for where, param in _options() if "--url" in param.opts and param.envvar != "FAKTS_URL"]
+    off = [
+        where
+        for where, param in _options()
+        if "--url" in param.opts and param.envvar != "FAKTS_URL"
+    ]
     assert not off, f"--url without FAKTS_URL: {off}"

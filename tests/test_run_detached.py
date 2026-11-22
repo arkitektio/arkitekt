@@ -63,7 +63,9 @@ class HeldAgent:
         return None
 
 
-def held_provider(agents: list[HeldAgent], fail_with: list[BaseException]) -> "Provider[HeldAgent]":
+def held_provider(
+    agents: list[HeldAgent], fail_with: list[BaseException]
+) -> "Provider[HeldAgent]":
     registry = AppRegistry()
 
     @registry.service()
@@ -81,8 +83,13 @@ def held_provider(agents: list[HeldAgent], fail_with: list[BaseException]) -> "P
     return rekuest_agent
 
 
-def held_app(agents: list[HeldAgent], fail_with: list[BaseException] | None = None) -> App[None]:
-    app = App("detached", providers=[held_provider(agents, fail_with if fail_with is not None else [])])
+def held_app(
+    agents: list[HeldAgent], fail_with: list[BaseException] | None = None
+) -> App[None]:
+    app = App(
+        "detached",
+        providers=[held_provider(agents, fail_with if fail_with is not None else [])],
+    )
 
     @app.action
     def move(x: int) -> int:
@@ -275,7 +282,9 @@ def test_a_login_stored_for_this_declaration_is_found_without_connecting() -> No
     app = held_app([])
     assert not has_stored_login(app, url=LAB)
 
-    write_session(app.identifier, app.version, LAB, manifest_hash=run_manifest(app).hash())
+    write_session(
+        app.identifier, app.version, LAB, manifest_hash=run_manifest(app).hash()
+    )
 
     assert has_stored_login(app, url=LAB)
     # The same server, written differently, is the same login.
@@ -292,7 +301,9 @@ def test_a_login_approved_for_another_declaration_is_not_this_apps() -> None:
 
 def test_logout_forgets_the_login() -> None:
     app = held_app([])
-    write_session(app.identifier, app.version, LAB, manifest_hash=run_manifest(app).hash())
+    write_session(
+        app.identifier, app.version, LAB, manifest_hash=run_manifest(app).hash()
+    )
 
     assert logout(app, url=LAB) is True
     assert not has_stored_login(app, url=LAB)
@@ -326,14 +337,20 @@ async def test_logout_revokes_the_login_where_the_server_can() -> None:
         await runner.cleanup()
 
     assert revoked == [
-        {"token": "SECRET-REFRESH", "token_type_hint": "refresh_token", "client_id": "client"}
+        {
+            "token": "SECRET-REFRESH",
+            "token_type_hint": "refresh_token",
+            "client_id": "client",
+        }
     ]
     assert not has_stored_login(app, url=base)
 
 
 @pytest.mark.revokes
 @pytest.mark.asyncio
-async def test_a_login_stored_before_servers_said_where_to_revoke_is_still_revoked() -> None:
+async def test_a_login_stored_before_servers_said_where_to_revoke_is_still_revoked() -> (
+    None
+):
     """The stored session names no revocation endpoint: the server is asked for it."""
     revoked: list[dict[str, str]] = []
     base_holder: list[str] = []
@@ -380,7 +397,10 @@ async def test_a_login_stored_before_servers_said_where_to_revoke_is_still_revok
 def test_logout_still_forgets_when_the_server_cannot_be_reached() -> None:
     app = held_app([])
     path = write_session(
-        app.identifier, app.version, LAB, revocation_endpoint="http://127.0.0.1:1/o/revoke/"
+        app.identifier,
+        app.version,
+        LAB,
+        revocation_endpoint="http://127.0.0.1:1/o/revoke/",
     )
 
     assert logout(app, url=LAB) is True

@@ -1,0 +1,27 @@
+{
+  "extends": "./pyright.shared.json",
+  "include": [
+    "."
+  ],
+  "exclude": [
+    "**/migrations",
+    "**/__pycache__",
+    "**/node_modules",
+    "**/.*",
+    ".venv",
+    "build",
+    "dist",
+    "tests/typing",
+    "arkitekt/cli/templates",
+    "arkitekt/cli/starter_tests"
+  ],
+  "executionEnvironments": [
+    {
+      "root": "examples",
+      "reportMissingImports": "none"
+    },
+    {
+      "root": "."
+    }
+  ]
+}

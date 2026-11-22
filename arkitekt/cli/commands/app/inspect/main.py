@@ -11,13 +11,13 @@ inspect = typer.Typer(
     """,
 )
 
-from .variables import variables
+from .all import all
 from .implementations import implementations
+from .lifecycle import lifecycle
 from .requirements import requirements
 from .services import services
 from .structures import structures
-from .lifecycle import lifecycle
-from .all import all
+from .variables import variables
 
 inspect.command("all")(all)
 inspect.command("variables")(variables)

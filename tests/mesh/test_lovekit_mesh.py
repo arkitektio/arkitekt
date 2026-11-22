@@ -38,7 +38,12 @@ from arkitekt import App, connect  # noqa: E402
 if TYPE_CHECKING:
     from konstruktor import Hub
 
-SPECTRUM = DataStream("spectrum", dtype="float16", shape=(512,), axes=[Axis("wavelength", AxisType.SPECTRUM)])
+SPECTRUM = DataStream(
+    "spectrum",
+    dtype="float16",
+    shape=(512,),
+    axes=[Axis("wavelength", AxisType.SPECTRUM)],
+)
 
 
 @pytest.fixture
@@ -62,10 +67,15 @@ def on_the_mesh(hub: Hub, name: str):  # noqa: ANN201
 
 
 @pytest.mark.asyncio
-async def test_two_apps_exchange_a_data_stream_over_the_mesh(hub: Hub, own_state: None) -> None:
+async def test_two_apps_exchange_a_data_stream_over_the_mesh(
+    hub: Hub, own_state: None
+) -> None:
     values = np.linspace(0, 1, 512, dtype=np.float16)
 
-    async with on_the_mesh(hub, "spectrometer") as publishing, on_the_mesh(hub, "viewer") as viewing:
+    async with (
+        on_the_mesh(hub, "spectrometer") as publishing,
+        on_the_mesh(hub, "viewer") as viewing,
+    ):
         spectrometer, viewer = publishing.require(Lovekit), viewing.require(Lovekit)
         # Each on a node of its own: the media server is an alias its node carries.
         media, watched = spectrometer.livekit, viewer.livekit
@@ -78,7 +88,9 @@ async def test_two_apps_exchange_a_data_stream_over_the_mesh(hub: Hub, own_state
             await live.data("spectrum").send(values)
 
             # The viewer knows the stream only from lovekit, as any other app would.
-            [stream] = [s for s in await viewer.alist_streams() if s.kind == StreamKind.DATA]
+            [stream] = [
+                s for s in await viewer.alist_streams() if s.kind == StreamKind.DATA
+            ]
             assert stream.id == live.streams[0].id
 
             async with viewer.watch(stream) as frames:

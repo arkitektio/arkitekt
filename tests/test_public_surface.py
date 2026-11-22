@@ -41,7 +41,9 @@ def _named_types(annotation: object) -> set[tuple[str, str]]:
         (module, name)
         for module, name in (
             dotted.rsplit(".", 1)
-            for dotted in re.findall(r"\b(?:arkitekt_spec|arkitekt_runtime)[\w.]*\.\w+", repr(annotation))
+            for dotted in re.findall(
+                r"\b(?:arkitekt_spec|arkitekt_runtime)[\w.]*\.\w+", repr(annotation)
+            )
         )
     }
 
@@ -57,19 +59,36 @@ def test_every_definition_type_in_a_public_signature_is_exported() -> None:
         for parameter, annotation in hints.items():
             for module, name in _named_types(annotation):
                 if module.startswith(DEFINITION_SPACE) and name not in exported:
-                    missing.setdefault(f"{module}.{name}", set()).add(f"{where}({parameter})")
+                    missing.setdefault(f"{module}.{name}", set()).add(
+                        f"{where}({parameter})"
+                    )
     assert not missing, missing
 
 
 def test_the_task_an_app_annotates_can_report_and_call() -> None:
     for member in (
-        "id", "user", "org", "token",
-        "log", "alog", "progress", "aprogress", "pausepoint", "apausepoint", "install_hook",
-        "call", "acall", "iterate", "aiterate", "local",
+        "id",
+        "user",
+        "org",
+        "token",
+        "log",
+        "alog",
+        "progress",
+        "aprogress",
+        "pausepoint",
+        "apausepoint",
+        "install_hook",
+        "call",
+        "acall",
+        "iterate",
+        "aiterate",
+        "local",
     ):
         assert hasattr(arkitekt.Task, member), member
 
 
 def test_every_exported_name_resolves() -> None:
     assert [n for n in arkitekt.__all__ if not hasattr(arkitekt, n)] == []
-    assert [n for n in arkitekt.widgets.__all__ if not hasattr(arkitekt.widgets, n)] == []
+    assert [
+        n for n in arkitekt.widgets.__all__ if not hasattr(arkitekt.widgets, n)
+    ] == []

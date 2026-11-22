@@ -5,6 +5,7 @@ function itself). Run these with `uv run pytest`; the release workflow does too.
 """
 
 import pytest
+
 from arkitekt.testing import LocalCallError
 
 

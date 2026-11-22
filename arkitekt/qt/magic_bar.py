@@ -1,19 +1,20 @@
-from enum import Enum
-from qtpy import QtWidgets, QtGui, QtCore
-from arkitekt.qt.types import QtApp
-from koil.qt import async_to_qt
-
-from arkitekt.app.app import App
-from arkitekt.runtime import Runtime
-from .utils import get_image_path
-from typing import Any
-from collections.abc import Callable
 import logging
+from collections.abc import Callable
+from enum import Enum
+from logging import LogRecord
+from typing import Any
+
 import aiohttp
 from fakts import Fakts
 from fakts.grants.remote import RemoteGrant
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
-from logging import LogRecord
+from koil.qt import async_to_qt
+from qtpy import QtCore, QtGui, QtWidgets
+
+from arkitekt.app.app import App
+from arkitekt.runtime import Runtime
+
+from .utils import get_image_path
 
 logger = logging.getLogger(__name__)
 
@@ -483,7 +484,9 @@ class MagicBar(QtWidgets.QWidget):
         self.magicb.setObjectName("magicButton")
         self.magicb.setFixedHeight(self.HEIGHT)
         self.magicb.setCursor(QtCore.Qt.PointingHandCursor)  # pyright: ignore[reportAttributeAccessIssue] -- the stubs scope the enum
-        self.magicb.setSizePolicy(QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed)
+        self.magicb.setSizePolicy(
+            QtWidgets.QSizePolicy.Expanding, QtWidgets.QSizePolicy.Fixed
+        )
 
         self.configure_future = None
         self.login_future = None
@@ -491,7 +494,9 @@ class MagicBar(QtWidgets.QWidget):
 
         self.gearb = QtWidgets.QPushButton()
         self.gearb.setObjectName("gearButton")
-        self.gearb.setIcon(QtGui.QIcon(QtGui.QPixmap(get_image_path("gear.png", dark_mode=dark_mode))))
+        self.gearb.setIcon(
+            QtGui.QIcon(QtGui.QPixmap(get_image_path("gear.png", dark_mode=dark_mode)))
+        )
         self.gearb.setIconSize(QtCore.QSize(16, 16))
         self.gearb.setFixedSize(self.HEIGHT, self.HEIGHT)
         self.gearb.setCursor(QtCore.Qt.PointingHandCursor)  # pyright: ignore[reportAttributeAccessIssue] -- the stubs scope the enum
@@ -506,7 +511,9 @@ class MagicBar(QtWidgets.QWidget):
         self.caption = QtWidgets.QLabel()
         self.caption.setObjectName("magicCaption")
         # Never the reason a dock grows: a long server name is cut, not the dock widened.
-        self.caption.setSizePolicy(QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred)
+        self.caption.setSizePolicy(
+            QtWidgets.QSizePolicy.Ignored, QtWidgets.QSizePolicy.Preferred
+        )
         caption_font = self.caption.font()
         caption_font.setPointSizeF(max(caption_font.pointSizeF() - 1.0, 7.0))
         self.caption.setFont(caption_font)
@@ -582,7 +589,9 @@ class MagicBar(QtWidgets.QWidget):
             return None
         return str(url).split("://", 1)[-1].rstrip("/")
 
-    def _present(self, label: str, caption: str, quiet: bool = False, pulsing: bool = False) -> None:
+    def _present(
+        self, label: str, caption: str, quiet: bool = False, pulsing: bool = False
+    ) -> None:
         """Show a step: what the button does next, and where the run stands.
 
         Args:
@@ -592,7 +601,11 @@ class MagicBar(QtWidgets.QWidget):
             pulsing: Whether the dot breathes: the run is live.
         """
         server = self.server_name()
-        text = caption.format(server=server) if server else caption.split(" on {server}")[0]
+        text = (
+            caption.format(server=server)
+            if server
+            else caption.split(" on {server}")[0]
+        )
         self.magicb.setText(label)
         self.magicb.setDisabled(False)
         if self.magicb.property("quiet") != quiet:
@@ -642,7 +655,9 @@ class MagicBar(QtWidgets.QWidget):
 
         self.app_state_changed.emit()
         self.profile.unkonfigure_button.setDisabled(False)
-        self._present("Stop providing", "Providing on {server}", quiet=True, pulsing=True)
+        self._present(
+            "Stop providing", "Providing on {server}", quiet=True, pulsing=True
+        )
         self.magicb.setToolTip("Stop offering this app's actions")
 
     def get_endpoints(self) -> list[str]:
@@ -677,7 +692,9 @@ class MagicBar(QtWidgets.QWidget):
     def connect_to_endpoint(self, url: str) -> None:
         discovery = self._well_known()
         if discovery is None:
-            logger.error("Could not update the fakts url: this run does not discover its server")
+            logger.error(
+                "Could not update the fakts url: this run does not discover its server"
+            )
         else:
             discovery.url = url
 
@@ -754,7 +771,9 @@ class MagicBar(QtWidgets.QWidget):
         """How the run finds its server, when it is by url (the only way arkitekt builds)."""
         fakts = self.runtime.fakts
         grant = fakts.grant if fakts is not None else None
-        if isinstance(grant, RemoteGrant) and isinstance(grant.discovery, WellKnownDiscovery):
+        if isinstance(grant, RemoteGrant) and isinstance(
+            grant.discovery, WellKnownDiscovery
+        ):
             return grant.discovery
         return None
 

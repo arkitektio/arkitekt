@@ -3,15 +3,15 @@ import typer
 from arkitekt.cli.vars import get_work_dir
 from arkitekt.utils import create_arkitekt_folder
 
+from .badge import badge
 from .build import build
-from .validate import validate
+from .ci import ci
+from .flavour import flavour
 from .publish import publish
 from .release import release
-from .ci import ci
-from .badge import badge
-from .stage import stage
-from .flavour import flavour
 from .selector import selector
+from .stage import stage
+from .validate import validate
 
 plugin = typer.Typer(
     no_args_is_help=True,

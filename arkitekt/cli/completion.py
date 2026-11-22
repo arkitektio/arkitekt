@@ -67,14 +67,20 @@ def _starting_with(names: Any, incomplete: str) -> list[str]:  # noqa: ANN401
 def complete_actions(ctx: typer.Context, incomplete: str) -> list[str]:
     """The names of the app's actions."""
     app = _app(ctx)
-    return [] if app is None else _starting_with(app.registry.implementations, incomplete)
+    return (
+        [] if app is None else _starting_with(app.registry.implementations, incomplete)
+    )
 
 
 def complete_flavours(ctx: typer.Context, incomplete: str) -> list[str]:
     """The flavours in the work dir's ``.arkitekt/flavours``."""
     folder = os.path.join(_work_dir(ctx), *FLAVOURS_DIR)
     try:
-        names = [name for name in os.listdir(folder) if os.path.isdir(os.path.join(folder, name))]
+        names = [
+            name
+            for name in os.listdir(folder)
+            if os.path.isdir(os.path.join(folder, name))
+        ]
     except OSError:
         return []
     return _starting_with(names, incomplete)

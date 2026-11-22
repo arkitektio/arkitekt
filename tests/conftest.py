@@ -21,8 +21,9 @@ import pytest
 # when typer is imported, so it is set before the CLI is.
 os.environ.setdefault("_TYPER_FORCE_DISABLE_TERMINAL", "1")
 
-from arkitekt.cli.main import cli_app  # noqa: E402
 from typer.testing import CliRunner  # noqa: E402
+
+from arkitekt.cli.main import cli_app  # noqa: E402
 
 # Qt tests need no display: a binding may be installed (the typecheck group).
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -107,9 +108,7 @@ def _assume_interactive(monkeypatch):
     test that drives a prompt via ``input=``. Tests that specifically exercise
     the non-TTY guard patch ``is_tty`` back to ``False`` themselves.
     """
-    monkeypatch.setattr(
-        "arkitekt.cli.tty.is_tty", lambda: True
-    )
+    monkeypatch.setattr("arkitekt.cli.tty.is_tty", lambda: True)
 
 
 @pytest.fixture(autouse=True)
@@ -131,7 +130,9 @@ def _isolate_app_imports(monkeypatch):
             sys.modules.pop(name, None)
 
 
-def assert_only_the_entrypoint_was_scaffolded(work_dir, entrypoint: str = "app") -> None:
+def assert_only_the_entrypoint_was_scaffolded(
+    work_dir, entrypoint: str = "app"
+) -> None:
     """`init` writes the app's module and nothing else: the App in it is the identity."""
     import os
 

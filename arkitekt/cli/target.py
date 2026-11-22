@@ -146,7 +146,11 @@ def parse_target(target: str, work_dir: str) -> Target:
 
     module_file = root.joinpath(*parts).with_suffix(".py")
     package_init = root.joinpath(*parts, "__init__.py")
-    file = package_init if not module_file.exists() and package_init.exists() else module_file
+    file = (
+        package_init
+        if not module_file.exists() and package_init.exists()
+        else module_file
+    )
     return Target(module=".".join(parts), attribute=attribute, file=str(file))
 
 
@@ -194,7 +198,9 @@ def import_target(target: Target) -> ModuleType:
     cached = sys.modules.get(target.module)
     if cached is not None:
         cached_file = getattr(cached, "__file__", None)
-        if cached_file is None or os.path.realpath(cached_file) != os.path.realpath(target.file):
+        if cached_file is None or os.path.realpath(cached_file) != os.path.realpath(
+            target.file
+        ):
             del sys.modules[target.module]
     importlib.invalidate_caches()
     # The user's module is named by a string on the command line: this is the one
@@ -202,7 +208,9 @@ def import_target(target: Target) -> ModuleType:
     return importlib.import_module(target.module)
 
 
-def find_app(module: ModuleType | None, attribute: str | None = None) -> App[Any] | None:
+def find_app(
+    module: ModuleType | None, attribute: str | None = None
+) -> App[Any] | None:
     """Find the App a module declares, or ``None`` if it declares none.
 
     With ``attribute`` that object is taken, and must be an App. Without it, the
@@ -233,11 +241,14 @@ def find_app(module: ModuleType | None, attribute: str | None = None) -> App[Any
         if not isinstance(candidate, App):
             raise NoAppError(
                 f"'{attribute}' in module '{module.__name__}' is not an arkitekt App "
-                f"(got {type(candidate).__name__}). Declare it as:\n\n" + _NEW_API_EXAMPLE
+                f"(got {type(candidate).__name__}). Declare it as:\n\n"
+                + _NEW_API_EXAMPLE
             )
         return candidate
 
-    apps = {name: value for name, value in vars(module).items() if isinstance(value, App)}
+    apps = {
+        name: value for name, value in vars(module).items() if isinstance(value, App)
+    }
     if not apps:
         return None
     if "app" in apps:
@@ -341,7 +352,7 @@ def project_frame(error: BaseException, work_dir: str) -> traceback.FrameSummary
     for frame in traceback.extract_tb(error.__traceback__):
         path = os.path.realpath(frame.filename)
         inside = path.startswith(root)
-        parts = path[len(root):].split(os.sep) if inside else []
+        parts = path[len(root) :].split(os.sep) if inside else []
         if inside and not ({".venv", "venv", "site-packages"} & set(parts)):
             found = frame
     return found
