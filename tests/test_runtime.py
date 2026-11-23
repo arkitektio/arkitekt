@@ -76,6 +76,9 @@ async def test_a_run_binds_its_snapshot_to_its_own_clients() -> None:
                 ).expand("2"),
             )
 
+    # expand() returns an opaque object: the structure is a Picture.
+    assert isinstance(from_a, Picture)
+    assert isinstance(from_b, Picture)
     assert (from_a.owner, from_b.owner) == ("pictures-1", "pictures-2")
     assert a.get(PictureClient) is not b.get(PictureClient)
     # The declaration is never bound: a run binds copies of its entries.

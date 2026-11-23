@@ -378,7 +378,7 @@ requires-dist = [
     { name = "arkitekt-runtime", marker = "extra == 'all'", specifier = ">=10.4" },
     { name = "arkitekt-runtime", marker = "extra == 'rekuest'", specifier = ">=10.4" },
     { name = "arkitekt-runtime", extras = ["qt"], marker = "extra == 'qt'", specifier = ">=10.4" },
-    { name = "arkitekt-spec", specifier = ">=12.7" },
+    { name = "arkitekt-spec", specifier = ">=12.10.2" },
     { name = "click", specifier = ">=8.2.0" },
     { name = "elektro", marker = "extra == 'all'", specifier = ">=5" },
     { name = "elektro", marker = "extra == 'elektro'", specifier = ">=5" },
@@ -496,7 +496,7 @@ qt = [
 
 [[package]]
 name = "arkitekt-spec"
-version = "12.7.0"
+version = "12.10.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -506,9 +506,9 @@ dependencies = [
     { name = "pydantic" },
     { name = "pyyaml" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/63/79/31d8170fd8bb584b7e44f1cae5469dfcc4685dc9eafd475da8873acb9ebd/arkitekt_spec-12.7.0.tar.gz", hash = "sha256:6d05e51e0f948aeb8b75069ed9ef09b7b8bdb649f6117b8fd05f60b3e0049bcc", size = 367530, upload-time = "2026-11-20T13:18:19.772Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4e/87/d22ec5eb6a14e3b2111310ad808365ed96368de90f5fe0efe972af69157c/arkitekt_spec-12.10.2.tar.gz", hash = "sha256:51fee676cdeefb22847eadeb009929087358b2673d004db9a44a422c11b9064d", size = 378737, upload-time = "2026-11-23T09:52:43.886Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3b/3c/3fcd9bb4de88b88bee8f3fd79e2f8abddaf691c4d16933f3bad6ce8335bd/arkitekt_spec-12.7.0-py3-none-any.whl", hash = "sha256:45fc62686944afe7673e49829c57e51f794f8431f2a5a5af0adb8a31b2a91cb0", size = 420291, upload-time = "2026-11-20T13:18:18.434Z" },
+    { url = "https://files.pythonhosted.org/packages/73/30/1b18d1e63852c11f9416d6050526d7869bc2bc6926dab134217d68219f71/arkitekt_spec-12.10.2-py3-none-any.whl", hash = "sha256:cef8c2c7762e1246e5217794b4f4d0cf33f61b2159df05e58f4f87a219d7fc15", size = 432627, upload-time = "2026-11-23T09:52:42.47Z" },
 ]
 
 [[package]]

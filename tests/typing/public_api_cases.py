@@ -85,7 +85,10 @@ async def orchestrate(x: int, target: CallTarget, task: Task) -> int:
     async for value in task.aiterate(target, x, cancel_timeout=2.0):
         print(value)
     try:
-        return int(task.call(target, first))
+        # An action's result is opaque (object): narrow it to what the action returns.
+        result = task.call(target, first)
+        assert isinstance(result, int)
+        return result
     except NoCallerError:
         return 0
 

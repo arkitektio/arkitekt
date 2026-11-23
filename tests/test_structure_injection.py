@@ -61,6 +61,7 @@ async def test_an_expander_is_handed_the_runs_client() -> None:
         )
         thing = await structure.expand("1")
 
+    assert isinstance(thing, Thing), "expand() returns an opaque object"
     assert (thing.id, thing.owner) == ("1", rt.require(PictureClient).name)
 
 
@@ -81,6 +82,8 @@ async def test_each_run_expands_through_its_own_client() -> None:
             from_a = await structure_of(a).expand("1")
             from_b = await structure_of(b).expand("2")
 
+    assert isinstance(from_a, Thing), "expand() returns an opaque object"
+    assert isinstance(from_b, Thing)
     assert (from_a.owner, from_b.owner) == ("pictures-1", "pictures-2")
     assert from_a.owner != from_b.owner
     # The declaration itself was never bound.

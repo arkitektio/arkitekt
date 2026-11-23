@@ -41,7 +41,7 @@ def build_app(log: list[str], built: list[PictureClient]) -> App[None]:
         raise RuntimeError("no luck")
 
     @app.startup
-    async def started():  # noqa: ANN202 -- a hook's return annotation names what it provides
+    async def started() -> None:
         log.append("startup")
 
     @app.shutdown
