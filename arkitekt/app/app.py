@@ -35,7 +35,6 @@ from typing import (
     Generic,
     Literal,
     ParamSpec,
-    Self,
     TypeVar,
     cast,
     dataclass_transform,
@@ -81,6 +80,8 @@ C = TypeVar("C", bound=type)
 Ctx = TypeVar("Ctx")
 """The app context: what a run hands the agent, ``run(app, context=...)``."""
 F = TypeVar("F", bound=Callable[..., Any])
+#: The app a builder method returns: itself, as the subclass it is (a QtApp stays one).
+_AppT = TypeVar("_AppT", bound="App[Any]")
 
 
 def _merge_requirements(*groups: Iterable[Requirement]) -> list[Requirement]:
@@ -342,7 +343,7 @@ class App(Generic[Ctx]):
     # Services                                                           #
     # ------------------------------------------------------------------ #
 
-    def service(self, *services: "Service[Any]") -> Self:
+    def service(self: _AppT, *services: "Service[Any]") -> _AppT:
         """Use these services: ``app.service(mikro_service)``.
 
         Each is registered on this app's registry, which takes in its structures
@@ -378,7 +379,7 @@ class App(Generic[Ctx]):
             self.registry.register_service(declared)
         return self
 
-    def provider(self, *providers: "Provider[Any]") -> Self:
+    def provider(self: _AppT, *providers: "Provider[Any]") -> _AppT:
         """Serve what this app offers through these providers: ``app.provider(...)``.
 
         A provider builds the agent a run drives; an app is served by one. Each

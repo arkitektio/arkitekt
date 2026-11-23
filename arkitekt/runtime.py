@@ -22,7 +22,6 @@ from typing import (
     TYPE_CHECKING,
     Any,
     Generic,
-    Self,
     TypeAlias,
     TypeVar,
     cast,
@@ -66,6 +65,8 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+#: The runtime ``async with`` enters: itself, as the subclass it is.
+_RuntimeT = TypeVar("_RuntimeT", bound="Runtime[Any]")
 
 #: An action of the app, as a caller names it: its name, the decorated function, or
 #: the plain one.
@@ -355,7 +356,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     # Entering                                                           #
     # ------------------------------------------------------------------ #
 
-    async def __aenter__(self) -> Self:
+    async def __aenter__(self: _RuntimeT) -> _RuntimeT:
         """Build and connect everything: snapshot, fakts, resolve, then each client.
 
         Returns:
