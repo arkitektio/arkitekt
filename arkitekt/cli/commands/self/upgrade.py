@@ -18,6 +18,7 @@ from typing import Annotated
 
 import semver
 import typer
+from rich.console import Console
 from rich.table import Table
 
 from arkitekt.cli.commands.app.create.main import get_default_package_manager
@@ -39,7 +40,9 @@ class PackageManager(str, enum.Enum):
     uv = "uv"
 
 
-def _resolve_package_manager(ctx, package_manager: PackageManager | None) -> str:
+def _resolve_package_manager(
+    ctx: typer.Context, package_manager: PackageManager | None
+) -> str:
     """Resolve which package manager to use.
 
     Explicit ``--package-manager`` wins. Otherwise a uv project in the work dir
@@ -93,7 +96,9 @@ def _is_newer(latest: str, current: str) -> bool:
         return latest != current
 
 
-def _upgrade_all_dependencies(ctx, console, manager: str, yes: bool) -> None:
+def _upgrade_all_dependencies(
+    ctx: typer.Context, console: Console, manager: str, yes: bool
+) -> None:
     """Upgrade *every* dependency of the current project (not just Arkitekt ones).
 
     For ``uv`` this runs ``uv sync --upgrade``, which upgrades all packages to the

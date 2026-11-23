@@ -15,7 +15,7 @@ How to connect (url, tokens, ...) is an argument of the run, not part of the app
 import asyncio
 import logging
 import threading
-from collections.abc import AsyncIterator, Iterator, Mapping, Sequence
+from collections.abc import AsyncIterator, Callable, Iterator, Mapping, Sequence
 from contextlib import asynccontextmanager
 from types import TracebackType
 from typing import (
@@ -23,6 +23,7 @@ from typing import (
     Any,
     Generic,
     Self,
+    TypeAlias,
     TypeVar,
     cast,
     overload,
@@ -54,6 +55,7 @@ from arkitekt.app.sources import DISCOVER, Source, resolve
 from arkitekt.device_id import resolve_device_id
 
 if TYPE_CHECKING:
+    from arkitekt_runtime.agents.base import BaseAgent
     from arkitekt_spec.declare.agents.connection import ConnectionListener, TaskListener
     from fakts.models import ActiveFakts, AuthFakt, Manifest
     from koil import KoilFuture
@@ -64,6 +66,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+
+#: An action of the app, as a caller names it: its name, the decorated function, or
+#: the plain one.
+_ActionRef: TypeAlias = "str | Callable[..., object]"
 
 
 #: Where an offline run's services point: a host that can never resolve.
@@ -256,7 +262,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
             if name in own
         )
 
-    def _replacement_for(self, service: "Service[Any]") -> Any | None:
+    def _replacement_for(self, service: "Service[Any]") -> object | None:
         """The client a local run was handed in place of the one ``service`` builds."""
         if self.local is None:
             return None
@@ -306,7 +312,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
 
     async def _build_agent(
         self, snapshot: RunSnapshot, fakts: Fakts | None
-    ) -> Any | None:
+    ) -> "BaseAgent | None":
         """Build the agent from this run's provider, after the clients, and make it this run's."""
         if self.local is not None:
             agent = _local_agent(snapshot)
@@ -429,7 +435,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     # Running                                                            #
     # ------------------------------------------------------------------ #
 
-    def _require_agent(self) -> Any:  # noqa: ANN401
+    def _require_agent(self) -> "BaseAgent":
         if self.agent is None:
             if self.app.registry.is_empty():
                 raise LookupError(
@@ -442,7 +448,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
             )
         return self.agent
 
-    def _require_context(self, context: Any) -> None:  # noqa: ANN401
+    def _require_context(self, context: object) -> None:
         self.app.registry.require_app_context(
             context, whose=f"App {self.app.identifier!r}"
         )
@@ -556,7 +562,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     # Calling in-process                                                 #
     # ------------------------------------------------------------------ #
 
-    def _local_call(self, action: Any) -> tuple[Any, str]:  # noqa: ANN401
+    def _local_call(self, action: _ActionRef) -> "tuple[BaseAgent, str]":
         """The agent of this local run and the interface ``action`` names on it."""
         agent = self.agent
         if self.local is None or agent is None:
@@ -566,7 +572,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
             )
         return agent, _interface_of(agent, action)
 
-    async def acall_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    async def acall_local(self, action: _ActionRef, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401 -- what the app's action returns
         """Call one of the app's own actions in-process and return its result.
 
         The call goes through the app's agent, as an assignment from a server
@@ -594,7 +600,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
 
     async def aiterate_local(
         self,
-        action: Any,  # noqa: ANN401
+        action: _ActionRef,
         *args: Any,
         **kwargs: Any,
     ) -> AsyncIterator[Any]:
@@ -610,7 +616,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
 
     async def aiterate_local_raw(
         self,
-        action: Any,  # noqa: ANN401
+        action: _ActionRef,
         args: dict[str, Any],
     ) -> AsyncIterator[Any]:
         """Call one of the app's own actions with arguments as they travel, and yield
@@ -625,12 +631,12 @@ class Runtime(KoiledModel, Generic[Ctx]):
         async for returns in aiterate_local_raw(agent, interface, args):
             yield returns
 
-    def call_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    def call_local(self, action: _ActionRef, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401 -- what the app's action returns
         """Call one of the app's own actions in-process (see :meth:`acall_local`)."""
         return unkoil(self.acall_local, action, *args, **kwargs)
 
 
-def _interface_of(agent: Any, action: Any) -> str:  # noqa: ANN401
+def _interface_of(agent: "BaseAgent", action: _ActionRef) -> str:
     """The interface ``action`` names on ``agent``: its name, the decorated function, or the plain one.
 
     Raises:
@@ -652,7 +658,7 @@ def _interface_of(agent: Any, action: Any) -> str:  # noqa: ANN401
     )
 
 
-def _local_agent(snapshot: RunSnapshot) -> Any:  # noqa: ANN401
+def _local_agent(snapshot: RunSnapshot) -> "BaseAgent":
     """The agent of a local run: the runtime's own, on a transport that goes nowhere."""
     try:
         from arkitekt_runtime.local import local_agent
@@ -926,7 +932,7 @@ def run(
 def run(
     app: App[Any],
     *,
-    context: Any | None = None,  # noqa: ANN401
+    context: object = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
     mandate_key: str | Source | None = DISCOVER,
@@ -1080,7 +1086,7 @@ async def arun(
 async def arun(
     app: App[Any],
     *,
-    context: Any | None = None,  # noqa: ANN401
+    context: object = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
     mandate_key: str | Source | None = DISCOVER,
@@ -1871,7 +1877,7 @@ def run_detached(
 def run_detached(
     app: App[Any],
     *,
-    context: Any | None = None,  # noqa: ANN401
+    context: object = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
     mandate_key: str | Source | None = DISCOVER,

@@ -1,7 +1,8 @@
 import json
-from typing import Any
+from collections.abc import Iterable, Sequence
 
 import typer
+from arkitekt_spec.actions import ArgPortInput, ImplementationInput, ReturnPortInput
 from rich.table import Table
 
 from arkitekt.cli.commands.app.inspect.utils import NOTHING_TO_PROVIDE, snapshot_or_exit
@@ -16,7 +17,7 @@ from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_st
 from arkitekt.cli.vars import get_console
 
 
-def _ports(ports: Any) -> str:  # noqa: ANN401
+def _ports(ports: Sequence[ArgPortInput | ReturnPortInput]) -> str:
     """Ports as one line: ``a: INT, b: INT?``."""
     return ", ".join(
         f"{port.key}: {getattr(port.kind, 'value', port.kind)}{'?' if port.nullable else ''}"
@@ -24,7 +25,7 @@ def _ports(ports: Any) -> str:  # noqa: ANN401
     )
 
 
-def implementations_table(implementations: Any) -> Table:  # noqa: ANN401
+def implementations_table(implementations: Iterable[ImplementationInput]) -> Table:
     """The actions an app offers: what to call them by, and what they take and return."""
     from arkitekt_spec import definition_hash
 
@@ -48,7 +49,7 @@ def implementations(
     as_json: JsonOption = False,
     machine_readable: MachineReadableOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-):
+) -> None:
     """Inspect the actions this app offers
 
     Loads the app without connecting it and lists what it would register: each

@@ -24,7 +24,7 @@ def all(
     as_json: JsonOption = False,
     machine_readable: MachineReadableOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-):
+) -> None:
     """Inspect everything this app exposes
 
     Loads the app without connecting it and reports its implementations, states,

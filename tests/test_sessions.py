@@ -2,6 +2,7 @@
 
 import os
 import time
+from pathlib import Path
 
 from fakts.session import REFRESH_CHAIN_MAX_AGE, REFRESH_TOKEN_MAX_AGE
 
@@ -59,7 +60,7 @@ def test_a_session_unused_for_too_long_is_idle_and_one_too_old_is_expired() -> N
     assert old_session.state() == "expired"
 
 
-def test_no_session_and_an_unreadable_one_are_both_none(tmp_path) -> None:
+def test_no_session_and_an_unreadable_one_are_both_none(tmp_path: Path) -> None:
     broken = tmp_path / "broken_fakts_cache.json"
     broken.write_text("{not json")
 

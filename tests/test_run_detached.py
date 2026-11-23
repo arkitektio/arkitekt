@@ -7,6 +7,7 @@ it happens to be on. The run owns its thread and its loop; the host owns neither
 import asyncio
 import threading
 import time
+from collections.abc import Callable
 from typing import Annotated, Any
 
 import pytest
@@ -21,6 +22,7 @@ from arkitekt import (
     App,
     ConnectionState,
     DeviceCodeChallenge,
+    TaskEvent,
     has_stored_login,
     logout,
     run_detached,
@@ -43,14 +45,16 @@ class HeldAgent:
         self.task_listener: Any = None
         self.provided: list[Any] = []
 
-    async def aprovide(self, context: Any = None) -> None:  # noqa: ANN401
+    async def aprovide(self, context: object = None) -> None:
         self.provided.append(context)
         if self.fail_with is not None:
             raise self.fail_with
         await self.connection_listener(S.REGISTERED)
         await asyncio.Event().wait()
 
-    async def aconnect(self, context: Any = None, timeout: Any = None) -> None:  # noqa: ANN401
+    async def aconnect(
+        self, context: object = None, timeout: float | None = None
+    ) -> None:
         return None
 
     async def aloop(self) -> None:
@@ -99,7 +103,7 @@ def held_app(
     return app
 
 
-def _until(predicate, timeout: float = 5.0) -> None:  # noqa: ANN001
+def _until(predicate: Callable[[], bool], timeout: float = 5.0) -> None:
     deadline = time.time() + timeout
     while not predicate():
         if time.time() > deadline:
@@ -260,7 +264,7 @@ def test_a_pending_login_is_handed_to_the_hook_and_then_reported() -> None:
 def test_the_listeners_reach_the_agent() -> None:
     agents: list[HeldAgent] = []
 
-    async def on_task(event: Any) -> None:  # noqa: ANN401
+    async def on_task(event: TaskEvent) -> None:
         return None
 
     running = run_detached(held_app(agents), task_listener=on_task)

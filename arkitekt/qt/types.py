@@ -48,7 +48,7 @@ class QtApp(App[Ctx]):
         identifier: str | None = None,
         version: str = "0.0.1",
         *,
-        parent: Any | None = None,
+        parent: Any | None = None,  # noqa: ANN401 -- a QObject; unseen without a binding
         logo: str | None = None,
         scopes: list[str] | None = None,
         author: str | None = None,
@@ -64,7 +64,7 @@ class QtApp(App[Ctx]):
         identifier: str | None = None,
         version: str = "0.0.1",
         *,
-        parent: Any | None = None,
+        parent: Any | None = None,  # noqa: ANN401 -- a QObject; unseen without a binding
         logo: str | None = None,
         scopes: list[str] | None = None,
         author: str | None = None,
@@ -81,7 +81,7 @@ class QtApp(App[Ctx]):
         *,
         # A QtCore.QObject. qtpy re-exports the binding's classes at runtime, so
         # no checker can see the type; it is Any to them either way.
-        parent: Any | None = None,
+        parent: Any | None = None,  # noqa: ANN401 -- a QObject; unseen without a binding
         logo: str | None = None,
         scopes: list[str] | None = None,
         author: str | None = None,

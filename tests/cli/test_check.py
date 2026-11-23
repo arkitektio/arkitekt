@@ -1,10 +1,10 @@
 """`arkitekt check`, and what any command says when the app does not import."""
 
 from pathlib import Path
-from typing import Any
+from typing import Any, Never
 
 import pytest
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from arkitekt.cli.main import cli_app
 
@@ -31,11 +31,11 @@ RAISING_HELPER = (
 )
 
 
-def _invoke(work_dir, *args):
+def _invoke(work_dir: Path, *args: str) -> Result:
     return CliRunner().invoke(cli_app, ["--work-dir", str(work_dir), *args])
 
 
-def test_check_says_what_a_valid_app_declares(tmp_path):
+def test_check_says_what_a_valid_app_declares(tmp_path: Path) -> None:
     (tmp_path / "app.py").write_text(VALID)
 
     result = _invoke(tmp_path, "check")
@@ -45,8 +45,10 @@ def test_check_says_what_a_valid_app_declares(tmp_path):
     assert "1 action" in result.output
 
 
-def test_check_connects_to_nothing(tmp_path, monkeypatch):
-    def never(*args, **kwargs):
+def test_check_connects_to_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def never(*args: object, **kwargs: object) -> Never:
         raise AssertionError("check connected")
 
     monkeypatch.setattr("arkitekt.runtime.connect", never)
@@ -137,8 +139,8 @@ def test_the_stubs_are_gone_after_the_check(tmp_path: Path, no_server: None) -> 
     ],
 )
 def test_an_app_that_does_not_import_is_a_few_lines_not_a_traceback(
-    tmp_path, command, source, where, why
-):
+    tmp_path: Path, command: list[str], source: str, where: str, why: str
+) -> None:
     (tmp_path / "app.py").write_text(source)
 
     result = _invoke(tmp_path, *command)
@@ -151,7 +153,9 @@ def test_an_app_that_does_not_import_is_a_few_lines_not_a_traceback(
     assert result.exception is None or isinstance(result.exception, SystemExit)
 
 
-def test_an_error_in_a_helper_is_reported_where_the_helper_raised(tmp_path):
+def test_an_error_in_a_helper_is_reported_where_the_helper_raised(
+    tmp_path: Path,
+) -> None:
     (tmp_path / "app.py").write_text(RAISING_HELPER)
     (tmp_path / "checkhelper.py").write_text(
         "def go():\n    return 1 / 0\n\nX = go()\n"
@@ -165,7 +169,7 @@ def test_an_error_in_a_helper_is_reported_where_the_helper_raised(tmp_path):
     assert "ZeroDivisionError" in result.output
 
 
-def test_check_refuses_an_app_a_run_would_refuse(tmp_path):
+def test_check_refuses_an_app_a_run_would_refuse(tmp_path: Path) -> None:
     """A port naming a structure no service of the app resolves: found without running."""
     (tmp_path / "app.py").write_text(
         "from arkitekt import App\n"
@@ -183,7 +187,9 @@ def test_check_refuses_an_app_a_run_would_refuse(tmp_path):
     assert "Thing" in result.output
 
 
-def test_check_lists_what_a_blok_uses_that_its_catalog_does_not_know(tmp_path):
+def test_check_lists_what_a_blok_uses_that_its_catalog_does_not_know(
+    tmp_path: Path,
+) -> None:
     """A catalog finding does not block a run, so check says it and still passes."""
     (tmp_path / "app.py").write_text(
         VALID
@@ -199,7 +205,7 @@ def test_check_lists_what_a_blok_uses_that_its_catalog_does_not_know(tmp_path):
     assert "2 warnings" in said
 
 
-def test_check_refuses_a_strict_blok_its_catalog_does_not_know(tmp_path):
+def test_check_refuses_a_strict_blok_its_catalog_does_not_know(tmp_path: Path) -> None:
     (tmp_path / "app.py").write_text(
         VALID
         + "\napp.blok('panel', '<Blok kind=\"agent\" context=\"panel\"><Card><Slidr /></Card></Blok>', mode='strict')\n"

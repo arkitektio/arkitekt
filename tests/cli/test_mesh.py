@@ -9,9 +9,12 @@ well-known document, start a join, poll for a pre-auth key, then run
 import asyncio
 import re
 import subprocess
+from collections.abc import Iterator
+from contextlib import AbstractContextManager
+from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 import typer
@@ -54,18 +57,24 @@ GRANTED = {
 }
 
 
-def _ok(returncode: int = 0):
+def _ok(returncode: int = 0) -> SimpleNamespace:
     return SimpleNamespace(returncode=returncode)
 
 
 @pytest.fixture(autouse=True)
-def _tailscale_installed():
+def _tailscale_installed() -> Iterator[None]:
     """Pretend tailscale is installed for every test unless overridden."""
     with patch(f"{MESH}.shutil.which", return_value="/usr/bin/tailscale"):
         yield
 
 
-def _patch_flow(granted=GRANTED, well_known=WELL_KNOWN):
+def _patch_flow(
+    granted: dict[str, str] = GRANTED, well_known: dict[str, str] = WELL_KNOWN
+) -> tuple[
+    AbstractContextManager[MagicMock | AsyncMock],
+    AbstractContextManager[MagicMock | AsyncMock],
+    AbstractContextManager[MagicMock | AsyncMock],
+]:
     """Patch the whole device-code flow boundary. Returns the ExitStack-like tuple."""
     return (
         patch(f"{MESH}._fetch_well_known", return_value=well_known),
@@ -74,7 +83,7 @@ def _patch_flow(granted=GRANTED, well_known=WELL_KNOWN):
     )
 
 
-def test_mesh_group_registered():
+def test_mesh_group_registered() -> None:
     result = CliRunner().invoke(cli_app, ["mesh", "--help"])
     assert result.exit_code == 0
     help_text = _plain(result.output)
@@ -82,7 +91,7 @@ def test_mesh_group_registered():
     assert "cert" in help_text
 
 
-def test_join_help_has_device_code_options_and_no_force_reauth():
+def test_join_help_has_device_code_options_and_no_force_reauth() -> None:
     result = CliRunner().invoke(cli_app, ["mesh", "join", "--help"])
     assert result.exit_code == 0
     help_text = _plain(result.output)
@@ -93,7 +102,7 @@ def test_join_help_has_device_code_options_and_no_force_reauth():
     assert "disconnect" not in help_text
 
 
-def test_join_runs_full_device_code_flow():
+def test_join_runs_full_device_code_flow() -> None:
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     with (
@@ -134,7 +143,7 @@ def test_join_runs_full_device_code_flow():
     )
 
 
-def test_join_defaults_name_to_hostname():
+def test_join_defaults_name_to_hostname() -> None:
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     with (
@@ -152,7 +161,7 @@ def test_join_defaults_name_to_hostname():
     assert mock_start.call_args.args[1]["requested_machine_name"] == "host42"
 
 
-def test_join_redacts_authkey_in_output():
+def test_join_redacts_authkey_in_output() -> None:
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     with p_fetch, p_start, p_poll, patch(f"{MESH}.subprocess.run", return_value=_ok()):
@@ -165,7 +174,7 @@ def test_join_redacts_authkey_in_output():
     assert "tskey-abc123" not in result.output
 
 
-def test_join_uses_hint_options_in_payload():
+def test_join_uses_hint_options_in_payload() -> None:
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     with (
@@ -202,7 +211,7 @@ def test_join_uses_hint_options_in_payload():
     assert payload["expiration_time_seconds"] == 120
 
 
-def test_join_falls_back_to_wellknown_coord_when_poll_omits_it():
+def test_join_falls_back_to_wellknown_coord_when_poll_omits_it() -> None:
     runner = CliRunner()
     granted = {k: v for k, v in GRANTED.items() if k != "ionscale_coord_url"}
     p_fetch, p_start, p_poll = _patch_flow(granted=granted)
@@ -220,7 +229,7 @@ def test_join_falls_back_to_wellknown_coord_when_poll_omits_it():
     assert "--login-server=https://coord.example" in mock_run.call_args.args[0]
 
 
-def test_join_errors_when_deployment_lacks_mesh_endpoints():
+def test_join_errors_when_deployment_lacks_mesh_endpoints() -> None:
     runner = CliRunner()
     with (
         patch(f"{MESH}._fetch_well_known", return_value={"name": "F"}),
@@ -234,7 +243,7 @@ def test_join_errors_when_deployment_lacks_mesh_endpoints():
     mock_run.assert_not_called()
 
 
-def test_join_not_installed_guides_install():
+def test_join_not_installed_guides_install() -> None:
     runner = CliRunner()
     with (
         patch(f"{MESH}.shutil.which", return_value=None),
@@ -250,7 +259,7 @@ def test_join_not_installed_guides_install():
     mock_run.assert_not_called()
 
 
-def test_cert_self_fqdn():
+def test_cert_self_fqdn() -> None:
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run:
         result = runner.invoke(cli_app, ["mesh", "cert"])
@@ -261,7 +270,7 @@ def test_cert_self_fqdn():
     )
 
 
-def test_cert_explicit_domain():
+def test_cert_explicit_domain() -> None:
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run:
         result = runner.invoke(cli_app, ["mesh", "cert", "host.ts.net"])
@@ -272,7 +281,7 @@ def test_cert_explicit_domain():
     )
 
 
-def test_cert_not_installed_guides_install():
+def test_cert_not_installed_guides_install() -> None:
     runner = CliRunner()
     with (
         patch(f"{MESH}.shutil.which", return_value=None),
@@ -285,7 +294,7 @@ def test_cert_not_installed_guides_install():
     mock_run.assert_not_called()
 
 
-def test_tailscale_sudo_fallback_on_nonzero_exit():
+def test_tailscale_sudo_fallback_on_nonzero_exit() -> None:
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", side_effect=[_ok(1), _ok(0)]) as mock_run:
         result = runner.invoke(cli_app, ["mesh", "cert"])
@@ -296,7 +305,7 @@ def test_tailscale_sudo_fallback_on_nonzero_exit():
     assert mock_run.call_args_list[1].args[0] == ["sudo", "tailscale", "cert"]
 
 
-def test_tailscale_binary_missing_at_runtime():
+def test_tailscale_binary_missing_at_runtime() -> None:
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", side_effect=FileNotFoundError()):
         result = runner.invoke(cli_app, ["mesh", "cert"])
@@ -310,7 +319,7 @@ def test_tailscale_binary_missing_at_runtime():
 # --------------------------------------------------------------------------
 
 
-def test_leave_yes_runs_logout():
+def test_leave_yes_runs_logout() -> None:
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run", return_value=_ok()) as mock_run:
         result = runner.invoke(cli_app, ["mesh", "leave", "--yes"])
@@ -321,7 +330,7 @@ def test_leave_yes_runs_logout():
     )
 
 
-def test_leave_without_yes_aborts_on_no():
+def test_leave_without_yes_aborts_on_no() -> None:
     runner = CliRunner()
     with patch(f"{MESH}.subprocess.run") as mock_run:
         result = runner.invoke(cli_app, ["mesh", "leave"], input="n\n")
@@ -330,7 +339,7 @@ def test_leave_without_yes_aborts_on_no():
     mock_run.assert_not_called()
 
 
-def test_leave_not_installed_guides_install():
+def test_leave_not_installed_guides_install() -> None:
     runner = CliRunner()
     with (
         patch(f"{MESH}.shutil.which", return_value=None),
@@ -351,26 +360,26 @@ def test_leave_not_installed_guides_install():
 class _FakeProc:
     """A fake tailscaled process: wait() returns immediately, terminate() no-ops."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.terminated = False
 
-    def wait(self, timeout=None):
+    def wait(self, timeout: float | None = None) -> int:
         return 0
 
-    def terminate(self):
+    def terminate(self) -> None:
         self.terminated = True
 
-    def kill(self):
+    def kill(self) -> None:
         pass
 
 
 @pytest.fixture
-def _tailscaled_found():
+def _tailscaled_found() -> Iterator[None]:
     with patch(f"{MESH}._find_tailscaled", return_value="/usr/sbin/tailscaled"):
         yield
 
 
-def test_proxy_starts_daemon_and_brings_up(_tailscaled_found):
+def test_proxy_starts_daemon_and_brings_up(_tailscaled_found: None) -> None:
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     fake_proc = _FakeProc()
@@ -409,7 +418,7 @@ def test_proxy_starts_daemon_and_brings_up(_tailscaled_found):
     assert fake_proc.terminated
 
 
-def test_proxy_socks5_listen_adds_flag(_tailscaled_found):
+def test_proxy_socks5_listen_adds_flag(_tailscaled_found: None) -> None:
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     with (
@@ -438,7 +447,7 @@ def test_proxy_socks5_listen_adds_flag(_tailscaled_found):
     assert "--socks5-server=localhost:1080" in daemon_cmd
 
 
-def test_proxy_custom_listen(_tailscaled_found):
+def test_proxy_custom_listen(_tailscaled_found: None) -> None:
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     with (
@@ -468,7 +477,7 @@ def test_proxy_custom_listen(_tailscaled_found):
     assert "http://0.0.0.0:8080" in result.output
 
 
-def test_proxy_tailscaled_missing_guides_install():
+def test_proxy_tailscaled_missing_guides_install() -> None:
     runner = CliRunner()
     with (
         patch(f"{MESH}._find_tailscaled", return_value=None),
@@ -486,7 +495,7 @@ def test_proxy_tailscaled_missing_guides_install():
     mock_popen.assert_not_called()
 
 
-def test_proxy_bringup_failure_raises(_tailscaled_found):
+def test_proxy_bringup_failure_raises(_tailscaled_found: None) -> None:
     runner = CliRunner()
     p_fetch, p_start, p_poll = _patch_flow()
     fake_proc = _FakeProc()
@@ -517,39 +526,41 @@ class _FakeResp:
 
     status = 200
 
-    def __init__(self, payload):
+    def __init__(self, payload: dict[str, str]) -> None:
         self._payload = payload
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "_FakeResp":
         return self
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(self, *exc: object) -> bool:
         return False
 
-    async def json(self, content_type=None):
+    async def json(self, content_type: str | None = None) -> dict[str, str]:
         return self._payload
 
-    async def text(self):
+    async def text(self) -> str:
         return ""
 
 
 class _FakeSession:
     """Minimal aiohttp ClientSession that always answers ``post`` with ``payload``."""
 
-    def __init__(self, payload):
+    def __init__(self, payload: dict[str, str]) -> None:
         self._payload = payload
 
-    async def __aenter__(self):
+    async def __aenter__(self) -> "_FakeSession":
         return self
 
-    async def __aexit__(self, *exc):
+    async def __aexit__(self, *exc: object) -> bool:
         return False
 
-    def post(self, url, json=None, timeout=None):
+    def post(self, url: str, json: object = None, timeout: object = None) -> _FakeResp:
         return _FakeResp(self._payload)
 
 
-def test_mesh_poll_times_out_when_never_authorized(capsys):
+def test_mesh_poll_times_out_when_never_authorized(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     """`_mesh_poll` raises (does not spin forever) once its deadline passes."""
     import itertools
 
@@ -572,7 +583,7 @@ def test_mesh_poll_times_out_when_never_authorized(capsys):
     assert "not authorized within" in capsys.readouterr().err
 
 
-def test_tailscale_up_timeout_surfaces_clean_error():
+def test_tailscale_up_timeout_surfaces_clean_error() -> None:
     """A wedged `tailscale up` is aborted and reported, not left to hang."""
     runner = CliRunner()
     with patch(
@@ -612,7 +623,13 @@ class _FakeRelayNode:
         return _FakeRelayNode.joined_before
 
     @staticmethod
-    async def start(statedir, hostname, control_url=None, auth_key=None, **options):
+    async def start(
+        statedir: str,
+        hostname: str,
+        control_url: str | None = None,
+        auth_key: str | None = None,
+        **options: object,
+    ) -> "_FakeRelayNode":
         node = _FakeRelayNode()
         _FakeRelayNode.started.append(
             {
@@ -626,7 +643,9 @@ class _FakeRelayNode:
         )
         return node
 
-    async def relay(self, port, endpoints=None):
+    async def relay(
+        self, port: int, endpoints: list[str] | None = None
+    ) -> SimpleNamespace:
         self.relays.append((port, list(endpoints or [])))
         return SimpleNamespace(
             port=port,
@@ -637,7 +656,7 @@ class _FakeRelayNode:
             bytes=0,
         )
 
-    async def relay_status(self):
+    async def relay_status(self) -> SimpleNamespace | None:
         # One pair bound, then the node is gone (which ends the command).
         self.polls += 1
         if self.polls > 1:
@@ -651,7 +670,7 @@ class _FakeRelayNode:
             bytes=4096,
         )
 
-    async def control_changed(self):
+    async def control_changed(self) -> None:
         await asyncio.sleep(3600)
 
     def close(self) -> None:
@@ -669,7 +688,7 @@ def _fake_relay_bindings(joined_before: bool = False) -> SimpleNamespace:
     )
 
 
-def test_relay_asks_to_be_one_and_runs_the_node_in_process(tmp_path):
+def test_relay_asks_to_be_one_and_runs_the_node_in_process(tmp_path: Path) -> None:
     runner = CliRunner()
     p_fetch, p_start, _ = _patch_flow()
     granted = {**GRANTED, "relay": True}
@@ -715,7 +734,7 @@ def test_relay_asks_to_be_one_and_runs_the_node_in_process(tmp_path):
     assert "tskey-abc123" not in out
 
 
-def test_relay_refuses_to_run_as_a_plain_machine():
+def test_relay_refuses_to_run_as_a_plain_machine() -> None:
     # Approved without the relay tick (or by a server that knows none): the
     # key is a plain machine's, and a relay nobody may ask relays nothing.
     runner = CliRunner()
@@ -735,7 +754,7 @@ def test_relay_refuses_to_run_as_a_plain_machine():
     assert _FakeRelayNode.started == []
 
 
-def test_relay_that_joined_before_starts_without_asking_again(tmp_path):
+def test_relay_that_joined_before_starts_without_asking_again(tmp_path: Path) -> None:
     runner = CliRunner()
     with (
         patch(f"{MESH}._fetch_well_known") as mock_fetch,

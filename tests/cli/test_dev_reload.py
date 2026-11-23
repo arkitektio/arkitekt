@@ -10,6 +10,9 @@ import asyncio
 import io
 import signal
 import sys
+from collections.abc import AsyncIterator, Callable, Iterator
+from pathlib import Path
+from typing import Never
 
 import pytest
 from arkitekt_spec.declare.agents.connection import TaskEvent, TaskEventKind
@@ -27,12 +30,15 @@ from arkitekt.cli.commands.app.run.dev import (
     run_dev,
 )
 from arkitekt.cli.running import TaskReporter
-from arkitekt.cli.target import parse_target
+from arkitekt.cli.target import Target, parse_target
 
-from ..fakes import recording_connect
+from ..fakes import RecordedRun, recording_connect
+
+#: What watchfiles' ``awatch`` yields: the changes of a burst, as (change, path).
+Changes = set[tuple[int, str]]
 
 
-def _declare(path, identifier: str, helper: str = "") -> None:
+def _declare(path: Path, identifier: str, helper: str = "") -> None:
     path.write_text(
         "from arkitekt import App\n"
         + (f"import {helper}\n" if helper else "")
@@ -44,7 +50,7 @@ def _declare(path, identifier: str, helper: str = "") -> None:
 
 
 @pytest.fixture()
-def project(tmp_path, monkeypatch):
+def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[Path]:
     """A work dir on the path, whose modules are forgotten again afterwards."""
     monkeypatch.syspath_prepend(str(tmp_path))
     before = set(sys.modules)
@@ -54,7 +60,9 @@ def project(tmp_path, monkeypatch):
             del sys.modules[name]
 
 
-def test_a_reload_runs_the_new_app_with_the_same_connection_flags(project, monkeypatch):
+def test_a_reload_runs_the_new_app_with_the_same_connection_flags(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The App is looked up again after a reload; the flags go to the runner each time."""
     runs = []
     monkeypatch.setattr("arkitekt.runtime.connect", recording_connect(runs))
@@ -63,7 +71,7 @@ def test_a_reload_runs_the_new_app_with_the_same_connection_flags(project, monke
     target = parse_target("devreloaded", str(project))
     console = Console(file=io.StringIO())
 
-    async def scenario():
+    async def scenario() -> None:
         await _start(console, load_candidate(target, []), {"url": "http://x"})
         # A different length, so the bytecode cache cannot mistake it for the old file.
         _declare(entry, "after the change")
@@ -80,7 +88,7 @@ def test_a_reload_runs_the_new_app_with_the_same_connection_flags(project, monke
     assert all(options == {"url": "http://x"} for _, options in runs)
 
 
-def test_a_change_in_a_helper_reaches_the_app_that_imports_it(project):
+def test_a_change_in_a_helper_reaches_the_app_that_imports_it(project: Path) -> None:
     (project / "devhelper.py").write_text("OFFSET = 1\n")
     _declare(project / "devwithhelper.py", "helped", helper="devhelper")
     target = parse_target("devwithhelper", str(project))
@@ -108,7 +116,9 @@ def test_a_change_in_a_helper_reaches_the_app_that_imports_it(project):
         ("x = 1\n", "App"),
     ],
 )
-def test_a_change_that_does_not_load_leaves_everything_as_it_was(project, broken, said):
+def test_a_change_that_does_not_load_leaves_everything_as_it_was(
+    project: Path, broken: str, said: str
+) -> None:
     entry = project / "devbroken.py"
     _declare(entry, "working")
     target = parse_target("devbroken", str(project))
@@ -121,7 +131,9 @@ def test_a_change_that_does_not_load_leaves_everything_as_it_was(project, broken
     assert sys.modules["devbroken"] is working.module
 
 
-def test_the_project_is_what_lives_in_the_folder_outside_an_environment(project):
+def test_the_project_is_what_lives_in_the_folder_outside_an_environment(
+    project: Path,
+) -> None:
     (project / ".venv" / "lib").mkdir(parents=True)
     (project / ".venv" / "lib" / "devvendored.py").write_text("X = 1\n")
     (project / "devmine.py").write_text("X = 1\n")
@@ -141,8 +153,8 @@ def test_the_project_is_what_lives_in_the_folder_outside_an_environment(project)
 
 
 def test_deep_follows_packages_that_live_outside_the_project_and_any_environment(
-    project, tmp_path_factory
-):
+    project: Path, tmp_path_factory: pytest.TempPathFactory
+) -> None:
     elsewhere = tmp_path_factory.mktemp("checkout")
     (elsewhere / "devlinked").mkdir()
     (elsewhere / "devlinked" / "__init__.py").write_text("X = 1\n")
@@ -161,7 +173,7 @@ def test_deep_follows_packages_that_live_outside_the_project_and_any_environment
     assert modules == ["devlinked"]
 
 
-def test_what_was_loaded_before_the_app_is_never_reloaded(project):
+def test_what_was_loaded_before_the_app_is_never_reloaded(project: Path) -> None:
     """The SDK the CLI runs on may live in the folder, or be a checkout: it is not the app's."""
     (project / "devsdk.py").write_text("X = 1\n")
     import devsdk  # noqa: F401  # pyright: ignore[reportMissingImports] -- written above
@@ -175,7 +187,7 @@ def test_what_was_loaded_before_the_app_is_never_reloaded(project):
     assert "arkitekt" not in development_modules(str(project), baseline)
 
 
-def test_only_a_change_to_what_the_app_is_made_of_concerns_it(project):
+def test_only_a_change_to_what_the_app_is_made_of_concerns_it(project: Path) -> None:
     made_of = {str(project / "app.py"), str(project / "helper.py")}
 
     assert concerns({(1, str(project / "helper.py"))}, made_of)
@@ -184,11 +196,13 @@ def test_only_a_change_to_what_the_app_is_made_of_concerns_it(project):
     assert concerns({(1, str(project / "another_script.py"))}, None)
 
 
-def _watching(*bursts, changed):
+def _watching(
+    *bursts: Callable[[], object], changed: list[Path]
+) -> Callable[..., AsyncIterator[Changes]]:
     """A stand-in for watchfiles' ``awatch``: runs each burst's ``before``, then yields a
     change to each of the ``changed`` files."""
 
-    async def awatch(*roots, **options):
+    async def awatch(*roots: str | Path, **options: object) -> AsyncIterator[Changes]:
         for before in bursts:
             await asyncio.sleep(0.01)  # the run that was started gets to run
             before()
@@ -197,11 +211,13 @@ def _watching(*bursts, changed):
     return awatch
 
 
-def test_a_broken_save_keeps_the_last_working_version_running(project, monkeypatch):
+def test_a_broken_save_keeps_the_last_working_version_running(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runs = []
     stopped = []
 
-    async def forever(run):
+    async def forever(run: RecordedRun) -> None:
         try:
             await asyncio.Event().wait()
         except asyncio.CancelledError:
@@ -216,11 +232,11 @@ def test_a_broken_save_keeps_the_last_working_version_running(project, monkeypat
     target = parse_target("devkept", str(project))
     out = io.StringIO()
 
-    def break_it():
+    def break_it() -> None:
         assert [app.identifier for app, _ in runs] == ["first"]
         entry.write_text("from arkitekt import App\napp = App('second'\n")
 
-    def fix_it():
+    def fix_it() -> None:
         # The broken save neither stopped the first run nor started another.
         assert [app.identifier for app, _ in runs] == ["first"]
         assert stopped == []
@@ -230,7 +246,7 @@ def test_a_broken_save_keeps_the_last_working_version_running(project, monkeypat
         dev_module, "awatch", _watching(break_it, fix_it, changed=[entry])
     )
 
-    async def scenario():
+    async def scenario() -> None:
         await run_dev(Console(file=out, width=200), target, str(project))
         await asyncio.sleep(0.01)
         for task in asyncio.all_tasks() - {asyncio.current_task()}:
@@ -246,18 +262,20 @@ def test_a_broken_save_keeps_the_last_working_version_running(project, monkeypat
     assert "Traceback" not in said
 
 
-def test_ctrl_c_stops_the_app_before_the_dev_run_ends(project, monkeypatch):
+def test_ctrl_c_stops_the_app_before_the_dev_run_ends(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The dev loop stops its app itself, and says so: nothing is left to the closing loop."""
     events = []
 
-    async def forever(run):
+    async def forever(run: RecordedRun) -> None:
         try:
             await asyncio.Event().wait()
         except asyncio.CancelledError:
             events.append("app stopped")
             raise
 
-    async def awatch(*roots, **options):
+    async def awatch(*roots: str | Path, **options: object) -> AsyncIterator[Changes]:
         await asyncio.sleep(0.01)  # the run that was started gets to run
         signal.raise_signal(signal.SIGINT)
         await asyncio.Event().wait()
@@ -271,7 +289,7 @@ def test_ctrl_c_stops_the_app_before_the_dev_run_ends(project, monkeypatch):
     target = parse_target("devstopped", str(project))
     out = io.StringIO()
 
-    async def scenario():
+    async def scenario() -> None:
         try:
             await run_dev(Console(file=out, width=200), target, str(project))
         finally:
@@ -284,7 +302,9 @@ def test_ctrl_c_stops_the_app_before_the_dev_run_ends(project, monkeypatch):
     assert "Ctrl+C again to force" in out.getvalue()
 
 
-def test_an_app_that_never_loaded_starts_once_it_does(project, monkeypatch):
+def test_an_app_that_never_loaded_starts_once_it_does(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runs = []
     monkeypatch.setattr("arkitekt.runtime.connect", recording_connect(runs))
     entry = project / "devlate.py"
@@ -297,7 +317,7 @@ def test_an_app_that_never_loaded_starts_once_it_does(project, monkeypatch):
         _watching(lambda: _declare(entry, "at last"), changed=[entry]),
     )
 
-    async def scenario():
+    async def scenario() -> None:
         await run_dev(Console(file=out, width=200), target, str(project))
         await asyncio.sleep(0.01)
 
@@ -307,10 +327,12 @@ def test_an_app_that_never_loaded_starts_once_it_does(project, monkeypatch):
     assert "The app does not load" in out.getvalue()
 
 
-def test_the_dev_run_reports_its_tasks_and_a_plain_run_does_not(project, monkeypatch):
+def test_the_dev_run_reports_its_tasks_and_a_plain_run_does_not(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     seen = []
 
-    async def note(run):
+    async def note(run: RecordedRun) -> None:
         seen.append(run.task_listener)
 
     monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], during=note))
@@ -318,7 +340,7 @@ def test_the_dev_run_reports_its_tasks_and_a_plain_run_does_not(project, monkeyp
     target = parse_target("devtasks", str(project))
     console = Console(file=io.StringIO())
 
-    async def scenario():
+    async def scenario() -> None:
         from arkitekt.cli.running import arun_app
 
         candidate = load_candidate(target, [])
@@ -331,11 +353,11 @@ def test_the_dev_run_reports_its_tasks_and_a_plain_run_does_not(project, monkeyp
     assert seen[1] is None
 
 
-def test_a_task_is_one_line_when_it_arrives_and_one_when_it_ends():
+def test_a_task_is_one_line_when_it_arrives_and_one_when_it_ends() -> None:
     out = io.StringIO()
     reporter = TaskReporter(Console(file=out, width=200))
 
-    async def scenario():
+    async def scenario() -> None:
         await reporter(
             TaskEvent(
                 "t1", "add", TaskEventKind.ASSIGNED, arguments={"a": 1, "b": "x" * 80}
@@ -358,11 +380,11 @@ def test_a_task_is_one_line_when_it_arrives_and_one_when_it_ends():
 
 
 def test_a_failure_the_user_can_act_on_is_one_line_in_the_dev_loop(
-    project, monkeypatch
-):
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     errors = pytest.importorskip("rekuest.agents.transport.errors")
 
-    async def busy(run):
+    async def busy(run: RecordedRun) -> Never:
         raise errors.AgentIsAlreadyBusy("busy")
 
     monkeypatch.setattr("arkitekt.runtime.connect", recording_connect([], during=busy))
@@ -371,7 +393,7 @@ def test_a_failure_the_user_can_act_on_is_one_line_in_the_dev_loop(
     out = io.StringIO()
     console = Console(file=out, width=200)
 
-    async def scenario():
+    async def scenario() -> None:
         run = _start(console, load_candidate(target, []), {})
         await asyncio.wait([run])
         await asyncio.sleep(0)  # the done-callback reports
@@ -383,7 +405,7 @@ def test_a_failure_the_user_can_act_on_is_one_line_in_the_dev_loop(
     assert "Traceback" not in out.getvalue()
 
 
-def test_a_candidate_is_the_module_its_app_and_its_context(project):
+def test_a_candidate_is_the_module_its_app_and_its_context(project: Path) -> None:
     _declare(project / "devcandidate.py", "candidate")
     candidate = load_candidate(parse_target("devcandidate", str(project)), [])
 
@@ -392,7 +414,9 @@ def test_a_candidate_is_the_module_its_app_and_its_context(project):
     assert candidate.context is None
 
 
-def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
+def test_dev_hands_the_explicit_flags_to_the_loop(
+    app_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from typer.testing import CliRunner
 
     from arkitekt.cli.main import cli_app
@@ -400,14 +424,14 @@ def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
     seen = {}
 
     async def fake_run_dev(
-        console,
-        target,
-        work_dir,
-        options=None,
-        deep=False,
-        context=None,
-        context_file=None,
-    ):
+        console: Console,
+        target: Target,
+        work_dir: str,
+        options: dict[str, object] | None = None,
+        deep: bool = False,
+        context: str | None = None,
+        context_file: Path | None = None,
+    ) -> None:
         seen.update(
             target=target,
             work_dir=work_dir,
@@ -442,8 +466,8 @@ def test_dev_hands_the_explicit_flags_to_the_loop(app_dir, monkeypatch):
 
 
 def test_dev_force_mesh_reaches_the_runner_as_the_mesh_it_stands_for(
-    app_dir, monkeypatch
-):
+    app_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """--force-mesh is no connection keyword of its own: the runner gets the
     mesh configuration it means -- a node of our own, or the proxy the
     environment names -- with nothing else to fall back to."""
@@ -454,7 +478,13 @@ def test_dev_force_mesh_reaches_the_runner_as_the_mesh_it_stands_for(
 
     seen = {}
 
-    async def fake_run_dev(console, target, work_dir, options=None, **kwargs):
+    async def fake_run_dev(
+        console: Console,
+        target: Target,
+        work_dir: str,
+        options: dict[str, object] | None = None,
+        **kwargs: object,
+    ) -> None:
         seen.update(options=options)
 
     monkeypatch.setattr(dev_module, "run_dev", fake_run_dev)
@@ -476,7 +506,9 @@ def test_dev_force_mesh_reaches_the_runner_as_the_mesh_it_stands_for(
 
 
 @pytest.mark.parametrize("flag", ["--version", "-v"])
-def test_the_run_commands_no_longer_override_the_version(app_dir, flag):
+def test_the_run_commands_no_longer_override_the_version(
+    app_dir: Path, flag: str
+) -> None:
     from typer.testing import CliRunner
 
     from arkitekt.cli.main import cli_app
@@ -490,11 +522,11 @@ def test_the_run_commands_no_longer_override_the_version(app_dir, flag):
 
 
 def test_a_save_to_a_file_the_app_does_not_import_restarts_nothing(
-    project, monkeypatch
-):
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runs = []
 
-    async def forever(run):
+    async def forever(run: RecordedRun) -> None:
         await asyncio.Event().wait()
 
     monkeypatch.setattr(
@@ -511,7 +543,7 @@ def test_a_save_to_a_file_the_app_does_not_import_restarts_nothing(
         _watching(lambda: other.write_text("X = 2\n"), changed=[other]),
     )
 
-    async def scenario():
+    async def scenario() -> None:
         await run_dev(Console(file=out, width=200), target, str(project))
         await asyncio.sleep(0.01)
         for task in asyncio.all_tasks() - {asyncio.current_task()}:

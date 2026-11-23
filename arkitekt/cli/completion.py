@@ -11,28 +11,34 @@ import contextlib
 import io
 import os
 import sys
-from typing import Any
+from collections.abc import Callable, Iterable
+from typing import TYPE_CHECKING, Any, TypeVar
 
 import typer
+
+if TYPE_CHECKING:
+    from arkitekt.app.app import App
+
+T = TypeVar("T")
 
 #: Where `plugin flavour add` keeps the flavours, under the work dir.
 FLAVOURS_DIR = (".arkitekt", "flavours")
 
 
-def _work_dir(ctx: Any) -> str:  # noqa: ANN401
+def _work_dir(ctx: typer.Context | None) -> str:
     """The ``--work-dir`` typed so far, else the current directory."""
     root = ctx.find_root() if ctx is not None else None
     work_dir = (getattr(root, "params", None) or {}).get("work_dir")
     return os.path.abspath(work_dir or ".")
 
 
-def _target(ctx: Any) -> str:  # noqa: ANN401
+def _target(ctx: typer.Context) -> str:
     """The app target typed so far, else the one a command defaults to."""
     typed = (getattr(ctx, "params", None) or {}).get("target")
     return typed or os.environ.get("ARKITEKT_APP") or "app"
 
 
-def _quietly(load: Any) -> Any:  # noqa: ANN401
+def _quietly(load: Callable[[], T]) -> T | None:
     """Run ``load`` with nothing reaching the terminal, and ``None`` on any failure."""
     sink = io.StringIO()
     try:
@@ -42,11 +48,11 @@ def _quietly(load: Any) -> Any:  # noqa: ANN401
         return None
 
 
-def _app(ctx: Any) -> Any:  # noqa: ANN401
+def _app(ctx: typer.Context) -> "App[Any] | None":
     from arkitekt.cli.offline import offline
     from arkitekt.cli.target import load_target
 
-    def load() -> Any:  # noqa: ANN401
+    def load() -> "App[Any]":
         work_dir = _work_dir(ctx)
         # The root callback puts the work dir first on sys.path for a run; a
         # completion is answered before any callback, so it does that itself.
@@ -60,7 +66,7 @@ def _app(ctx: Any) -> Any:  # noqa: ANN401
     return _quietly(load)
 
 
-def _starting_with(names: Any, incomplete: str) -> list[str]:  # noqa: ANN401
+def _starting_with(names: Iterable[str], incomplete: str) -> list[str]:
     return sorted(name for name in names if name.startswith(incomplete))
 
 

@@ -45,7 +45,7 @@ def serve(
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
     alias_policy: AliasPolicy | None = None,
-    **fastapi_options: Any,  # noqa: ANN401
+    **fastapi_options: Any,
 ) -> Runtime[None]: ...
 @overload
 def serve(
@@ -65,7 +65,7 @@ def serve(
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
     alias_policy: AliasPolicy | None = None,
-    **fastapi_options: Any,  # noqa: ANN401
+    **fastapi_options: Any,
 ) -> Runtime[Ctx]: ...
 
 
@@ -73,7 +73,7 @@ def serve(
     app: App[Any],
     fastapi_app: "FastAPI",
     *,
-    context: Any | None = None,  # noqa: ANN401
+    context: object = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
     mandate_key: str | Source | None = DISCOVER,
@@ -86,7 +86,7 @@ def serve(
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
     alias_policy: AliasPolicy | None = None,
-    **fastapi_options: Any,  # noqa: ANN401
+    **fastapi_options: Any,
 ) -> Runtime[Any]:
     """Provide ``app``'s offerings over ``fastapi_app`` for as long as it runs.
 

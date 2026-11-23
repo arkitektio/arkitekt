@@ -8,7 +8,8 @@ shared with a run started outside the CLI, and re-exported here.
 """
 
 import os
-from collections.abc import Callable, MutableSet
+from collections.abc import Callable, Mapping
+from collections.abc import Set as AbstractSet
 from importlib.metadata import PackageNotFoundError, version
 from itertools import zip_longest
 from typing import Any
@@ -167,7 +168,7 @@ def construct_section(title: str, body: RenderableType) -> Group:
     return Group(Text(title, style="bold"), Padding(body, (0, 0, 0, 2)))
 
 
-def construct_changes_group(changes: MutableSet[tuple[Any, str]]) -> Adaptive:
+def construct_changes_group(changes: AbstractSet[tuple[object, str]]) -> Adaptive:
     """Construct the status lines for the detected changes
 
     They are displayed if the app has detected changes before
@@ -182,7 +183,7 @@ def construct_changes_group(changes: MutableSet[tuple[Any, str]]) -> Adaptive:
     )
 
 
-def construct_leaking_group(variables: dict[str, Any]) -> Adaptive:
+def construct_leaking_group(variables: Mapping[str, object]) -> Adaptive:
     """Construct the report for the leaking variables
 
     It is displayed if the app has leaking variables

@@ -38,6 +38,9 @@ from arkitekt import App, connect  # noqa: E402
 if TYPE_CHECKING:
     from konstruktor import Hub
 
+    from arkitekt.runtime import Runtime
+
+
 SPECTRUM = DataStream(
     "spectrum",
     dtype="float16",
@@ -54,7 +57,7 @@ def own_state(hub: Hub, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
     monkeypatch.setenv("ARKITEKT_MESH_CA_FILE", str(hub.mesh.ca_file))
 
 
-def on_the_mesh(hub: Hub, name: str):  # noqa: ANN201
+def on_the_mesh(hub: Hub, name: str) -> Runtime[None]:
     """An app of its own identifier (so a mesh node of its own), logged in and on the mesh alone."""
     app = App(f"live.arkitekt.tests.{name}", "0.1.0", services=[lovekit_service])
     return connect(

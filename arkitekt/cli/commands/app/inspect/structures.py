@@ -1,7 +1,11 @@
 import json
+from collections.abc import Sequence
 from typing import Any
 
 import typer
+from arkitekt_spec.actions import ArgPortInput, AssignWidgetInput, ReturnPortInput
+from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.structures.types import FullFilledStructure
 from rich.table import Table
 
 from arkitekt.cli.commands.app.inspect.utils import snapshot_or_exit
@@ -16,14 +20,16 @@ from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_st
 from arkitekt.cli.vars import get_console
 
 
-def _widget_name(widget: Any) -> str | None:
+def _widget_name(widget: AssignWidgetInput | None) -> str | None:
     """`SearchAssignWidgetInput` -> `search`: widgets are one class per kind."""
     if widget is None:
         return None
     return type(widget).__name__.removesuffix("AssignWidgetInput").lower() or None
 
 
-def _describe_structure(structure: Any, used_by: dict[str, set[str]]) -> dict[str, Any]:
+def _describe_structure(
+    structure: FullFilledStructure, used_by: dict[str, set[str]]
+) -> dict[str, Any]:
     """Project one structure into a JSON-friendly record."""
     cls = structure.cls
     widget = structure.default_widget
@@ -37,11 +43,13 @@ def _describe_structure(structure: Any, used_by: dict[str, set[str]]) -> dict[st
     }
 
 
-def _interfaces_by_identifier(registry: Any) -> dict[str, set[str]]:
+def _interfaces_by_identifier(registry: AppRegistry) -> dict[str, set[str]]:
     """Which registered functions take or return each structure."""
     used: dict[str, set[str]] = {}
 
-    def visit(interface: str, ports: Any) -> None:
+    def visit(
+        interface: str, ports: Sequence[ArgPortInput | ReturnPortInput] | None
+    ) -> None:
         for port in ports or ():
             if port.identifier:
                 used.setdefault(port.identifier, set()).add(interface)
@@ -60,7 +68,7 @@ def structures(
     as_json: JsonOption = False,
     machine_readable: MachineReadableOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-):
+) -> None:
     """List the structures this app can send and receive by id
 
     A structure belongs to the service that declares it, so this is a function

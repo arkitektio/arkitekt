@@ -90,7 +90,7 @@ async def call_app(
     options: dict[str, Any],
     work_dir: str | None = None,
     agent: str | None = None,
-) -> Any:  # noqa: ANN401
+) -> object:
     """Connect ``app`` (without providing it), find the action by hash, and call it.
 
     The call goes through the run's rekuest client, so only actions available on
@@ -165,7 +165,7 @@ def remote(
             "-a",
             help="An argument of the call, as key=value (the value is read as JSON when it parses).",
         ),
-    ] = [],
+    ] = [],  # noqa: B006 -- typer's default; never mutated
     agent: Annotated[
         str | None,
         typer.Option(
@@ -177,7 +177,7 @@ def remote(
             show_default=False,
         ),
     ] = None,
-):
+) -> None:
     """Call an action on the connected server and print its output
 
     The server assigns the call to whichever agent provides the action: for one of
@@ -247,7 +247,7 @@ def remote(
     print_result(console, result)
 
 
-def print_result(console: Console, result: Any) -> None:  # noqa: ANN401
+def print_result(console: Console, result: object) -> None:
     """Print what a call returned: as JSON when it is JSON, as it is otherwise."""
     if _is_json(result):
         console.print_json(data=result)
@@ -255,7 +255,7 @@ def print_result(console: Console, result: Any) -> None:  # noqa: ANN401
         console.print(result)
 
 
-def _is_json(value: Any) -> bool:  # noqa: ANN401
+def _is_json(value: object) -> bool:
     try:
         json.dumps(value)
     except (TypeError, ValueError):

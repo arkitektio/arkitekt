@@ -3,6 +3,7 @@ import uuid
 from typing import TYPE_CHECKING, Annotated
 
 import typer
+from rich.console import Console
 
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.tty import require_tty
@@ -32,7 +33,9 @@ def check_if_build_already_deployed(
             )
 
 
-def push_multi_arch(build_model: "Build", tag: str, work_dir: str, console) -> None:
+def push_multi_arch(
+    build_model: "Build", tag: str, work_dir: str, console: Console
+) -> None:
     """Push every platform of a build as one manifest list.
 
     A multi-platform image only exists in a registry, so it cannot be assembled
@@ -110,7 +113,7 @@ def publish(
             "Could not find username in docker info. Please provide your docker username"
         )
 
-    for build_id, build_model in builds.items():
+    for _build_id, build_model in builds.items():
         check_if_build_already_deployed(build_model, work_dir)
 
         if build_model.inspection is None:

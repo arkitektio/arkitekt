@@ -7,10 +7,16 @@ private state directory.
 
 import os
 import time
+from pathlib import Path
+from typing import Any, Never, Protocol
 
 import pytest
-from typer.testing import CliRunner
+from fakts.fakts import Fakts
+from fakts.models import ActiveFakts, Manifest
+from typer.testing import CliRunner, Result
 
+from arkitekt import App
+from arkitekt.app.options import ConnectionOptions
 from arkitekt.app.sessions import list_sessions, session_path
 from arkitekt.cli.main import cli_app
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
@@ -21,8 +27,24 @@ DAY = 86400
 APP = ("com.test.app", "0.0.1")
 
 
+class SaveSession(Protocol):
+    """Saves a session for the scaffolded app; returns the file it wrote."""
+
+    def __call__(
+        self,
+        url: str = DEFAULT_ARKITEKT_URL,
+        *,
+        logged_in_at: float | None = None,
+        refreshed_at: float | None = None,
+    ) -> str: ...
+
+
+#: What the replaced login was asked: the app, and the options it was given.
+Logins = list[tuple[App[Any], dict[str, object]]]
+
+
 @pytest.fixture
-def saved(app_dir):
+def saved(app_dir: Path) -> SaveSession:
     """Save a session for the scaffolded app, as a run of it would have."""
     from arkitekt import runtime
     from arkitekt.cli.target import load_target
@@ -30,19 +52,32 @@ def saved(app_dir):
     app, _, _ = load_target("app", str(app_dir))
     approved = runtime.run_manifest(app).hash()
 
-    def save(url=DEFAULT_ARKITEKT_URL, **kwargs):
-        return write_session(*APP, url, manifest_hash=approved, **kwargs)
+    def save(
+        url: str = DEFAULT_ARKITEKT_URL,
+        *,
+        logged_in_at: float | None = None,
+        refreshed_at: float | None = None,
+    ) -> str:
+        return write_session(
+            *APP,
+            url,
+            manifest_hash=approved,
+            logged_in_at=logged_in_at,
+            refreshed_at=refreshed_at,
+        )
 
     return save
 
 
 @pytest.fixture(autouse=True)
-def _default_server(monkeypatch):
+def _default_server(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("FAKTS_URL", raising=False)
 
 
-def _invoke(work_dir, *args, **kwargs):
-    return CliRunner().invoke(cli_app, ["--work-dir", str(work_dir), *args], **kwargs)
+def _invoke(work_dir: Path | str, *args: str, input: str | None = None) -> Result:
+    return CliRunner().invoke(
+        cli_app, ["--work-dir", str(work_dir), *args], input=input
+    )
 
 
 def _flat(output: str) -> str:
@@ -55,7 +90,7 @@ def _flat(output: str) -> str:
 # --------------------------------------------------------------------------- #
 
 
-def test_status_of_an_app_that_never_logged_in(app_dir):
+def test_status_of_an_app_that_never_logged_in(app_dir: Path) -> None:
     result = _invoke(app_dir, "status")
 
     assert result.exit_code == 0, result.output
@@ -65,7 +100,7 @@ def test_status_of_an_app_that_never_logged_in(app_dir):
     assert "uv run" not in result.output, "no uv.lock: arkitekt is started as itself"
 
 
-def test_status_json_says_the_same_on_stdout(app_dir, saved):
+def test_status_json_says_the_same_on_stdout(app_dir: Path, saved: SaveSession) -> None:
     import json
 
     saved(logged_in_at=time.time() - DAY)
@@ -79,7 +114,7 @@ def test_status_json_says_the_same_on_stdout(app_dir, saved):
     assert status["stale_session"] is False
 
 
-def test_status_json_of_an_app_that_never_logged_in(app_dir):
+def test_status_json_of_an_app_that_never_logged_in(app_dir: Path) -> None:
     import json
 
     result = _invoke(app_dir, "status", "--json")
@@ -88,15 +123,15 @@ def test_status_json_of_an_app_that_never_logged_in(app_dir):
 
 
 def test_status_says_a_known_failure_of_the_manifest_in_one_line(
-    app_dir, saved, monkeypatch
-):
+    app_dir: Path, saved: SaveSession, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Checking the saved session builds the run's manifest; a failure there is one line."""
     saved(logged_in_at=time.time() - DAY)
 
     class NeedsReauthenticationError(Exception):
         pass
 
-    def failing(app):
+    def failing(app: App[Any]) -> Never:
         raise NeedsReauthenticationError("stale")
 
     (app_dir / "uv.lock").write_text("")
@@ -108,7 +143,7 @@ def test_status_says_a_known_failure_of_the_manifest_in_one_line(
     assert "uv run arkitekt login --reauth" in _flat(result.output)
 
 
-def test_a_uv_projects_hints_start_arkitekt_with_uv_run(app_dir):
+def test_a_uv_projects_hints_start_arkitekt_with_uv_run(app_dir: Path) -> None:
     """In a uv project arkitekt is in the project's environment, not on the PATH."""
     (app_dir / "uv.lock").write_text("")
     result = _invoke(app_dir, "status")
@@ -117,7 +152,7 @@ def test_a_uv_projects_hints_start_arkitekt_with_uv_run(app_dir):
     assert "`uv run arkitekt login`" in _flat(result.output)
 
 
-def test_status_says_since_when_and_where(app_dir, saved):
+def test_status_says_since_when_and_where(app_dir: Path, saved: SaveSession) -> None:
     saved(logged_in_at=time.time() - 3 * DAY)
 
     result = _invoke(app_dir, "status")
@@ -127,7 +162,9 @@ def test_status_says_since_when_and_where(app_dir, saved):
     assert "SECRET" not in result.output
 
 
-def test_status_is_about_the_server_asked_for(app_dir, saved):
+def test_status_is_about_the_server_asked_for(
+    app_dir: Path, saved: SaveSession
+) -> None:
     saved()
 
     result = _invoke(app_dir, "status", "--url", "http://localhost:8000")
@@ -135,7 +172,9 @@ def test_status_is_about_the_server_asked_for(app_dir, saved):
     assert "Not logged in" in result.output
 
 
-def test_status_says_when_the_saved_session_is_too_old(app_dir, saved):
+def test_status_says_when_the_saved_session_is_too_old(
+    app_dir: Path, saved: SaveSession
+) -> None:
     saved(refreshed_at=time.time() - 60 * DAY)
 
     result = _invoke(app_dir, "status")
@@ -144,7 +183,7 @@ def test_status_says_when_the_saved_session_is_too_old(app_dir, saved):
     assert "arkitekt login --reauth" in _flat(result.output)
 
 
-def test_status_does_not_claim_a_session_the_run_would_not_use(app_dir):
+def test_status_does_not_claim_a_session_the_run_would_not_use(app_dir: Path) -> None:
     """Saved for the app as it was declared then: the run sends another manifest."""
     write_session(*APP, DEFAULT_ARKITEKT_URL, manifest_hash="f" * 64)
 
@@ -159,7 +198,7 @@ def test_status_does_not_claim_a_session_the_run_would_not_use(app_dir):
 # --------------------------------------------------------------------------- #
 
 
-def test_logout_forgets_this_apps_session_only(app_dir):
+def test_logout_forgets_this_apps_session_only(app_dir: Path) -> None:
     mine = write_session(*APP, DEFAULT_ARKITEKT_URL)
     elsewhere = write_session(*APP, "http://localhost:8000")
     another = write_session("another-app", "1.0.0", DEFAULT_ARKITEKT_URL)
@@ -174,7 +213,7 @@ def test_logout_forgets_this_apps_session_only(app_dir):
     assert os.path.exists(elsewhere) and os.path.exists(another)
 
 
-def test_logout_without_a_session_says_so(app_dir):
+def test_logout_without_a_session_says_so(app_dir: Path) -> None:
     result = _invoke(app_dir, "logout")
 
     assert result.exit_code == 0, result.output
@@ -186,26 +225,30 @@ def test_logout_without_a_session_says_so(app_dir):
 # --------------------------------------------------------------------------- #
 
 
+def _saved_fakts(path: str) -> ActiveFakts:
+    """The fakts of the session file at ``path``, as a login returns them."""
+    from fakts.cache.file import CacheFile
+
+    with open(path, encoding="utf-8") as file:
+        return CacheFile.model_validate_json(file.read()).fakts
+
+
 @pytest.fixture
-def logins(monkeypatch):
+def logins(monkeypatch: pytest.MonkeyPatch) -> Logins:
     """Replace the login itself: records what it was asked, and saves a session."""
-    asked = []
+    asked: Logins = []
 
-    async def fake_alogin(app, **options):
-        from fakts.cache.file import CacheFile
-
+    async def fake_alogin(app: App[Any], **options: object) -> ActiveFakts:
         asked.append((app, options))
-        path = write_session(
-            app.identifier, app.version, options.get("url", DEFAULT_ARKITEKT_URL)
-        )
-        with open(path, encoding="utf-8") as file:
-            return CacheFile.model_validate_json(file.read()).fakts
+        url = options.get("url", DEFAULT_ARKITEKT_URL)
+        assert isinstance(url, str)
+        return _saved_fakts(write_session(app.identifier, app.version, url))
 
     monkeypatch.setattr("arkitekt.runtime.alogin", fake_alogin)
     return asked
 
 
-def test_login_logs_in_and_saves_the_session(app_dir, logins):
+def test_login_logs_in_and_saves_the_session(app_dir: Path, logins: Logins) -> None:
     result = _invoke(app_dir, "login", "--headless")
 
     assert result.exit_code == 0, result.output
@@ -217,8 +260,8 @@ def test_login_logs_in_and_saves_the_session(app_dir, logins):
 
 
 def test_login_qr_shows_the_link_as_a_qr_code_whatever_the_login(
-    app_dir, logins, monkeypatch
-):
+    app_dir: Path, logins: Logins, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from arkitekt.app.terminal import QR_ENV
 
     monkeypatch.delenv(QR_ENV, raising=False)  # restored after the test: --qr sets it
@@ -231,7 +274,9 @@ def test_login_qr_shows_the_link_as_a_qr_code_whatever_the_login(
     assert "qr" not in options
 
 
-def test_login_leaves_a_good_session_alone(app_dir, logins, saved):
+def test_login_leaves_a_good_session_alone(
+    app_dir: Path, logins: Logins, saved: SaveSession
+) -> None:
     saved(logged_in_at=time.time() - DAY)
 
     result = _invoke(app_dir, "login")
@@ -241,7 +286,9 @@ def test_login_leaves_a_good_session_alone(app_dir, logins, saved):
     assert logins == []
 
 
-def test_login_reauth_replaces_a_good_session(app_dir, logins, saved):
+def test_login_reauth_replaces_a_good_session(
+    app_dir: Path, logins: Logins, saved: SaveSession
+) -> None:
     saved()
 
     result = _invoke(app_dir, "login", "--reauth")
@@ -250,7 +297,9 @@ def test_login_reauth_replaces_a_good_session(app_dir, logins, saved):
     assert len(logins) == 1
 
 
-def test_login_replaces_a_session_that_is_too_old(app_dir, logins, saved):
+def test_login_replaces_a_session_that_is_too_old(
+    app_dir: Path, logins: Logins, saved: SaveSession
+) -> None:
     saved(refreshed_at=time.time() - 60 * DAY)
 
     result = _invoke(app_dir, "login")
@@ -259,7 +308,9 @@ def test_login_replaces_a_session_that_is_too_old(app_dir, logins, saved):
     assert len(logins) == 1
 
 
-def test_login_replaces_a_session_the_run_would_not_use(app_dir, logins):
+def test_login_replaces_a_session_the_run_would_not_use(
+    app_dir: Path, logins: Logins
+) -> None:
     write_session(*APP, DEFAULT_ARKITEKT_URL, manifest_hash="f" * 64)
 
     result = _invoke(app_dir, "login")
@@ -269,17 +320,19 @@ def test_login_replaces_a_session_the_run_would_not_use(app_dir, logins):
     assert len(logins) == 1
 
 
-def test_login_with_a_token_says_it_logged_in(app_dir, logins):
+def test_login_with_a_token_says_it_logged_in(app_dir: Path, logins: Logins) -> None:
     result = _invoke(app_dir, "login", "--token", "client:refresh")
 
     assert "Logged in to Lab" in result.output
     assert "client:refresh" not in result.output and "SECRET" not in result.output
 
 
-def test_a_declined_login_is_one_line(app_dir, monkeypatch):
+def test_a_declined_login_is_one_line(
+    app_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     from fakts.grants.remote.errors import UserDeniedError
 
-    async def declined(app, **options):
+    async def declined(app: App[Any], **options: object) -> Never:
         raise UserDeniedError("denied")
 
     monkeypatch.setattr("arkitekt.runtime.alogin", declined)
@@ -291,7 +344,9 @@ def test_a_declined_login_is_one_line(app_dir, monkeypatch):
     assert "Traceback" not in result.output
 
 
-def test_a_login_is_for_the_manifest_the_run_sends(app_dir, monkeypatch):
+def test_a_login_is_for_the_manifest_the_run_sends(
+    app_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Else the run would not find the session `login` saved, and ask again.
 
     The app offers actions, so its run is rekuest's and requires what rekuest
@@ -305,8 +360,9 @@ def test_a_login_is_for_the_manifest_the_run_sends(app_dir, monkeypatch):
 
     sent = []
 
-    def recording(manifest, options):
+    def recording(manifest: Manifest, options: ConnectionOptions) -> Fakts:
         sent.append(manifest.hash())
+        assert manifest.requirements is not None
         return build_testing_fakts(
             aliases={r.key: f"http://{r.key}.test" for r in manifest.requirements}
         )
@@ -322,7 +378,7 @@ def test_a_login_is_for_the_manifest_the_run_sends(app_dir, monkeypatch):
     assert sent == [runtime.run_manifest(app).hash()]
 
 
-def test_logging_in_for_real_goes_through_fakts_and_nothing_else(app_dir):
+def test_logging_in_for_real_goes_through_fakts_and_nothing_else(app_dir: Path) -> None:
     """The real `alogin`, on the offline fakts: no client is built, no agent."""
     result = _invoke(app_dir, "login", "--token", "client:refresh")
 
@@ -335,7 +391,7 @@ def test_logging_in_for_real_goes_through_fakts_and_nothing_else(app_dir):
 # --------------------------------------------------------------------------- #
 
 
-def test_self_sessions_lists_every_login_on_the_machine(tmp_path):
+def test_self_sessions_lists_every_login_on_the_machine(tmp_path: Path) -> None:
     write_session(
         "my-app", "0.1.0", DEFAULT_ARKITEKT_URL, logged_in_at=time.time() - 2 * DAY
     )
@@ -351,14 +407,14 @@ def test_self_sessions_lists_every_login_on_the_machine(tmp_path):
     assert "SECRET" not in result.output
 
 
-def test_self_sessions_with_nothing_saved(tmp_path):
+def test_self_sessions_with_nothing_saved(tmp_path: Path) -> None:
     result = _invoke(tmp_path, "self", "sessions")
 
     assert result.exit_code == 0, result.output
     assert "No sessions on this machine" in result.output
 
 
-def test_self_sessions_forgets_an_app_on_every_server(tmp_path):
+def test_self_sessions_forgets_an_app_on_every_server(tmp_path: Path) -> None:
     write_session("my-app", "0.1.0", DEFAULT_ARKITEKT_URL)
     write_session("my-app", "0.1.0", "http://localhost:8000")
     write_session("other-app", "1.0.0", DEFAULT_ARKITEKT_URL)
@@ -370,7 +426,7 @@ def test_self_sessions_forgets_an_app_on_every_server(tmp_path):
     assert [session.name for session in list_sessions()] == ["other-app-1.0.0"]
 
 
-def test_self_sessions_asks_before_forgetting_everything(tmp_path):
+def test_self_sessions_asks_before_forgetting_everything(tmp_path: Path) -> None:
     write_session("my-app", "0.1.0", DEFAULT_ARKITEKT_URL)
 
     declined = _invoke(tmp_path, "self", "sessions", "--all", input="n\n")

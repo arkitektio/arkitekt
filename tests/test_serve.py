@@ -5,6 +5,8 @@ enters the runtime and provides. An app with no requirements authenticates
 nothing, and an action served this way is handed its clients like any other.
 """
 
+from pathlib import Path
+
 import pytest
 
 fastapi = pytest.importorskip("fastapi")
@@ -16,7 +18,7 @@ from arkitekt import App, Task, serve  # noqa: E402
 from .fakes import PictureClient, PictureService  # noqa: E402
 
 
-def test_serving_installs_a_lifespan_that_runs_the_app(tmp_path) -> None:  # noqa: ANN001
+def test_serving_installs_a_lifespan_that_runs_the_app(tmp_path: Path) -> None:
     from arkitekt_fastapi import FastApiAgent
 
     app = App("served")
@@ -59,7 +61,7 @@ def test_serving_refuses_a_missing_context_at_the_call() -> None:
         serve(app, fastapi.FastAPI())  # pyright: ignore[reportArgumentType]
 
 
-def test_a_served_app_with_services_builds_their_clients(tmp_path) -> None:  # noqa: ANN001
+def test_a_served_app_with_services_builds_their_clients(tmp_path: Path) -> None:
     app = App("served-with-clients", services=[PictureService()])
 
     @app.action
@@ -79,7 +81,7 @@ def test_a_served_app_with_services_builds_their_clients(tmp_path) -> None:  # n
         assert runtime.agent.bound_app is runtime
 
 
-def test_a_served_app_hosts_the_assets_it_registered(tmp_path) -> None:  # noqa: ANN001
+def test_a_served_app_hosts_the_assets_it_registered(tmp_path: Path) -> None:
     """Nothing uploads a served app's assets: it serves them, from the app's directory."""
     image = b"\x89PNG\r\n\x1a\n" + b"pixels"
     (tmp_path / "logo.png").write_bytes(image)
@@ -100,7 +102,7 @@ def test_a_served_app_hosts_the_assets_it_registered(tmp_path) -> None:  # noqa:
 
 
 @pytest.mark.asyncio
-async def test_a_served_action_runs_inside_raths_task_scope(tmp_path) -> None:  # noqa: ANN001
+async def test_a_served_action_runs_inside_raths_task_scope(tmp_path: Path) -> None:
     """What the clients an action is handed read to attribute their requests."""
     from arkitekt_fastapi.testing import AsyncAgentTestClient
     from rath.task import current_task

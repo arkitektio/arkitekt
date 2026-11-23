@@ -2,6 +2,7 @@
 
 import io
 
+import pytest
 from rich.console import Console
 from typer.testing import CliRunner
 
@@ -24,7 +25,7 @@ def _written(raw: io.BytesIO, encoding: str = "utf-8") -> str:
     return raw.getvalue().decode(encoding)
 
 
-def test_the_root_help_shows_the_mark_on_three_rows():
+def test_the_root_help_shows_the_mark_on_three_rows() -> None:
     result = CliRunner().invoke(cli_app, ["--help"])
 
     assert result.exit_code == 0, result.output
@@ -34,7 +35,7 @@ def test_the_root_help_shows_the_mark_on_three_rows():
     assert sum(line.startswith("■") for line in rows) == 3
 
 
-def test_the_banner_puts_its_lines_beside_the_mark():
+def test_the_banner_puts_its_lines_beside_the_mark() -> None:
     console, raw = _console()
 
     console.print(ui.Banner("one", "two", "three"))
@@ -44,12 +45,17 @@ def test_the_banner_puts_its_lines_beside_the_mark():
     assert [line.split()[-1] for line in lines] == ["one", "two", "three"]
     # One column: the text starts at the same cell on every row.
     assert (
-        len({line.index(word) for line, word in zip(lines, ("one", "two", "three"))})
+        len(
+            {
+                line.index(word)
+                for line, word in zip(lines, ("one", "two", "three"), strict=True)
+            }
+        )
         == 1
     )
 
 
-def test_a_terminal_that_cannot_encode_the_mark_gets_the_ascii_one():
+def test_a_terminal_that_cannot_encode_the_mark_gets_the_ascii_one() -> None:
     console, raw = _console(encoding="ascii")
 
     console.print(ui.Banner("one"))
@@ -64,7 +70,7 @@ def test_a_terminal_that_cannot_encode_the_mark_gets_the_ascii_one():
     assert written.splitlines()[3:] == ["# building", "* built", "- waiting", "x broke"]
 
 
-def test_a_run_banner_survives_an_ascii_stream():
+def test_a_run_banner_survives_an_ascii_stream() -> None:
     app = App("com.test.app", "0.0.1", author="tester")
     console, raw = _console(encoding="ascii")
 
@@ -75,7 +81,7 @@ def test_a_run_banner_survives_an_ascii_stream():
     assert "connecting to http://fakts.example" in written
 
 
-def test_a_status_line_leads_with_its_glyph_and_trails_its_detail():
+def test_a_status_line_leads_with_its_glyph_and_trails_its_detail() -> None:
     console, raw = _console()
 
     ui.done(console, "Built flavour vanilla", "build 42")
@@ -83,7 +89,9 @@ def test_a_status_line_leads_with_its_glyph_and_trails_its_detail():
     assert _written(raw) == "◆ Built flavour vanilla  build 42\n"
 
 
-def test_the_shown_url_is_the_one_the_run_connects_to(monkeypatch):
+def test_the_shown_url_is_the_one_the_run_connects_to(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("FAKTS_URL", raising=False)
     assert resolve_url(None) == DEFAULT_ARKITEKT_URL
 

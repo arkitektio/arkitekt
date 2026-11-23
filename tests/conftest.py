@@ -13,8 +13,17 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from collections.abc import Iterator
+from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
+
+if TYPE_CHECKING:
+    from fakts.models import AuthFakt, Manifest
+    from fakts.testing import TestingFakts
+
+    from arkitekt.app.options import ConnectionOptions
 
 # Typer forces a terminal on GitHub Actions (and under FORCE_COLOR), so the help
 # these tests read would be wrapped in escape codes there and nowhere else. Read
@@ -66,7 +75,7 @@ def pytest_collection_modifyitems(
 
 
 @pytest.fixture(autouse=True)
-def _offline_fakts(monkeypatch):
+def _offline_fakts(monkeypatch: pytest.MonkeyPatch) -> None:
     """Give every run a hot-pluggable fakts instead of a real one.
 
     A runtime builds its fakts from the manifest it is about to send; here that
@@ -75,16 +84,18 @@ def _offline_fakts(monkeypatch):
     """
     from fakts.testing import build_testing_fakts
 
-    def offline(manifest, options):  # noqa: ANN001, ANN202
+    def offline(manifest: Manifest, options: ConnectionOptions) -> TestingFakts:
         return build_testing_fakts(
-            aliases={r.key: f"http://{r.key}.test" for r in manifest.requirements}
+            aliases={r.key: f"http://{r.key}.test" for r in manifest.requirements or []}
         )
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", offline)
 
 
 @pytest.fixture(autouse=True)
-def _offline_revocation(request, monkeypatch):
+def _offline_revocation(
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Keep a logout from reaching a server: it would ask the session's server
     where to revoke, and the sessions tests write name real deployments.
 
@@ -93,14 +104,16 @@ def _offline_revocation(request, monkeypatch):
     if request.node.get_closest_marker("revokes") is not None:
         return
 
-    async def nowhere(auth, server, allow_insecure_transport):  # noqa: ANN001, ANN202
+    async def nowhere(
+        auth: AuthFakt, server: str, allow_insecure_transport: bool
+    ) -> None:
         return None
 
     monkeypatch.setattr("arkitekt.runtime._arevoke_stored", nowhere)
 
 
 @pytest.fixture(autouse=True)
-def _assume_interactive(monkeypatch):
+def _assume_interactive(monkeypatch: pytest.MonkeyPatch) -> None:
     """Make the CLI treat itself as interactive during tests.
 
     ``CliRunner`` replaces ``sys.stdin`` with a non-TTY stream, so the
@@ -112,7 +125,7 @@ def _assume_interactive(monkeypatch):
 
 
 @pytest.fixture(autouse=True)
-def _isolate_app_imports(monkeypatch):
+def _isolate_app_imports(monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     """Give every test its own ``sys.path`` and forget the app modules it imported.
 
     The CLI puts ``--work-dir`` on ``sys.path`` and imports the user's module from
@@ -131,7 +144,7 @@ def _isolate_app_imports(monkeypatch):
 
 
 def assert_only_the_entrypoint_was_scaffolded(
-    work_dir, entrypoint: str = "app"
+    work_dir: Path, entrypoint: str = "app"
 ) -> None:
     """`init` writes the app's module and nothing else: the App in it is the identity."""
     import os
@@ -141,7 +154,9 @@ def assert_only_the_entrypoint_was_scaffolded(
 
 
 @pytest.fixture(autouse=True)
-def _private_session_state(tmp_path_factory, monkeypatch):
+def _private_session_state(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """Keep the saved sessions of a test out of the user's own state directory.
 
     Sessions live under the per-user state dir; a test that builds a cache, logs
@@ -156,7 +171,7 @@ def _private_session_state(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture
-def app_dir(tmp_path):
+def app_dir(tmp_path: Path) -> Path:
     """Temp dir with a scaffolded ``app.py``, using --work-dir (no os.chdir).
 
     The app is ``App("com.test.app", "0.0.1", author="tester", scopes=["read"])``
@@ -189,7 +204,7 @@ def app_dir(tmp_path):
 
 
 @pytest.fixture
-def app_runner(app_dir):
+def app_runner(app_dir: Path) -> tuple[CliRunner, Path]:
     """CliRunner paired with a directory holding a scaffolded app."""
     runner = CliRunner()
     return runner, app_dir

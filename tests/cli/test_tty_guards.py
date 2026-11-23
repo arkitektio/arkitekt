@@ -19,12 +19,12 @@ from arkitekt.cli.tty import require_tty
 INTERACTIVE = "arkitekt.cli.tty.is_tty"
 
 
-def test_require_tty_is_noop_when_tty():
+def test_require_tty_is_noop_when_tty() -> None:
     with patch(INTERACTIVE, return_value=True):
         require_tty("Something", hint="do X")  # must not raise
 
 
-def test_require_tty_raises_when_not_tty(capsys):
+def test_require_tty_raises_when_not_tty(capsys: pytest.CaptureFixture[str]) -> None:
     with patch(INTERACTIVE, return_value=False):
         # cli_error prints the guidance to stderr, then raises typer.Exit(1).
         with pytest.raises(typer.Exit):
@@ -35,7 +35,7 @@ def test_require_tty_raises_when_not_tty(capsys):
     assert "Pass --template instead." in message
 
 
-def test_mesh_leave_aborts_without_tty_and_without_yes():
+def test_mesh_leave_aborts_without_tty_and_without_yes() -> None:
     """`mesh leave` without --yes must not block on the confirm in a non-TTY."""
     runner = CliRunner()
     with (

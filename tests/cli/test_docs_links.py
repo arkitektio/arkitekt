@@ -12,7 +12,7 @@ from arkitekt.cli import docs
 from arkitekt.cli.main import cli_app
 
 
-def test_routes_build_on_base_url():
+def test_routes_build_on_base_url() -> None:
     """Every per-command route is derived from the configurable base URL."""
     assert docs.CLI_DOCS_BASE.startswith(docs.DOCS_BASE_URL)
     for route in (
@@ -29,7 +29,7 @@ def test_routes_build_on_base_url():
         assert route.startswith(docs.CLI_DOCS_BASE)
 
 
-def test_help_epilog_renders_a_link():
+def test_help_epilog_renders_a_link() -> None:
     epilog = docs.help_epilog(docs.CREATE_DOCS)
     assert docs.CREATE_DOCS in epilog
     assert "[link=" in epilog
@@ -53,7 +53,8 @@ def test_help_epilog_renders_a_link():
         ["status"],
     ],
 )
-def test_help_includes_docs_link(args):
+def test_help_includes_docs_link(args: list[str]) -> None:
+
     result = CliRunner().invoke(cli_app, [*args, "--help"])
     assert result.exit_code == 0, result.output
     assert "Learn more" in result.output

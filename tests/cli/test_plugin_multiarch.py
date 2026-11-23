@@ -8,12 +8,16 @@ these run on a CI host with no emulation installed.
 """
 
 import subprocess
+from contextlib import AbstractContextManager
+from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
 import typer
 import yaml
-from typer.testing import CliRunner
+from rich.console import Console
+from typer.testing import CliRunner, Result
 
 from arkitekt.cli.commands.plugin import buildx
 from arkitekt.cli.commands.plugin.build import build_flavour
@@ -28,6 +32,10 @@ from arkitekt.cli.commands.plugin.types import (
 )
 from arkitekt.cli.main import cli_app
 
+if TYPE_CHECKING:
+    from arkitekt_spec import AppManifest
+
+
 #: What ``docker buildx inspect --bootstrap`` prints for a builder that can do
 #: both architectures (the shape was captured from a real docker-container
 #: builder; the default ``docker`` driver reports only the host's).
@@ -41,11 +49,11 @@ Platforms:             linux/amd64, linux/amd64/v2, linux/arm64, linux/arm64/v8
 """
 
 
-def _config(tmp_path, flavour="vanilla"):
+def _config(tmp_path: Path, flavour: str = "vanilla") -> Path:
     return tmp_path / ".arkitekt" / "flavours" / flavour / "config.yaml"
 
 
-def _init(tmp_path, *extra):
+def _init(tmp_path: Path, *extra: str) -> Result:
     return CliRunner().invoke(
         cli_app,
         [
@@ -67,7 +75,7 @@ def _init(tmp_path, *extra):
 # ---------------------------------------------------------------------------
 
 
-def test_a_new_flavour_builds_both_architectures(tmp_path):
+def test_a_new_flavour_builds_both_architectures(tmp_path: Path) -> None:
     result = _init(tmp_path)
 
     assert result.exit_code == 0, result.output
@@ -76,7 +84,7 @@ def test_a_new_flavour_builds_both_architectures(tmp_path):
     )
 
 
-def test_no_multi_arch_builds_only_this_machine(tmp_path):
+def test_no_multi_arch_builds_only_this_machine(tmp_path: Path) -> None:
     with patch.object(buildx, "host_platform", return_value="linux/amd64"):
         result = _init(tmp_path, "--no-multi-arch")
 
@@ -84,7 +92,7 @@ def test_no_multi_arch_builds_only_this_machine(tmp_path):
     assert yaml.safe_load(_config(tmp_path).read_text())["platforms"] == ["linux/amd64"]
 
 
-def test_platforms_can_be_named_explicitly(tmp_path):
+def test_platforms_can_be_named_explicitly(tmp_path: Path) -> None:
     result = _init(tmp_path, "-p", "linux/arm64", "-p", "linux/amd64")
 
     assert result.exit_code == 0, result.output
@@ -94,14 +102,14 @@ def test_platforms_can_be_named_explicitly(tmp_path):
     ]
 
 
-def test_naming_platforms_and_opting_out_at_once_is_refused(tmp_path):
+def test_naming_platforms_and_opting_out_at_once_is_refused(tmp_path: Path) -> None:
     result = _init(tmp_path, "--no-multi-arch", "-p", "linux/arm64")
 
     assert result.exit_code != 0
     assert "--platform and --no-multi-arch" in result.output
 
 
-def test_a_flavour_written_before_multi_arch_still_builds_both(tmp_path):
+def test_a_flavour_written_before_multi_arch_still_builds_both(tmp_path: Path) -> None:
     """The old default build command is a spelling, not a choice."""
     _init(tmp_path)
     config = _config(tmp_path)
@@ -117,7 +125,7 @@ def test_a_flavour_written_before_multi_arch_still_builds_both(tmp_path):
     assert not loaded.is_customized()
 
 
-def test_a_hand_written_build_command_is_left_alone(tmp_path):
+def test_a_hand_written_build_command_is_left_alone(tmp_path: Path) -> None:
     _init(tmp_path)
     config = _config(tmp_path)
     custom = yaml.safe_load(config.read_text())
@@ -140,7 +148,7 @@ def test_a_hand_written_build_command_is_left_alone(tmp_path):
     assert "--build-arg" in loaded.generate_build_command("tag", "dir/")
 
 
-def test_an_unloadable_config_names_the_file_and_the_reason(tmp_path):
+def test_an_unloadable_config_names_the_file_and_the_reason(tmp_path: Path) -> None:
     _init(tmp_path)
     _config(tmp_path).write_text(
         yaml.dump({"selectors": [], "platforms": "linux/amd64"})
@@ -155,7 +163,9 @@ def test_an_unloadable_config_names_the_file_and_the_reason(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def _build(flavour, platforms=None, host="linux/amd64"):
+def _build(
+    flavour: Flavour, platforms: list[str] | None = None, host: str = "linux/amd64"
+) -> tuple[str, list[list[str]]]:
     """Run build_flavour against a mocked docker, returning the argv lists."""
     with (
         patch.object(buildx, "host_platform", return_value=host),
@@ -169,7 +179,7 @@ def _build(flavour, platforms=None, host="linux/amd64"):
     return build_id, [call.args[0] for call in run.call_args_list]
 
 
-def test_the_host_platform_is_loaded_and_the_rest_only_cached():
+def test_the_host_platform_is_loaded_and_the_rest_only_cached() -> None:
     build_id, commands = _build(Flavour(selectors=[]))
 
     host, foreign = commands
@@ -185,26 +195,26 @@ def test_the_host_platform_is_loaded_and_the_rest_only_cached():
     assert "--load" not in foreign
 
 
-def test_a_single_platform_flavour_runs_one_build():
+def test_a_single_platform_flavour_runs_one_build() -> None:
     _, commands = _build(Flavour(selectors=[], platforms=["linux/amd64"]))
 
     assert len(commands) == 1
     assert "--load" in commands[0]
 
 
-def test_the_platform_flag_overrides_what_the_flavour_declares():
+def test_the_platform_flag_overrides_what_the_flavour_declares() -> None:
     _, commands = _build(Flavour(selectors=[]), platforms=["linux/amd64"])
 
     assert len(commands) == 1
 
 
-def test_building_nothing_this_machine_can_load_is_refused():
+def test_building_nothing_this_machine_can_load_is_refused() -> None:
     """Every later step -- inspection, --tag, stage -- reads the local image."""
     with pytest.raises(typer.Exit):
         _build(Flavour(selectors=[], platforms=["linux/arm64"]))
 
 
-def test_a_customized_command_is_run_verbatim():
+def test_a_customized_command_is_run_verbatim() -> None:
     flavour = Flavour(
         selectors=[],
         build_command=[
@@ -232,7 +242,7 @@ def test_a_customized_command_is_run_verbatim():
 # ---------------------------------------------------------------------------
 
 
-def _inspect_returns(text):
+def _inspect_returns(text: str) -> AbstractContextManager[object]:
     return patch.object(
         buildx.subprocess,
         "run",
@@ -240,7 +250,7 @@ def _inspect_returns(text):
     )
 
 
-def test_a_builder_is_asked_what_it_supports():
+def test_a_builder_is_asked_what_it_supports() -> None:
     with _inspect_returns(_BOTH_PLATFORMS):
         assert buildx.builder_platforms("arkitekt") == [
             "linux/amd64",
@@ -250,12 +260,14 @@ def test_a_builder_is_asked_what_it_supports():
         ]
 
 
-def test_a_variant_covers_the_platform_that_was_asked_for():
+def test_a_variant_covers_the_platform_that_was_asked_for() -> None:
     assert buildx._supports(["linux/arm64/v8"], "linux/arm64")
     assert not buildx._supports(["linux/amd64", "linux/386"], "linux/arm64")
 
 
-def test_a_missing_architecture_names_both_the_remedy_and_the_way_out(capsys):
+def test_a_missing_architecture_names_both_the_remedy_and_the_way_out(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with (
         patch.object(buildx, "host_platform", return_value="linux/amd64"),
         patch.object(buildx, "_builder_exists", return_value=True),
@@ -270,7 +282,7 @@ def test_a_missing_architecture_names_both_the_remedy_and_the_way_out(capsys):
     assert "--no-multi-arch" in message
 
 
-def test_building_only_for_this_machine_creates_no_builder():
+def test_building_only_for_this_machine_creates_no_builder() -> None:
     with (
         patch.object(buildx, "host_platform", return_value="linux/amd64"),
         patch.object(buildx, "_builder_exists") as exists,
@@ -285,7 +297,7 @@ def test_building_only_for_this_machine_creates_no_builder():
 # ---------------------------------------------------------------------------
 
 
-def test_publishing_a_multi_arch_build_pushes_one_image(tmp_path):
+def test_publishing_a_multi_arch_build_pushes_one_image(tmp_path: Path) -> None:
     _init(tmp_path)
     build = Build(
         build_run="run",
@@ -311,20 +323,22 @@ def test_publishing_a_multi_arch_build_pushes_one_image(tmp_path):
     assert command[command.index("-t") + 1] == "me/x:1"
 
 
-def _manifest():
+def _manifest() -> "AppManifest":
     from arkitekt_spec import AppManifest
 
     return AppManifest(identifier="com.x", version="1.0.0", entrypoint="app")
 
 
-class _Console:
-    def print(self, *args, **kwargs):
+class _Console(Console):
+    """A console that says nothing."""
+
+    def print(self, *args: object, **kwargs: object) -> None:
         pass
 
 
 def test_publishing_an_uninspected_build_is_refused_before_it_is_pushed(
-    tmp_path, monkeypatch
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """The push is the expensive, irreversible half; the record needs the inspection."""
     _init(tmp_path)
     monkeypatch.chdir(tmp_path)

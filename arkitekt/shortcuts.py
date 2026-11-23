@@ -105,7 +105,7 @@ class Easy(Generic[R]):
         Raises:
             LookupError: If the runtime has no client for a named service.
         """
-        found: tuple[Any, ...] = tuple(
+        found: tuple[object, ...] = tuple(
             self._client_of(runtime, declared) for declared in self.services
         )
         if not found:
@@ -115,7 +115,7 @@ class Easy(Generic[R]):
         return cast(R, found)
 
     @staticmethod
-    def _client_of(runtime: Runtime[Any], declared: "Service[Any]") -> Any:  # noqa: ANN401
+    def _client_of(runtime: Runtime[Any], declared: "Service[Any]") -> object:
         try:
             return runtime.clients[declared.name]
         except KeyError:
@@ -1177,7 +1177,7 @@ def interactive(
     device_id: str | Source | None = DISCOVER,
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
-) -> Any:  # noqa: ANN401 -- typed by the overloads
+) -> object:  # typed by the overloads
     """Connect and stay connected; return the clients. For notebooks.
 
     ``mikro, fluss = interactive("notebook", mikro_service, fluss_service)``. Sync calls work inside

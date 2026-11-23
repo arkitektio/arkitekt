@@ -17,8 +17,9 @@ import sys
 import threading
 import time
 import urllib.request
-from typing import Any
+from typing import Any, TextIO
 
+import typer
 from rich.console import Console
 
 #: Set to anything to never ask.
@@ -98,7 +99,7 @@ def is_newer(latest: str, current: str) -> bool:
     return newest > running
 
 
-def wanted(environ: dict[str, str] | None = None, stderr: Any = None) -> bool:  # noqa: ANN401
+def wanted(environ: dict[str, str] | None = None, stderr: TextIO | None = None) -> bool:
     """Whether to ask at all: someone reads stderr, it is not CI, and it is not turned off."""
     environ = dict(os.environ) if environ is None else environ
     if environ.get(DISABLE_ENV) or environ.get("CI"):
@@ -172,7 +173,7 @@ class UpdateCheck:
             )
 
 
-def start(ctx: Any) -> None:  # noqa: ANN401
+def start(ctx: typer.Context) -> None:
     """Begin the look for a command, and have it said when the command closes."""
     from arkitekt.cli.ui import arkitekt_version
 

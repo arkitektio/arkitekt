@@ -5,6 +5,8 @@ by whoever installs it — konstruktor, a deployer — from the deployments file
 Nothing here needs docker: the records are written straight from the flavour.
 """
 
+from pathlib import Path
+
 import pytest
 import typer
 import yaml
@@ -14,7 +16,7 @@ from arkitekt_spec import (
     FolderCapability,
     Inspection,
 )
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from arkitekt.cli.commands.plugin.io import (
     generate_build,
@@ -24,7 +26,7 @@ from arkitekt.cli.commands.plugin.io import (
 from arkitekt.cli.main import cli_app
 
 
-def _init(tmp_path):
+def _init(tmp_path: Path) -> Result:
     return CliRunner().invoke(
         cli_app,
         [
@@ -40,19 +42,19 @@ def _init(tmp_path):
     )
 
 
-def _declare(tmp_path, capabilities):
+def _declare(tmp_path: Path, capabilities: list[dict[str, str | bool]]) -> None:
     config = tmp_path / ".arkitekt" / "flavours" / "vanilla" / "config.yaml"
     written = yaml.safe_load(config.read_text())
     written["capabilities"] = capabilities
     config.write_text(yaml.dump(written))
 
 
-def test_a_new_flavour_needs_nothing_granted(tmp_path):
+def test_a_new_flavour_needs_nothing_granted(tmp_path: Path) -> None:
     _init(tmp_path)
     assert get_flavours(base_dir=str(tmp_path))["vanilla"].capabilities == []
 
 
-def test_capabilities_reach_the_build_and_the_deployments_file(tmp_path):
+def test_capabilities_reach_the_build_and_the_deployments_file(tmp_path: Path) -> None:
     _init(tmp_path)
     _declare(
         tmp_path,
@@ -92,7 +94,9 @@ def test_capabilities_reach_the_build_and_the_deployments_file(tmp_path):
     }
 
 
-def test_a_typo_in_a_capability_is_refused_when_the_flavour_is_read(tmp_path, capsys):
+def test_a_typo_in_a_capability_is_refused_when_the_flavour_is_read(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     _init(tmp_path)
     _declare(
         tmp_path,

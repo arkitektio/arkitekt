@@ -57,7 +57,7 @@ def services(
     as_json: JsonOption = False,
     machine_readable: MachineReadableOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-):
+) -> None:
     """List the service SDKs this app would connect through
 
     Loads the target's app and reports each service it declares, its fakts requirements, and whether it

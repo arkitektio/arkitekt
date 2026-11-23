@@ -4,12 +4,11 @@ import logging
 import os
 import sys
 from collections.abc import Callable, Iterator
-from typing import Any
 
 from rich.console import Console
 
 
-def emit_machine_readable(kind: str, data: Any) -> None:
+def emit_machine_readable(kind: str, data: object) -> None:
     """Print ``data`` as JSON wrapped in ``--START_<KIND>--``/``--END_<KIND>--``.
 
     The sentinels let consumers (e.g. ``plugin build``'s in-container inspection)
@@ -19,7 +18,7 @@ def emit_machine_readable(kind: str, data: Any) -> None:
     print(f"--START_{kind}--" + json.dumps(data) + f"--END_{kind}--")
 
 
-def build_relative_dir(*paths):
+def build_relative_dir(*paths: str) -> str:
     return os.path.join(os.path.dirname(os.path.abspath(__file__)), *paths)
 
 
@@ -42,7 +41,7 @@ def configure_logging(log_level: str) -> None:
 
 
 @contextlib.contextmanager
-def json_stdout(enabled: bool) -> Iterator[Callable[[Any], None]]:
+def json_stdout(enabled: bool) -> Iterator[Callable[[object], None]]:
     """Keep stdout for one JSON document, when ``enabled``.
 
     Inside, whatever else would reach stdout (an app's own prints while it is
@@ -51,7 +50,7 @@ def json_stdout(enabled: bool) -> Iterator[Callable[[Any], None]]:
     """
     stdout = sys.stdout
 
-    def emit(data: Any) -> None:  # noqa: ANN401
+    def emit(data: object) -> None:
         if enabled:
             stdout.write(json.dumps(data, indent=2, default=str) + "\n")
             stdout.flush()

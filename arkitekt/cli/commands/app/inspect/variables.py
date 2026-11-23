@@ -1,5 +1,6 @@
 import inspect as pyinspect
 import json
+from types import ModuleType
 
 import typer
 
@@ -15,7 +16,7 @@ from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_st
 from arkitekt.cli.vars import get_console
 
 
-def inspect_dangerous_variables(module):
+def inspect_dangerous_variables(module: ModuleType) -> dict[str, object]:
     """Inspect the module and return a dictionary of all the variables that are
     not upper case and that are not classes, modules, functions or builtins.
 
@@ -28,7 +29,7 @@ def inspect_dangerous_variables(module):
 
     """
 
-    dangerous_variables = {}
+    dangerous_variables: dict[str, object] = {}
 
     for key, value in pyinspect.getmembers(module):
         if key.startswith("_"):
@@ -50,7 +51,7 @@ def inspect_dangerous_variables(module):
     return dangerous_variables
 
 
-def scan_module(module):
+def scan_module(module: ModuleType) -> dict[str, object]:
     """Scan a module for dangerous variables."""
     return inspect_dangerous_variables(module)
 
@@ -61,7 +62,7 @@ def variables(
     as_json: JsonOption = False,
     machine_readable: MachineReadableOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-):
+) -> None:
     """Scan the app for unsafe variables
 
     When designing an Arkitekt app, you should not have variables in your

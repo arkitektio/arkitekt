@@ -1,7 +1,8 @@
 """Shell completion of values: an app's actions, its flavours, its services."""
 
 from pathlib import Path
-from typing import Any
+
+import pytest
 
 from arkitekt.cli.completion import (
     complete_actions,
@@ -25,18 +26,27 @@ APP = (
 )
 
 
+class _Root:
+    """The root of the command line: where ``--work-dir`` was given."""
+
+    def __init__(self, work_dir: Path) -> None:
+        self.params = {"work_dir": str(work_dir)}
+
+
 class _Ctx:
     """What a completer is handed: the line parsed so far, before any callback."""
 
-    def __init__(self, work_dir: Path, **params: Any) -> None:  # noqa: ANN401
+    def __init__(self, work_dir: Path, **params: str) -> None:
         self.params = params
-        self._root = type("Root", (), {"params": {"work_dir": str(work_dir)}})()
+        self._root = _Root(work_dir)
 
-    def find_root(self) -> Any:  # noqa: ANN401
+    def find_root(self) -> _Root:
         return self._root
 
 
-def test_an_apps_actions_complete_by_name(tmp_path: Path, capsys) -> None:
+def test_an_apps_actions_complete_by_name(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     (tmp_path / "completed_app.py").write_text(APP)
     ctx = _Ctx(tmp_path, target="completed_app")
 

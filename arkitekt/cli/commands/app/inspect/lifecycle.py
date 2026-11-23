@@ -34,7 +34,7 @@ def lifecycle(
     as_json: JsonOption = False,
     machine_readable: MachineReadableOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-):
+) -> None:
     """List the agent lifecycle hooks: startup, shutdown and background
 
     Startup hooks populate states/contexts when the agent starts (a ``@app.lifecycle``

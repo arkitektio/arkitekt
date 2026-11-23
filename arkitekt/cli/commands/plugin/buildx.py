@@ -17,7 +17,8 @@ import platform as _platform
 import re
 import subprocess
 from collections.abc import Sequence
-from typing import Any
+
+from rich.console import Console
 
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.ui import command_hint
@@ -133,7 +134,9 @@ def _create_builder(name: str, work_dir: str | None) -> None:
 
 
 def ensure_builder(
-    platforms: Sequence[str], console: Any = None, work_dir: str | None = None
+    platforms: Sequence[str],
+    console: Console | None = None,
+    work_dir: str | None = None,
 ) -> str | None:
     """The builder to pass as ``--builder`` for these platforms.
 

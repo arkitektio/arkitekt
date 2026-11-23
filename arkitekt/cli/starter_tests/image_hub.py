@@ -17,7 +17,7 @@ from arkitekt.testing import TestStack
 pytestmark = pytest.mark.hub
 
 
-def test_a_random_image_is_stored(teststack: TestStack[None]):
+def test_a_random_image_is_stored(teststack: TestStack[None]) -> None:
     image = teststack.call("generate_random_image", width=16, height=8, name="noise")
 
     stored = teststack.runtime.require(Mikro).get_lens(image.id)
@@ -25,7 +25,7 @@ def test_a_random_image_is_stored(teststack: TestStack[None]):
     assert stored.data.squeeze().shape == (8, 16)
 
 
-def test_a_blurred_image_is_as_large_and_smoother(teststack: TestStack[None]):
+def test_a_blurred_image_is_as_large_and_smoother(teststack: TestStack[None]) -> None:
     image = teststack.call("generate_random_image", width=16, height=16)
 
     blurred = teststack.call("blur_image", image=image, radius=2)

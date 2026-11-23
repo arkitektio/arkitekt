@@ -7,6 +7,8 @@ skipped. Run them with `uv run pytest`.
 """
 
 import os
+from collections.abc import Callable, Iterator
+from typing import Any
 
 import pytest
 
@@ -28,7 +30,7 @@ from arkitekt.testing import local_app  # noqa: E402
 
 
 @pytest.fixture(scope="module")
-def window():
+def window() -> Iterator[Window]:
     """The app's window, built once for the tests of this file."""
     application = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
     window = Window()
@@ -43,31 +45,31 @@ def arkitekt_context(window: Window) -> Window:
     return window
 
 
-def test_count_words(call):
+def test_count_words(call: Callable[..., Any]) -> None:
     assert call("count_words", text="one two  three") == 3
     assert call("count_words", text="") == 0
 
 
 def test_the_app_is_started_with_its_window(
     local_runtime: Runtime[Window], window: Window
-):
+) -> None:
     assert local_runtime.app is app
     assert app.registry.app_context_class is Window
 
 
-def test_the_app_does_not_start_without_a_window():
+def test_the_app_does_not_start_without_a_window() -> None:
     with pytest.raises(Exception, match="Window"):
         with local_app(app):
             pass
 
 
-def test_the_window_is_not_an_argument_of_the_action():
+def test_the_window_is_not_an_argument_of_the_action() -> None:
     # A caller gives the text; the window is the app's to hand in.
     definition = app.registry.implementations["show_message"].definition
     assert [port.key for port in definition.args] == ["text"]
 
 
-def test_show_message_shows_it_and_returns_what_was_there(window: Window):
+def test_show_message_shows_it_and_returns_what_was_there(window: Window) -> None:
     # Called as the function it is: through the app it runs in the Qt loop, which
     # a test that waits for the answer would be standing in.
     assert show_message("Hello", window) == "Nothing was shown yet"
@@ -75,7 +77,7 @@ def test_show_message_shows_it_and_returns_what_was_there(window: Window):
     assert show_message("again", window) == "Hello"
 
 
-def test_the_bar_provides_the_app_with_its_window(window: Window):
+def test_the_bar_provides_the_app_with_its_window(window: Window) -> None:
     assert window.bar.runtime is window.runtime
     assert window.bar.context is window
     assert window.runtime.app is app

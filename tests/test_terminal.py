@@ -4,6 +4,7 @@ import asyncio
 import io
 import re
 
+import pytest
 from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.grants.remote.models import FaktsEndpoint
 from rich.console import Console
@@ -37,7 +38,7 @@ def _flat(output: str) -> str:
 
 
 def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(
-    capsys, monkeypatch
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv(QR_ENV, raising=False)
     asyncio.run(login_prompt(opened_browser=True)(APPROVE))  # pyright: ignore[reportArgumentType]
@@ -51,7 +52,9 @@ def test_the_prompt_links_to_the_approval_page_with_the_code_filled_in(
     assert "█" not in out, "the page opened here: no QR code to scan"
 
 
-def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys, monkeypatch) -> None:
+def test_a_headless_prompt_asks_for_the_link_to_be_opened(
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv(QR_ENV, raising=False)
     asyncio.run(login_prompt(opened_browser=False)(APPROVE))  # pyright: ignore[reportArgumentType]
 
@@ -61,7 +64,7 @@ def test_a_headless_prompt_asks_for_the_link_to_be_opened(capsys, monkeypatch) -
 
 
 def test_a_forced_qr_code_is_drawn_even_for_a_local_page_that_opened(
-    capsys, monkeypatch
+    capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.delenv(
         QR_ENV, raising=False
@@ -138,7 +141,7 @@ def test_without_colours_a_qr_code_draws_its_light_modules() -> None:
 
 
 def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(
-    capsys,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     bare = FaktsEndpoint(base_url="https://lab.example/f/", name="Lab")
 
@@ -148,7 +151,9 @@ def test_an_endpoint_without_an_approval_page_gets_its_address_and_the_code(
     assert "https://lab.example/f/" in out and "code ABCD-EFGH" in out
 
 
-def test_being_logged_in_never_shows_the_token(capsys) -> None:
+def test_being_logged_in_never_shows_the_token(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     asyncio.run(logged_in(ENDPOINT, "SECRET-ACCESS"))
 
     out = capsys.readouterr().out

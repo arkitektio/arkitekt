@@ -9,7 +9,7 @@ each step; and a cancel from the backend stops it where it asks.
 import asyncio
 import threading
 import time
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from types import TracebackType
 from typing import Annotated, Any
 
@@ -88,7 +88,7 @@ class Loopback(AgentTransport):
         await self.adisconnect()
 
 
-def _until(predicate, timeout: float = 10.0) -> None:  # noqa: ANN001
+def _until(predicate: Callable[[], bool], timeout: float = 10.0) -> None:
     deadline = time.time() + timeout
     while not predicate():
         if time.time() > deadline:

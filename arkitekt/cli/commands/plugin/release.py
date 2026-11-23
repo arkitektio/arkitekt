@@ -24,7 +24,7 @@ import shlex
 import subprocess
 import uuid
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Annotated, Any
+from typing import TYPE_CHECKING, Annotated
 
 import typer
 from arkitekt_spec import (
@@ -35,6 +35,7 @@ from arkitekt_spec import (
     current_spec_version,
 )
 from arkitekt_spec.release import channel_tag, channel_version, image_tag, release_tag
+from rich.console import Console
 
 from arkitekt.app.app import VERSION_ENV
 from arkitekt.cli.errors import cli_error
@@ -213,7 +214,7 @@ def identify(
     platforms: dict[str, list[str]],
     work_dir: str,
     target: str,
-    console: Any,
+    console: Console,
 ) -> AppManifest:
     """Which app, at which version, the flavours hold: as their images say, not the source.
 
@@ -266,7 +267,7 @@ def push_flavour(
     resolved: Resolved,
     work_dir: str,
     platforms: list[str],
-    console: Any,
+    console: Console,
 ) -> None:
     """Build a flavour for all of its platforms and push it, as one image."""
     from .buildx import ensure_builder

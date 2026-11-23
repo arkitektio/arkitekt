@@ -24,7 +24,8 @@ from arkitekt.qt.types import QtApp  # noqa: E402
 
 
 @pytest.fixture(scope="module")
-def qapp() -> Any:
+def qapp() -> object:
+    """The process's QApplication; the tests need one to exist, never touch it."""
     from qtpy import QtWidgets
 
     return QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
@@ -38,7 +39,7 @@ def build_qt_app(identifier: str = "qt-app", **kwargs: Any) -> QtApp[Any]:
     return QtApp(identifier, parent=parent, **kwargs)
 
 
-def test_a_qt_app_is_a_declaration(qapp: Any) -> None:
+def test_a_qt_app_is_a_declaration(qapp: object) -> None:
     app = build_qt_app("declared", version="1.2")
 
     assert (app.identifier, app.version) == ("declared", "1.2")
@@ -54,7 +55,7 @@ def test_a_qt_app_is_a_declaration(qapp: Any) -> None:
         "register_with_qt_generator",
     ],
 )
-def test_registering_on_a_qt_app(qapp: Any, method: str) -> None:
+def test_registering_on_a_qt_app(qapp: object, method: str) -> None:
     """Each Qt actifier reaches the app's own registry, and makes the app use rekuest."""
     from koil.qt import QtFuture, QtGenerator
 
@@ -85,7 +86,7 @@ def test_registering_on_a_qt_app(qapp: Any, method: str) -> None:
     )
 
 
-def test_the_magic_bar_builds_on_an_unentered_runtime(qapp: Any) -> None:
+def test_the_magic_bar_builds_on_an_unentered_runtime(qapp: object) -> None:
     """The bar is built before its runtime is entered: labels from the app, tasks lazy."""
     from arkitekt.qt.magic_bar import MagicBar
 
@@ -101,7 +102,7 @@ def test_the_magic_bar_builds_on_an_unentered_runtime(qapp: Any) -> None:
     assert bar.provide_task is not None
 
 
-def test_the_magic_bar_provides_the_run_with_its_context(qapp: Any) -> None:
+def test_the_magic_bar_provides_the_run_with_its_context(qapp: object) -> None:
     """An app that declares a context is provided with the one the bar was given."""
     import asyncio
 
@@ -116,9 +117,10 @@ def test_the_magic_bar_provides_the_run_with_its_context(qapp: Any) -> None:
     )
     stage = Stage()
     bar = MagicBar(runtime, context=stage)
-    seen: list[Any] = []
+    seen: list[object] = []
 
-    async def arun(context: Any = None) -> None:
+    async def arun(context: object = None) -> None:
+
         seen.append(context)
 
     # A pydantic model: set past its validation, as only this test stands in for a run.
@@ -129,7 +131,7 @@ def test_the_magic_bar_provides_the_run_with_its_context(qapp: Any) -> None:
     assert seen == [stage]
 
 
-def test_a_magic_bar_without_a_context_provides_none(qapp: Any) -> None:
+def test_a_magic_bar_without_a_context_provides_none(qapp: object) -> None:
     from arkitekt.qt.magic_bar import MagicBar
 
     runtime = connect(

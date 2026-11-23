@@ -1,6 +1,7 @@
 import io
 import json
 import sys
+from collections.abc import Callable
 from unittest.mock import patch
 
 from typer.testing import CliRunner
@@ -16,16 +17,16 @@ def _pypi_payload(version: str) -> bytes:
     ).encode()
 
 
-def _fake_urlopen(version: str):
+def _fake_urlopen(version: str) -> Callable[..., io.BytesIO]:
     """Return a fake urlopen that yields a PyPI JSON payload for any package."""
 
-    def _urlopen(url, timeout=None):
+    def _urlopen(url: str, timeout: float | None = None) -> io.BytesIO:
         return io.BytesIO(_pypi_payload(version))
 
     return _urlopen
 
 
-def test_self_upgrade_pip_outdated():
+def test_self_upgrade_pip_outdated() -> None:
     """An outdated package triggers a pip upgrade with the right command."""
     runner = CliRunner()
     with (
@@ -47,7 +48,7 @@ def test_self_upgrade_pip_outdated():
         assert "arkitekt" in command
 
 
-def test_self_upgrade_uv_outdated():
+def test_self_upgrade_uv_outdated() -> None:
     """With uv selected, uv add --upgrade is used and uv presence is checked."""
     runner = CliRunner()
     with (
@@ -69,7 +70,7 @@ def test_self_upgrade_uv_outdated():
         assert "arkitekt" in command
 
 
-def test_self_upgrade_uv_not_installed():
+def test_self_upgrade_uv_not_installed() -> None:
     """Selecting uv without uv installed raises a clear error."""
     runner = CliRunner()
     with (
@@ -86,7 +87,7 @@ def test_self_upgrade_uv_not_installed():
         assert mock_run.call_count == 0
 
 
-def test_self_upgrade_up_to_date():
+def test_self_upgrade_up_to_date() -> None:
     """When installed == latest, nothing is upgraded."""
     runner = CliRunner()
     with (
@@ -105,7 +106,7 @@ def test_self_upgrade_up_to_date():
         assert mock_run.call_count == 0
 
 
-def test_self_upgrade_confirm_no_aborts():
+def test_self_upgrade_confirm_no_aborts() -> None:
     """Declining the confirmation prompt aborts without upgrading."""
     runner = CliRunner()
     with (

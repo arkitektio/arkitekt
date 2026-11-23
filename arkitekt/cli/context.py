@@ -12,21 +12,20 @@ prompt, not after a login.
 import inspect
 import json
 from pathlib import Path
-from typing import Any
 
 from pydantic import BaseModel
 
-from arkitekt.app.app import App
+from arkitekt.app.app import App, Ctx
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.target import TargetError, import_target, parse_target
 
 
 def load_context(
-    app: App[Any],
+    app: App[Ctx],
     context: str | None,
     context_file: Path | None,
     work_dir: str,
-) -> Any:  # noqa: ANN401
+) -> Ctx | None:
     """The app context for a run of ``app``, from the flags; ``None`` when it declares none.
 
     Args:
@@ -63,7 +62,9 @@ def load_context(
     )
 
 
-def _from_target(app: App[Any], declared: type, context: str, work_dir: str) -> Any:  # noqa: ANN401
+def _from_target(
+    app: App[Ctx], declared: type[Ctx], context: str, work_dir: str
+) -> Ctx:
     try:
         target = parse_target(context, work_dir)
     except TargetError as e:
@@ -91,7 +92,7 @@ def _from_target(app: App[Any], declared: type, context: str, work_dir: str) -> 
     return value
 
 
-def _from_file(app: App[Any], declared: type, path: Path) -> Any:  # noqa: ANN401
+def _from_file(app: App[Ctx], declared: type[Ctx], path: Path) -> Ctx:
     if not issubclass(declared, BaseModel):
         cli_error(
             f"App {app.identifier!r} declares its app context as {declared.__name__}, which is "

@@ -17,6 +17,7 @@ except ImportError as e:
     ) from e
 
 from .magic_bar import MagicBar
-from .types import *
+from .types import *  # noqa: F403 -- arkitekt.qt has always re-exported these
+from .types import QtApp
 
 __all__ = ["MagicBar", "QtApp"]

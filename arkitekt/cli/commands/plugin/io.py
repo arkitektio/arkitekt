@@ -205,7 +205,7 @@ def generate_deployment(
         selectors=build.selectors,
         capabilities=build.capabilities,
         inspection=build.inspection,
-        image=DockerImage(imageString=image, buildAt=datetime.datetime.now()),
+        image=DockerImage(imageString=image, buildAt=datetime.datetime.now()),  # noqa: DTZ005 -- local time, as deployments.yaml has always held
     )
 
     config = get_deployments(base_dir=base_dir)

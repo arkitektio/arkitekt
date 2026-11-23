@@ -9,8 +9,10 @@ from typing import Any
 import pytest
 from arkitekt_spec.declare.service import Service
 from arkitekt_spec.declare.structures.errors import StructureDefinitionError
+from arkitekt_spec.declare.structures.types import FullFilledStructure
 
 from arkitekt import App, connect
+from arkitekt.runtime import Runtime
 
 from .fakes import PictureClient, PictureService, RekuestProvider
 
@@ -68,7 +70,8 @@ async def test_each_run_expands_through_its_own_client() -> None:
     app = picture_app()
     app.register_structure(Thing, "@lib/thing", expand=expand_thing)
 
-    def structure_of(rt: Any) -> Any:  # noqa: ANN401
+    def structure_of(rt: Runtime[None]) -> FullFilledStructure:
+        assert rt.snapshot is not None, "an entered run has its snapshot"
         return rt.snapshot.registry.structure_registry.get_fullfilled_structure(
             "@lib/thing"
         )
@@ -115,7 +118,7 @@ def test_a_lambda_is_refused_at_registration() -> None:
 def test_an_unannotated_parameter_is_refused_at_registration() -> None:
     app = picture_app()
 
-    async def expand(id: str, pictures) -> Thing:  # noqa: ANN001
+    async def expand(id: str, pictures) -> Thing:  # noqa: ANN001 -- the missing annotation is the case
         """Says nothing about what it wants."""
         return Thing(id, "x")
 

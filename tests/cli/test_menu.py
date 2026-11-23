@@ -1,6 +1,8 @@
 """The root menu follows the folder: an app's commands where there is an app,
 `create` where there is none. Nothing is taken away, only left off the list."""
 
+from pathlib import Path
+
 import pytest
 from typer.testing import CliRunner
 
@@ -23,7 +25,9 @@ def _listed(output: str) -> list[str]:
 @pytest.mark.parametrize(
     "order", [("--work-dir", "{}", "--help"), ("--help", "--work-dir", "{}")]
 )
-def test_a_folder_with_an_app_lists_its_commands(app_dir, order):
+def test_a_folder_with_an_app_lists_its_commands(
+    app_dir: Path, order: tuple[str, ...]
+) -> None:
     result = CliRunner().invoke(cli_app, [part.format(app_dir) for part in order])
 
     assert result.exit_code == 0, result.output
@@ -34,7 +38,10 @@ def test_a_folder_with_an_app_lists_its_commands(app_dir, order):
 @pytest.mark.parametrize(
     "order", [("--work-dir", "{}", "--help"), ("--help", "--work-dir", "{}")]
 )
-def test_a_folder_without_an_app_lists_create(tmp_path, order):
+def test_a_folder_without_an_app_lists_create(
+    tmp_path: Path, order: tuple[str, ...]
+) -> None:
+
     result = CliRunner().invoke(cli_app, [part.format(tmp_path) for part in order])
 
     assert result.exit_code == 0, result.output
@@ -42,7 +49,9 @@ def test_a_folder_without_an_app_lists_create(tmp_path, order):
     assert "arkitekt create" in result.output
 
 
-def test_an_app_is_a_target_file_that_mentions_arkitekt(tmp_path, monkeypatch):
+def test_an_app_is_a_target_file_that_mentions_arkitekt(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.delenv("ARKITEKT_APP", raising=False)
     assert has_app(str(tmp_path)) is None
 
@@ -53,7 +62,9 @@ def test_an_app_is_a_target_file_that_mentions_arkitekt(tmp_path, monkeypatch):
     assert has_app(str(tmp_path)) == str(tmp_path / "app.py")
 
 
-def test_the_app_is_found_without_running_it(tmp_path, monkeypatch):
+def test_the_app_is_found_without_running_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """What the help lists must not depend on importing the user's code."""
     monkeypatch.delenv("ARKITEKT_APP", raising=False)
     (tmp_path / "app.py").write_text("import arkitekt\nraise SystemExit('imported')\n")
@@ -64,14 +75,18 @@ def test_the_app_is_found_without_running_it(tmp_path, monkeypatch):
     assert _listed(result.output) == list(APP_MENU)
 
 
-def test_the_target_from_the_environment_names_the_app(tmp_path, monkeypatch):
+def test_the_target_from_the_environment_names_the_app(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     (tmp_path / "main.py").write_text("from arkitekt import App\n")
 
     monkeypatch.setenv("ARKITEKT_APP", "main")
     assert has_app(str(tmp_path)) == str(tmp_path / "main.py")
 
 
-def test_a_command_off_the_menu_still_runs_and_says_what_is_missing(tmp_path):
+def test_a_command_off_the_menu_still_runs_and_says_what_is_missing(
+    tmp_path: Path,
+) -> None:
     result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "run", "prod"])
 
     assert result.exit_code != 0
@@ -79,7 +94,7 @@ def test_a_command_off_the_menu_still_runs_and_says_what_is_missing(tmp_path):
     assert "arkitekt create" in result.output
 
 
-def test_create_is_off_the_app_menu_but_still_there(app_dir):
+def test_create_is_off_the_app_menu_but_still_there(app_dir: Path) -> None:
     result = CliRunner().invoke(
         cli_app, ["--work-dir", str(app_dir), "create", "--help"]
     )
@@ -87,7 +102,7 @@ def test_create_is_off_the_app_menu_but_still_there(app_dir):
     assert result.exit_code == 0, result.output
 
 
-def test_init_is_gone(tmp_path):
+def test_init_is_gone(tmp_path: Path) -> None:
     result = CliRunner().invoke(cli_app, ["--work-dir", str(tmp_path), "init"])
 
     assert result.exit_code != 0

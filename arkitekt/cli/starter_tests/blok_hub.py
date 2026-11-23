@@ -17,7 +17,7 @@ from arkitekt.testing import TestStack
 pytestmark = pytest.mark.hub
 
 
-def test_a_test_image_is_stored(teststack: TestStack[None]):
+def test_a_test_image_is_stored(teststack: TestStack[None]) -> None:
     image = teststack.call("generate_test_image", objects=4, size=64)
 
     stored = teststack.runtime.require(Mikro).get_lens(image.id)
@@ -25,7 +25,7 @@ def test_a_test_image_is_stored(teststack: TestStack[None]):
     assert stored.data.squeeze().shape == (64, 64)
 
 
-def test_analysing_a_stored_image_updates_the_state(teststack: TestStack[None]):
+def test_analysing_a_stored_image_updates_the_state(teststack: TestStack[None]) -> None:
     image = teststack.call("generate_test_image", objects=4, size=64)
 
     found = teststack.call("analyse_image", image=image)
@@ -39,7 +39,7 @@ def test_analysing_a_stored_image_updates_the_state(teststack: TestStack[None]):
 
 def test_the_objects_of_an_image_are_stored_as_an_image_of_their_own(
     teststack: TestStack[None],
-):
+) -> None:
     image = teststack.call("generate_test_image", objects=4, size=64)
 
     objects = teststack.call("segment_image", image=image)

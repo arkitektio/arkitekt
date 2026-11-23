@@ -24,7 +24,7 @@ def _settle(check: UpdateCheck) -> None:
 
 
 def test_a_newer_release_is_said_with_how_to_get_it(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     monkeypatch.setattr(updates, "fetch_latest", lambda: "13.7.0")
     monkeypatch.setattr(updates, "upgrade_hint", lambda work_dir: "uvx arkitekt@latest")
@@ -38,7 +38,9 @@ def test_a_newer_release_is_said_with_how_to_get_it(
     assert json.loads((tmp_path / "latest.json").read_text())["latest"] == "13.7.0"
 
 
-def test_the_running_release_says_nothing(tmp_path: Path, monkeypatch) -> None:
+def test_the_running_release_says_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(updates, "fetch_latest", lambda: "13.6.0")
     check = UpdateCheck("13.6.0", cache_file=str(tmp_path / "latest.json"))
     _settle(check)
@@ -46,7 +48,9 @@ def test_the_running_release_says_nothing(tmp_path: Path, monkeypatch) -> None:
     assert _said(check) == ""
 
 
-def test_pypi_is_asked_at_most_once_a_day(tmp_path: Path, monkeypatch) -> None:
+def test_pypi_is_asked_at_most_once_a_day(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     cache = tmp_path / "latest.json"
     cache.write_text(json.dumps({"latest": "14.0.0", "checked_at": time.time() - 60}))
     monkeypatch.setattr(
@@ -59,7 +63,9 @@ def test_pypi_is_asked_at_most_once_a_day(tmp_path: Path, monkeypatch) -> None:
     assert "arkitekt 14.0.0 is out" in _said(check), "the kept answer is still said"
 
 
-def test_a_day_old_answer_is_asked_again(tmp_path: Path, monkeypatch) -> None:
+def test_a_day_old_answer_is_asked_again(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     cache = tmp_path / "latest.json"
     cache.write_text(
         json.dumps(
@@ -74,7 +80,9 @@ def test_a_day_old_answer_is_asked_again(tmp_path: Path, monkeypatch) -> None:
     assert "arkitekt 13.8.0 is out" in _said(check)
 
 
-def test_an_answer_that_is_not_in_holds_nothing_up(tmp_path: Path, monkeypatch) -> None:
+def test_an_answer_that_is_not_in_holds_nothing_up(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import threading
 
     release = threading.Event()
@@ -95,7 +103,7 @@ def test_an_answer_that_is_not_in_holds_nothing_up(tmp_path: Path, monkeypatch) 
 
 
 def test_an_answer_that_comes_in_after_the_command_is_kept_for_the_next(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     import threading
 
@@ -114,7 +122,9 @@ def test_an_answer_that_comes_in_after_the_command_is_kept_for_the_next(
     assert json.loads((tmp_path / "latest.json").read_text())["latest"] == "13.9.0"
 
 
-def test_pypi_out_of_reach_says_nothing(tmp_path: Path, monkeypatch) -> None:
+def test_pypi_out_of_reach_says_nothing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(updates, "fetch_latest", lambda: None)
     check = UpdateCheck("13.6.0", cache_file=str(tmp_path / "latest.json"))
     _settle(check)
@@ -151,6 +161,6 @@ def test_it_is_asked_only_where_someone_reads_it() -> None:
     assert wanted({"ARKITEKT_NO_UPDATE_CHECK": "1"}, _Tty()) is False
 
 
-def test_uvx_is_told_to_ask_for_latest(monkeypatch) -> None:
+def test_uvx_is_told_to_ask_for_latest(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr("sys.prefix", "/home/me/.cache/uv/archive-v0/AbC123")
     assert updates.upgrade_hint(None) == "uvx arkitekt@latest"

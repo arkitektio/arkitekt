@@ -95,7 +95,7 @@ async def call_locally(
     kwargs: dict[str, Any],
     options: dict[str, Any],
     offline: bool = True,
-    context: Any = None,  # noqa: ANN401
+    context: object = None,
     work_dir: str | None = None,
 ) -> list[Any]:
     """Start ``app`` for itself, call ``action`` once, and return everything it yielded.
@@ -134,7 +134,7 @@ def local(
             "-a",
             help="An argument of the call, as key=value (the value is read as JSON when it parses).",
         ),
-    ] = [],
+    ] = [],  # noqa: B006 -- typer's default; never mutated
     online: Annotated[
         bool,
         typer.Option(

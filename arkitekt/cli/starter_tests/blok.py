@@ -33,7 +33,7 @@ from arkitekt.runtime import Runtime
 # -- the analysis -----------------------------------------------------------------
 
 
-def test_statistics_of_an_image():
+def test_statistics_of_an_image() -> None:
     statistics = intensity_statistics(np.array([[0.0, 1.0], [2.0, 5.0]]))
 
     assert statistics["minimum"] == 0.0 and statistics["maximum"] == 5.0
@@ -41,7 +41,7 @@ def test_statistics_of_an_image():
     assert statistics["spread"] == pytest.approx(1.8708, abs=1e-4)
 
 
-def test_a_histogram_is_a_share_of_its_fullest_bin():
+def test_a_histogram_is_a_share_of_its_fullest_bin() -> None:
     assert intensity_histogram(np.array([0.0, 0.0, 0.0, 0.0, 1.0, 1.0]), bins=2) == [
         100,
         50,
@@ -50,17 +50,17 @@ def test_a_histogram_is_a_share_of_its_fullest_bin():
         intensity_histogram(np.ones((2, 2)), bins=0)
 
 
-def test_the_threshold_lies_between_the_dark_and_the_bright():
+def test_the_threshold_lies_between_the_dark_and_the_bright() -> None:
     pixels = np.concatenate([np.full(50, 0.1), np.full(50, 0.9)]).reshape(10, 10)
 
     assert 0.1 < otsu_threshold(pixels) < 0.9
 
 
-def test_a_flat_image_has_no_threshold_to_find():
+def test_a_flat_image_has_no_threshold_to_find() -> None:
     assert otsu_threshold(np.full((4, 4), 0.5)) == 0.5
 
 
-def test_objects_that_touch_at_an_edge_are_one():
+def test_objects_that_touch_at_an_edge_are_one() -> None:
     mask = np.array(
         [
             [1, 1, 0, 0, 1],
@@ -79,11 +79,11 @@ def test_objects_that_touch_at_an_edge_are_one():
     assert len({labels[0, 0], labels[0, 1], labels[1, 1]}) == 1
 
 
-def test_nothing_bright_is_no_object():
+def test_nothing_bright_is_no_object() -> None:
     assert count_objects(np.zeros((5, 5)), threshold=0.5) == 0
 
 
-def test_the_blobs_of_a_test_image_are_found_again():
+def test_the_blobs_of_a_test_image_are_found_again() -> None:
     # Far apart and seeded, so none of them touch.
     pixels = np.zeros((40, 40))
     for y, x in [(8, 8), (8, 30), (30, 8), (30, 30)]:
@@ -92,7 +92,7 @@ def test_the_blobs_of_a_test_image_are_found_again():
     assert count_objects(pixels, otsu_threshold(pixels)) == 4
 
 
-def test_a_test_image_has_the_size_asked_for_and_is_the_same_for_a_seed():
+def test_a_test_image_has_the_size_asked_for_and_is_the_same_for_a_seed() -> None:
     image = blobs_on_noise(width=32, height=16, objects=3, seed=1)
 
     assert image.shape == (16, 32)
@@ -129,7 +129,7 @@ def four_squares() -> StoredImage:
     return StoredImage("squares", xr.DataArray(pixels, dims=("y", "x")))
 
 
-def test_analysing_an_image_writes_what_it_found_to_the_state():
+def test_analysing_an_image_writes_what_it_found_to_the_state() -> None:
     state, task = Analysis(), SilentTask()
 
     found = analyse_image(four_squares(), state, task, bins=4)
@@ -148,7 +148,7 @@ def test_analysing_an_image_writes_what_it_found_to_the_state():
     assert task.reported[-1] == (100, "Idle")
 
 
-def test_the_history_keeps_only_the_last_runs():
+def test_the_history_keeps_only_the_last_runs() -> None:
     state = Analysis()
 
     for _ in range(HISTORY_LENGTH + 2):
@@ -161,7 +161,7 @@ def test_the_history_keeps_only_the_last_runs():
     assert state.analysed == HISTORY_LENGTH + 2
 
 
-def test_an_image_that_cannot_be_analysed_leaves_the_agent_free():
+def test_an_image_that_cannot_be_analysed_leaves_the_agent_free() -> None:
     state = Analysis()
     volume = StoredImage(
         "volume", xr.DataArray(np.zeros((2, 3, 3)), dims=("z", "y", "x"))
@@ -176,7 +176,7 @@ def test_an_image_that_cannot_be_analysed_leaves_the_agent_free():
 # -- the app, and its panel -------------------------------------------------------
 
 
-def test_the_app_starts_with_nothing_analysed(local_runtime: Runtime[None]):
+def test_the_app_starts_with_nothing_analysed(local_runtime: Runtime[None]) -> None:
     state = local_runtime.agent.states["Analysis"]
 
     assert (state.status, state.busy, state.objects, state.history) == (
@@ -189,7 +189,7 @@ def test_the_app_starts_with_nothing_analysed(local_runtime: Runtime[None]):
 
 def test_clearing_the_history_reaches_the_state_the_panel_shows(
     local_runtime: Runtime[None],
-):
+) -> None:
     state = local_runtime.agent.states["Analysis"]
     state.history, state.analysed = ["an image: 3 objects"], 1
 
@@ -198,7 +198,7 @@ def test_clearing_the_history_reaches_the_state_the_panel_shows(
     assert (state.history, state.analysed) == ([], 0)
 
 
-def test_the_panel_is_declared_and_everything_it_names_exists():
+def test_the_panel_is_declared_and_everything_it_names_exists() -> None:
     # Building the declaration resolves what the tree reads and calls: a state or
     # an action it names that the app does not have fails here.
     panel = app.registry.get_declared_bloks()["analysis"]
@@ -225,7 +225,7 @@ def test_the_panel_is_declared_and_everything_it_names_exists():
     }
 
 
-def test_the_app_offers_its_actions():
+def test_the_app_offers_its_actions() -> None:
     offered = set(app.registry.implementations)
 
     assert {

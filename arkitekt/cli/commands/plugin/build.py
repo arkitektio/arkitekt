@@ -8,6 +8,7 @@ import uuid
 from typing import TYPE_CHECKING, Annotated, Any
 
 import typer
+from rich.console import Console
 
 from arkitekt.cli.completion import complete_flavours
 from arkitekt.cli.errors import cli_error
@@ -35,7 +36,7 @@ class InspectionError(Exception):
     pass
 
 
-def read_inspection(runtime: dict[str, Any], size: Any, image: str) -> "Inspection":
+def read_inspection(runtime: dict[str, Any], size: int, image: str) -> "Inspection":
     """Read what an image declared, or say which two specs could not agree on it.
 
     The arkitekt inside the image wrote this, and it may be older than this CLI's.
@@ -64,7 +65,7 @@ def build_flavour(
     flavour: "Flavour",
     work_dir: str,
     platforms: list[str] | None = None,
-    console: Any = None,
+    console: Console | None = None,
 ) -> str:
     """Build a flavour for every platform it targets; return the build_id (tag).
 
@@ -132,7 +133,7 @@ def build_host_image(
     flavour: "Flavour",
     work_dir: str,
     platforms: list[str],
-    console: Any = None,
+    console: Console | None = None,
 ) -> None:
     """Build this machine's image of a flavour into the local image store, as ``build_id``.
 
@@ -248,14 +249,14 @@ def inspect_all(
         # container is killed and reported rather than hanging the build forever.
         try:
             stdout, _stderr = process.communicate(timeout=INSPECTION_TIMEOUT_SECONDS)
-        except subprocess.TimeoutExpired:
+        except subprocess.TimeoutExpired as e:
             process.kill()
             process.communicate()
             raise InspectionError(
                 f"Inspecting the container ({build_id}) timed out after "
                 f"{INSPECTION_TIMEOUT_SECONDS}s and was aborted. Make sure "
                 "`arkitekt inspect all` returns inside the image."
-            )
+            ) from e
 
         # Surface the captured output so the operator still sees what ran.
         if stdout:
@@ -287,7 +288,7 @@ def inspect_all(
             raise InspectionError(
                 "Command `arkitekt inspect implementations` not found in container. "
                 "Did you forget to install arkitekt?"
-            )
+            ) from e
         raise InspectionError(f"An error occurred: {combined}") from e
 
 

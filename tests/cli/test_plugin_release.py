@@ -22,7 +22,7 @@ import pytest
 import typer
 from arkitekt_spec import AppManifest, Inspection, ReleaseDescriptor, ReleaseFlavour
 from rich.console import Console
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from arkitekt.cli.commands.plugin.registry import Repository
 from arkitekt.cli.commands.plugin.release import (
@@ -61,14 +61,16 @@ def checkout(tmp_path: Path) -> Path:
 # -- what a checkout releases -------------------------------------------------
 
 
-def test_a_branch_commit_is_a_build_of_its_channel(checkout: Path):
+def test_a_branch_commit_is_a_build_of_its_channel(checkout: Path) -> None:
     revision = git(checkout, "rev-parse", "HEAD")
     resolved = resolve("1.4.0", str(checkout))
     assert resolved == Resolved(f"1.4.0-dev.{revision[:7]}", "main", revision, None)
     assert resolved.tag == "main"
 
 
-def test_the_commit_tagged_with_the_apps_version_is_that_release(checkout: Path):
+def test_the_commit_tagged_with_the_apps_version_is_that_release(
+    checkout: Path,
+) -> None:
     git(checkout, "tag", "v1.4.0")
     resolved = resolve("1.4.0", str(checkout))
     assert (resolved.version, resolved.channel, resolved.tag) == (
@@ -78,14 +80,16 @@ def test_the_commit_tagged_with_the_apps_version_is_that_release(checkout: Path)
     )
 
 
-def test_a_version_tag_the_app_does_not_declare_is_refused(checkout: Path, capsys):
+def test_a_version_tag_the_app_does_not_declare_is_refused(
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     git(checkout, "tag", "v2.0.0")
     with pytest.raises(typer.Exit):
         resolve("1.4.0", str(checkout))
     assert "the app declares version 1.4.0" in capsys.readouterr().err
 
 
-def test_a_named_channel_wins_over_the_tag(checkout: Path):
+def test_a_named_channel_wins_over_the_tag(checkout: Path) -> None:
     """A push of a tagged commit to its branch is still a build of the branch."""
     git(checkout, "tag", "v1.4.0")
     resolved = resolve("1.4.0", str(checkout), channel="feat/thing")
@@ -94,14 +98,18 @@ def test_a_named_channel_wins_over_the_tag(checkout: Path):
     assert resolved.version.startswith("1.4.0-dev.")
 
 
-def test_a_detached_commit_needs_its_channel_named(checkout: Path, capsys):
+def test_a_detached_commit_needs_its_channel_named(
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     git(checkout, "checkout", "-q", "--detach")
     with pytest.raises(typer.Exit):
         resolve("1.4.0", str(checkout))
     assert "--channel" in capsys.readouterr().err
 
 
-def test_uncommitted_changes_are_refused(checkout: Path, capsys):
+def test_uncommitted_changes_are_refused(
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     (checkout / "app.py").write_text("x = 2\n")
     with pytest.raises(typer.Exit):
         resolve("1.4.0", str(checkout))
@@ -110,8 +118,8 @@ def test_uncommitted_changes_are_refused(checkout: Path, capsys):
 
 
 def test_the_ignore_files_arkitekt_tops_up_do_not_make_the_tree_dirty(
-    checkout: Path, capsys
-):
+    checkout: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     """An app whose .arkitekt ignore files predate a pattern still releases once arkitekt adds it."""
     from arkitekt.utils import create_arkitekt_folder
 
@@ -135,7 +143,7 @@ def test_the_ignore_files_arkitekt_tops_up_do_not_make_the_tree_dirty(
     assert "uncommitted" in capsys.readouterr().err
 
 
-def test_the_source_never_carries_the_remotes_credentials(checkout: Path):
+def test_the_source_never_carries_the_remotes_credentials(checkout: Path) -> None:
     git(
         checkout,
         "remote",
@@ -146,7 +154,9 @@ def test_the_source_never_carries_the_remotes_credentials(checkout: Path):
     assert resolve("1.4.0", str(checkout)).source == "https://example.com/org/app.git"
 
 
-def test_outside_git_there_is_nothing_to_release(tmp_path: Path, capsys):
+def test_outside_git_there_is_nothing_to_release(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     with pytest.raises(typer.Exit):
         resolve("1.4.0", str(tmp_path))
     assert "git" in capsys.readouterr().err
@@ -159,11 +169,13 @@ RELEASE = Resolved("1.4.0", None, "abc", None)
 CHANNEL = Resolved("1.4.0-dev.abc", "main", "abc", None)
 
 
-def test_an_image_that_is_the_release_passes():
+def test_an_image_that_is_the_release_passes() -> None:
     check_identity("vanilla", MANIFEST, MANIFEST, RELEASE)
 
 
-def test_an_image_that_does_not_say_which_app_it_is_is_refused(capsys):
+def test_an_image_that_does_not_say_which_app_it_is_is_refused(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     """Neither for a release nor a channel: the source is not asked in its place."""
     for resolved in (RELEASE, CHANNEL):
         with pytest.raises(typer.Exit):
@@ -171,13 +183,15 @@ def test_an_image_that_does_not_say_which_app_it_is_is_refused(capsys):
         assert "6.2.0 or newer" in capsys.readouterr().err
 
 
-def test_a_channel_image_still_carrying_the_sources_version_is_refused(capsys):
+def test_a_channel_image_still_carrying_the_sources_version_is_refused(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with pytest.raises(typer.Exit):
         check_identity("vanilla", MANIFEST, MANIFEST, CHANNEL)
     assert "ARG ARKITEKT_APP_VERSION" in capsys.readouterr().err
 
 
-def test_an_image_of_another_app_is_refused(capsys):
+def test_an_image_of_another_app_is_refused(capsys: pytest.CaptureFixture[str]) -> None:
     other = AppManifest(identifier="other", version="1.4.0")
     with pytest.raises(typer.Exit):
         check_identity("vanilla", other, MANIFEST, RELEASE)
@@ -196,7 +210,9 @@ def identified(reports: dict[str, dict[str, str]]) -> AppManifest:
     def build(probe: str, name: str, *args: object, **kwargs: object) -> None:
         probes.append(name)
 
-    def inspect(probe: str, url: str, target: str):
+    def inspect(
+        probe: str, url: str, target: str
+    ) -> tuple[dict[str, str], dict[str, str]]:
         assert target == "main:api"
         return {}, reports[probes[-1]]
 
@@ -223,14 +239,16 @@ def identified(reports: dict[str, dict[str, str]]) -> AppManifest:
             assert len(removed) == len(probes)
 
 
-def test_the_release_is_the_app_its_images_say_they_are():
+def test_the_release_is_the_app_its_images_say_they_are() -> None:
     image = {"identifier": "app", "version": "1.4.0", "entrypoint": "main:api"}
     assert identified({"vanilla": image, "gpu": image}) == AppManifest.model_validate(
         image
     )
 
 
-def test_flavours_holding_different_apps_are_refused(capsys):
+def test_flavours_holding_different_apps_are_refused(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
     with pytest.raises(typer.Exit):
         identified(
             {
@@ -243,7 +261,9 @@ def test_flavours_holding_different_apps_are_refused(capsys):
     assert "version" in err
 
 
-def test_the_build_version_wins_over_the_declared_one(monkeypatch):
+def test_the_build_version_wins_over_the_declared_one(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from arkitekt import App
 
     monkeypatch.setenv("ARKITEKT_APP_VERSION", "1.4.0-dev.abc")
@@ -332,7 +352,7 @@ def a_release(**changes: object) -> ReleaseDescriptor:
     )
 
 
-def test_a_pushed_release_reads_back_as_it_was_pushed(repository: Repository):
+def test_a_pushed_release_reads_back_as_it_was_pushed(repository: Repository) -> None:
     assert not repository.has("1.4.0")
     digest = repository.push_release("1.4.0", a_release(revision="abc"))
     assert repository.has("1.4.0")
@@ -340,21 +360,23 @@ def test_a_pushed_release_reads_back_as_it_was_pushed(repository: Repository):
     assert repository.release("1.4.0") == a_release(revision="abc")
 
 
-def test_a_tag_that_names_an_image_is_not_a_release(repository: Repository):
+def test_a_tag_that_names_an_image_is_not_a_release(repository: Repository) -> None:
     _Registry.manifests["1.4.0-vanilla"] = json.dumps({"manifests": []}).encode()
     assert repository.has("1.4.0-vanilla")
     assert repository.release("1.4.0-vanilla") is None
     assert repository.release("missing") is None
 
 
-def test_a_channel_tag_moves_to_the_next_build(repository: Repository):
+def test_a_channel_tag_moves_to_the_next_build(repository: Repository) -> None:
     repository.push_release("main", a_release(channel="main", revision="one"))
     repository.push_release("main", a_release(channel="main", revision="two"))
     release = repository.release("main")
     assert release is not None and release.revision == "two"
 
 
-def test_a_release_moves_its_majors_channel_to_the_same_image(repository: Repository):
+def test_a_release_moves_its_majors_channel_to_the_same_image(
+    repository: Repository,
+) -> None:
     """`4-vanilla` names the manifest `4.0.5-vanilla` does, byte for byte."""
     from arkitekt.cli.commands.plugin.release import major_tag
 
@@ -400,7 +422,7 @@ def docker_registry() -> Iterator[str]:
 
 
 @pytest.mark.needs_docker
-def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
+def test_release_publishes_a_release_and_then_a_channel(docker_registry: str) -> None:
     """Build and push for real; only the in-container inspection is canned.
 
     The image installs the released arkitekt, whose inspection this checkout does not
@@ -410,11 +432,15 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
     runner = CliRunner()
     reported: list[AppManifest] = []
 
-    def canned(image: str, target: str, platform: str | None = None):
+    def canned(
+        image: str, target: str, platform: str | None = None
+    ) -> tuple[Inspection, AppManifest]:
         assert "@sha256:" in image and image.startswith(docker_registry)
         return Inspection(spec_version="8.0.0"), reported[-1]
 
-    def identity(image: str, url: str, target: str):
+    def identity(
+        image: str, url: str, target: str
+    ) -> tuple[dict[str, str], dict[str, str]]:
         assert image.startswith("arkitekt-identify-")
         # Built without the channel's version: it says what the source declares.
         return {}, {
@@ -423,7 +449,7 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
             "entrypoint": target,
         }
 
-    def release(*extra: str):
+    def release(*extra: str) -> Result:
         with (
             patch(
                 "arkitekt.cli.commands.plugin.release.inspect_image", side_effect=canned
@@ -492,7 +518,7 @@ def test_release_publishes_a_release_and_then_a_channel(docker_registry: str):
 # -- the forge's part -----------------------------------------------------------
 
 
-def test_ci_github_writes_a_workflow_that_versions_and_then_calls_the_action():
+def test_ci_github_writes_a_workflow_that_versions_and_then_calls_the_action() -> None:
     import yaml
 
     runner = CliRunner()
@@ -536,7 +562,7 @@ def test_ci_github_writes_a_workflow_that_versions_and_then_calls_the_action():
         assert "already exists" in again.output
 
 
-def test_ci_github_follows_the_branch_and_the_file_the_app_is_in():
+def test_ci_github_follows_the_branch_and_the_file_the_app_is_in() -> None:
     runner = CliRunner()
     with isolated_filesystem() as directory:
         (Path(directory) / "main.py").write_text('__version__ = "0.0.1"\n')
@@ -557,7 +583,7 @@ def test_ci_github_follows_the_branch_and_the_file_the_app_is_in():
         assert configured["branches"]["release"]["match"] == "trunk"
 
 
-def test_ci_github_says_when_the_app_has_no_version_to_raise():
+def test_ci_github_says_when_the_app_has_no_version_to_raise() -> None:
     runner = CliRunner()
     with isolated_filesystem() as directory:
         (Path(directory) / "app.py").write_text('app = App("x", "0.0.1")\n')
@@ -566,7 +592,7 @@ def test_ci_github_says_when_the_app_has_no_version_to_raise():
         assert "has no __version__" in " ".join(result.output.split())
 
 
-def test_ci_github_leaves_a_semantic_release_configuration_that_is_there():
+def test_ci_github_leaves_a_semantic_release_configuration_that_is_there() -> None:
     runner = CliRunner()
     with isolated_filesystem() as directory:
         mine = '[tool.semantic_release]\nversion_variables = ["mine.py:VERSION"]\n'
@@ -576,7 +602,7 @@ def test_ci_github_leaves_a_semantic_release_configuration_that_is_there():
         assert (Path(directory) / "pyproject.toml").read_text() == mine
 
 
-def test_ci_gitlab_is_not_given_a_semantic_release_configuration():
+def test_ci_gitlab_is_not_given_a_semantic_release_configuration() -> None:
     runner = CliRunner()
     with isolated_filesystem() as directory:
         result = runner.invoke(cli_app, ["plugin", "ci", "gitlab"])
@@ -588,7 +614,7 @@ def test_ci_gitlab_is_not_given_a_semantic_release_configuration():
     sys.platform == "win32",
     reason="the action is a bash script, run on a Linux runner: Windows' `bash` is not one",
 )
-def test_the_action_releases_the_commit_the_job_tagged():
+def test_the_action_releases_the_commit_the_job_tagged() -> None:
     """A push to a branch is a channel build, unless the job says it cut the release itself."""
     import yaml
 
@@ -621,7 +647,7 @@ def test_the_action_releases_the_commit_the_job_tagged():
     assert channel("tag", "false") == "channel="
 
 
-def test_the_shipped_action_runs_nothing_but_the_release_command():
+def test_the_shipped_action_runs_nothing_but_the_release_command() -> None:
     """A forge integration is a shell: the day it grows logic, the CLI has lost some."""
     import yaml
 

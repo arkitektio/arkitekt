@@ -78,6 +78,7 @@ from koil.bridge import unkoil_task
 from arkitekt.app.app import App, Ctx
 from arkitekt.runtime import (
     Runtime,
+    _ActionRef,
     _interface_of,
     _provider_for,
     connect,
@@ -86,6 +87,7 @@ from arkitekt.runtime import (
 
 if TYPE_CHECKING:
     from konstruktor import Hub  # pyright: ignore[reportMissingImports]
+    from pytest import Config, FixtureRequest, TempPathFactory
 
 #: The environment variable naming the app under test, as the CLI reads it.
 TARGET_ENVVAR = "ARKITEKT_APP"
@@ -107,10 +109,10 @@ def call_through_rekuest_requested() -> bool:
 
 def call_through_rekuest(
     runtime: Runtime[Any],
-    action: Any,  # noqa: ANN401
+    action: _ActionRef,
     *args: Any,
     **kwargs: Any,
-) -> Any:  # noqa: ANN401
+) -> Any:  # noqa: ANN401 -- what the app's action returns
     """Call one of the app's own actions as a task rekuest assigns to it, and return its result.
 
     ``runtime`` is a run of the app that provides it (``connect(app, provide=True)``,
@@ -220,7 +222,7 @@ class TestStack(Generic[Ctx]):
     #: Whether :meth:`call` goes through the hub's rekuest rather than to the agent in-process.
     through_rekuest: bool = False
 
-    def call(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    def call(self, action: _ActionRef, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401 -- what the app's action returns
         """Call one of the app's actions, with its services real: ``teststack.call("segment", image)``."""
         if self.through_rekuest:
             return call_through_rekuest(self.runtime, action, *args, **kwargs)
@@ -267,7 +269,7 @@ except ImportError:  # pragma: no cover - depends on what is installed
 if pytest is not None:
 
     @pytest.fixture(scope="session")
-    def arkitekt_app(pytestconfig: Any) -> App[Any]:  # noqa: ANN401 -- a pytest.Config
+    def arkitekt_app(pytestconfig: "Config") -> App[Any]:
         """The project's app, found as the CLI finds it.
 
         ``$ARKITEKT_APP`` if set, else the module ``app`` in the directory pytest
@@ -292,7 +294,7 @@ if pytest is not None:
         return ()
 
     @pytest.fixture()
-    def arkitekt_context() -> Any:  # noqa: ANN401
+    def arkitekt_context() -> object:
         """The app context the app under test is started with. Override it for an app that declares one."""
         return None
 
@@ -300,7 +302,7 @@ if pytest is not None:
     def local_runtime(
         arkitekt_app: App[Any],
         arkitekt_clients: Sequence[Any],
-        arkitekt_context: Any,  # noqa: ANN401
+        arkitekt_context: object,
     ) -> Iterator[Runtime[Any]]:
         """The app under test, started with no server, for the length of one test."""
         with local_app(
@@ -313,7 +315,7 @@ if pytest is not None:
         """Call one of the app's actions: ``call("add", 1, b=2)`` or ``call(add, 1, b=2)``."""
         return local_runtime.call_local
 
-    def pytest_configure(config: Any) -> None:  # noqa: ANN401 -- a pytest.Config
+    def pytest_configure(config: "Config") -> None:
         """Register the marker for tests that run against a hub."""
         config.addinivalue_line(
             "markers",
@@ -331,10 +333,10 @@ if pytest is not None:
 
     @pytest.fixture(scope="session")
     def arkitekt_hub(
-        request: Any,  # noqa: ANN401 -- a pytest.FixtureRequest
+        request: "FixtureRequest",
         arkitekt_app: App[Any],
         arkitekt_hub_apps: int,
-        tmp_path_factory: Any,  # noqa: ANN401 -- a pytest.TempPathFactory
+        tmp_path_factory: "TempPathFactory",
     ) -> Iterator["Hub"]:
         """A hub of the app's own, for the session: the services it uses and a login for it.
 
@@ -386,7 +388,7 @@ if pytest is not None:
         arkitekt_app: App[Any],
         arkitekt_hub: "Hub",
         arkitekt_clients: Sequence[Any],
-        arkitekt_context: Any,  # noqa: ANN401
+        arkitekt_context: object,
         arkitekt_call_through_rekuest: bool,
     ) -> Iterator[Runtime[Any]]:
         """The app under test, started and logged in to its hub, for the length of one test.

@@ -28,7 +28,7 @@ BADGE = (
 )
 
 
-def test_the_badge_is_orkestrators_byte_for_byte():
+def test_the_badge_is_orkestrators_byte_for_byte() -> None:
     assert (
         install_path("ghcr.io/jhnnsrs/basiks")
         == "/do/v1/repo.install?source=oci%3Aghcr.io%2Fjhnnsrs%2Fbasiks"
@@ -46,7 +46,7 @@ def test_the_badge_is_orkestrators_byte_for_byte():
         ("jhnnsrs/basiks", "jhnnsrs/basiks"),
     ],
 )
-def test_a_reference_is_read_as_kabinet_reads_it(raw: str, reference: str):
+def test_a_reference_is_read_as_kabinet_reads_it(raw: str, reference: str) -> None:
     assert normalize_reference(raw) == reference
 
 
@@ -54,7 +54,7 @@ def test_a_reference_is_read_as_kabinet_reads_it(raw: str, reference: str):
     "raw",
     ["", "ghcr.io/a/b:latest", "ghcr.io/a/b@sha256:0", "ghcr.io/a//b", "ghcr.io/-a/b"],
 )
-def test_a_tag_a_digest_or_a_bad_segment_is_refused(raw: str):
+def test_a_tag_a_digest_or_a_bad_segment_is_refused(raw: str) -> None:
     with pytest.raises(ValueError):
         normalize_reference(raw)
 
@@ -72,13 +72,13 @@ def test_a_tag_a_digest_or_a_bad_segment_is_refused(raw: str):
 )
 def test_the_package_is_the_one_the_workflow_publishes_for_a_github_remote(
     remote: str | None, package: str | None
-):
+) -> None:
     assert package_for_remote(remote) == package
 
 
 def test_the_badge_goes_under_the_first_heading_and_is_replaced_in_place(
     tmp_path: Path,
-):
+) -> None:
     readme = tmp_path / "README.md"
     readme.write_text("# basiks\n\nWhat it does.\n")
     assert write_badge(str(readme), PLACEHOLDER)
@@ -94,7 +94,7 @@ def test_the_badge_goes_under_the_first_heading_and_is_replaced_in_place(
     assert not write_badge(str(readme), BADGE, insert=False)
 
 
-def test_a_readme_without_a_place_is_left_alone_unless_asked(tmp_path: Path):
+def test_a_readme_without_a_place_is_left_alone_unless_asked(tmp_path: Path) -> None:
     readme = tmp_path / "README.md"
     readme.write_text("No heading here.\n")
     assert not write_badge(str(readme), BADGE, insert=False)
@@ -105,7 +105,7 @@ def test_a_readme_without_a_place_is_left_alone_unless_asked(tmp_path: Path):
     assert (tmp_path / "NEW.md").read_text() == f"{START}\n{BADGE}\n{END}\n"
 
 
-def test_the_command_prints_the_badge_for_a_package():
+def test_the_command_prints_the_badge_for_a_package() -> None:
     with isolated_filesystem():
         result = CliRunner().invoke(
             cli_app, ["plugin", "badge", "--repository", "ghcr.io/Jhnnsrs/Basiks"]
@@ -114,7 +114,7 @@ def test_the_command_prints_the_badge_for_a_package():
         assert result.output.strip() == BADGE
 
 
-def test_the_command_reads_the_package_off_the_github_remote():
+def test_the_command_reads_the_package_off_the_github_remote() -> None:
     with isolated_filesystem() as directory:
         subprocess.run(["git", "init", "-q"], cwd=directory, check=True)
         subprocess.run(
@@ -128,7 +128,7 @@ def test_the_command_reads_the_package_off_the_github_remote():
         assert BADGE in (Path(directory) / "README.md").read_text()
 
 
-def test_the_workflows_update_leaves_a_readme_without_a_place_alone():
+def test_the_workflows_update_leaves_a_readme_without_a_place_alone() -> None:
     with isolated_filesystem() as directory:
         (Path(directory) / "README.md").write_text("# mine, no badge please\n")
         result = CliRunner().invoke(
@@ -140,7 +140,7 @@ def test_the_workflows_update_leaves_a_readme_without_a_place_alone():
         ).read_text() == "# mine, no badge please\n"
 
 
-def test_without_a_github_remote_the_command_says_what_to_pass():
+def test_without_a_github_remote_the_command_says_what_to_pass() -> None:
     with isolated_filesystem():
         result = CliRunner().invoke(cli_app, ["plugin", "badge"])
         assert result.exit_code == 1

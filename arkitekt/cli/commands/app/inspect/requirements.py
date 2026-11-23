@@ -20,7 +20,7 @@ def requirements(
     as_json: JsonOption = False,
     machine_readable: MachineReadableOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
-):
+) -> None:
     """List what the app requires of a deployment
 
     What a run of the app needs of a deployment: its services' requirements and
@@ -28,7 +28,8 @@ def requirements(
     """
     configure_logging(log_level.value)
 
-    console = get_console(ctx)
+    # Outside the CLI there is no console: that fails here, before the app loads.
+    get_console(ctx)
     with json_stdout(as_json):
         app = load_app_or_exit(ctx, target)
 

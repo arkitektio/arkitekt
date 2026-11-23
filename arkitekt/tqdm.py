@@ -6,6 +6,9 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from arkitekt_spec.declare.task import Task
 from tqdm import tqdm as _tqdm
 
+if TYPE_CHECKING:
+    from _typeshed import SupportsWrite
+
 T = TypeVar("T")
 
 
@@ -27,7 +30,7 @@ class tqdm(_tqdm[T] if TYPE_CHECKING else _tqdm, Generic[T]):
         desc: str | None = None,
         total: float | None = None,
         leave: bool | None = True,
-        file: Any | None = None,
+        file: "SupportsWrite[str] | None" = None,
         ncols: int | None = None,
         mininterval: float = 0.1,
         maxinterval: float = 10.0,
@@ -84,7 +87,7 @@ class tqdm(_tqdm[T] if TYPE_CHECKING else _tqdm, Generic[T]):
 
         self.last_arkitekt_perc = 0
 
-    def update(self, *args: Any, **kwargs: Any):
+    def update(self, *args: Any, **kwargs: Any) -> bool | None:
         """An update method that also reports progress to the task, if one was given
 
         Returns

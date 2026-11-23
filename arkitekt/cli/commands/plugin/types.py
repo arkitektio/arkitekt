@@ -60,13 +60,16 @@ class Flavour(BaseModel):
     )
 
     @field_validator("build_command", mode="before")
-    def check_valid_template_name(cls, value):
+    def check_valid_template_name(cls, value: list[str]) -> list[str]:
         """Checks that the build_command templates are valid"""
 
         for v in value:
-            for literal_text, field_name, format_spec, conversion in Formatter().parse(
-                v
-            ):
+            for (
+                _literal_text,
+                field_name,
+                _format_spec,
+                _conversion,
+            ) in Formatter().parse(v):
                 if field_name is not None:
                     assert field_name in ALLOWED_BUILDER_KEYS, (
                         f"Invalid template key {field_name}. Allowed keys are {ALLOWED_BUILDER_KEYS}"
@@ -123,7 +126,7 @@ class Flavour(BaseModel):
 
         return rendered
 
-    def check_relative_paths(self, flavour_folder: str):
+    def check_relative_paths(self, flavour_folder: str) -> None:
         """Checks that the paths are relative to the flavour folder"""
 
         dockerfile_path = os.path.join(flavour_folder, self.dockerfile)
@@ -173,7 +176,7 @@ class Build(BaseModel):
 
         return base_command
 
-    def build_arkitekt_command(self, fakts_url: str):
+    def build_arkitekt_command(self, fakts_url: str) -> list[str]:
         """Builds the arkitekt command for this build.
 
         The target recorded at build time is passed on, so the container runs the

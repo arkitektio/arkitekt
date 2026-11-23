@@ -10,11 +10,15 @@ that are registered: it also covers what is served from somewhere else.
 import textwrap
 from collections.abc import Iterable
 from dataclasses import dataclass, replace
-from typing import Any, Protocol
+from typing import TYPE_CHECKING, Any, Protocol
 
 from arkitekt_spec.declare.demands import DemandFinding, check_demands
 
 from arkitekt.app.app import App
+from arkitekt.app.snapshot import RunSnapshot
+
+if TYPE_CHECKING:
+    from rekuest.api.schema import RekuestApi
 
 
 class _Running(Protocol):
@@ -28,7 +32,7 @@ class _Running(Protocol):
     @property
     def clients(self) -> dict[str, Any]: ...
     @property
-    def snapshot(self) -> Any | None: ...  # noqa: ANN401
+    def snapshot(self) -> RunSnapshot | None: ...
 
 
 class DependencyCheckError(ValueError):
@@ -103,7 +107,7 @@ class UnmetDependency:
         return f"{self.app}: {self.action}: {self.dependency}: {self.reason}"
 
 
-def _rekuest_of(runtime: _Running) -> Any | None:  # noqa: ANN401
+def _rekuest_of(runtime: _Running) -> "RekuestApi | None":
     """The run's client that can ask rekuest for a dry run, if it has one."""
     return next(
         (

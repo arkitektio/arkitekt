@@ -69,11 +69,18 @@ def ensure_ignored(path: str) -> None:
             f.write("\n".join(missing) + "\n")
 
 
-from typing import Any
+from typing import Protocol
+
+
+class _Identified(Protocol):
+    """What a devcontainer is named after: an app, or its manifest."""
+
+    @property
+    def identifier(self) -> str: ...
 
 
 def create_devcontainer_file(
-    manifest: Any,
+    manifest: _Identified,
     flavour: str,
     docker_file_path: str,
     devcontainer_path: str = ".devcontainer",

@@ -14,6 +14,7 @@ from arkitekt_spec.blok.catalogs import checking_catalogs
 from arkitekt_spec.blok.catalogs.fetch import CatalogUnavailable, resolve_catalog
 from arkitekt_spec.blok.vocabulary import BlokError
 from arkitekt_spec.declare.agents.dependency import prepare_dependency_variables
+from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.blok.action import action_blok_id
 from arkitekt_spec.declare.catalogs import CatalogWarning
 from arkitekt_spec.declare.demands import DemandFinding, check_demands
@@ -45,7 +46,7 @@ def _counted(count: int, what: str) -> str:
     return f"{count} {what}{'' if count == 1 else 's'}"
 
 
-def summarize(registry: Any) -> str:  # noqa: ANN401
+def summarize(registry: AppRegistry) -> str:
     """What an app declares, in one line: ``3 actions · 1 state · uses mikro``."""
     parts: list[str] = [_counted(len(registry.implementations), "action")]
     states = len(registry.state_registry_schemas)
@@ -118,7 +119,9 @@ def _dumped(models: Iterable[Any]) -> list[dict[str, Any]]:
     return [model.model_dump(mode="json", exclude_none=True) for model in models]
 
 
-def _declared_at(obj: Any) -> tuple[str | None, int | None]:  # noqa: ANN401
+def _declared_at(
+    obj: Callable[..., object] | type[object],
+) -> tuple[str | None, int | None]:
     """The file and first line (its first decorator's) of a function or class, if it has source."""
     try:
         target = (
@@ -155,7 +158,7 @@ def scope_record(
     }
 
 
-def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
+def blok_records(registry: AppRegistry) -> list[dict[str, Any]]:
     """Each blok the app declares with the BSX it was written as, for a reader to find it by,
     and where it is mounted.
 
@@ -227,7 +230,7 @@ def blok_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     return records
 
 
-def structure_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
+def structure_records(registry: AppRegistry) -> list[dict[str, Any]]:
     """The Python class behind each identifier this app knows, its services' included: what an editor
     writes when a port names one. An enum spelled as a Literal, or a nested class, has no name to import."""
     structures = registry.structure_registry
@@ -259,7 +262,7 @@ def structure_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     return records
 
 
-def action_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
+def action_records(registry: AppRegistry) -> list[dict[str, Any]]:
     """Each action the app declares: where, and the hash of its definition, which is the hash the
     server finds it by whichever agent provides it (``call remote``'s ``hash_of``)."""
     from arkitekt_spec import definition_hash
@@ -284,7 +287,7 @@ def action_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
     return records
 
 
-def protocol_records(registry: Any) -> list[dict[str, Any]]:  # noqa: ANN401
+def protocol_records(registry: AppRegistry) -> list[dict[str, Any]]:
     """Each dependency protocol the app declares: where, the dependency it stands for, and the
     action parameters that take it.
 

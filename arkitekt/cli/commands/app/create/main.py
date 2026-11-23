@@ -38,7 +38,7 @@ def is_empty_folder(path: str) -> bool:
     return all(entry in IGNORED_WHEN_EMPTY for entry in entries)
 
 
-def get_default_package_manager():
+def get_default_package_manager() -> str:
     if shutil.which("uv"):
         return "uv"
     return "pip"
@@ -483,7 +483,7 @@ def create_command(
             "--scopes",
             help="Scopes the app asks for beyond what its services' clients need (those are asked for anyway): rarely needed.",
         ),
-    ] = [],
+    ] = [],  # noqa: B006 -- typer's default; never mutated
     template: Annotated[
         str,
         typer.Option(
@@ -561,8 +561,8 @@ def create_command(
             "--with-extra",
             help="The extras to install with arkitekt. Defaults to all.",
         ),
-    ] = ["all"],
-):
+    ] = ["all"],  # noqa: B006 -- typer's default; never mutated
+) -> None:
     """Create an Arkitekt app
 
     Run in an empty folder, it sets the app up right there; elsewhere name a

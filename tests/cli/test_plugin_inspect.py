@@ -26,20 +26,21 @@ class _HangingProc:
 
     returncode = None
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.killed = False
 
-    def communicate(self, timeout=None):
+    def communicate(self, timeout: float | None = None) -> tuple[bytes, bytes]:
+
         if timeout is not None:
             raise subprocess.TimeoutExpired(cmd="docker run", timeout=timeout)
         return (b"", b"")  # the post-kill drain
 
-    def kill(self):
+    def kill(self) -> None:
         self.killed = True
         self.returncode = -9
 
 
-def test_inspect_all_times_out_instead_of_hanging():
+def test_inspect_all_times_out_instead_of_hanging() -> None:
     proc = _HangingProc()
     with patch(f"{BUILD}.subprocess.Popen", return_value=proc):
         with pytest.raises(InspectionError) as exc:
@@ -56,18 +57,19 @@ class _OkProc:
 
     returncode = 0
 
-    def communicate(self, timeout=None):
+    def communicate(self, timeout: float | None = None) -> tuple[bytes, bytes]:
+
         payload = (
             b'noise\n--START_AGENT--{"implementations": []}--END_AGENT--\n'
             b'--START_MANIFEST--{"identifier": "com.x", "version": "1.0.0"}--END_MANIFEST--\n'
         )
         return (payload, b"")
 
-    def kill(self):  # pragma: no cover - not reached on the happy path
+    def kill(self) -> None:  # pragma: no cover - not reached on the happy path
         pass
 
 
-def test_inspect_all_parses_payload_within_bound():
+def test_inspect_all_parses_payload_within_bound() -> None:
     with patch(f"{BUILD}.subprocess.Popen", return_value=_OkProc()):
         result = inspect_all("build-123", "http://fakts.example")
 
@@ -82,11 +84,12 @@ class _AgentOnlyProc:
 
     returncode = 0
 
-    def communicate(self, timeout=None):
+    def communicate(self, timeout: float | None = None) -> tuple[bytes, bytes]:
+
         return (b'--START_AGENT--{"implementations": []}--END_AGENT--\n', b"")
 
 
-def test_an_image_that_does_not_say_which_app_it_is_is_refused():
+def test_an_image_that_does_not_say_which_app_it_is_is_refused() -> None:
     """Its identity is not taken from the source on this machine instead."""
     with patch(f"{BUILD}.subprocess.Popen", return_value=_AgentOnlyProc()):
         with pytest.raises(InspectionError) as exc:

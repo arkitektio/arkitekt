@@ -127,7 +127,7 @@ def stain_and_measure(
                     if not decision.approved:
                         raise RuntimeError(
                             f"Abandoned at {well}: {decision.answer or 'denied'}"
-                        )
+                        ) from lost
             absorbance = task.retry(
                 handler.read_absorbance, well, attempts=3, if_started=True
             )

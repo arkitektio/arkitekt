@@ -6,7 +6,7 @@ had to import the definition space (arkitekt-spec) to write this, that is the bu
 """
 
 from collections.abc import AsyncGenerator, Generator
-from typing import Annotated, Any, assert_type
+from typing import Annotated, assert_type
 
 from arkitekt import (
     App,
@@ -77,7 +77,7 @@ async def astream(n: int, task: Task) -> AsyncGenerator[int, None]:
 
 
 @app.action
-async def orchestrate(x: int, target: Any, task: Task) -> int:
+async def orchestrate(x: int, target: CallTarget, task: Task) -> int:
     """Calls another action as a child of this task."""
     first = await task.acall(target, x, reference="once")
     for value in task.iterate(target, x):

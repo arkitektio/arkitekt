@@ -15,8 +15,9 @@ import time
 from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager, suppress
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
+from arkitekt_spec.declare.agents.connection import ConnectionState, TaskEvent
 from rich.console import Console
 from rich.markup import escape
 
@@ -26,6 +27,11 @@ from arkitekt.app.fakts import resolve_url
 from arkitekt.app.sessions import read_session, session_path
 from arkitekt.app.terminal import done, fail, notice, step
 from arkitekt.cli.ui import command_hint
+
+if TYPE_CHECKING:
+    from fakts import Fakts, MeshPath
+
+    from arkitekt.runtime import Runtime
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +60,7 @@ class ConnectionReporter:
         self.app = app
         self.registered_before = False
 
-    async def __call__(self, state: Any) -> None:  # noqa: ANN401
+    async def __call__(self, state: ConnectionState) -> None:
         # By value: the states are arkitekt-runtime's, which only a run needs.
         if getattr(state, "value", state) == "disconnected":
             notice(self.console, "Connection lost, reconnecting")
@@ -88,7 +94,7 @@ class TaskReporter:
         self.console = console
         self.started: dict[str, float] = {}
 
-    async def __call__(self, event: Any) -> None:  # noqa: ANN401
+    async def __call__(self, event: TaskEvent) -> None:
         # By value: the kinds are arkitekt-spec's agent module, which only a run needs.
         kind = getattr(event.kind, "value", event.kind)
         action = escape(event.action)
@@ -112,7 +118,7 @@ class TaskReporter:
             fail(self.console, f"{action} failed", escape(event.error or ""))
 
 
-def _short(value: Any, limit: int = 40) -> str:  # noqa: ANN401
+def _short(value: object, limit: int = 40) -> str:
     text = repr(value)
     return text if len(text) <= limit else text[: limit - 1] + "…"
 
@@ -123,11 +129,11 @@ def _elapsed(seconds: float) -> str:
 
 def report_session(
     console: Console,
-    rt: Any,
+    rt: "Runtime[Any]",
     before: float | None,
     options: dict[str, Any],
     work_dir: str | None = None,
-) -> None:  # noqa: ANN401
+) -> None:
     """Say how the run got its session, unless the login prompt already did.
 
     ``before`` is when the session the app had cached was logged in. The run's
@@ -170,7 +176,7 @@ class _Host:
         return escape(f"{host}:{ports}" if ports else host)
 
 
-def _hosts(fakts: Any) -> dict[str, _Host]:  # noqa: ANN401
+def _hosts(fakts: "Fakts | None") -> dict[str, _Host]:
     """The resolved services, grouped by the host their alias reaches.
 
     By host alone, not port: a path is the peer's, so services behind one host
@@ -186,7 +192,7 @@ def _hosts(fakts: Any) -> dict[str, _Host]:  # noqa: ANN401
     return hosts
 
 
-def _path(fakts: Any, group: _Host) -> Any:  # noqa: ANN401
+def _path(fakts: "Fakts | None", group: _Host) -> "MeshPath | None":
     """How the host of ``group`` is reached over this process's mesh node, if it is.
 
     ``None`` for a host not reached through the node, or with a fakts or
@@ -203,7 +209,9 @@ def _path(fakts: Any, group: _Host) -> Any:  # noqa: ANN401
         return None
 
 
-def _report_path(console: Console, host: str, group: _Host, path: Any) -> None:  # noqa: ANN401
+def _report_path(
+    console: Console, host: str, group: _Host, path: "MeshPath | None"
+) -> None:
     """One host's line: green when direct (or off the mesh), yellow when relayed.
 
     A host reached through a proxy whose path cannot be told is not green: that
@@ -227,7 +235,7 @@ def _report_path(console: Console, host: str, group: _Host, path: Any) -> None: 
         step(console, names, f"{where} · over the mesh, path not known yet")
 
 
-def report_connection(console: Console, rt: Any) -> dict[str, str | None]:  # noqa: ANN401
+def report_connection(console: Console, rt: "Runtime[Any]") -> dict[str, str | None]:
     """Say which hub the run is connected to, and how each of its services is reached.
 
     Returns the path kind each mesh host was reported with (``None`` for an idle
@@ -252,7 +260,7 @@ def report_connection(console: Console, rt: Any) -> dict[str, str | None]:  # no
     return reported
 
 
-def report_versions(console: Console, rt: Any) -> None:  # noqa: ANN401
+def report_versions(console: Console, rt: "Runtime[Any]") -> None:
     """Say which services run outside the versions the app asked for. They are used anyway."""
     mismatches = getattr(getattr(rt, "fakts", None), "version_mismatches", None)
     for mismatch in mismatches() if mismatches else []:
@@ -267,7 +275,7 @@ def report_versions(console: Console, rt: Any) -> None:  # noqa: ANN401
 
 async def watch_paths(
     console: Console,
-    rt: Any,  # noqa: ANN401
+    rt: "Runtime[Any]",
     reported: dict[str, str | None],
 ) -> None:
     """Say whenever a mesh host's path turns direct or falls back to the relay.
@@ -304,7 +312,7 @@ async def connected(
     provide: bool = False,
     tasks: bool = False,
     work_dir: str | None = None,
-) -> AsyncIterator[Any]:
+) -> "AsyncIterator[Runtime[Any]]":
     """Connect ``app`` with the explicitly passed ``options``, and report on it.
 
     Args:
@@ -351,9 +359,9 @@ async def connected_local(
     app: App[Any],
     options: dict[str, Any],
     offline: bool = True,
-    context: Any = None,  # noqa: ANN401
+    context: object = None,
     work_dir: str | None = None,
-) -> AsyncIterator[Any]:
+) -> "AsyncIterator[Runtime[Any]]":
     """Start ``app`` for itself, to call its own actions in: nothing is registered.
 
     Args:
@@ -379,7 +387,7 @@ async def arun_app(
     console: Console,
     app: App[Any],
     options: dict[str, Any],
-    context: Any = None,  # noqa: ANN401
+    context: object = None,
     tasks: bool = False,
     work_dir: str | None = None,
 ) -> None:

@@ -8,9 +8,11 @@ These exercise commands that introspect an initialized app. They use the
 import json
 import subprocess
 import sys
+from pathlib import Path
+from typing import Never
 
 import pytest
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from arkitekt.cli.main import cli_app
 
@@ -19,17 +21,17 @@ from arkitekt.cli.main import cli_app
 pytestmark = pytest.mark.cli
 
 
-def _invoke(work_dir, *args, **kwargs):
+def _invoke(work_dir: Path | str, *args: str) -> Result:
     runner = CliRunner()
     # SDK commands now live under the `app` group.
-    result = runner.invoke(cli_app, ["--work-dir", str(work_dir), *args], **kwargs)
+    result = runner.invoke(cli_app, ["--work-dir", str(work_dir), *args])
     if result.exit_code != 0:
         print(result.output)
         print(result.exception)
     return result
 
 
-def _run_cli(work_dir, *args):
+def _run_cli(work_dir: Path | str, *args: str) -> subprocess.CompletedProcess[str]:
     """Run the CLI in a fresh subprocess (clean global registries, cwd on sys.path).
 
     Uses ``python -m arkitekt.cli.main`` with the test's own interpreter so the
@@ -55,8 +57,9 @@ def _run_cli(work_dir, *args):
     return result
 
 
-def _between(text, start, end):
-    """Extract and JSON-parse the payload between two stdout markers."""
+def _between(text: str, start: str, end: str) -> object:
+    """Extract and JSON-parse the payload between two stdout markers (any JSON value:
+    a test checks which)."""
     return json.loads(text.split(start)[1].split(end)[0])
 
 
@@ -65,7 +68,7 @@ def _between(text, start, end):
 # ---------------------------------------------------------------------------
 
 
-def test_inspect_variables_clean_app(app_dir):
+def test_inspect_variables_clean_app(app_dir: Path) -> None:
     """The default `simple` template has no leaking globals."""
     # `inspect variables` imports the entrypoint module by name ("app"). Python
     # caches imported modules in sys.modules, so drop any cached copy from a
@@ -77,7 +80,7 @@ def test_inspect_variables_clean_app(app_dir):
     assert "No dangerous variables found" in result.output
 
 
-def test_inspect_variables_detects_leaking_global(app_dir):
+def test_inspect_variables_detects_leaking_global(app_dir: Path) -> None:
     """A module-level mutable variable is reported as dangerous."""
     # Overwrite the entrypoint with a deliberately leaking global.
     (app_dir / "app.py").write_text("leaking_state = []\n")
@@ -100,7 +103,7 @@ def test_inspect_variables_detects_leaking_global(app_dir):
 _SIMPLE_FUNCS = ("generate_n_string", "append_world", "print_string")
 
 
-def test_inspect_requirements(app_dir):
+def test_inspect_requirements(app_dir: Path) -> None:
     """`inspect requirements --machine-readable` emits a JSON list between its markers."""
     result = _run_cli(app_dir, "inspect", "requirements", "--machine-readable")
     assert result.returncode == 0, result.stderr
@@ -109,7 +112,7 @@ def test_inspect_requirements(app_dir):
     assert isinstance(reqs, list)  # simple template adds no extra requirements
 
 
-def test_inspect_implementations(app_dir):
+def test_inspect_implementations(app_dir: Path) -> None:
     """`inspect implementations --machine-readable` lists the template's registered functions."""
     result = _run_cli(app_dir, "inspect", "implementations", "--machine-readable")
     assert result.returncode == 0, result.stderr
@@ -121,7 +124,7 @@ def test_inspect_implementations(app_dir):
         assert name in result.stdout
 
 
-def test_inspect_all(app_dir):
+def test_inspect_all(app_dir: Path) -> None:
     """`inspect all --machine-readable` emits the full agent manifest with the expected sections."""
     result = _run_cli(app_dir, "inspect", "all", "--machine-readable")
     assert result.returncode == 0, result.stderr
@@ -142,7 +145,9 @@ def test_inspect_all(app_dir):
         assert name in result.stdout
 
 
-def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
+def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(
+    app_dir: Path,
+) -> None:
     """The payload a container emits must survive the host's models, key for key.
 
     Nothing checked this before: `inspect all` dumped rekuest's agent input while
@@ -162,6 +167,7 @@ def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
     result = _run_cli(app_dir, "inspect", "all", "--machine-readable")
     assert result.returncode == 0, result.stderr
     agent = _between(result.stdout, "--START_AGENT--", "--END_AGENT--")
+    assert isinstance(agent, dict)
 
     known = {f.alias or name for name, f in Inspection.model_fields.items()}
     assert set(agent) <= known, set(agent) - known
@@ -183,7 +189,7 @@ def test_inspect_all_is_what_the_build_reads_and_the_server_is_sent(app_dir):
     assert load_deployments(dump_deployments(file)) == file
 
 
-def test_inspect_all_json(app_dir):
+def test_inspect_all_json(app_dir: Path) -> None:
     """`inspect all --json` prints the manifest as plain, parseable JSON: not through
     rich's console, which would wrap it."""
     import json
@@ -199,7 +205,7 @@ def test_inspect_all_json(app_dir):
 # ---------------------------------------------------------------------------
 
 
-def test_inspect_services(app_dir):
+def test_inspect_services(app_dir: Path) -> None:
     """`inspect services --machine-readable` lists the service SDKs the app selected."""
     result = _run_cli(app_dir, "inspect", "services", "--machine-readable")
     assert result.returncode == 0, result.stderr
@@ -215,14 +221,14 @@ def test_inspect_services(app_dir):
             assert key in record
 
 
-def test_inspect_services_schema(app_dir):
+def test_inspect_services_schema(app_dir: Path) -> None:
     """`inspect services --schema rekuest` dumps raw SDL."""
     result = _run_cli(app_dir, "inspect", "services", "--schema", "rekuest")
     assert result.returncode == 0, result.stderr
     assert "type" in result.stdout
 
 
-def test_inspect_services_unknown_schema(app_dir):
+def test_inspect_services_unknown_schema(app_dir: Path) -> None:
     result = _run_cli(app_dir, "inspect", "services", "--schema", "nope")
     assert result.returncode != 0
     assert "Unknown service" in result.stdout + result.stderr
@@ -233,7 +239,7 @@ def test_inspect_services_unknown_schema(app_dir):
 # ---------------------------------------------------------------------------
 
 
-def test_gen_init_writes_a_project_for_each_service(app_dir):
+def test_gen_init_writes_a_project_for_each_service(app_dir: Path) -> None:
     """`gen init` points rekuest's turms project at the app's own files."""
     import yaml
 
@@ -258,7 +264,7 @@ def test_gen_init_writes_a_project_for_each_service(app_dir):
     assert (app_dir / "graphql" / "rekuest").is_dir()
 
 
-def test_gen_init_keeps_existing_projects(app_dir):
+def test_gen_init_keeps_existing_projects(app_dir: Path) -> None:
     import yaml
 
     (app_dir / "graphql.config.yaml").write_text(
@@ -277,7 +283,7 @@ def test_gen_init_keeps_existing_projects(app_dir):
     assert projects["rekuest"]["schema"] == "schemas/rekuest.graphql"
 
 
-def test_gen_init_unknown_service(app_dir):
+def test_gen_init_unknown_service(app_dir: Path) -> None:
     result = _run_cli(app_dir, "gen", "init", "--service", "nope")
     assert result.returncode != 0
     assert "declares no service nope" in " ".join(
@@ -285,18 +291,19 @@ def test_gen_init_unknown_service(app_dir):
     )
 
 
-def test_gen_points_at_turms():
+def test_gen_points_at_turms() -> None:
     result = CliRunner().invoke(cli_app, ["gen"])
     assert result.exit_code == 0, result.output
     assert "turms gen" in result.output
 
 
-def test_inspect_lifecycle(app_dir):
+def test_inspect_lifecycle(app_dir: Path) -> None:
     """`inspect lifecycle --machine-readable` emits the three hook sections."""
     result = _run_cli(app_dir, "inspect", "lifecycle", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     data = _between(result.stdout, "--START_LIFECYCLE--", "--END_LIFECYCLE--")
+    assert isinstance(data, dict)
     assert set(data.keys()) == {"startup", "shutdown", "background"}
     for rows in data.values():
         assert isinstance(rows, list)
@@ -307,7 +314,7 @@ def test_inspect_lifecycle(app_dir):
 # ---------------------------------------------------------------------------
 
 
-def test_kabinet_validate(app_dir):
+def test_kabinet_validate(app_dir: Path) -> None:
     """After scaffolding a flavour, validate reports it as valid."""
     # Flavours are scaffolded with `plugin flavour add`.
     init_result = CliRunner().invoke(
@@ -335,7 +342,7 @@ def test_kabinet_validate(app_dir):
     assert "All flavours are valid" in result.output
 
 
-def test_kabinet_validate_without_flavours_errors(app_dir):
+def test_kabinet_validate_without_flavours_errors(app_dir: Path) -> None:
     """validate fails cleanly when no flavours folder exists yet."""
     result = CliRunner().invoke(
         cli_app, ["--work-dir", str(app_dir), "plugin", "validate"]
@@ -363,7 +370,7 @@ def test_kabinet_validate_without_flavours_errors(app_dir):
         ["call"],
     ],
 )
-def test_help_for_command_groups(args):
+def test_help_for_command_groups(args: list[str]) -> None:
     runner = CliRunner()
     result = runner.invoke(cli_app, [*args, "--help"])
     assert result.exit_code == 0, result.output
@@ -410,10 +417,10 @@ def double(x: int) -> int:
 
 
 @pytest.fixture
-def no_connecting(monkeypatch):
+def no_connecting(monkeypatch: pytest.MonkeyPatch) -> None:
     """Make any attempt to connect fail the test."""
 
-    def refuse(*args, **kwargs):
+    def refuse(*args: object, **kwargs: object) -> Never:
         raise AssertionError("inspect must not connect")
 
     monkeypatch.setattr("arkitekt.runtime.connect", refuse)
@@ -434,13 +441,15 @@ def no_connecting(monkeypatch):
         "variables",
     ],
 )
-def test_inspect_never_connects(app_dir, no_connecting, command):
+def test_inspect_never_connects(
+    app_dir: Path, no_connecting: None, command: str
+) -> None:
     result = _invoke(app_dir, "inspect", command, "--machine-readable")
 
     assert result.exit_code == 0, result.output
 
 
-def test_inspect_requirements_are_the_apps(app_dir, no_connecting):
+def test_inspect_requirements_are_the_apps(app_dir: Path, no_connecting: None) -> None:
     (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
 
     result = _invoke(app_dir, "inspect", "requirements", "--machine-readable")
@@ -449,23 +458,27 @@ def test_inspect_requirements_are_the_apps(app_dir, no_connecting):
     requirements = _between(
         result.output, "--START_REQUIREMENTS--", "--END_REQUIREMENTS--"
     )
+    assert isinstance(requirements, list)
     assert {"rekuest", "extra"} <= {item["key"] for item in requirements}
 
 
-def test_inspect_all_carries_the_apps_requirements_and_actions(app_dir, no_connecting):
+def test_inspect_all_carries_the_apps_requirements_and_actions(
+    app_dir: Path, no_connecting: None
+) -> None:
     (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
 
     result = _invoke(app_dir, "inspect", "all", "--machine-readable")
 
     assert result.exit_code == 0, result.output
     agent = _between(result.output, "--START_AGENT--", "--END_AGENT--")
+    assert isinstance(agent, dict)
     assert [impl["interface"] for impl in agent["implementations"]] == ["double"]
     assert "extra" in {item["key"] for item in agent["requirements"]}
 
 
 def test_the_manifest_an_image_says_asks_for_what_a_run_asks_for(
-    app_dir, no_connecting
-):
+    app_dir: Path, no_connecting: None
+) -> None:
     """A mandate key is pinned to the MANIFEST a build reads: it must carry the scopes a run asks
     for, the rekuest provider's among them, or the running container cannot log in."""
     from rekuest.arkitekt import rekuest_service
@@ -476,11 +489,12 @@ def test_the_manifest_an_image_says_asks_for_what_a_run_asks_for(
 
     assert result.exit_code == 0, result.output
     manifest = _between(result.output, "--START_MANIFEST--", "--END_MANIFEST--")
+    assert isinstance(manifest, dict)
     assert set(rekuest_service.get_scopes()) <= set(manifest["scopes"])
     assert rekuest_service.get_scopes(), "rekuest's client says what it needs"
 
 
-def test_inspect_an_app_that_offers_nothing(app_dir, no_connecting):
+def test_inspect_an_app_that_offers_nothing(app_dir: Path, no_connecting: None) -> None:
     (app_dir / "app.py").write_text("from arkitekt import App\napp = App('quiet')\n")
 
     result = _invoke(app_dir, "inspect", "implementations", "--machine-readable")
@@ -489,7 +503,7 @@ def test_inspect_an_app_that_offers_nothing(app_dir, no_connecting):
     assert "offers nothing" in result.output
 
 
-def test_the_manifest_group_is_gone():
+def test_the_manifest_group_is_gone() -> None:
     result = CliRunner().invoke(cli_app, ["manifest", "--help"])
 
     assert result.exit_code != 0

@@ -8,6 +8,7 @@ itself has loaded.
 import subprocess
 import sys
 import textwrap
+from pathlib import Path
 
 BLOCK_REKUEST = """
 import sys
@@ -88,7 +89,7 @@ def test_running_an_app_says_what_to_install() -> None:
     assert result.stdout.strip() == "hint: True"
 
 
-def test_an_app_is_served_without_rekuest(tmp_path) -> None:  # noqa: ANN001
+def test_an_app_is_served_without_rekuest(tmp_path: Path) -> None:
     """Server mode is arkitekt-fastapi's, on the execution core: no rekuest at all."""
     result = _run(
         f"""

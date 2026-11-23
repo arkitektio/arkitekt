@@ -7,9 +7,11 @@ builder; the fakts they resolve through is the offline one every test gets
 """
 
 import asyncio
-from typing import Any
+from pathlib import Path
+from typing import Any, Never
 
 import pytest
+from arkitekt_spec.declare.agents.connection import ConnectionState
 from arkitekt_spec.declare.errors import RegistryFrozenError
 from arkitekt_spec.declare.service import Service
 
@@ -199,7 +201,7 @@ def test_run_refuses_a_missing_context_before_logging_in(
 ) -> None:
     from arkitekt_spec.declare.errors import AppContextError
 
-    def never(*args, **kwargs):  # noqa: ANN002, ANN003, ANN202
+    def never(*args: object, **kwargs: object) -> Never:
         raise AssertionError("fakts must not be built for a run that cannot start")
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
@@ -296,7 +298,7 @@ async def test_the_runtime_manifest_adds_the_device_id() -> None:
 
 @pytest.mark.asyncio
 async def test_a_run_writes_nothing_into_the_working_directory(
-    tmp_path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The working directory is process-wide state; a run leaves it alone."""
     monkeypatch.chdir(tmp_path)
@@ -304,12 +306,12 @@ async def test_a_run_writes_nothing_into_the_working_directory(
     async with connect(picture_app()):
         pass
 
-    assert list(tmp_path.iterdir()) == []
+    assert await asyncio.to_thread(lambda: list(tmp_path.iterdir())) == []
 
 
 @pytest.mark.asyncio
 async def test_a_run_hands_its_connection_listener_to_its_agent() -> None:
-    async def listener(state: Any) -> None:  # noqa: ANN401
+    async def listener(state: ConnectionState) -> None:
         return None
 
     async with connect(picture_app(), provide=True, connection_listener=listener) as rt:

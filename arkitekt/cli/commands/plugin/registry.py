@@ -19,7 +19,9 @@ import urllib.parse
 import urllib.request
 from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Any
+from email.message import Message
+from http.client import HTTPMessage
+from typing import IO, Any
 
 from arkitekt_spec.release import (
     OCI_MANIFEST_MEDIA_TYPE,
@@ -73,7 +75,15 @@ class _KeepAuthorizationHome(urllib.request.HTTPRedirectHandler):
     request that brings an Authorization header it did not issue.
     """
 
-    def redirect_request(self, req, fp, code, msg, headers, newurl):  # type: ignore[no-untyped-def]
+    def redirect_request(
+        self,
+        req: urllib.request.Request,
+        fp: IO[bytes],
+        code: int,
+        msg: str,
+        headers: HTTPMessage,
+        newurl: str,
+    ) -> urllib.request.Request | None:
         new = super().redirect_request(req, fp, code, msg, headers, newurl)
         if new is not None and urllib.parse.urlsplit(newurl).netloc != req.host:
             new.remove_header("Authorization")
@@ -356,5 +366,5 @@ def _basic(credentials: tuple[str, str]) -> str:
     return base64.b64encode(":".join(credentials).encode()).decode()
 
 
-def _lowered(headers: Any) -> dict[str, str]:
+def _lowered(headers: Message) -> dict[str, str]:
     return {key.lower(): value for key, value in headers.items()}

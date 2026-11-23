@@ -5,18 +5,19 @@ import subprocess
 import sys
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
 
 import pytest
+from fakts.models import Manifest
 
 from arkitekt import App
+from arkitekt.app.options import ConnectionOptions
 from arkitekt.runtime import connect, connect_local
 from arkitekt.testing import LocalCallError, local_app
 
 from .fakes import Picture, PictureClient, PictureService
 
 
-def build_app(log: list[str], built: list[Any]) -> App[None]:
+def build_app(log: list[str], built: list[PictureClient]) -> App[None]:
     app = App("local-run", "0.1.0", services=[PictureService(built=built)])
 
     @app.action
@@ -44,7 +45,7 @@ def build_app(log: list[str], built: list[Any]) -> App[None]:
         log.append("startup")
 
     @app.shutdown
-    async def stopped():  # noqa: ANN202
+    async def stopped() -> None:
         log.append("shutdown")
 
     return app
@@ -56,12 +57,12 @@ def log() -> list[str]:
 
 
 @pytest.fixture()
-def built() -> list[Any]:
+def built() -> list[PictureClient]:
     return []
 
 
 @pytest.fixture()
-def app(log: list[str], built: list[Any]) -> App[None]:
+def app(log: list[str], built: list[PictureClient]) -> App[None]:
     return build_app(log, built)
 
 
@@ -93,7 +94,7 @@ def test_the_app_is_started_and_stopped_around_the_run(
 
 
 def test_a_replaced_client_is_what_actions_and_expanders_get(
-    app: App[None], built: list[Any]
+    app: App[None], built: list[PictureClient]
 ) -> None:
     fake = PictureClient("fake")
     with local_app(app, clients=[fake]) as rt:
@@ -116,7 +117,7 @@ def test_a_service_that_is_not_replaced_points_nowhere(
 ) -> None:
     """Offline builds its own fakts: the deployment's is never asked for."""
 
-    def never(manifest: Any, options: Any) -> None:  # noqa: ANN401
+    def never(manifest: Manifest, options: ConnectionOptions) -> None:
         raise AssertionError("an offline run built the deployment's fakts")
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
@@ -140,7 +141,7 @@ def test_only_a_local_run_calls_in_process(app: App[None]) -> None:
 
 
 def test_a_local_run_that_is_not_offline_builds_the_deployments_fakts(
-    app: App[None], built: list[Any]
+    app: App[None], built: list[PictureClient]
 ) -> None:
     """The conftest's stand-in for the deployment's fakts is what it gets."""
     with connect_local(app, offline=False) as rt:
@@ -286,7 +287,7 @@ def test_a_local_run_of_an_app_without_services_reaches_no_server(
         """Add"""
         return a + b
 
-    def never(manifest: Any, options: Any) -> None:  # noqa: ANN401
+    def never(manifest: Manifest, options: ConnectionOptions) -> None:
         raise AssertionError(
             "a local run of an app without services built the deployment's fakts"
         )

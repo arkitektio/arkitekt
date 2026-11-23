@@ -8,8 +8,10 @@ boundary is mocked.
 """
 
 import json
+from pathlib import Path
 from unittest.mock import patch
 
+import pytest
 import yaml
 from arkitekt_spec import UNKNOWN_AUTHOR, AppManifest, Inspection, current_spec_version
 from typer.testing import CliRunner
@@ -23,7 +25,7 @@ from arkitekt.cli.main import cli_app
 from arkitekt.cli.target import infer_package_manager
 
 
-def test_an_image_reports_the_apps_identity_and_target():
+def test_an_image_reports_the_apps_identity_and_target() -> None:
     manifest = app_manifest(
         App(
             "com.x",
@@ -47,11 +49,11 @@ def test_an_image_reports_the_apps_identity_and_target():
     assert manifest.entrypoint == "main:api"
 
 
-def test_an_app_without_an_author_is_recorded_as_unknown():
+def test_an_app_without_an_author_is_recorded_as_unknown() -> None:
     assert app_manifest(App("com.x"), entrypoint="app").author == UNKNOWN_AUTHOR
 
 
-def test_a_staged_build_runs_the_recorded_target():
+def test_a_staged_build_runs_the_recorded_target() -> None:
     build = Build(
         build_run="run",
         build_id="image",
@@ -72,7 +74,7 @@ def test_a_staged_build_runs_the_recorded_target():
 class _OkProc:
     returncode = 0
 
-    def communicate(self, timeout=None):
+    def communicate(self, timeout: float | None = None) -> tuple[bytes, bytes]:
         return (
             b"--START_AGENT--"
             + json.dumps({"implementations": []}).encode()
@@ -84,7 +86,7 @@ class _OkProc:
         )
 
 
-def test_the_image_is_inspected_on_the_built_target():
+def test_the_image_is_inspected_on_the_built_target() -> None:
     with patch(
         "arkitekt.cli.commands.plugin.build.subprocess.Popen", return_value=_OkProc()
     ) as popen:
@@ -95,7 +97,7 @@ def test_the_image_is_inspected_on_the_built_target():
     assert "--rm" in command  # the inspection's container is not left behind
 
 
-def _flavour_without_an_app(tmp_path):
+def _flavour_without_an_app(tmp_path: Path) -> None:
     """A flavour, and no app module at all: the image is the only place the app is."""
     result = CliRunner().invoke(
         cli_app,
@@ -114,7 +116,9 @@ def _flavour_without_an_app(tmp_path):
     assert result.exit_code == 0, result.output
 
 
-def test_a_build_records_who_the_image_says_it_is_without_importing_the_app(tmp_path):
+def test_a_build_records_who_the_image_says_it_is_without_importing_the_app(
+    tmp_path: Path,
+) -> None:
     _flavour_without_an_app(tmp_path)
     reported = AppManifest(
         identifier="from.the.image", version="9.9.9", entrypoint="main:api"
@@ -137,7 +141,9 @@ def test_a_build_records_who_the_image_says_it_is_without_importing_the_app(tmp_
     assert build.manifest == reported
 
 
-def test_builds_yaml_names_the_spec_that_wrote_it_and_the_one_the_image_used(tmp_path):
+def test_builds_yaml_names_the_spec_that_wrote_it_and_the_one_the_image_used(
+    tmp_path: Path,
+) -> None:
     _flavour_without_an_app(tmp_path)
     reported = AppManifest(
         identifier="from.the.image", version="9.9.9", entrypoint="main:api"
@@ -160,7 +166,7 @@ def test_builds_yaml_names_the_spec_that_wrote_it_and_the_one_the_image_used(tmp
     assert written["builds"][0]["inspection"]["spec_version"] == "6.0.0"
 
 
-def test_a_build_that_is_not_inspected_is_not_recorded(tmp_path):
+def test_a_build_that_is_not_inspected_is_not_recorded(tmp_path: Path) -> None:
     _flavour_without_an_app(tmp_path)
 
     with (
@@ -177,15 +183,15 @@ def test_a_build_that_is_not_inspected_is_not_recorded(tmp_path):
     assert not (tmp_path / ".arkitekt" / "builds.yaml").exists()
 
 
-def test_the_package_manager_is_inferred_from_the_lockfile(tmp_path):
+def test_the_package_manager_is_inferred_from_the_lockfile(tmp_path: Path) -> None:
     assert infer_package_manager(str(tmp_path)) == "pip"
     (tmp_path / "uv.lock").write_text("")
     assert infer_package_manager(str(tmp_path)) == "uv"
 
 
 def test_plugin_init_picks_the_uv_image_for_a_uv_project_without_loading_the_app(
-    tmp_path,
-):
+    tmp_path: Path,
+) -> None:
     """No app module here at all: only the devcontainer needs the app."""
     (tmp_path / "uv.lock").write_text("")
 
@@ -210,7 +216,9 @@ def test_plugin_init_picks_the_uv_image_for_a_uv_project_without_loading_the_app
     assert "uv sync" in dockerfile
 
 
-def test_plugin_init_names_the_devcontainer_after_the_app(app_dir, monkeypatch):
+def test_plugin_init_names_the_devcontainer_after_the_app(
+    app_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(app_dir)  # the devcontainer is written relative to the cwd
 
     result = CliRunner().invoke(
@@ -235,8 +243,8 @@ def test_plugin_init_names_the_devcontainer_after_the_app(app_dir, monkeypatch):
 
 
 def test_plugin_init_devcontainer_without_an_app_is_a_clean_error(
-    tmp_path, monkeypatch
-):
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.chdir(tmp_path)
 
     result = CliRunner().invoke(
@@ -257,7 +265,7 @@ def test_plugin_init_devcontainer_without_an_app_is_a_clean_error(
     assert "Could not find the app module 'app'" in result.output
 
 
-def test_an_app_asks_for_what_its_services_clients_need():
+def test_an_app_asks_for_what_its_services_clients_need() -> None:
     from arkitekt_spec.declare.app import AppRegistry
 
     class Client:
@@ -283,7 +291,9 @@ def test_an_app_asks_for_what_its_services_clients_need():
     ]
 
 
-def test_a_flavour_is_added_from_a_script_without_a_devcontainer(tmp_path, monkeypatch):
+def test_a_flavour_is_added_from_a_script_without_a_devcontainer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """No terminal, no question: the flavour alone, not an abort."""
     monkeypatch.setattr("arkitekt.cli.tty.is_tty", lambda: False)
     result = CliRunner().invoke(
@@ -312,7 +322,8 @@ def test_a_flavour_is_added_from_a_script_without_a_devcontainer(tmp_path, monke
     )
 
 
-def _builds(*flavours):
+def _builds(*flavours: str) -> dict[str, Build]:
+
     manifest = app_manifest(App("com.x"), entrypoint="app")
     return {
         f"id-{f}": Build(
@@ -322,7 +333,9 @@ def _builds(*flavours):
     }
 
 
-def test_stage_asks_which_flavour_when_the_build_made_several(tmp_path, monkeypatch):
+def test_stage_asks_which_flavour_when_the_build_made_several(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(
         "arkitekt.cli.commands.plugin.io.get_builds",
         lambda *a, **k: _builds("vanilla", "gpu"),
@@ -339,7 +352,9 @@ def test_stage_asks_which_flavour_when_the_build_made_several(tmp_path, monkeypa
     )
 
 
-def test_stage_takes_the_only_flavour_or_the_one_named(tmp_path, monkeypatch):
+def test_stage_takes_the_only_flavour_or_the_one_named(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     monkeypatch.setattr(
         "arkitekt.cli.commands.plugin.io.get_builds",
         lambda *a, **k: _builds("vanilla", "gpu"),

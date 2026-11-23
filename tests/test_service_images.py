@@ -4,6 +4,7 @@ from typing import Annotated
 
 import pytest
 from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.service import Service
 from fakts import Alias, Require
 
 from arkitekt import App
@@ -18,7 +19,7 @@ class OtherClient:
     pass
 
 
-def hosted(image: str | None = "example/pictures:3"):  # noqa: ANN201 -- a Service
+def hosted(image: str | None = "example/pictures:3") -> Service[Client]:
     registry = AppRegistry()
 
     @registry.service(image=image)

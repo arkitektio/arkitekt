@@ -16,7 +16,7 @@ import sys
 import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TypeVar
 
 import pytest
 
@@ -53,13 +53,15 @@ pytestmark = [
 
 EXAMPLES = Path(__file__).parent.parent.parent / "examples"
 
+T = TypeVar("T")
+
 #: How long an agent gets to register and answer its first call.
 REGISTRATION_TIMEOUT = 90.0
 
 
 def eventually(
-    attempt: Callable[[], Any], *, timeout: float, still_running: Callable[[], bool]
-) -> Any:  # noqa: ANN401
+    attempt: Callable[[], T], *, timeout: float, still_running: Callable[[], bool]
+) -> T:
     """The result of ``attempt``, retried until it stops raising.
 
     An agent is registered some time after its run starts, and the only way to

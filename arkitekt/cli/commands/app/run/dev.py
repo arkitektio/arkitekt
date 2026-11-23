@@ -77,7 +77,7 @@ BURST_MS = 1000
 class Candidate:
     """An app that was loaded and checked, and is ready to run."""
 
-    def __init__(self, module: ModuleType, app: App[Any], context: Any) -> None:  # noqa: ANN401
+    def __init__(self, module: ModuleType, app: App[Any], context: object) -> None:
         self.module = module
         self.app = app
         self.context = context
@@ -160,7 +160,7 @@ def files_of(modules: Iterable[str]) -> set[str]:
     return files
 
 
-def concerns(changes: Iterable[Any], files: set[str] | None) -> bool:
+def concerns(changes: Iterable[tuple[object, str]], files: set[str] | None) -> bool:
     """Whether a burst of changes touches the app.
 
     ``files`` is what the running app was loaded from; a change elsewhere in the
@@ -246,7 +246,9 @@ def report_broken(
     )
 
 
-def callback(console: Console, work_dir: str | None, future: asyncio.Task[None]):
+def callback(
+    console: Console, work_dir: str | None, future: asyncio.Task[None]
+) -> None:
     if future.cancelled():
         return
     else:
@@ -318,7 +320,7 @@ async def run_dev(
     deep: bool = False,
     context: str | None = None,
     context_file: Path | None = None,
-):
+) -> None:
     """Run the target's app, and run it again whenever its code changes.
 
     A change is loaded and checked first, beside the app that is running. Only

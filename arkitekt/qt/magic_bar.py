@@ -8,6 +8,7 @@ import aiohttp
 from fakts import Fakts
 from fakts.grants.remote import RemoteGrant
 from fakts.grants.remote.discovery.well_known import WellKnownDiscovery
+from fakts.models import ActiveFakts
 from koil.qt import async_to_qt
 from qtpy import QtCore, QtGui, QtWidgets
 
@@ -28,7 +29,7 @@ class Logo(QtWidgets.QWidget):
 
     """
 
-    def __init__(self, url: str, *args, **kwargs) -> None:
+    def __init__(self, url: str, *args: Any, **kwargs: Any) -> None:
         """Logo widget
 
         Parameters
@@ -125,10 +126,10 @@ class ArkitektLogs(QtWidgets.QDialog):
     def __init__(
         self,
         settings: QtCore.QSettings,
-        *args,
+        *args: Any,
         log_level_key: str = "log_level",
         log_to_file_key: str = "log_to_file",
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """A dialog that will display the logs of the app.
 
@@ -185,9 +186,9 @@ class Profile(QtWidgets.QDialog):
         self,
         app: App[Any],
         bar: "MagicBar",
-        *args,
+        *args: Any,
         dark_mode: bool = False,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         """The profile dialog.
 
@@ -310,7 +311,7 @@ class StatusDot(QtWidgets.QWidget):
         """Whether the dot is breathing."""
         return self._pulse.state() == QtCore.QAbstractAnimation.Running  # pyright: ignore[reportAttributeAccessIssue] -- the stubs scope the enum
 
-    def _on_phase(self, value: Any) -> None:  # noqa: ANN401 -- a QVariant
+    def _on_phase(self, value: float) -> None:
         self._phase = float(value)
         self.update()
 
@@ -418,7 +419,7 @@ class MagicBar(QtWidgets.QWidget):
         runtime: Runtime[Any],
         dark_mode: bool = False,
         on_error: Callable[[Exception], None] | None = None,
-        context: Any | None = None,
+        context: object = None,
     ) -> None:
         """Magic bar Widget
 
@@ -777,19 +778,19 @@ class MagicBar(QtWidgets.QWidget):
             return grant.discovery
         return None
 
-    async def _aload(self) -> Any:
+    async def _aload(self) -> ActiveFakts:
         return await self._fakts().aload()
 
-    async def _arefresh(self) -> Any:
+    async def _arefresh(self) -> ActiveFakts:
         return await self._fakts().arefresh()
 
-    async def _aget_token(self) -> Any:
+    async def _aget_token(self) -> str:
         return await self._fakts().aget_token()
 
-    async def _arefresh_token(self) -> Any:
+    async def _arefresh_token(self) -> str:
         return await self._fakts().arefresh_token()
 
-    async def _aprovide(self) -> Any:
+    async def _aprovide(self) -> None:
         # Through the runtime: it owns the agent, binds it to this run and
         # applies the run's options (force) before providing.
         return await self.runtime.arun(self.context)

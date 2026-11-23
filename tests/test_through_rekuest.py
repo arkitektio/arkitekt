@@ -5,7 +5,6 @@ runtime and the rekuest client are stand-ins that record what they are asked.
 """
 
 from types import SimpleNamespace
-from typing import Any
 
 import pytest
 from arkitekt_runtime.types import TaskPolicy
@@ -42,12 +41,14 @@ class FakeRekuest:
     """Records the implementation looked up and the call made on it."""
 
     def __init__(self) -> None:
-        self.calls: list[tuple[str, Any, tuple[Any, ...], dict[str, Any]]] = []
+        self.calls: list[
+            tuple[str, SimpleNamespace, tuple[object, ...], dict[str, object]]
+        ] = []
 
-    def my_implementation_at(self, interface: str) -> Any:  # noqa: ANN401
+    def my_implementation_at(self, interface: str) -> SimpleNamespace:
         return SimpleNamespace(interface=interface)
 
-    def call(self, target: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    def call(self, target: SimpleNamespace, *args: object, **kwargs: object) -> str:
         self.calls.append(("call", target, args, kwargs))
         return f"{target.interface} through rekuest"
 
@@ -55,17 +56,20 @@ class FakeRekuest:
 class FakeRuntime:
     """A run that provides the app: an agent declaring its actions, and a rekuest client."""
 
-    def __init__(self, declared: dict[str, Any]) -> None:
-        self.agent: Any = SimpleNamespace(
+    def __init__(self, declared: dict[str, SimpleNamespace]) -> None:
+        self.agent: SimpleNamespace | None = SimpleNamespace(
             app_registry=SimpleNamespace(declared_implementations=declared)
         )
         self.rekuest = FakeRekuest()
-        self.local_calls: list[tuple[Any, tuple[Any, ...], dict[str, Any]]] = []
+        self.local_calls: list[
+            tuple[object, tuple[object, ...], dict[str, object]]
+        ] = []
 
-    def require(self, cls: type) -> Any:  # noqa: ANN401
+    def require(self, cls: type) -> FakeRekuest:
         return self.rekuest
 
-    def call_local(self, action: Any, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401
+    def call_local(self, action: object, *args: object, **kwargs: object) -> str:
+
         self.local_calls.append((action, args, kwargs))
         return "in process"
 

@@ -19,9 +19,10 @@ import time
 import webbrowser
 from collections.abc import Sequence
 from pathlib import Path
-from typing import Annotated, Any
+from typing import TYPE_CHECKING, Annotated, Any, Protocol
 
 import typer
+from rich.console import Console
 
 from arkitekt.app.terminal import force_qr, show_qr
 from arkitekt.cli.errors import cli_error, confirm_or_abort
@@ -30,6 +31,9 @@ from arkitekt.cli.tty import require_tty
 from arkitekt.cli.ui import done, escape, fail, notice, step
 from arkitekt.cli.vars import get_console
 from arkitekt.constants import DEFAULT_ARKITEKT_URL
+
+if TYPE_CHECKING:
+    import arkitekt_mesh  # type: ignore[import-not-found]  # the mesh extra
 
 #: Where to point users who do not have tailscale installed yet.
 TAILSCALE_INSTALL_URL = "https://tailscale.com/download"
@@ -219,7 +223,7 @@ def _build_configure_url(base: str | None, code: str) -> str | None:
 
 
 def _display_configure_prompt(
-    console, configure_url: str | None, code: str, open_browser: bool
+    console: Console, configure_url: str | None, code: str, open_browser: bool
 ) -> None:
     """Show the user where to authorize the join (and open a browser if asked)."""
     if configure_url:
@@ -251,7 +255,7 @@ def _display_configure_prompt(
 
 
 def _run_mesh_device_code(
-    console,
+    console: Console,
     endpoints: dict[str, str | None],
     payload: dict[str, Any],
     open_browser: bool,
@@ -272,7 +276,7 @@ def _run_mesh_device_code(
         return asyncio.run(_mesh_poll(challenge_url, challenge, timeout))
 
 
-def _ensure_tailscale_installed(console) -> None:
+def _ensure_tailscale_installed(console: Console) -> None:
     """Abort with install guidance if the ``tailscale`` binary is not on PATH."""
     if shutil.which("tailscale") is not None:
         return
@@ -300,7 +304,7 @@ def _redact(args: list[str]) -> list[str]:
     return redacted
 
 
-def _run_tailscale(console, args: list[str]) -> None:
+def _run_tailscale(console: Console, args: list[str]) -> None:
     """Run ``tailscale <args>``, retrying with ``sudo`` if it exits non-zero.
 
     Output is streamed (not captured) so tailscale's progress stays visible. The
@@ -363,7 +367,7 @@ def _find_tailscaled() -> str | None:
     return None
 
 
-def _ensure_tailscaled_installed(console) -> str:
+def _ensure_tailscaled_installed(console: Console) -> str:
     """Return the ``tailscaled`` path or abort with install guidance."""
     path = _find_tailscaled()
     if path:
@@ -397,7 +401,7 @@ def _userspace_daemon_command(
 
 
 def _bring_up_via_socket(
-    console,
+    console: Console,
     socket_path: Path,
     up_args: list[str],
     attempts: int = 40,
@@ -460,7 +464,7 @@ mesh = typer.Typer(
 
 
 def _device_code_join(
-    console,
+    console: Console,
     url: str,
     machine_name: str | None,
     description: str | None,
@@ -549,7 +553,7 @@ def join(
             "--tag",
             help="Requested ionscale ACL tag (repeatable; advisory).",
         ),
-    ] = [],
+    ] = [],  # noqa: B006 -- typer's default; never mutated
     expiration: Annotated[
         int,
         typer.Option(
@@ -661,7 +665,7 @@ def proxy(
             "--tag",
             help="Requested ionscale ACL tag (repeatable; advisory).",
         ),
-    ] = [],
+    ] = [],  # noqa: B006 -- typer's default; never mutated
     expiration: Annotated[
         int,
         typer.Option(
@@ -760,7 +764,20 @@ def proxy(
             proc.kill()
 
 
-def _relay_bindings() -> Any:
+class _RelayBindings(Protocol):
+    """The ``arkitekt_mesh`` module, as far as the relay uses it."""
+
+    @property
+    def Node(self) -> "type[arkitekt_mesh.Node]": ...
+    @property
+    def MeshError(self) -> "type[arkitekt_mesh.MeshError]": ...
+    @property
+    def NeedsLogin(self) -> "type[arkitekt_mesh.NeedsLogin]": ...
+    @property
+    def Locked(self) -> "type[arkitekt_mesh.Locked]": ...
+
+
+def _relay_bindings() -> _RelayBindings:
     """The mesh node's Python bindings, new enough to relay."""
     try:
         import arkitekt_mesh  # type: ignore[import-not-found]
@@ -788,8 +805,8 @@ def _format_bytes(count: int) -> str:
 
 
 async def _serve_relay(
-    console,
-    bindings: Any,
+    console: Console,
+    bindings: "_RelayBindings",
     state_dir: Path,
     hostname: str,
     coord: str | None,
@@ -914,7 +931,7 @@ def relay(
             help="Where peers reach the port, as IP:PORT (repeatable): for a relay behind a "
             "port forward. Without it the relay tells its own address and what a STUN server sees.",
         ),
-    ] = [],
+    ] = [],  # noqa: B006 -- typer's default; never mutated
     state_dir: Annotated[
         Path,
         typer.Option(

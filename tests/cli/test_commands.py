@@ -1,9 +1,13 @@
 import importlib.util
 import os
 import sys
+from collections.abc import Iterator
+from pathlib import Path
+from types import ModuleType
 from unittest.mock import patch
 
 import pytest
+from typer._click import Command, Parameter
 from typer.testing import CliRunner
 
 from arkitekt import App
@@ -19,7 +23,7 @@ from .isolation import isolated_filesystem
 # ---------------------------------------------------------------------------
 
 
-def test_init_uv():
+def test_init_uv() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         with patch("shutil.which") as mock_which, patch("subprocess.run") as mock_run:
@@ -70,7 +74,7 @@ def test_init_uv():
             assert not os.path.exists(".arkitekt/manifest.yaml")
 
 
-def test_init_yes():
+def test_init_yes() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         result = runner.invoke(
@@ -85,7 +89,7 @@ def test_init_yes():
         assert not os.path.exists(".arkitekt")
 
 
-def test_init_path():
+def test_init_path() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         original_cwd = os.getcwd()
@@ -124,7 +128,7 @@ def test_init_path():
         assert "App('myapp', __version__, author='me'" in source
 
 
-def test_init_default_uv():
+def test_init_default_uv() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         with patch("shutil.which") as mock_which, patch("subprocess.run") as mock_run:
@@ -164,7 +168,7 @@ def test_init_default_uv():
             )
 
 
-def test_init_default_pip():
+def test_init_default_pip() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         with patch("shutil.which") as mock_which:
@@ -192,7 +196,7 @@ def test_init_default_pip():
             assert not os.path.exists("pyproject.toml")
 
 
-def test_init_uv_not_installed():
+def test_init_uv_not_installed() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         with patch("shutil.which") as mock_which:
@@ -225,7 +229,7 @@ def test_init_uv_not_installed():
 # ---------------------------------------------------------------------------
 
 
-def test_init_work_dir(tmp_path):
+def test_init_work_dir(tmp_path: Path) -> None:
     """init with --work-dir writes to tmp_path without touching process CWD."""
     original_cwd = os.getcwd()
     runner = CliRunner()
@@ -266,7 +270,7 @@ def test_init_work_dir(tmp_path):
     assert "App('com.workdir.app', __version__, author='tester'" in source
 
 
-def test_init_subdir_work_dir(tmp_path):
+def test_init_subdir_work_dir(tmp_path: Path) -> None:
     """init <subdir> with --work-dir creates a sub-directory inside work_dir."""
     original_cwd = os.getcwd()
     runner = CliRunner()
@@ -307,7 +311,7 @@ def test_init_subdir_work_dir(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_kabinet_init():
+def test_kabinet_init() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         runner.invoke(
@@ -352,7 +356,7 @@ def test_kabinet_init():
             assert "ms-python.python" in content
 
 
-def test_kabinet_init_uv():
+def test_kabinet_init_uv() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         runner.invoke(
@@ -398,7 +402,7 @@ def test_kabinet_init_uv():
             assert "COPY --from=ghcr.io/astral-sh/uv" in content
 
 
-def test_kabinet_flavour_commands():
+def test_kabinet_flavour_commands() -> None:
     runner = CliRunner()
     with isolated_filesystem():
         runner.invoke(
@@ -457,7 +461,7 @@ def test_kabinet_flavour_commands():
 # ---------------------------------------------------------------------------
 
 
-def test_kabinet_init_work_dir(tmp_path):
+def test_kabinet_init_work_dir(tmp_path: Path) -> None:
     """kabinet init via --work-dir, no os.chdir."""
     original_cwd = os.getcwd()
     runner = CliRunner()
@@ -513,7 +517,7 @@ def test_kabinet_init_work_dir(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def _import_file(path, name):
+def _import_file(path: str | Path, name: str) -> ModuleType:
     spec = importlib.util.spec_from_file_location(name, path)
     assert spec is not None and spec.loader is not None, (
         f"{path} is not an importable file"
@@ -528,7 +532,9 @@ def _import_file(path, name):
 
 
 @pytest.mark.parametrize("template", compile_templates())
-def test_every_template_scaffolds_an_importable_app(tmp_path, template):
+def test_every_template_scaffolds_an_importable_app(
+    tmp_path: Path, template: str
+) -> None:
     if template == "qt":
         # qtpy is installed, a binding (PyQt, PySide) may not be: the app imports one.
         try:
@@ -580,7 +586,7 @@ def test_every_template_scaffolds_an_importable_app(tmp_path, template):
     assert app.snapshot().registry.get_implementations()
 
 
-def test_the_scaffolded_app_is_what_the_commands_find(tmp_path):
+def test_the_scaffolded_app_is_what_the_commands_find(tmp_path: Path) -> None:
     result = CliRunner().invoke(
         cli_app,
         [
@@ -612,7 +618,7 @@ def test_the_scaffolded_app_is_what_the_commands_find(tmp_path):
     assert "generate_n_string" in result.output
 
 
-def test_a_rendered_template_is_python_source():
+def test_a_rendered_template_is_python_source() -> None:
     """Filling a template must not `str.format` it: it is Python source, braces and all."""
     with open(build_relative_dir("templates", "simple.py")) as f:
         source = f.read()
@@ -628,7 +634,9 @@ def test_a_rendered_template_is_python_source():
     assert '__version__ = "0.0.1"' in rendered and "App('x', __version__)" in rendered
 
 
-def test_a_template_without_a_version_of_its_own_is_declared_with_it_written_out():
+def test_a_template_without_a_version_of_its_own_is_declared_with_it_written_out() -> (
+    None
+):
     rendered = render_template(
         "app = App(__APP_ARGUMENTS__)", render_app_arguments("x", "0.0.1")
     )
@@ -636,7 +644,7 @@ def test_a_template_without_a_version_of_its_own_is_declared_with_it_written_out
     assert rendered == "app = App('x', '0.0.1')"
 
 
-def test_a_template_that_keeps_its_version_needs_one():
+def test_a_template_that_keeps_its_version_needs_one() -> None:
     with pytest.raises(ValueError, match="no version was given"):
         render_template(
             "__version__ = __APP_VERSION__\napp = App(__APP_ARGUMENTS__)",
@@ -644,7 +652,7 @@ def test_a_template_that_keeps_its_version_needs_one():
         )
 
 
-def test_app_arguments_quote_anything():
+def test_app_arguments_quote_anything() -> None:
     arguments = render_app_arguments('we"ird', "0.0.1", author="a'b", scopes=["read"])
 
     # It is Python source for the App(...) call: evaluating it gives the values back.
@@ -654,7 +662,7 @@ def test_app_arguments_quote_anything():
     )
 
 
-def test_init_has_no_manifest_options():
+def test_init_has_no_manifest_options() -> None:
     result = CliRunner().invoke(cli_app, ["create", "--help"])
 
     assert "--overwrite-manifest" not in result.output
@@ -665,11 +673,11 @@ def test_init_has_no_manifest_options():
 # --------------------------------------------------------------------------- #
 
 
-def _every_command():
+def _every_command() -> Iterator[tuple[list[str], Command]]:
     """Each command of the tree, with its path, as Typer builds it."""
     import typer
 
-    def walk(command, path):
+    def walk(command: Command, path: list[str]) -> Iterator[tuple[list[str], Command]]:
         yield path, command
         for name, sub in sorted(getattr(command, "commands", {}).items()):
             yield from walk(sub, [*path, name])
@@ -677,7 +685,7 @@ def _every_command():
     yield from walk(typer.main.get_command(cli_app), ["arkitekt"])
 
 
-def _options():
+def _options() -> Iterator[tuple[str, Parameter]]:
     for path, command in _every_command():
         for param in command.params:
             if param.name == "help" or type(param).__name__.endswith("Argument"):
@@ -685,7 +693,7 @@ def _options():
             yield " ".join(path), param
 
 
-def test_a_short_flag_means_one_thing_everywhere():
+def test_a_short_flag_means_one_thing_everywhere() -> None:
     meanings: dict[str, set[str]] = {}
     for _, param in _options():
         longs = [o for o in param.opts if o.startswith("--")]
@@ -697,7 +705,7 @@ def test_a_short_flag_means_one_thing_everywhere():
     assert not clashes, f"a short flag names different options: {clashes}"
 
 
-def test_short_flags_are_one_letter():
+def test_short_flags_are_one_letter() -> None:
     long_shorts = sorted(
         {
             f"{where}: {o}"
@@ -709,7 +717,7 @@ def test_short_flags_are_one_letter():
     assert not long_shorts, f"multi-letter short flags: {long_shorts}"
 
 
-def test_every_argument_says_what_it_is():
+def test_every_argument_says_what_it_is() -> None:
     unexplained = [
         f"{' '.join(path)} {param.name}"
         for path, command in _every_command()
@@ -720,7 +728,7 @@ def test_every_argument_says_what_it_is():
     assert not unexplained, f"arguments without help: {unexplained}"
 
 
-def test_every_url_option_reads_fakts_url():
+def test_every_url_option_reads_fakts_url() -> None:
     off = [
         where
         for where, param in _options()

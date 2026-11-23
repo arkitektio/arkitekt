@@ -10,9 +10,10 @@ import subprocess
 import sys
 from pathlib import Path
 from types import ModuleType
+from typing import Any
 
 import pytest
-from typer.testing import CliRunner
+from typer.testing import CliRunner, Result
 
 from arkitekt import App
 from arkitekt.cli.main import cli_app
@@ -48,7 +49,9 @@ if __name__ == "__main__":
 '''
 
 
-def _run_cli(work_dir, *args, env=None):
+def _run_cli(
+    work_dir: Path, *args: str, env: dict[str, str] | None = None
+) -> subprocess.CompletedProcess[str]:
     return subprocess.run(
         [sys.executable, "-m", "arkitekt.cli.main", "--work-dir", str(work_dir), *args],
         capture_output=True,
@@ -57,11 +60,11 @@ def _run_cli(work_dir, *args, env=None):
     )
 
 
-def _between(text, start, end):
+def _between(text: str, start: str, end: str) -> object:
     return json.loads(text.split(start)[1].split(end)[0])
 
 
-def module_with(**attributes) -> ModuleType:
+def module_with(**attributes: object) -> ModuleType:
     module = ModuleType("entrypoint")
     vars(module).update(attributes)
     return module
@@ -72,7 +75,7 @@ def module_with(**attributes) -> ModuleType:
 # --------------------------------------------------------------------------- #
 
 
-def test_the_default_target_is_the_module_app(tmp_path):
+def test_the_default_target_is_the_module_app(tmp_path: Path) -> None:
     assert DEFAULT_TARGET == "app"
     target = parse_target(DEFAULT_TARGET, str(tmp_path))
 
@@ -80,7 +83,7 @@ def test_the_default_target_is_the_module_app(tmp_path):
     assert target.file == str((tmp_path / "app.py").resolve())
 
 
-def test_a_module_target_may_name_the_attribute(tmp_path):
+def test_a_module_target_may_name_the_attribute(tmp_path: Path) -> None:
     target = parse_target("pkg.main:api", str(tmp_path))
 
     assert (target.module, target.attribute) == ("pkg.main", "api")
@@ -88,26 +91,26 @@ def test_a_module_target_may_name_the_attribute(tmp_path):
 
 
 @pytest.mark.parametrize("raw", ["app.py", "./app.py", "app.py:app"])
-def test_a_file_target_is_its_module(tmp_path, raw):
+def test_a_file_target_is_its_module(tmp_path: Path, raw: str) -> None:
     target = parse_target(raw, str(tmp_path))
 
     assert target.module == "app"
     assert target.attribute == ("app" if raw.endswith(":app") else None)
 
 
-def test_a_file_target_in_a_subdirectory_is_a_dotted_module(tmp_path):
+def test_a_file_target_in_a_subdirectory_is_a_dotted_module(tmp_path: Path) -> None:
     target = parse_target("src/tools/app.py:api", str(tmp_path))
 
     assert (target.module, target.attribute) == ("src.tools.app", "api")
 
 
-def test_an_absolute_file_target_is_relative_to_the_work_dir(tmp_path):
+def test_an_absolute_file_target_is_relative_to_the_work_dir(tmp_path: Path) -> None:
     target = parse_target(str(tmp_path / "app.py"), str(tmp_path))
 
     assert target.module == "app"
 
 
-def test_a_package_target_watches_its_init(tmp_path):
+def test_a_package_target_watches_its_init(tmp_path: Path) -> None:
     (tmp_path / "pkg").mkdir()
     (tmp_path / "pkg" / "__init__.py").write_text("")
 
@@ -116,12 +119,12 @@ def test_a_package_target_watches_its_init(tmp_path):
 
 
 @pytest.mark.parametrize("raw", ["", "  ", "app:", "not a module", "1app"])
-def test_malformed_targets_are_refused(tmp_path, raw):
+def test_malformed_targets_are_refused(tmp_path: Path, raw: str) -> None:
     with pytest.raises(TargetError):
         parse_target(raw, str(tmp_path))
 
 
-def test_a_file_outside_the_work_dir_is_refused(tmp_path):
+def test_a_file_outside_the_work_dir_is_refused(tmp_path: Path) -> None:
     with pytest.raises(TargetError, match="not inside the work dir"):
         parse_target("/somewhere/else/app.py", str(tmp_path / "project"))
 
@@ -131,18 +134,18 @@ def test_a_file_outside_the_work_dir_is_refused(tmp_path):
 # --------------------------------------------------------------------------- #
 
 
-def test_a_module_without_an_app_has_none_to_find():
+def test_a_module_without_an_app_has_none_to_find() -> None:
     assert find_app(module_with(something=1)) is None
     assert find_app(None) is None
 
 
-def test_the_app_named_app_wins():
+def test_the_app_named_app_wins() -> None:
     main, other = App("main"), App("other")
 
     assert find_app(module_with(app=main, worker=other)) is main
 
 
-def test_one_app_under_any_name_is_found_and_several_are_ambiguous():
+def test_one_app_under_any_name_is_found_and_several_are_ambiguous() -> None:
     only, second = App("only"), App("second")
 
     assert find_app(module_with(application=only, alias=only)) is only
@@ -150,20 +153,20 @@ def test_one_app_under_any_name_is_found_and_several_are_ambiguous():
         find_app(module_with(first=only, second=second))
 
 
-def test_the_named_attribute_is_taken_even_among_several():
+def test_the_named_attribute_is_taken_even_among_several() -> None:
     first, second = App("first"), App("second")
 
     assert find_app(module_with(first=first, second=second), "second") is second
 
 
-def test_named_attribute_must_be_an_app():
+def test_named_attribute_must_be_an_app() -> None:
     with pytest.raises(NoAppError, match="not an arkitekt App"):
         find_app(module_with(app=object()), "app")
     with pytest.raises(NoAppError, match="has no attribute 'missing'"):
         find_app(module_with(app=App("x")), "missing")
 
 
-def test_a_module_without_an_app_is_an_error_that_shows_the_new_api():
+def test_a_module_without_an_app_is_an_error_that_shows_the_new_api() -> None:
     with pytest.raises(
         NoAppError,
         match=r"(?s)defines no arkitekt App.*App\(.*@app\.action.*run\(app\)",
@@ -176,7 +179,9 @@ def test_a_module_without_an_app_is_an_error_that_shows_the_new_api():
 # --------------------------------------------------------------------------- #
 
 
-def test_load_target_imports_the_work_dirs_module(tmp_path, monkeypatch):
+def test_load_target_imports_the_work_dirs_module(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     (tmp_path / "myapp.py").write_text(APP_STYLE)
     monkeypatch.syspath_prepend(str(tmp_path))
 
@@ -190,7 +195,9 @@ def test_load_target_imports_the_work_dirs_module(tmp_path, monkeypatch):
     )
 
 
-def test_load_target_prefers_the_work_dir_over_a_cached_module(tmp_path, monkeypatch):
+def test_load_target_prefers_the_work_dir_over_a_cached_module(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     """A module of the same name imported from elsewhere must not shadow --work-dir."""
     first, second = tmp_path / "one", tmp_path / "two"
     for directory, identifier in ((first, "first"), (second, "second")):
@@ -212,7 +219,7 @@ def test_load_target_prefers_the_work_dir_over_a_cached_module(tmp_path, monkeyp
 # --------------------------------------------------------------------------- #
 
 
-def _requirements_via_cli(work_dir, *args, **kwargs):
+def _requirements_via_cli(work_dir: Path, *args: str, **kwargs: Any) -> Result:
     result = CliRunner().invoke(
         cli_app,
         [
@@ -229,7 +236,9 @@ def _requirements_via_cli(work_dir, *args, **kwargs):
 
 
 @pytest.mark.parametrize("target", [None, "app", "app:app", "app.py", "app.py:app"])
-def test_every_target_form_reaches_the_same_app(app_dir, target):
+def test_every_target_form_reaches_the_same_app(
+    app_dir: Path, target: str | None
+) -> None:
     args = [target] if target else []
     result = _requirements_via_cli(app_dir, *args)
 
@@ -237,7 +246,7 @@ def test_every_target_form_reaches_the_same_app(app_dir, target):
     assert "--START_REQUIREMENTS--" in result.output
 
 
-def test_the_target_can_come_from_the_environment(app_dir):
+def test_the_target_can_come_from_the_environment(app_dir: Path) -> None:
     (app_dir / "other.py").write_text(
         "from arkitekt import App\napi = App('from-env')\n"
     )
@@ -250,7 +259,7 @@ def test_the_target_can_come_from_the_environment(app_dir):
     assert "Could not find the app module 'nowhere'" in missing.output
 
 
-def test_an_ambiguous_module_is_an_error_naming_the_choices(app_dir):
+def test_an_ambiguous_module_is_an_error_naming_the_choices(app_dir: Path) -> None:
     (app_dir / "twice.py").write_text(
         "from arkitekt import App\nfirst = App('one')\nsecond = App('two')\n"
     )
@@ -262,7 +271,7 @@ def test_an_ambiguous_module_is_an_error_naming_the_choices(app_dir):
     assert "twice:first" in result.output
 
 
-def test_a_module_without_an_app_is_a_clean_error(app_dir):
+def test_a_module_without_an_app_is_a_clean_error(app_dir: Path) -> None:
     (app_dir / "empty.py").write_text("VALUE = 1\n")
 
     result = _requirements_via_cli(app_dir, "empty")
@@ -277,33 +286,36 @@ def test_a_module_without_an_app_is_a_clean_error(app_dir):
 # --------------------------------------------------------------------------- #
 
 
-def test_inspect_reports_what_was_declared_on_the_modules_app(app_dir):
+def test_inspect_reports_what_was_declared_on_the_modules_app(app_dir: Path) -> None:
     (app_dir / "app.py").write_text(APP_STYLE)
 
     result = _run_cli(app_dir, "inspect", "implementations", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     impls = _between(result.stdout, "--START_TEMPLATES--", "--END_TEMPLATES--")
+    assert isinstance(impls, list)
     assert [impl["interface"] for impl in impls] == ["from_the_app"]
     assert [port["key"] for port in impls[0]["definition"]["args"]] == ["x"]
 
 
-def test_inspect_lifecycle_reads_the_apps_hooks(app_dir):
+def test_inspect_lifecycle_reads_the_apps_hooks(app_dir: Path) -> None:
     (app_dir / "app.py").write_text(APP_STYLE)
 
     result = _run_cli(app_dir, "inspect", "lifecycle", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     lifecycle = _between(result.stdout, "--START_LIFECYCLE--", "--END_LIFECYCLE--")
+    assert isinstance(lifecycle, dict)
     assert [hook["name"] for hook in lifecycle["startup"]] == ["boot"]
 
 
-def test_inspect_structures_reads_the_apps_own_registry(app_dir):
+def test_inspect_structures_reads_the_apps_own_registry(app_dir: Path) -> None:
     (app_dir / "app.py").write_text(APP_STYLE)
 
     result = _run_cli(app_dir, "inspect", "structures", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     structures = _between(result.stdout, "--START_STRUCTURES--", "--END_STRUCTURES--")
+    assert isinstance(structures, list)
     assert "@rekuest/implementation" in {item["identifier"] for item in structures}
     assert {item["service"] for item in structures} == {"rekuest"}

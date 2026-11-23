@@ -1,14 +1,17 @@
 """Fake services and clients for the app and runtime tests: no fakts, no server."""
 
-from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from collections.abc import AsyncIterator, Awaitable, Callable
+from contextlib import AbstractAsyncContextManager, asynccontextmanager
 from typing import Annotated, Any
 
+from arkitekt_spec.declare.agents.connection import ConnectionListener, TaskListener
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.service import Service
 from fakts import Alias, Require
 from rath.expansion import ExpandsStructures
+
+from arkitekt.app.app import App
 
 
 class FakeClient:
@@ -42,7 +45,7 @@ class PictureClient(FakeClient, ExpandsStructures):
 
 
 def PictureService(  # noqa: N802
-    built: list[Any] | None = None, log: list[str] | None = None
+    built: list[PictureClient] | None = None, log: list[str] | None = None
 ) -> Service[PictureClient]:
     """A pictures service. Pass ``built`` to record the client of each build.
 
@@ -53,7 +56,7 @@ def PictureService(  # noqa: N802
     ``pictures-2``, ... in build order, so two runs can be told apart. Kept
     capitalised so it still reads as the thing an app is given.
     """
-    record: list[Any] = built if built is not None else []
+    record: list[PictureClient] = built if built is not None else []
     registry = AppRegistry()
 
     @registry.service()
@@ -78,7 +81,7 @@ class OtherClient(FakeClient):
 
 
 def OtherService(  # noqa: N802
-    log: list[str] | None = None, client_cls: type = OtherClient
+    log: list[str] | None = None, client_cls: type[OtherClient] = OtherClient
 ) -> Service[OtherClient]:
     """A second service, to test ordering and multiple clients.
 
@@ -107,10 +110,12 @@ class FakeAgent:
         self.bound_app: Any = None
         self.force: Any = None
 
-    async def aprovide(self, context: Any = None) -> None:  # noqa: ANN401
+    async def aprovide(self, context: object = None) -> None:
         self.provided.append(context)
 
-    async def aconnect(self, context: Any = None, timeout: Any = None) -> None:  # noqa: ANN401
+    async def aconnect(
+        self, context: object = None, timeout: float | None = None
+    ) -> None:
         self.provided.append(context)
 
     async def aloop(self) -> None:
@@ -151,12 +156,12 @@ class RecordedRun:
 
     def __init__(
         self,
-        app: Any,
-        options: dict[str, Any],
-        runs: list[Any],
-        listener: Any = None,
-        fakts: Any = None,
-        during: Any = None,
+        app: App[Any],
+        options: dict[str, object],
+        runs: list[tuple[App[Any], dict[str, object]]],
+        listener: ConnectionListener | None = None,
+        fakts: object = None,
+        during: "During | None" = None,
     ) -> None:
         self.app = app
         self.options = options
@@ -164,9 +169,9 @@ class RecordedRun:
         self.listener = listener
         self.fakts = fakts
         self.during = during
-        self.task_listener: Any = None
+        self.task_listener: TaskListener | None = None
 
-    async def arun(self, context: Any = None) -> None:  # noqa: ANN401
+    async def arun(self, context: object = None) -> None:
         """Record the run as the user asked for it; then do what the test wants of it."""
         asked = (
             {**self.options, "context": context}
@@ -178,7 +183,15 @@ class RecordedRun:
             await self.during(self)
 
 
-def recording_connect(runs: list[Any], fakts: Any = None, during: Any = None) -> Any:  # noqa: ANN401
+During = Callable[[RecordedRun], Awaitable[None]]
+"""What a test does inside a recorded run: raise, or drive its listener."""
+
+
+def recording_connect(
+    runs: list[tuple[App[Any], dict[str, object]]],
+    fakts: object = None,
+    during: During | None = None,
+) -> Callable[..., AbstractAsyncContextManager[RecordedRun]]:
     """A stand-in for ``arkitekt.runtime.connect`` that connects nothing.
 
     ``runs`` collects ``(app, options)`` of every run, the options being what the
@@ -189,11 +202,11 @@ def recording_connect(runs: list[Any], fakts: Any = None, during: Any = None) ->
 
     @asynccontextmanager
     async def fake_connect(
-        app: Any,  # noqa: ANN401
+        app: App[Any],
         provide: bool = False,
-        connection_listener: Any = None,  # noqa: ANN401
-        task_listener: Any = None,  # noqa: ANN401
-        **options: Any,  # noqa: ANN401
+        connection_listener: ConnectionListener | None = None,
+        task_listener: TaskListener | None = None,
+        **options: object,
     ) -> AsyncIterator[RecordedRun]:
         run = RecordedRun(
             app, options, runs, listener=connection_listener, fakts=fakts, during=during

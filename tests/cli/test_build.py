@@ -22,6 +22,9 @@ tests need no registry/credentials.
 import os
 import re
 import subprocess
+from collections.abc import Sequence
+from contextlib import AbstractContextManager
+from typing import Any
 from unittest.mock import patch
 
 import pytest
@@ -108,7 +111,7 @@ def _cleanup_images() -> None:
         )
 
 
-def _patched_inspect_all():
+def _patched_inspect_all() -> AbstractContextManager[object]:
     """Stub the (upstream-broken) in-container ``arkitekt inspect all`` call.
 
     The real ``docker inspect`` for image size still runs, so the build's inspection
@@ -120,11 +123,13 @@ def _patched_inspect_all():
     )
 
 
-def _patched_push():
+def _patched_push() -> AbstractContextManager[object]:
     """Patch only the ``docker push`` subprocess call, letting ``docker tag`` run."""
     real_run = subprocess.run
 
-    def fake_run(cmd, *args, **kwargs):
+    def fake_run(
+        cmd: str | Sequence[str], *args: Any, **kwargs: Any
+    ) -> subprocess.CompletedProcess[str | bytes]:
         # Both shapes a push can take: the single-arch `docker push`, and the
         # multi-arch `docker buildx build ... --push` that writes the manifest
         # list. Letting either through would need a real registry.
@@ -146,7 +151,7 @@ def _patched_push():
 # ---------------------------------------------------------------------------
 
 
-def test_kabinet_build_no_inspect():
+def test_kabinet_build_no_inspect() -> None:
     """`kabinet build --no-inspect` runs a real docker build, and records nothing.
 
     Without running the image nothing says which app it holds, and the source on
@@ -179,7 +184,7 @@ def test_kabinet_build_no_inspect():
                 )
 
 
-def test_kabinet_build_with_inspect():
+def test_kabinet_build_with_inspect() -> None:
     """`kabinet build` (default) builds the image and inspects it.
 
     Real ``docker build`` + real ``docker inspect`` (size); the in-container
@@ -211,7 +216,7 @@ def test_kabinet_build_with_inspect():
 # ---------------------------------------------------------------------------
 
 
-def test_kabinet_full_lifecycle():
+def test_kabinet_full_lifecycle() -> None:
     """init -> kabinet init -> build -> publish: the full flow, push patched out."""
     tag = "localhost:5000/com.test.app:0.0.1-vanilla"
     runner = CliRunner()
@@ -238,7 +243,7 @@ def test_kabinet_full_lifecycle():
             _cleanup_images()
 
 
-def test_kabinet_publish_rejects_duplicate():
+def test_kabinet_publish_rejects_duplicate() -> None:
     """Publishing the same build twice fails: a version/flavour can't be deployed twice."""
     tag = "localhost:5000/com.test.app:0.0.1-vanilla"
     runner = CliRunner()

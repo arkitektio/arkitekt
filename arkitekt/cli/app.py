@@ -69,7 +69,10 @@ def _root_help(app_file: str | None) -> str:
     # ``\b`` keeps the rows on their own lines: Typer re-flows any other paragraph.
     return (
         "\b\n"
-        + "\n".join(f"[cyan]{row:<7}[/cyan]   {line}" for row, line in zip(MARK, lines))
+        + "\n".join(
+            f"[cyan]{row:<7}[/cyan]   {line}"
+            for row, line in zip(MARK, lines, strict=True)
+        )
         + "\n\n"
         "Arkitekt is a framework for building safe and performant apps that can be "
         "centrally orchestrated and managed in workflows.\n\n"
@@ -104,14 +107,14 @@ class FolderGroup(TyperGroup):
 
     # The contexts are typed ``Any``: Typer hands its own vendored click's, or the
     # real click's on an older Typer, and neither is ours to name.
-    def parse_args(self, ctx: Any, args: list[str]) -> list[str]:  # noqa: ANN401
+    def parse_args(self, ctx: Any, args: list[str]) -> list[str]:  # noqa: ANN401 -- either click's context
         """Note the work dir, and say in the help whether it holds an app."""
         app_file = has_app(_peek_work_dir(args))
         ctx.meta[_APP_FILE] = app_file
         self.help = _root_help(app_file)
         return super().parse_args(ctx, args)
 
-    def list_commands(self, ctx: Any) -> list[str]:  # noqa: ANN401
+    def list_commands(self, ctx: Any) -> list[str]:  # noqa: ANN401 -- either click's context
         """The menu for the work dir, in menu order."""
         mounted = set(super().list_commands(ctx))
         menu = APP_MENU if ctx.meta.get(_APP_FILE) else BARE_MENU
