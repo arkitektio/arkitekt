@@ -17,3 +17,4 @@ jobs:
     uses: arkitektio/.github/.github/workflows/python-quality.yml@main
     with:
       python-version: "3.12"
+      sync-args: "--all-extras --dev --group qt-binding"
