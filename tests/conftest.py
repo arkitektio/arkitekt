@@ -170,6 +170,22 @@ def _private_session_state(
     )
 
 
+@pytest.fixture(autouse=True)
+def _private_journal(
+    tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Give every test's agents a journal of their own.
+
+    A rekuest agent keeps its unacknowledged frames (and persisted states, beside
+    them) in ``.arkitekt/rekuest_journal.db`` under the working directory, so an
+    agent started by a test would otherwise replay what one of an earlier test --
+    or an earlier run, against a hub long gone -- left there. Read when the agent
+    is built, so subprocesses the test starts inherit it too.
+    """
+    journal = tmp_path_factory.mktemp("journal") / "rekuest_journal.db"
+    monkeypatch.setenv("REKUEST_JOURNAL_PATH", str(journal))
+
+
 @pytest.fixture
 def app_dir(tmp_path: Path) -> Path:
     """Temp dir with a scaffolded ``app.py``, using --work-dir (no os.chdir).
