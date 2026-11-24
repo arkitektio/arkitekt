@@ -412,18 +412,26 @@ def test_check_json_out_is_not_corrupted_by_what_the_app_prints(tmp_path: Path) 
     assert code == 0 and report["ok"] is True
 
 
-def test_check_json_out_lists_each_action_by_the_hash_the_server_finds_it_by(
+def test_check_json_out_lists_actions_by_hash_and_states_by_class(
     tmp_path: Path,
 ) -> None:
     import json
 
-    (tmp_path / "app.py").write_text(VALID)
+    (tmp_path / "app.py").write_text(
+        VALID + "\nfrom dataclasses import dataclass\n\n"
+        "@app.state(name='counter')\n@dataclass\nclass Counter:\n    count: int = 0\n"
+    )
     out = tmp_path / "report.json"
 
     assert _invoke(tmp_path, "check", "--json-out", str(out)).exit_code == 0
 
-    (action, *_) = json.loads(out.read_text())["actions"]
+    report = json.loads(out.read_text())
+    (action, *_) = report["actions"]
     assert action["hash"] and action["line"] and action["file"].endswith("app.py")
+    # What an editor follows self.counter to.
+    (state,) = report["states"]
+    assert state["key"] == "counter" and state["name"] == "Counter"
+    assert state["file"].endswith("app.py")
 
 
 def test_check_json_prints_the_report_alone_on_stdout(tmp_path: Path) -> None:

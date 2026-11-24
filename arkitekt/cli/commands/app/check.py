@@ -39,7 +39,8 @@ REPORT_VERSION = 4
 
 2: every blok carries its ``scope``, an action's blok where its action was declared, and the
 report lists the dependency ``protocols`` the app declares. It also lists the ``structures``
-the app knows, by the class behind each identifier; a reader takes their absence as knowing none."""
+the app knows, by the class behind each identifier, and its ``states`` with their classes; a reader
+takes the absence of either as knowing none."""
 
 
 def _counted(count: int, what: str) -> str:
@@ -287,6 +288,21 @@ def action_records(registry: AppRegistry) -> list[dict[str, Any]]:
     return records
 
 
+def state_records(registry: AppRegistry) -> list[dict[str, Any]]:
+    """Each state the app declares: its key (``self.<key>``) and the class behind it."""
+    return [
+        _compact(
+            {
+                "key": interface,
+                "name": cls.__qualname__,
+                "file": _declared_at(cls)[0],
+            }
+        )
+        for interface, cls in registry.state_interface_classes.items()
+        if isinstance(cls, type)  # annotated as the instance; the class is stored
+    ]
+
+
 def protocol_records(registry: AppRegistry) -> list[dict[str, Any]]:
     """Each dependency protocol the app declares: where, the dependency it stands for, and the
     action parameters that take it.
@@ -504,6 +520,7 @@ def _check(
         ok=True,
         bloks=blok_records(snapshot.registry),
         actions=action_records(snapshot.registry),
+        states=state_records(snapshot.registry),
         protocols=protocol_records(snapshot.registry),
         structures=structure_records(snapshot.registry),
         diagnostics=[warning_record(warning) for warning in findings],
