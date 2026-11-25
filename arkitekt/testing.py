@@ -62,7 +62,7 @@ import sys
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, Any, Generic, cast
+from typing import TYPE_CHECKING, Any, Generic, cast, get_type_hints
 
 try:
     from arkitekt_runtime.local import LocalCallCancelledError, LocalCallError
@@ -107,6 +107,19 @@ def call_through_rekuest_requested() -> bool:
     )
 
 
+def _holds_ref(value: object) -> bool:
+    """Whether an untyped call's result has a reference in it to fetch."""
+    from arkitekt_runtime.ref import Ref
+
+    if isinstance(value, Ref):
+        return True
+    if isinstance(value, (list, tuple)):
+        return any(_holds_ref(item) for item in value)
+    if isinstance(value, dict):
+        return any(_holds_ref(item) for item in value.values())
+    return False
+
+
 def call_through_rekuest(
     runtime: Runtime[Any],
     action: _ActionRef,
@@ -119,8 +132,9 @@ def call_through_rekuest(
     running): the call is a root task on the app's own implementation, made with the
     AUTO policy, since nobody is there to approve what it asks for. Starting a task takes
     the caller client, so the app uses ``RekuestCaller`` (:func:`served_app` sees to
-    that).
+    that). Structures come back as what the action returns, as in an in-process call.
     """
+    from arkitekt_runtime.ref import to
     from arkitekt_runtime.types import TaskPolicy
     from rekuest.client.client import RekuestCaller
 
@@ -130,10 +144,16 @@ def call_through_rekuest(
             "Only a run that provides the app is called through rekuest: `connect(app, provide=True)`."
         )
     rekuest = runtime.require(RekuestCaller)
-    implementation = rekuest.my_implementation_at(
-        interface=_interface_of(agent, action)
-    )
-    return rekuest.call(implementation, *args, policy=TaskPolicy.AUTO, **kwargs)
+    interface = _interface_of(agent, action)
+    implementation = rekuest.my_implementation_at(interface=interface)
+    result = rekuest.call(implementation, *args, policy=TaskPolicy.AUTO, **kwargs)
+    # The call is untyped, so structures come back as references; the app's own
+    # action says what they are, so the result matches an in-process call.
+    function = agent.app_registry.declared_implementations[interface].function
+    returns = get_type_hints(function).get("return")
+    if returns is None or not _holds_ref(result):
+        return result
+    return to(result, returns)
 
 
 def local_app(
