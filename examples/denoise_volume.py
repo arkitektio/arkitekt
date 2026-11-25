@@ -25,18 +25,18 @@ from typing import Annotated
 
 import numpy as np
 import xarray as xr
-from mikro import Mikro, mikro_service
+from mikro import Mikro
 from mikro.arkitekt.specs import Volume
 from scipy import ndimage
 
 from arkitekt import App, Description, Task, run
 
-app = App("denoise-volume", "0.1.0", services=[mikro_service])
+app = App("denoise-volume", "0.1.0")
 
 
 @app.action
 def denoise(
-    mikro: Mikro,  # The mikro service is needed to create the result dataset (arkitekt injects it automatically)
+    mikro: Mikro,  # The mikro client creates the result dataset (arkitekt injects it automatically)
     task: Task,  # The task is needed to report progress (arkitekt injects it automatically)
     volume: Annotated[
         Volume, Description("The stack to smooth")

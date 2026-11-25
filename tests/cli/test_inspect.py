@@ -201,37 +201,44 @@ def test_inspect_all_json(app_dir: Path) -> None:
 
 
 # ---------------------------------------------------------------------------
-# inspect services / lifecycle
+# inspect clients / lifecycle
 # ---------------------------------------------------------------------------
 
 
-def test_inspect_services(app_dir: Path) -> None:
-    """`inspect services --machine-readable` lists the service SDKs the app selected."""
-    result = _run_cli(app_dir, "inspect", "services", "--machine-readable")
+def test_inspect_clients(app_dir: Path) -> None:
+    """`inspect clients --machine-readable` lists the clients a run of the app builds."""
+    result = _run_cli(app_dir, "inspect", "clients", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
-    records = _between(result.stdout, "--START_SERVICES--", "--END_SERVICES--")
+    records = _between(result.stdout, "--START_CLIENTS--", "--END_CLIENTS--")
     assert isinstance(records, list)
     names = [r["name"] for r in records]
     assert (
         "rekuest" in names
     )  # a run of an app that offers something is served by rekuest
     for record in records:
-        for key in ("name", "class", "requirements", "has_schema", "has_turms_project"):
+        for key in (
+            "name",
+            "class",
+            "image",
+            "requirements",
+            "has_schema",
+            "has_turms_project",
+        ):
             assert key in record
 
 
-def test_inspect_services_schema(app_dir: Path) -> None:
-    """`inspect services --schema rekuest` dumps raw SDL."""
-    result = _run_cli(app_dir, "inspect", "services", "--schema", "rekuest")
+def test_inspect_clients_schema(app_dir: Path) -> None:
+    """`inspect clients --schema rekuest` dumps raw SDL."""
+    result = _run_cli(app_dir, "inspect", "clients", "--schema", "rekuest")
     assert result.returncode == 0, result.stderr
     assert "type" in result.stdout
 
 
-def test_inspect_services_unknown_schema(app_dir: Path) -> None:
-    result = _run_cli(app_dir, "inspect", "services", "--schema", "nope")
+def test_inspect_clients_unknown_schema(app_dir: Path) -> None:
+    result = _run_cli(app_dir, "inspect", "clients", "--schema", "nope")
     assert result.returncode != 0
-    assert "Unknown service" in result.stdout + result.stderr
+    assert "Unknown client" in result.stdout + result.stderr
 
 
 # ---------------------------------------------------------------------------
@@ -239,7 +246,7 @@ def test_inspect_services_unknown_schema(app_dir: Path) -> None:
 # ---------------------------------------------------------------------------
 
 
-def test_gen_init_writes_a_project_for_each_service(app_dir: Path) -> None:
+def test_gen_init_writes_a_project_for_each_client(app_dir: Path) -> None:
     """`gen init` points rekuest's turms project at the app's own files."""
     import yaml
 
@@ -283,12 +290,10 @@ def test_gen_init_keeps_existing_projects(app_dir: Path) -> None:
     assert projects["rekuest"]["schema"] == "schemas/rekuest.graphql"
 
 
-def test_gen_init_unknown_service(app_dir: Path) -> None:
-    result = _run_cli(app_dir, "gen", "init", "--service", "nope")
+def test_gen_init_unknown_client(app_dir: Path) -> None:
+    result = _run_cli(app_dir, "gen", "init", "--client", "nope")
     assert result.returncode != 0
-    assert "declares no service nope" in " ".join(
-        (result.stdout + result.stderr).split()
-    )
+    assert "uses no client nope" in " ".join((result.stdout + result.stderr).split())
 
 
 def test_gen_points_at_turms() -> None:
@@ -365,7 +370,7 @@ def test_kabinet_validate_without_flavours_errors(app_dir: Path) -> None:
         ["gen"],
         ["plugin"],
         ["inspect"],
-        ["inspect", "services"],
+        ["inspect", "clients"],
         ["inspect", "lifecycle"],
         ["call"],
     ],
@@ -381,32 +386,28 @@ def test_help_for_command_groups(args: list[str]) -> None:
 # inspect reads the App's declaration and never connects
 # ---------------------------------------------------------------------------
 
-APP_WITH_EXTRA_SERVICE = '''
-from typing import Annotated
+APP_WITH_EXTRA_CLIENT = '''
+from typing import Annotated, Self
 
 from fakts import Alias, Require
 
-from arkitekt import App
-from arkitekt_spec.declare.app import AppRegistry
+from arkitekt import App, client
 
 
+@client()
 class ExtraClient:
     """A client of a deployment service beyond rekuest."""
 
-
-registry = AppRegistry()
-
-
-@registry.service()
-def extra(
-    extra: Annotated[Alias, Require("live.arkitekt.extra", "Something beyond rekuest")],
-) -> ExtraClient:
-    """A deployment service beyond rekuest."""
-    return ExtraClient()
+    @classmethod
+    def from_fakts(
+        cls,
+        extra: Annotated[Alias, Require("live.arkitekt.extra", "Something beyond rekuest")],
+    ) -> Self:
+        return cls()
 
 
-# A requirement only ever arrives with a service.
-app = App("com.inspect.app", "2.0.0", author="inspector", services=[extra])
+# A requirement only ever arrives with a client.
+app = App("com.inspect.app", "2.0.0", author="inspector", clients=[ExtraClient])
 
 
 @app.action
@@ -435,7 +436,7 @@ def no_connecting(monkeypatch: pytest.MonkeyPatch) -> None:
         "all",
         "requirements",
         "implementations",
-        "services",
+        "clients",
         "structures",
         "lifecycle",
         "variables",
@@ -450,7 +451,7 @@ def test_inspect_never_connects(
 
 
 def test_inspect_requirements_are_the_apps(app_dir: Path, no_connecting: None) -> None:
-    (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
+    (app_dir / "app.py").write_text(APP_WITH_EXTRA_CLIENT)
 
     result = _invoke(app_dir, "inspect", "requirements", "--machine-readable")
 
@@ -465,7 +466,7 @@ def test_inspect_requirements_are_the_apps(app_dir: Path, no_connecting: None) -
 def test_inspect_all_carries_the_apps_requirements_and_actions(
     app_dir: Path, no_connecting: None
 ) -> None:
-    (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
+    (app_dir / "app.py").write_text(APP_WITH_EXTRA_CLIENT)
 
     result = _invoke(app_dir, "inspect", "all", "--machine-readable")
 
@@ -481,17 +482,20 @@ def test_the_manifest_an_image_says_asks_for_what_a_run_asks_for(
 ) -> None:
     """A mandate key is pinned to the MANIFEST a build reads: it must carry the scopes a run asks
     for, the rekuest provider's among them, or the running container cannot log in."""
-    from rekuest.arkitekt import rekuest_service
+    from arkitekt_spec.declare.client import client_of
+    from rekuest.client.client import Rekuest
 
-    (app_dir / "app.py").write_text(APP_WITH_EXTRA_SERVICE)
+    rekuest = client_of(Rekuest)
+    assert rekuest is not None
+    (app_dir / "app.py").write_text(APP_WITH_EXTRA_CLIENT)
 
     result = _invoke(app_dir, "inspect", "all", "--machine-readable")
 
     assert result.exit_code == 0, result.output
     manifest = _between(result.output, "--START_MANIFEST--", "--END_MANIFEST--")
     assert isinstance(manifest, dict)
-    assert set(rekuest_service.get_scopes()) <= set(manifest["scopes"])
-    assert rekuest_service.get_scopes(), "rekuest's client says what it needs"
+    assert set(rekuest.get_scopes()) <= set(manifest["scopes"])
+    assert rekuest.get_scopes(), "rekuest's client says what it needs"
 
 
 def test_inspect_an_app_that_offers_nothing(app_dir: Path, no_connecting: None) -> None:

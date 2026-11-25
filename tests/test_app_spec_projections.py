@@ -43,11 +43,11 @@ def test_the_inspection_is_the_declaration_seen_by_a_build() -> None:
 
 def test_the_build_records_the_scopes_a_run_asks_for() -> None:
     """A mandate key is pinned to what the build records: a run with its provider asks for no more."""
-    from rekuest.arkitekt import rekuest_provider, rekuest_service
+    from rekuest.arkitekt import rekuest_provider
 
     app = _app()
     run = app.snapshot(provider=rekuest_provider)
     declaration = app_declaration(app, run)
 
     assert declaration.manifest.scopes == run.manifest.scopes
-    assert set(rekuest_service.get_scopes()) <= set(declaration.manifest.scopes)
+    assert set(run.clients["rekuest"].get_scopes()) <= set(declaration.manifest.scopes)

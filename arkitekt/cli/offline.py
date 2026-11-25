@@ -6,7 +6,7 @@ An app module should only declare. One that runs or connects when it is imported
 only being checked. Under :func:`offline`:
 
 - ``run`` and ``arun`` return at once: the app they were handed is what is checked;
-- entering a runtime (``with connect(app)``, ``easy(...)``, what ``run`` does), logging in
+- entering a runtime (``with connect(app)``, ``connect(Mikro)``, what ``run`` does), logging in
   (``alogin``) and starting a detached run raise :class:`ConnectedAtImport`, which the
   check reports at the module's line.
 """

@@ -32,10 +32,17 @@ def hub() -> Iterator[Hub]:
     )
     mikro = pytest.importorskip("mikro", reason="a service the apps call")
     lovekit = pytest.importorskip("lovekit", reason="a service the apps call")
+    from arkitekt_spec.declare.client import client_of
+
+    images = [
+        declared.image
+        for cls in (mikro.Mikro, lovekit.Lovekit)
+        if (declared := client_of(cls)) is not None and declared.image is not None
+    ]
 
     with konstruktor.testing_hub(
         name="meshhub",
-        service_images=[mikro.mikro_service.image, lovekit.lovekit_service.image],
+        service_images=images,
         mandate_keys=3,
         mesh=True,
     ) as hub:

@@ -12,8 +12,8 @@
 
 Run:  uv run --script examples/upload_cells3d.py
 
-`easy` is the other direction from `run`: you name the *services* you need and
-it hands you their clients. Nothing connects until the `with` block is entered.
+`connect(Mikro)` is the other direction from `run`: it hands you the clients you
+name. Nothing connects until the `with` block is entered.
 
 The image is scikit-image's `cells3d` — a two-channel (membrane, nuclei) z-stack
 of cells, 60 planes of 256x256, fetched through pooch on first use (~80 MB).
@@ -24,11 +24,11 @@ can show it without loading the whole volume.
 
 import numpy as np
 import xarray as xr
-from mikro import dataset_arrays, mikro_service
+from mikro import Mikro, dataset_arrays
 from mikro.api.schema import CoordinateAnchorInput
 from skimage import data
 
-from arkitekt import easy
+from arkitekt import connect
 
 
 def main() -> None:
@@ -40,7 +40,7 @@ def main() -> None:
         np.moveaxis(raw, 1, 0).astype("uint16"), dims=("c", "z", "y", "x")
     )
 
-    with easy("cells3d-upload", mikro_service) as mikro:
+    with connect(Mikro, identifier="cells3d-upload") as mikro:
         folder = mikro.create_folder(name="examples")
 
         # `data` *is* level 0 and `scales` only what is coarser than it —

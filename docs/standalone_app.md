@@ -27,16 +27,14 @@ if __name__ == "__main__":
 
 ## Calling other apps
 
-`easy` is the other direction: it declares an app from the *services* you name
-and hands you their clients. Nothing connects until it is entered, and what you
-get back is the clients — one service gives you one client, several give you a
-tuple.
+`connect(Mikro)` is the other direction: it hands you the clients you name. Nothing
+connects until it is entered; one client gives you one, several a tuple.
 
 ```python
-from arkitekt import easy
-from mikro import mikro_service
+from arkitekt import connect
+from mikro import Mikro
 
-with easy("my.app", mikro_service) as mikro:
+with connect(Mikro) as mikro:
     dataset = mikro.get_array_dataset("some-id")
 ```
 
@@ -140,8 +138,7 @@ first time; the prompts say which app they are for. One app failing stops the
 others. Apps that need no identity of their own are better merged into one
 (`merge`): one agent, one login.
 
-The identifier defaults to the calling file's name, so `easy()` with no
-arguments works for a quick script.
+A script's identifier defaults to its file's name; `identifier=` names another.
 
 ## From a script to a plugin
 

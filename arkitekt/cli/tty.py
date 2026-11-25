@@ -9,9 +9,8 @@ escape hatch instead of hanging. (It does not raise ``click.ClickException`` --
 that is the very thing ``cli_error`` exists to replace under Typer's vendored
 click.)
 
-Named for the TTY, not for "interactive": :func:`arkitekt.interactive` means
-something else entirely -- a notebook session, where sync calls run inside a
-running event loop -- and the two used to read as the same word.
+Named for the TTY, not "interactive", which reads as a notebook session
+(:meth:`arkitekt.Connected.enter`).
 """
 
 import sys

@@ -29,7 +29,7 @@ pytest.importorskip("lovekit", reason="the service the apps exchange a stream th
 np = pytest.importorskip("numpy")
 
 from fakts.mesh import MeshOptions  # noqa: E402
-from lovekit import Axis, AxisType, DataStream, lovekit_service  # noqa: E402
+from lovekit import Axis, AxisType, DataStream  # noqa: E402
 from lovekit.api.schema import StreamKind  # noqa: E402
 from lovekit.lovekit import Lovekit  # noqa: E402
 
@@ -59,7 +59,7 @@ def own_state(hub: Hub, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None
 
 def on_the_mesh(hub: Hub, name: str) -> Runtime[None]:
     """An app of its own identifier (so a mesh node of its own), logged in and on the mesh alone."""
-    app = App(f"live.arkitekt.tests.{name}", "0.1.0", services=[lovekit_service])
+    app = App(f"live.arkitekt.tests.{name}", "0.1.0", clients=[Lovekit])
     return connect(
         app,
         url=hub.fakts_url,

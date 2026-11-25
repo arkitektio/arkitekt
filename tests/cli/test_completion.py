@@ -6,8 +6,8 @@ import pytest
 
 from arkitekt.cli.completion import (
     complete_actions,
+    complete_clients,
     complete_flavours,
-    complete_services,
 )
 
 APP = (
@@ -57,7 +57,7 @@ def test_an_apps_actions_complete_by_name(
 
 def test_a_folder_without_an_app_completes_nothing(tmp_path: Path) -> None:
     assert complete_actions(_Ctx(tmp_path), "") == []  # pyright: ignore[reportArgumentType]
-    assert complete_services(_Ctx(tmp_path), "") == []  # pyright: ignore[reportArgumentType]
+    assert complete_clients(_Ctx(tmp_path), "") == []  # pyright: ignore[reportArgumentType]
 
 
 def test_an_app_that_fails_to_import_completes_nothing(tmp_path: Path) -> None:

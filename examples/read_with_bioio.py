@@ -32,10 +32,10 @@ import numpy as np
 import tifffile
 import xarray as xr
 from bioio import BioImage
-from mikro import mikro_service
+from mikro import Mikro
 from mikro.api.schema import CoordinateAnchorInput
 
-from arkitekt import easy
+from arkitekt import connect
 
 
 def synthesise(path: Path) -> Path:
@@ -62,7 +62,7 @@ def main(path: Path) -> None:
     )
     print(f"{path.name}: {image.dims.order} {array.shape} -> {squeezed.dims}")
 
-    with easy("bioio-upload", mikro_service) as mikro:
+    with connect(Mikro, identifier="bioio-upload") as mikro:
         dataset = mikro.create_array_dataset(
             data=squeezed,
             scales=[],

@@ -23,14 +23,14 @@ from typing import Annotated
 
 import numpy as np
 import xarray as xr
-from mikro import Mikro, mikro_service
+from mikro import Mikro
 from mikro.arkitekt.specs import LabelMask, SingleChannelImage
 from skimage.filters import threshold_otsu
 from skimage.measure import label
 
 from arkitekt import App, Description, Effects, run
 
-app = App("segmentation", "0.1.0", services=[mikro_service])
+app = App("segmentation", "0.1.0")
 
 
 @app.action(effects=Effects.NONE)

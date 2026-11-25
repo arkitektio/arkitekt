@@ -9,19 +9,19 @@ import json
 
 # Came with arkitekt, which was installed without extras.
 import arkitekt_mesh  # noqa: F401
-from mikro import mikro_service
+from mikro import Mikro
 
-from arkitekt import easy
+from arkitekt import connect
 
 
 def main() -> None:
     """Log in, create a folder in mikro, print how it was reached."""
-    setup = easy("mesh-install-test", mikro_service)
+    setup = connect(Mikro, identifier="mesh-install-test")
     with setup.runtime() as runtime:
         mikro = setup.resolve(runtime)
         folder = mikro.create_folder(name="over the mesh")
         # The alias the call went through: a mesh alias, carrying the node's proxy.
-        assert runtime.fakts is not None, "a run with a service builds its fakts"
+        assert runtime.fakts is not None, "a run with a client builds its fakts"
         alias = runtime.fakts.get_alias("mikro")
     print(
         json.dumps({"folder": str(folder.id), "kind": alias.kind, "proxy": alias.proxy})

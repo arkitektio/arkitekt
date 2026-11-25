@@ -11,16 +11,23 @@ import threading
 import time
 from collections.abc import AsyncIterator, Callable
 from types import TracebackType
-from typing import Annotated, Any
+from typing import Any
 
 import koil
 from arkitekt_runtime import messages
 from arkitekt_runtime.agents.base import BaseAgent
 from arkitekt_runtime.agents.transport.base import AgentTransport
 from arkitekt_spec.declare.app import AppRegistry
-from fakts import Alias, Require
 
-from arkitekt import App, ConnectionState, Task, TaskEvent, TaskEventKind, run_detached
+from arkitekt import (
+    App,
+    ConnectionState,
+    Task,
+    TaskEvent,
+    TaskEventKind,
+    provider,
+    run_detached,
+)
 
 from .fakes import FakeRekuest
 
@@ -120,21 +127,15 @@ class Pump:
 
 def test_a_sync_action_runs_reports_and_is_cancelled_where_it_asks() -> None:
     transports: list[Loopback] = []
-    registry = AppRegistry()
 
-    @registry.service()
-    def rekuest(rekuest: Annotated[Alias, Require("live.test.rekuest")]) -> FakeRekuest:
-        """Rekuest, for tests."""
-        return FakeRekuest("rekuest", None)
-
-    @registry.provider()
+    @provider(clients=[FakeRekuest])
     def agent(registry: AppRegistry, client: FakeRekuest) -> BaseAgent:
         """A real agent over a queue."""
         transport = Loopback()
         transports.append(transport)
         return BaseAgent(transport=transport, app_registry=registry, name="detached")
 
-    app = App("detached-real", app_context=Pump, providers=[agent])
+    app = App("detached-real", app_context=Pump, provider=agent)
 
     @app.action
     def dispense(pump: Pump, volume: float, task: Task) -> None:

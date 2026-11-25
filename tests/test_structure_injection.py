@@ -1,20 +1,17 @@
 """A hand-registered structure whose expander asks for clients by annotation.
 
-The service-owned path (``declare``) is unchanged and covered in rekuest. What is new here is the other path: a type a shared library
-defines, fetched back through a client the run supplies.
+The ``@structure`` path is the spec's and tested there. This is the other one: a
+type a shared library defines, fetched back through a client the run supplies.
 """
 
-from typing import Any
-
 import pytest
-from arkitekt_spec.declare.service import Service
 from arkitekt_spec.declare.structures.errors import StructureDefinitionError
 from arkitekt_spec.declare.structures.types import FullFilledStructure
 
-from arkitekt import App, connect
+from arkitekt import App, AppDeclarationError, connect
 from arkitekt.runtime import Runtime
 
-from .fakes import PictureClient, PictureService, RekuestProvider
+from .fakes import PictureClient, fake_provider
 
 
 class Thing:
@@ -30,18 +27,16 @@ async def expand_thing(id: str, pictures: PictureClient) -> Thing:
     return Thing(id, pictures.name)
 
 
-def picture_app(*services: Service[Any]) -> App[None]:
-    """An app using the pictures service (and a fake rekuest), and any others given."""
-    return App(
-        "structures",
-        services=[PictureService(), *services],
-        providers=[RekuestProvider()],
-    )
+def picture_app() -> App[None]:
+    """An app with a fake rekuest; its expanders bring the clients they ask for."""
+    return App("structures", provider=fake_provider())
 
 
-def bare_app() -> App[None]:
-    """An app using no service at all."""
-    return App("structures")
+def refused(app: App[None]) -> pytest.ExceptionInfo[AppDeclarationError]:
+    """What assembling ``app`` raises."""
+    with pytest.raises(AppDeclarationError) as caught:
+        app.declaration()
+    return caught
 
 
 # ------------------------------------------------------------------ #
@@ -104,78 +99,56 @@ def test_the_shrinker_defaults_to_the_objects_id() -> None:
 # ------------------------------------------------------------------ #
 
 
-def test_a_lambda_is_refused_at_registration() -> None:
+def test_a_lambda_is_refused_at_assembly() -> None:
     """Annotation-driven injection means a lambda has nothing to read."""
-    app = picture_app()
-
-    with pytest.raises(StructureDefinitionError, match="is a lambda, which carries no"):
-        app.register_structure(
-            Thing, "@lib/thing", expand=lambda id, pictures: Thing(id, "x")
+    # Even one that needs nothing: the rule is the shape, not the arity.
+    for expand in (lambda id, pictures: Thing(id, "x"), lambda id: Thing(id, "x")):
+        app = picture_app()
+        app.register_structure(Thing, "@lib/thing", expand=expand)
+        assert refused(app).group_contains(
+            StructureDefinitionError, match="is a lambda, which carries no"
         )
 
-    # Even one that needs nothing: the rule is the shape, not the arity.
-    with pytest.raises(StructureDefinitionError, match="is a lambda, which carries no"):
-        app.register_structure(Thing, "@lib/other", expand=lambda id: Thing(id, "x"))
 
-
-def test_an_unannotated_parameter_is_refused_at_registration() -> None:
+def test_an_unannotated_parameter_is_refused_at_assembly() -> None:
     app = picture_app()
 
     async def expand(id: str, pictures) -> Thing:  # noqa: ANN001 -- the missing annotation is the case
         """Says nothing about what it wants."""
         return Thing(id, "x")
 
-    with pytest.raises(StructureDefinitionError, match="is unannotated"):
-        app.register_structure(Thing, "@lib/thing", expand=expand)
+    app.register_structure(Thing, "@lib/thing", expand=expand)
+    assert refused(app).group_contains(StructureDefinitionError, match="is unannotated")
 
 
-def test_a_parameter_that_is_not_a_client_is_refused_at_registration() -> None:
-    """Every parameter after the id is a client; a class no registered service
-    returns is refused on the spot, long before anything connects."""
+def test_a_parameter_that_is_not_a_client_is_refused_at_assembly() -> None:
+    """Every parameter after the id is a client; a class that is no ``@client`` is
+    refused when the app is assembled, long before anything connects."""
     app = picture_app()
 
     async def expand(id: str, depth: int) -> Thing:
         """Wants something no run can supply."""
         return Thing(id, "x")
 
-    with pytest.raises(StructureDefinitionError, match="wants a int"):
-        app.register_structure(Thing, "@lib/thing", expand=expand)
+    app.register_structure(Thing, "@lib/thing", expand=expand)
+    caught = refused(app)
+    assert caught.group_contains(StructureDefinitionError, match="wants a int")
+    assert "@lib/thing" in str(caught.value)
 
 
-def test_a_client_no_registered_service_returns_is_refused_at_registration() -> None:
-    """The service has to come first: it is what makes ``PictureClient`` a client."""
-    app = bare_app()  # the pictures service exists, but this app never registered it
-
-    with pytest.raises(
-        StructureDefinitionError, match="no registered service returns one"
-    ):
-        app.register_structure(Thing, "@lib/thing", expand=expand_thing)
-
-    assert "@lib/thing" not in app.registry.structure_registry.identifier_structure_map
-
-
-def test_the_refusal_names_the_structure_and_the_client() -> None:
-    app = bare_app()
-
-    with pytest.raises(StructureDefinitionError) as caught:
-        app.register_structure(Thing, "@lib/thing", expand=expand_thing)
-
-    message = str(caught.value)
-    assert "@lib/thing" in message
-    assert "PictureClient" in message
-
-
-def test_registering_the_service_makes_it_valid() -> None:
-    app = picture_app()
+def test_an_expander_asking_for_a_client_brings_it() -> None:
+    """The client need not be named anywhere else: the expander's annotation is enough."""
+    app = App("structures")
     app.register_structure(Thing, "@lib/thing", expand=expand_thing)
 
     snapshot = app.snapshot()
     assert "@lib/thing" in snapshot.registry.structure_registry.identifier_structure_map
+    assert list(snapshot.clients) == ["pictures"]
 
 
 def test_an_expander_that_wants_nothing_still_works() -> None:
     """The common case stays free: no injection, no copy at bind."""
-    app = bare_app()
+    app = App("structures")
 
     async def expand(id: str) -> Thing:
         """No client needed."""

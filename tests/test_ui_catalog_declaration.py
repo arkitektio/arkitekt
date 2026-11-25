@@ -13,8 +13,16 @@ from arkitekt_spec.declare.catalogs import (
     OperationSpec,
     PropSpec,
 )
+from arkitekt_spec.declare.catalogs.ports import scalar
 
-from arkitekt import App, BlokError, PortKind
+from arkitekt import App, AppDeclarationError, BlokError, PortKind
+
+
+def refusal(app: App[None]) -> pytest.ExceptionInfo[AppDeclarationError]:
+    """What assembling ``app`` raises."""
+    with pytest.raises(AppDeclarationError) as refused:
+        app.declaration()
+    return refused
 
 
 @pytest.fixture(autouse=True)
@@ -30,7 +38,7 @@ def _catalogs_checked() -> Iterator[None]:
 SLIDER = ComponentSpec(
     name="DeskSlider",
     accepts_children=False,
-    props=(PropSpec(key="min", kind="FLOAT", required=True),),
+    props=(PropSpec(key="min", port=scalar("FLOAT"), required=True),),
 )
 BOX = ComponentSpec(name="Box", accepts_children=True)
 ELECTRON = '<Blok kind="agent" context="panel" catalog="electron">'
@@ -56,16 +64,19 @@ def test_blok_passes_its_catalog_through() -> None:
 def test_a_blok_is_validated_against_the_declared_module() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
-    with pytest.raises(BlokError, match="Slidr") as refused:
-        app.blok("bad", ELECTRON + "<Box><Slidr /></Box></Blok>", mode="strict")
-    assert refused.value.code == "catalog.unknown_component"
+    app.blok("bad", ELECTRON + "<Box><Slidr /></Box></Blok>", mode="strict")
+    refused = refusal(app)
+    assert refused.group_contains(BlokError, match="Slidr")
+    (error,) = refused.value.exceptions
+    assert isinstance(error, BlokError) and error.code == "catalog.unknown_component"
 
 
 def test_a_catalog_finding_is_a_warning_by_default() -> None:
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER, BOX])
+    app.blok("loose", ELECTRON + "<Box><Slidr /></Box></Blok>")
     with pytest.warns(CatalogWarning, match=r"\[catalog.unknown_component\]"):
-        app.blok("loose", ELECTRON + "<Box><Slidr /></Box></Blok>")
+        app.declaration()
 
 
 def test_a_warning_is_told_once_at_the_apps_own_line() -> None:
@@ -90,15 +101,18 @@ def test_declaring_a_module_offers_nothing() -> None:
     """A UI app registering its module should not be made to serve."""
     app = App("demo")
     app.ui_catalog("electron", components=[SLIDER])
-    assert "rekuest" not in app.registry.services
+    assert "rekuest" not in app.registry.clients
 
 
 def test_a_module_may_not_shadow_a_base_operation() -> None:
     app = App("demo")
-    with pytest.raises(ValueError, match="cannot redefine base operations"):
-        app.ui_catalog(
-            "rogue", operations=[OperationSpec(name="gt", returns="BOOL", arguments=())]
-        )
+    app.ui_catalog(
+        "rogue",
+        operations=[OperationSpec(name="gt", returns=scalar("BOOL"), arguments=())],
+    )
+    assert refusal(app).group_contains(
+        ValueError, match="cannot redefine base operations"
+    )
 
 
 def test_blok_declares_its_locals_and_its_queries() -> None:
@@ -135,30 +149,34 @@ def test_blok_declares_its_locals_and_its_queries() -> None:
 
 def test_a_blok_reading_an_undeclared_local_is_refused() -> None:
     app = App("demo")
-    with pytest.raises(BlokError):
-        app.blok(
-            "form",
-            '<Blok kind="agent" context="panel"><Slider bind={iterations} /></Blok>',
-        )
+    app.blok(
+        "form",
+        '<Blok kind="agent" context="panel"><Slider bind={iterations} /></Blok>',
+    )
+    assert refusal(app).group_contains(BlokError)
 
 
 def test_a_blok_reads_then_and_draws_relative_time_with_the_time_component() -> None:
     """Nothing ticks in an expression: ``now`` and ``time.since`` are gone, ``then`` is the
     viewed moment and ``<Time relative>`` ticks by itself."""
-    app = App("demo")
-    with pytest.raises(BlokError, match=r"roots\.unknown"):
-        app.blok(
-            "clock", '<Blok kind="agent" context="panel"><Text>{now}</Text></Blok>'
-        )
+    now = App("demo")
+    now.blok("clock", '<Blok kind="agent" context="panel"><Text>{now}</Text></Blok>')
+    assert refusal(now).group_contains(BlokError, match=r"roots\.unknown")
+
+    since = App("demo")
+    since.blok(
+        "since",
+        '<Blok kind="agent" context="panel"><Text>{time.since(t: self.run.started)}</Text></Blok>',
+    )
     with pytest.warns(CatalogWarning, match=r"\[expr\.unknown_function\]"):
-        app.blok(
-            "since",
-            '<Blok kind="agent" context="panel"><Text>{time.since(t: self.run.started)}</Text></Blok>',
-        )
-    app.blok(
+        since.declaration()
+
+    then = App("demo")
+    then.blok(
         "clock",
         '<Blok kind="agent" context="panel"><Card><Time value={self.run.started} relative /><Text>{then}</Text></Card></Blok>',
     )
+    then.declaration()
 
 
 def test_an_action_and_a_workflow_are_drawn_by_the_action_logo_they_name() -> None:
@@ -199,20 +217,21 @@ def test_an_action_naming_a_logo_the_app_does_not_declare_is_refused() -> None:
         """Crop."""
         return amount
 
+    registry = app.registry
     with pytest.raises(
         ValueError,
         match="'nowhere', which is not an action logo blok this app declares",
     ):
-        app.registry.to_implement_agent_input()
+        registry.to_implement_agent_input()
 
 
 def test_an_action_logo_paints_with_the_palette() -> None:
     app = App("demo")
-    with pytest.raises(BlokError, match="#fbbf24"):
-        app.blok(
-            "loud",
-            '<Blok kind="action" context="logo"><Logo><Path d="M0 0" fill="#fbbf24" /></Logo></Blok>',
-        )
+    app.blok(
+        "loud",
+        '<Blok kind="action" context="logo"><Logo><Path d="M0 0" fill="#fbbf24" /></Logo></Blok>',
+    )
+    assert refusal(app).group_contains(BlokError, match="#fbbf24")
 
 
 def test_blok_passes_its_args_through() -> None:
@@ -222,12 +241,11 @@ def test_blok_passes_its_args_through() -> None:
         def __init__(self, id: str) -> None:
             self.id = id
 
-    app = App("demo")
-
-    @app.registry.structure_registry.structure("@t/image")
     async def expand_image(id: str) -> Image:
         return Image(id)
 
+    app = App("demo")
+    app.register_structure(Image, "@t/image", expand=expand_image)
     app.blok(
         "inspector",
         '<Blok kind="agent" context="panel"><Text>{args.image.id}</Text></Blok>',
@@ -236,12 +254,15 @@ def test_blok_passes_its_args_through() -> None:
 
     declared = app.registry.registered_bloks["inspector"]
     assert [port.identifier for port in declared.args] == ["@t/image"]
-    with pytest.raises(BlokError):
-        app.blok(
-            "other",
-            '<Blok kind="agent" context="panel"><Text>{args.dataset}</Text></Blok>',
-            args={"image": Image},
-        )
+
+    other = App("demo")
+    other.register_structure(Image, "@t/image", expand=expand_image)
+    other.blok(
+        "other",
+        '<Blok kind="agent" context="panel"><Text>{args.dataset}</Text></Blok>',
+        args={"image": Image},
+    )
+    assert refusal(other).group_contains(BlokError)
 
 
 def test_a_catalog_never_redefines_a_component_of_the_base() -> None:
@@ -250,33 +271,37 @@ def test_a_catalog_never_redefines_a_component_of_the_base() -> None:
     own_slider = ComponentSpec(
         name="Slider",
         accepts_children=False,
-        props=(PropSpec(key="min", kind="FLOAT", required=True),),
+        props=(PropSpec(key="min", port=scalar("FLOAT"), required=True),),
     )
-    with pytest.raises(ValueError, match="redefines <Slider> of base@4"):
-        app.ui_catalog("electron", components=[own_slider, BOX])
+    app.ui_catalog("electron", components=[own_slider, BOX])
+    assert refusal(app).group_contains(ValueError, match="redefines <Slider> of base@4")
 
 
 def test_a_blok_naming_a_catalog_not_known_here_is_warned() -> None:
     app = App("demo")
+    app.blok(
+        "panel",
+        '<Blok kind="agent" context="panel" catalog="nowhere"><Thing /></Blok>',
+    )
     with pytest.warns(CatalogWarning, match=r"\[catalog.unknown\]"):
-        app.blok(
-            "panel",
-            '<Blok kind="agent" context="panel" catalog="nowhere"><Thing /></Blok>',
-        )
+        app.declaration()
 
 
 def test_an_app_that_merely_registers_is_held_to_the_language_alone() -> None:
     """What a catalog says is checked by whoever draws the blok, and by ``arkitekt check``."""
     with checking_catalogs(False), warnings.catch_warnings():
         warnings.simplefilter("error", CatalogWarning)
-        app = App("demo")
-        app.blok(
+        loose = App("demo")
+        loose.blok(
             "loose",
             '<Blok kind="agent" context="panel"><Slidr /></Blok>',
             mode="strict",
         )
-        with pytest.raises(BlokError, match="roots.unknown"):
-            app.blok(
-                "wrong",
-                '<Blok kind="agent" context="panel"><Text>{nothing.here}</Text></Blok>',
-            )
+        loose.declaration()
+
+        wrong = App("demo")
+        wrong.blok(
+            "wrong",
+            '<Blok kind="agent" context="panel"><Text>{nothing.here}</Text></Blok>',
+        )
+        assert refusal(wrong).group_contains(BlokError, match="roots.unknown")

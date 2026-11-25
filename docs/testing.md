@@ -73,12 +73,12 @@ The fixtures, each of which a project can override in its `conftest.py`:
 | `call` | `call(action, *args, **kwargs)`: one of the app's actions, called in-process. |
 | `local_runtime` | The started app, for one test: `call_local`, and `require(Client)` for the client an action would be handed. |
 | `arkitekt_app` | The app under test: `$ARKITEKT_APP`, else the module `app` in the folder pytest runs from. |
-| `arkitekt_clients` | The clients actions are handed in place of the services' own. Empty by default. |
+| `arkitekt_clients` | The clients actions are handed in place of the ones a run builds. Empty by default. |
 | `arkitekt_context` | The app context the app is started with, for an app that declares one. |
 
 ## End to end: against the real services
 
-Offline, a service of the app builds its real client against an address that does
+Offline, each client of the app is built for real against an address that does
 not exist. The client is there to be handed out, so an action that merely takes
 it runs; a call through it fails. That is enough for most of what an action
 does: test its logic with `call`, and give it what it would have fetched.
@@ -116,15 +116,14 @@ def test_it_stores_the_result(teststack: TestStack[None]):
     assert teststack.runtime.require(Mikro).get_folder(folder.id).name == "results"
 ```
 
-The first such test starts a hub for the session: the services the app uses,
-and a coordination server of its own, in Docker, on a port of its own. It is
-made by [konstruktor](https://github.com/arkitektio/konstruktor)
-from one thing each service's package declares, the
-image that hosts it:
+The first such test starts a hub for the session: the servers the app's clients
+talk to, and a coordination server of its own, in Docker, on a port of its own.
+It is made by [konstruktor](https://github.com/arkitektio/konstruktor)
+from one thing each client declares, the image that hosts its server:
 
 ```python
-@registry.service(image="jhnnsrs/mikro:7", ...)
-def mikro(...) -> Mikro: ...
+@client(image="jhnnsrs/mikro:7", ...)
+class Mikro: ...
 ```
 
 Nothing else is written down anywhere: the image says what it needs, and
@@ -136,8 +135,8 @@ by rekuest, so its hub runs rekuest too.
 | Fixture | What it is |
 | --- | --- |
 | `teststack` | A `TestStack[Ctx]` for one test: `hub`, `app`, `runtime`, and `call(action, *args, **kwargs)`. |
-| `hub_call` | `hub_call(action, *args, **kwargs)`: an action called in-process, its services real. |
-| `hub_runtime` | The started app, logged in to the hub, for one test: `require(Client)` is the service's client. |
+| `hub_call` | `hub_call(action, *args, **kwargs)`: an action called in-process, its clients real. |
+| `hub_runtime` | The started app, logged in to the hub, for one test: `require(Client)` is the run's client. |
 | `arkitekt_hub` | The hub, for the session: `fakts_url`, `mandate_key(name)`, `logs()`. |
 | `arkitekt_hub_apps` | How many apps can log in to it (8): one mandate key serves one app. |
 
@@ -196,14 +195,14 @@ runs the shutdown hooks. It needs no pytest. An async test uses the `async with`
 form, so the app runs on the test's own event loop; the fixtures are for
 synchronous tests.
 
-With a service, connect the app to a hub of your own making:
+With a client, connect the app to a hub of your own making:
 
 ```python
 from arkitekt.runtime import connect_local
-from arkitekt.testing import service_images
+from arkitekt.testing import client_images
 from konstruktor import testing_hub
 
-with testing_hub(service_images=service_images(app)) as hub:
+with testing_hub(service_images=client_images(app)) as hub:
     hub.up()
     hub.wait_ready()
     with connect_local(

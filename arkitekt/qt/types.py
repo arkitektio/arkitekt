@@ -5,9 +5,7 @@ from typing import Any, ParamSpec, TypeVar, cast, overload
 
 from arkitekt_spec.actions import AssignWidgetInput
 from arkitekt_spec.declare.actors.types import Actifier
-from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.register import WrappedFunction
-from arkitekt_spec.declare.service import Service
 from fakts.models import PublicSource
 from koil import run_threaded
 from koil.qt import async_to_qt
@@ -37,8 +35,7 @@ class QtApp(App[Ctx]):
         scopes: The scopes the app requests. Defaults to ``["openid"]``.
         author: Who wrote the app.
         public_sources: Public sources the app announces in its manifest.
-        services: The services the app uses (``[mikro_service]``).
-        registry: The registry to declare into. A fresh one by default.
+        clients: ``@client`` classes the app uses although no annotation names them.
         app_context: The class of the app context, as for :class:`~arkitekt.App`.
     """
 
@@ -53,8 +50,7 @@ class QtApp(App[Ctx]):
         scopes: list[str] | None = None,
         author: str | None = None,
         public_sources: list[PublicSource] | None = None,
-        services: Sequence[Service[Any]] = (),
-        registry: AppRegistry | None = None,
+        clients: Sequence[type] = (),
         app_context: None = None,
     ) -> None: ...
 
@@ -69,8 +65,7 @@ class QtApp(App[Ctx]):
         scopes: list[str] | None = None,
         author: str | None = None,
         public_sources: list[PublicSource] | None = None,
-        services: Sequence[Service[Any]] = (),
-        registry: AppRegistry | None = None,
+        clients: Sequence[type] = (),
         app_context: type[Ctx],
     ) -> None: ...
 
@@ -86,8 +81,7 @@ class QtApp(App[Ctx]):
         scopes: list[str] | None = None,
         author: str | None = None,
         public_sources: list[PublicSource] | None = None,
-        services: Sequence[Service[Any]] = (),
-        registry: AppRegistry | None = None,
+        clients: Sequence[type] = (),
         app_context: type[Ctx] | None = None,
     ) -> None:
         # The file that constructs the QtApp, not this one: it names the app and
@@ -106,8 +100,7 @@ class QtApp(App[Ctx]):
                 scopes=scopes,
                 author=author,
                 public_sources=public_sources,
-                services=services,
-                registry=registry,
+                clients=clients,
                 root=_app_root(constructed_in),
             )
         else:
@@ -118,15 +111,12 @@ class QtApp(App[Ctx]):
                 scopes=scopes,
                 author=author,
                 public_sources=public_sources,
-                services=services,
-                registry=registry,
+                clients=clients,
                 app_context=app_context,
                 root=_app_root(constructed_in),
             )
         # The caller's source is the app's own, not this module's.
-        self.registry.structure_registry.namespace = _app_namespace(
-            self.identifier, caller
-        )
+        self.namespace = _app_namespace(self.identifier, caller)
         self.parent = parent
 
     def _offer_with(

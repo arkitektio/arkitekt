@@ -8,14 +8,13 @@ import asyncio
 import threading
 import time
 from collections.abc import Callable
-from typing import Annotated, Any
+from typing import Any
 
 import pytest
 from aiohttp import web
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.errors import AppContextError
 from arkitekt_spec.declare.provider import Provider
-from fakts import Alias, Require
 from fakts.grants.remote.models import FaktsEndpoint
 
 from arkitekt import (
@@ -25,6 +24,7 @@ from arkitekt import (
     TaskEvent,
     has_stored_login,
     logout,
+    provider,
     run_detached,
 )
 from arkitekt.runtime import DetachedRun, run_manifest
@@ -70,14 +70,7 @@ class HeldAgent:
 def held_provider(
     agents: list[HeldAgent], fail_with: list[BaseException]
 ) -> "Provider[HeldAgent]":
-    registry = AppRegistry()
-
-    @registry.service()
-    def rekuest(rekuest: Annotated[Alias, Require("live.test.rekuest")]) -> FakeRekuest:
-        """Rekuest, for tests."""
-        return FakeRekuest("rekuest", None)
-
-    @registry.provider()
+    @provider(clients=[FakeRekuest])
     def rekuest_agent(registry: AppRegistry, client: FakeRekuest) -> HeldAgent:
         """An agent that stays until cancelled."""
         agent = HeldAgent(fail_with.pop(0) if fail_with else None)
@@ -92,7 +85,7 @@ def held_app(
 ) -> App[None]:
     app = App(
         "detached",
-        providers=[held_provider(agents, fail_with if fail_with is not None else [])],
+        provider=held_provider(agents, fail_with if fail_with is not None else []),
     )
 
     @app.action
@@ -218,7 +211,7 @@ def test_the_context_is_checked_at_the_call_not_on_the_runs_thread() -> None:
     class Setup:
         pass
 
-    app = App("detached", app_context=Setup, providers=[held_provider([], [])])
+    app = App("detached", app_context=Setup, provider=held_provider([], []))
 
     @app.action
     def move(x: int) -> int:

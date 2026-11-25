@@ -109,10 +109,7 @@ def test_the_default_app_makes_a_random_image_and_blurs_one(
 
     source = (tmp_path / "my-app" / "app.py").read_text()
     assert '__version__ = "0.0.1"' in source
-    assert (
-        "App('com.test.app', __version__, author='me', services=[mikro_service])"
-        in source
-    )
+    assert "App('com.test.app', __version__, author='me')" in source
     assert "def generate_random_image(" in source and "def blur_image(" in source
 
 
@@ -598,10 +595,7 @@ def test_the_blok_template_is_a_whole_project_around_a_blok_agent(
 
     source = (project / "app.py").read_text()
     assert '__version__ = "0.0.1"' in source
-    assert (
-        "App('com.test.app', __version__, author='me', services=[mikro_service])"
-        in source
-    )
+    assert "App('com.test.app', __version__, author='me')" in source
     assert "@app.state" in source and 'app.blok(\n    "analysis",' in source
     output = " ".join(result.output.split())
     assert f"{HUB_TEST} tests it against a hub" in output

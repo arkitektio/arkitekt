@@ -80,7 +80,7 @@ logout(app, url=url)  # revoke the login on the server and forget it here
 ```
 
 A login is stored per app identifier, version and server, for the app as it is
-declared: changing its version, scopes, description or services is a different
+declared: changing its version, scopes, description or clients is a different
 app to the server and logs in again. Give a host's app a version of its own that
 changes when its actions do -- not the host program's release number.
 

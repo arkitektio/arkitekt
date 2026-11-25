@@ -29,10 +29,10 @@ mounted.
 
 `arkitekt create my-analyst --template blok` writes a whole app around one.
 
-A blok is checked here, when it is declared, by the spec's validator: the same rules the
-server and the renderer hold it to. An error raises a `BlokError` (a `ValueError`) with a
-stable code, such as `roots.unknown` or `callback.unbound`; a warning is a `CatalogWarning`
-with its code. It is sent as its BSX source, which the server parses into the same tree.
+A blok is checked when the app is assembled (run, inspected or `arkitekt check`ed), by the
+spec's validator: the same rules the server and the renderer hold it to. An error is a
+`BlokError` (a `ValueError`) with a stable code, such as `roots.unknown` or `callback.unbound`,
+raised inside the app's `AppDeclarationError`; a warning is a `CatalogWarning` with its code. It is sent as its BSX source, which the server parses into the same tree.
 
 ## The language in short
 

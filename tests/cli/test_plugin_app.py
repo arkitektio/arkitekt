@@ -265,25 +265,19 @@ def test_plugin_init_devcontainer_without_an_app_is_a_clean_error(
     assert "Could not find the app module 'app'" in result.output
 
 
-def test_an_app_asks_for_what_its_services_clients_need() -> None:
-    from arkitekt_spec.declare.app import AppRegistry
+def test_an_app_asks_for_what_its_clients_need() -> None:
+    from arkitekt import client
 
-    class Client:
+    @client(requires={})
+    class Mikro:
         """A client whose generated part says what its operations need."""
 
         __scopes__ = ("mikro_write", "mikro_read")
 
-    registry = AppRegistry()
-
-    @registry.service()
-    def mikro() -> Client:
-        """Talks to mikro."""
-        return Client()
-
-    app = App("com.x", "1.0", services=[mikro])
+    app = App("com.x", "1.0", clients=[Mikro])
     assert app.scopes == ["mikro_read", "mikro_write", "openid"]
     assert app.manifest.scopes == ["mikro_read", "mikro_write", "openid"]
-    assert App("com.y", "1.0", services=[mikro], scopes=["kabinet_deploy"]).scopes == [
+    assert App("com.y", "1.0", clients=[Mikro], scopes=["kabinet_deploy"]).scopes == [
         "kabinet_deploy",
         "mikro_read",
         "mikro_write",

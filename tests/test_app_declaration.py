@@ -1,25 +1,24 @@
-"""An App is a declaration: identity, services and offerings, with no I/O.
+"""An App is a declaration: identity, clients and offerings, with no I/O.
 
-The mechanisms it builds on (registry, snapshots) are rekuest's and tested there.
-This checks what the app itself decides: which services it uses, what its
-manifest says, and that declaring never connects anything.
+The mechanisms it builds on (assembly, registry, snapshots) are arkitekt-spec's and
+tested there. This checks what the app itself decides: which clients it uses, what
+its manifest says, and that declaring never connects anything.
 """
 
 import pytest
 from arkitekt_spec.declare.definition.errors import DefinitionError
-from arkitekt_spec.declare.structures.errors import StructureRegistryError
 
-from arkitekt import App
+from arkitekt import App, AppDeclarationError, Bundle
 
-from .fakes import OtherClient, OtherService, Picture, PictureClient, PictureService
+from .fakes import BUILT, OtherClient, Picture, PictureClient
 
 
 def test_declaring_builds_nothing() -> None:
-    built: list[PictureClient] = []
-    app = App("decl", services=[PictureService(built)])
+    app = App("decl", clients=[PictureClient])
 
-    assert app.services == ["pictures"]
-    assert built == []
+    assert app.clients() == [PictureClient]
+    assert list(app.registry.clients) == ["pictures"]
+    assert BUILT == []
 
 
 def test_the_manifest_is_read_off_the_declaration() -> None:
@@ -28,7 +27,7 @@ def test_the_manifest_is_read_off_the_declaration() -> None:
         "1.2.3",
         scopes=["pictures_read"],
         logo="http://logo",
-        services=[PictureService(), OtherService()],
+        clients=[PictureClient, OtherClient],
     )
 
     manifest = app.manifest
@@ -64,12 +63,12 @@ def test_the_identifier_defaults_to_the_declaring_file() -> None:
 
 
 def test_a_script_that_offers_nothing_uses_no_rekuest() -> None:
-    app = App("script", services=[PictureService()])
-    assert "rekuest" not in app.services
-    assert not app.registry.providers
+    app = App("script", clients=[PictureClient])
+    assert "rekuest" not in app.registry.clients
+    assert app.provider is None and app.registry.provider is None
 
 
-def test_offering_anything_declares_no_service_of_its_own() -> None:
+def test_offering_anything_uses_no_client_of_its_own() -> None:
     app = App("offers")
 
     @app.action
@@ -77,13 +76,14 @@ def test_offering_anything_declares_no_service_of_its_own() -> None:
         """Doubles."""
         return x * 2
 
-    assert app.services == [] and not app.registry.providers, (
+    assert app.registry.clients == {} and app.registry.provider is None, (
         "the app declares what it offers; run() serves it through rekuest"
     )
 
 
-def test_a_registered_services_client_is_injected_not_a_port() -> None:
-    app = App("inject", services=[PictureService(), OtherService()])
+def test_an_annotation_naming_a_client_brings_it_and_is_injected() -> None:
+    """A ``@client`` class, or a ``@structure`` its client owns, is enough: nothing is registered."""
+    app = App("inject")
 
     @app.action
     def show(
@@ -92,62 +92,44 @@ def test_a_registered_services_client_is_injected_not_a_port() -> None:
         """Shows it."""
         return picture.id
 
-    assert app.services == ["pictures", "other"]
+    assert list(app.registry.clients) == ["pictures", "other"]
     assert app.registry.structure_registry.is_client(PictureClient)
     ports = [port.key for port in app.registry.implementations["show"].definition.args]
     assert ports == ["picture"], "clients are injected, not ports"
 
 
-def test_a_client_no_registered_service_returns_is_a_port_and_is_refused() -> None:
-    """Nothing is inferred: without its service, ``OtherClient`` is just an
-    unregistered class in a port, and registration says to register the service."""
-    app = App("no-infer", services=[PictureService()])
+def test_an_unmarked_class_in_a_port_is_refused_at_assembly() -> None:
+    class Unmarked:
+        pass
 
-    with pytest.raises(Exception, match="register the service"):
-
-        @app.action
-        def show(picture: Picture, other: OtherClient) -> str:
-            """Wants a client the app never registered."""
-            return picture.id
-
-    assert "show" not in app.registry.implementations
-
-
-def test_a_structure_port_alone_infers_nothing_and_says_what_to_declare() -> None:
     app = App("no-infer")
 
-    with pytest.raises(DefinitionError):
+    @app.action
+    def show(thing: Unmarked) -> str:
+        """Wants a class nothing declares."""
+        return "x"
 
-        @app.action
-        def show(picture: Picture) -> str:
-            """Shows it."""
-            return picture.id
-
-
-def test_registering_a_service_twice_is_harmless() -> None:
-    pictures = PictureService()
-    app = App("twice", services=[pictures])
-    app.service(pictures).service(pictures)
-    assert app.services == ["pictures"]
+    with pytest.raises(AppDeclarationError) as refused:
+        app.declaration()
+    assert refused.group_contains(DefinitionError, match="Unmarked")
 
 
-def test_two_services_of_one_name_are_refused() -> None:
-    with pytest.raises(ValueError, match="both named 'pictures'"):
-        App("clash", services=[PictureService(), PictureService()])
+def test_using_a_client_twice_is_harmless() -> None:
+    app = App("twice", clients=[PictureClient])
+    app.register_client(PictureClient, PictureClient)
+    assert app.clients() == [PictureClient]
 
 
-def test_a_client_class_is_not_a_service() -> None:
-    """There is no catalog to look a class up in: the service object is passed."""
-    with pytest.raises(TypeError, match="PictureClient is not a service"):
+def test_only_a_client_class_is_a_client_and_only_a_provider_a_provider() -> None:
+    with pytest.raises(TypeError, match="is not a client"):
+        App("class", clients=[Picture])
+    with pytest.raises(TypeError, match="is not a provider"):
         # The wrong type is the point.
-        App("class", services=[PictureClient])  # pyright: ignore[reportArgumentType]
-    with pytest.raises(TypeError, match="is not a service"):
-        # The wrong type is the point.
-        App("name", services=["pictures"])  # pyright: ignore[reportArgumentType]
+        App("provider", provider=PictureClient)  # pyright: ignore[reportArgumentType]
 
 
 def test_a_registered_action_is_still_callable_as_itself() -> None:
-    app = App("callable", services=[PictureService()])
+    app = App("callable")
 
     @app.action
     def owner(picture: Picture, pictures: PictureClient) -> str:
@@ -158,8 +140,7 @@ def test_a_registered_action_is_still_callable_as_itself() -> None:
 
 
 def test_snapshot_validates_without_connecting() -> None:
-    built: list[PictureClient] = []
-    app = App("inspect", services=[PictureService(built)])
+    app = App("inspect")
 
     @app.action
     def show(picture: Picture) -> str:
@@ -168,29 +149,29 @@ def test_snapshot_validates_without_connecting() -> None:
 
     snapshot = app.snapshot()
     assert "show" in snapshot.registry.implementations
-    assert snapshot.services == app.service_builders
-    assert built == []
+    assert snapshot.clients == app.registry.clients
+    assert BUILT == []
 
 
-def test_snapshot_refuses_a_port_the_app_cannot_resolve() -> None:
-    app = App("broken", services=[PictureService()])
-
-    @app.action
-    def show(picture: Picture) -> str:
-        """Shows it."""
-        return picture.id
-
-    # The service's structures leave the registry: the port now names nothing.
-    del app.registry.structure_registry.identifier_structure_map["@pictures/picture"]
-    with pytest.raises(StructureRegistryError, match="services="):
-        app.snapshot()
-
-
-def test_requirements_come_only_from_services() -> None:
-    app = App("services-only", services=[PictureService()])
+def test_requirements_come_only_from_clients() -> None:
+    app = App("clients-only", clients=[PictureClient])
 
     assert [r.key for r in app.requirements] == ["pictures"]
     assert not hasattr(app, "require")
+
+
+def test_an_app_offers_what_it_includes() -> None:
+    extras = Bundle()
+
+    def snap(x: int) -> int:
+        """Takes a picture."""
+        return x
+
+    extras.register_action(snap)
+    app = App("microscope", "1", include=[extras])
+
+    assert "snap" in app.registry.implementations
+    assert app.interfaces == ["snap"]
 
 
 def test_declare_puts_the_protocol_on_the_apps_own_registry() -> None:
@@ -205,7 +186,9 @@ def test_declare_puts_the_protocol_on_the_apps_own_registry() -> None:
             ...
 
     assert app.registry.structure_registry.is_protocol(Lab)
-    assert "rekuest" not in app.services, "run() brings rekuest, not the declaration"
+    assert "rekuest" not in app.registry.clients, (
+        "run() brings rekuest, not the declaration"
+    )
     assert not any(name.startswith("__rekuest") for name in vars(Lab))
 
 
@@ -219,14 +202,6 @@ def test_an_app_declares_its_context_class_on_its_registry() -> None:
     assert app.registry.structure_registry.app_contexts == {Config: "Config"}
     assert App("bare").app_context is None
     assert not callable(App("bare").app_context), "a property now, not a decorator"
-
-
-def test_an_app_over_a_declaring_registry_reports_its_context() -> None:
-    from arkitekt_spec.declare.app import AppRegistry
-
-    registry = AppRegistry()
-    registry.app_context(Config)
-    assert App("over", registry=registry).app_context is Config
 
 
 def test_a_workflow_is_offered_like_an_action_and_may_call_other_apps() -> None:
@@ -265,8 +240,6 @@ def test_a_workflow_is_offered_like_an_action_and_may_call_other_apps() -> None:
 def test_a_plain_action_calling_another_app_is_refused() -> None:
     from typing import Protocol
 
-    from arkitekt_spec.declare.definition.errors import DefinitionError
-
     app = App("plain")
 
     @app.declare(app="lab")
@@ -275,12 +248,14 @@ def test_a_plain_action_calling_another_app_is_refused() -> None:
             """Ping."""
             ...
 
-    with pytest.raises(DefinitionError, match="@app.workflow"):
+    @app.action
+    def calls(lab: Lab, n: int) -> int:
+        """Calls the lab."""
+        return lab.ping(n)
 
-        @app.action
-        def calls(lab: Lab, n: int) -> int:
-            """Calls the lab."""
-            return lab.ping(n)
+    with pytest.raises(AppDeclarationError) as refused:
+        app.declaration()
+    assert refused.group_contains(DefinitionError, match="@app.workflow")
 
 
 def test_a_named_return_is_read_by_its_key() -> None:

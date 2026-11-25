@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from arkitekt import App, AssetKind, bsx
+from arkitekt import App, AppDeclarationError, AssetKind, bsx
 
 HERE = Path(__file__).parent
 GLB = b"glTF" + b"\x02\x00\x00\x00" + b"rest"
@@ -43,8 +43,10 @@ def test_a_file_outside_the_app_is_not_its_asset(tmp_path: Path) -> None:
     (tmp_path / "elsewhere.glb").write_bytes(GLB)
     app = App("asset-app", "0.1.0", root=tmp_path / "app")
 
-    with pytest.raises(ValueError, match="inside the app's directory"):
-        app.register_asset("scope", "../elsewhere.glb")
+    app.register_asset("scope", "../elsewhere.glb")
+    with pytest.raises(AppDeclarationError) as refused:
+        app.declaration()
+    assert refused.group_contains(ValueError, match="inside the app's directory")
 
 
 def test_an_app_names_a_file_it_does_not_ship_by_its_source_and_hash(
@@ -70,5 +72,7 @@ def test_an_app_names_a_file_it_does_not_ship_by_its_source_and_hash(
         "ref": ref,
         "source": "https://vendor.example/ur5.glb",
     }
-    with pytest.raises(ValueError, match="give exactly one"):
-        app.register_asset("other")
+    app.register_asset("other")
+    with pytest.raises(AppDeclarationError) as refused:
+        app.declaration()
+    assert refused.group_contains(ValueError, match="give exactly one")

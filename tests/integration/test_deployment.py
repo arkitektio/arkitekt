@@ -27,8 +27,7 @@ pytest.importorskip("rekuest")
 pytest.importorskip("mikro")
 
 from konstruktor import Hub  # noqa: E402
-from mikro import Mikro, mikro_service  # noqa: E402
-from rekuest.arkitekt import rekuest_caller_service  # noqa: E402
+from mikro import Mikro  # noqa: E402
 from rekuest.client.client import RekuestCaller  # noqa: E402
 
 from arkitekt import (  # noqa: E402
@@ -81,7 +80,7 @@ def eventually(
 
 def test_an_app_logs_in_and_calls_a_service(hub: Hub) -> None:
     """The whole way in: discovery, a mandate key logging in, and mikro taking its token."""
-    app = App("live.arkitekt.tests.archivist", "0.1.0", services=[mikro_service])
+    app = App("live.arkitekt.tests.archivist", "0.1.0", clients=[Mikro])
 
     with connect(
         app, url=hub.fakts_url, mandate_key=hub.mandate_key("archivist")
@@ -94,9 +93,9 @@ def test_an_app_logs_in_and_calls_a_service(hub: Hub) -> None:
 
 def test_a_local_run_calls_its_action_with_the_hubs_service(hub: Hub) -> None:
     """What ``hub_call`` of ``arkitekt.testing`` is: the app started for itself, its
-    services the deployment's. The action is handed a client that reached mikro
+    clients the deployment's. The action is handed a client that reached mikro
     through a real login, and nothing is registered."""
-    app = App("live.arkitekt.tests.librarian", "0.1.0", services=[mikro_service])
+    app = App("live.arkitekt.tests.librarian", "0.1.0")
 
     @app.action
     def make_folder(name: str, mikro: Mikro) -> str:
@@ -113,7 +112,7 @@ def test_a_local_run_calls_its_action_with_the_hubs_service(hub: Hub) -> None:
 
 def test_an_app_offers_an_action_and_is_called(hub: Hub) -> None:
     """An action registered over the agent socket, called back through the server."""
-    app = App("live.arkitekt.tests.shouter", "0.1.0", services=[rekuest_caller_service])
+    app = App("live.arkitekt.tests.shouter", "0.1.0", clients=[RekuestCaller])
 
     @app.action
     def shout(text: str = "hello") -> str:
@@ -196,7 +195,7 @@ def test_a_detached_run_is_called_and_tells_its_host(hub: Hub) -> None:
     caller = App(
         "live.arkitekt.tests.detached-caller",
         "0.1.0",
-        services=[rekuest_caller_service],
+        clients=[RekuestCaller],
     )
     try:
         with connect(
@@ -246,9 +245,7 @@ def test_a_script_run_with_nothing_but_its_environment_is_callable(hub: Hub) -> 
         stderr=subprocess.STDOUT,
         text=True,
     )
-    caller = App(
-        "live.arkitekt.tests.caller", "0.1.0", services=[rekuest_caller_service]
-    )
+    caller = App("live.arkitekt.tests.caller", "0.1.0", clients=[RekuestCaller])
 
     try:
         with connect(

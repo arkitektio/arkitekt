@@ -12,10 +12,10 @@ inspect = typer.Typer(
 )
 
 from .all import all
+from .clients import clients
 from .implementations import implementations
 from .lifecycle import lifecycle
 from .requirements import requirements
-from .services import services
 from .structures import structures
 from .variables import variables
 
@@ -23,6 +23,6 @@ inspect.command("all")(all)
 inspect.command("variables")(variables)
 inspect.command("requirements")(requirements)
 inspect.command("implementations")(implementations)
-inspect.command("services")(services)
+inspect.command("clients")(clients)
 inspect.command("structures")(structures)
 inspect.command("lifecycle")(lifecycle)

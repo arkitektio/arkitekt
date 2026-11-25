@@ -1,39 +1,45 @@
 """A run is a Runtime: it snapshots the app, builds its clients and binds them.
 
 The app is never changed by running it, so it runs any number of times, and two
-runs of one app never share a client. Every client comes from its service's
-builder; the fakts they resolve through is the offline one every test gets
-(``conftest``), so nothing here talks to a server.
+runs of one app never share a client. Every client is built with its binder
+(or handed in); the fakts they resolve through is the offline one every test
+gets (``conftest``), so nothing here talks to a server.
 """
 
 import asyncio
 from pathlib import Path
-from typing import Any, Never
+from typing import Never, Self
 
 import pytest
 from arkitekt_spec.declare.agents.connection import ConnectionState
+from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.errors import RegistryFrozenError
-from arkitekt_spec.declare.service import Service
 
-from arkitekt import App, DependencyCheckError, arun_all, connect, providing, run
+from arkitekt import (
+    App,
+    DependencyCheckError,
+    arun_all,
+    client,
+    connect,
+    providing,
+    run,
+)
 
 from .fakes import (
+    BUILT,
+    LOG,
     FakeAgent,
     FakeRekuest,
     OtherClient,
-    OtherService,
     Picture,
     PictureClient,
-    PictureService,
-    RekuestProvider,
+    fake_provider,
 )
 
 
-def picture_app(service: Service[Any] | None = None) -> App[None]:
+def picture_app() -> App[None]:
     """An app using pictures (and a fake rekuest provider, since it offers an action)."""
-    app = App(
-        "runtime", services=[service or PictureService()], providers=[RekuestProvider()]
-    )
+    app = App("runtime", clients=[PictureClient], provider=fake_provider())
 
     @app.action
     def show(picture: Picture) -> str:
@@ -44,16 +50,14 @@ def picture_app(service: Service[Any] | None = None) -> App[None]:
 
 
 def test_connect_builds_nothing_until_entered() -> None:
-    built: list[PictureClient] = []
-    runtime = connect(picture_app(PictureService(built)))
-    assert built == [] and runtime.clients == {}
+    runtime = connect(picture_app())
+    assert BUILT == [] and runtime.clients == {}
 
 
 @pytest.mark.asyncio
-async def test_entering_builds_one_client_per_service() -> None:
-    built: list[PictureClient] = []
-    async with connect(picture_app(PictureService(built))) as rt:
-        assert built == [rt.get(PictureClient)]
+async def test_entering_builds_one_client_per_client_class() -> None:
+    async with connect(picture_app()) as rt:
+        assert BUILT == [rt.get(PictureClient), rt.get(FakeRekuest)]
         assert isinstance(rt.get(FakeRekuest), FakeRekuest)
         assert set(rt.clients) == {"pictures", "rekuest"}
 
@@ -114,13 +118,12 @@ async def test_the_app_stays_open_while_its_run_is_frozen() -> None:
 
 @pytest.mark.asyncio
 async def test_entering_enters_every_client_and_leaves_them_in_reverse() -> None:
-    log: list[str] = []
-    app = App("order", services=[PictureService(log=log), OtherService(log=log)])
+    app = App("order", clients=[PictureClient, OtherClient])
 
     async with connect(app) as rt:
         assert rt.require(PictureClient).name == "pictures-1"
 
-    assert log == ["enter pictures-1", "enter other", "exit other", "exit pictures-1"]
+    assert LOG == ["enter pictures-1", "enter other", "exit other", "exit pictures-1"]
 
 
 @pytest.mark.asyncio
@@ -135,34 +138,64 @@ async def test_a_runtime_is_used_once() -> None:
 
 @pytest.mark.asyncio
 async def test_a_failing_client_leaves_what_was_entered() -> None:
-    log: list[str] = []
-
     class Broken(OtherClient):
         async def __aenter__(self) -> "Broken":
             raise ConnectionError("down")
 
-    app = App(
-        "broken",
-        services=[PictureService(log=log), OtherService(log=log, client_cls=Broken)],
-    )
+    app = App("broken", clients=[PictureClient, OtherClient])
     with pytest.raises(ConnectionError):
-        async with connect(app):
+        async with connect(app, clients=[Broken("other", LOG)]):
             pass
-    assert log == ["enter pictures-1", "exit pictures-1"]
+    assert LOG == ["enter pictures-1", "exit pictures-1"]
+
+
+@pytest.mark.asyncio
+async def test_a_handed_client_is_used_instead_of_building_one() -> None:
+    handed = OtherClient("handed", LOG)
+    async with connect(App("handed", clients=[OtherClient]), clients=[handed]) as rt:
+        assert rt.require(OtherClient) is handed
+    assert BUILT == [] and LOG == ["enter handed", "exit handed"]
+
+
+@pytest.mark.asyncio
+async def test_a_handed_client_the_app_does_not_use_is_refused() -> None:
+    with pytest.raises(ValueError, match="none of the clients the app uses"):
+        async with connect(
+            App("unused", clients=[PictureClient]), clients=[OtherClient("x")]
+        ):
+            pass
+
+
+@pytest.mark.asyncio
+async def test_a_client_built_with_the_runs_registry_cannot_be_handed_in() -> None:
+    @client(name="registered")
+    class Registered:
+        @classmethod
+        def from_fakts(cls, registry: AppRegistry) -> Self:
+            return cls()
+
+    with pytest.raises(ValueError, match="cannot be handed in"):
+        async with connect(
+            App("registered", clients=[Registered]), clients=[Registered()]
+        ):
+            pass
 
 
 @pytest.mark.asyncio
 async def test_the_run_builds_binds_and_drives_the_agent() -> None:
-    app = picture_app()
-    # Declared on the registry, past the App's type parameter: the checker still
-    # sees App[None], so the context the run is handed is untyped here.
-    app.registry.app_context(str)
+    app = App("runtime", provider=fake_provider(), app_context=str)
+
+    @app.action
+    def show(x: int) -> int:
+        """Shows it."""
+        return x
+
     async with connect(app, provide=True, force=True) as rt:
         agent = rt.agent
         assert isinstance(agent, FakeAgent)
         assert agent.client is rt.get(FakeRekuest), "built from the run's own client"
         assert agent.bound_app is rt and agent.force is True
-        await rt.arun(context="ctx")  # pyright: ignore[reportCallIssue, reportArgumentType]
+        await rt.arun(context="ctx")
     assert agent.provided == ["ctx"]
 
 
@@ -176,10 +209,7 @@ async def test_a_run_refuses_the_wrong_context_before_the_agent_starts() -> None
     from arkitekt_spec.declare.errors import AppContextError
 
     app = App(
-        "ctx",
-        services=[PictureService()],
-        providers=[RekuestProvider()],
-        app_context=Config,
+        "ctx", clients=[PictureClient], provider=fake_provider(), app_context=Config
     )
     async with connect(app, provide=True) as rt:
         agent = rt.agent
@@ -209,10 +239,7 @@ def test_run_refuses_a_missing_context_before_logging_in(
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
     app = App(
-        "ctx",
-        services=[PictureService()],
-        providers=[RekuestProvider()],
-        app_context=Config,
+        "ctx", clients=[PictureClient], provider=fake_provider(), app_context=Config
     )
     with pytest.raises(AppContextError, match="none was given"):
         # The missing context is the point.
@@ -221,13 +248,10 @@ def test_run_refuses_a_missing_context_before_logging_in(
 
 @pytest.mark.asyncio
 async def test_the_agent_enters_after_the_clients_and_leaves_first() -> None:
-    log: list[str] = []
-    app = App(
-        "order", services=[PictureService(log=log)], providers=[RekuestProvider(log)]
-    )
+    app = App("order", clients=[PictureClient], provider=fake_provider())
     async with connect(app, provide=True):
         pass
-    assert log == [
+    assert LOG == [
         "enter pictures-1",
         "enter rekuest",
         "enter agent",
@@ -239,7 +263,7 @@ async def test_the_agent_enters_after_the_clients_and_leaves_first() -> None:
 
 @pytest.mark.asyncio
 async def test_an_app_offering_nothing_has_nothing_to_run() -> None:
-    app = App("script", services=[PictureService()])
+    app = App("script", clients=[PictureClient])
     async with connect(app, provide=True) as rt:
         assert rt.agent is None
         with pytest.raises(LookupError, match="offers nothing"):
@@ -264,12 +288,12 @@ def test_running_an_app_that_declares_no_provider_serves_it_through_rekuest() ->
         """Doubles."""
         return x * 2
 
-    assert "rekuest" not in app.services and not app.registry.providers
+    assert app.provider is None and "rekuest" not in app.registry.clients
     runtime = connect(app, provide=True)
     assert runtime.provider is rekuest_provider
 
     snapshot = app.snapshot(provider=runtime.provider)
-    assert "rekuest" in snapshot.services and snapshot.provider is rekuest_provider
+    assert "rekuest" in snapshot.clients and snapshot.provider is rekuest_provider
     assert snapshot.manifest.requirements is not None
     assert {r.key for r in snapshot.manifest.requirements} >= {"rekuest", "s3"}
     assert app.manifest.requirements == [], "the declaration is unchanged"
@@ -282,10 +306,10 @@ async def test_an_app_with_no_requirements_authenticates_nothing() -> None:
 
 
 @pytest.mark.asyncio
-async def test_require_names_the_service_to_register() -> None:
+async def test_require_says_how_to_use_the_client() -> None:
     async with connect(App("bare")) as rt:
         assert rt.get(PictureClient) is None
-        with pytest.raises(LookupError, match="PictureClient"):
+        with pytest.raises(LookupError, match=r"App\(clients=\[PictureClient\]\)"):
             rt.require(PictureClient)
 
 
@@ -358,7 +382,7 @@ async def test_the_supervisor_that_started_the_process_reaches_its_agent(
 
 def offering_app(identifier: str) -> App[None]:
     """An app of its own identifier that offers one action through the fake provider."""
-    app = App(identifier, providers=[RekuestProvider()])
+    app = App(identifier, provider=fake_provider())
 
     @app.action
     def shout(text: str) -> str:
@@ -386,14 +410,13 @@ async def test_several_apps_are_started_before_the_block_and_left_after_it(
         )
         with pytest.raises(KeyError, match="not one of the apps"):
             runtimes[offering_app("one")]
-        agents = {identifier: runtime.agent for identifier, runtime in runtimes.items()}
         for identifier, runtime in runtimes.items():
             assert runtime.app.identifier == identifier
             assert runtime.agent.provided == [None], (  # pyright: ignore[reportOptionalMemberAccess]
                 "each app was started by its own agent"
             )
-            assert "exit agent" not in runtime.agent.log  # pyright: ignore[reportOptionalMemberAccess]
-    assert all("exit agent" in agent.log for agent in agents.values())  # pyright: ignore[reportOptionalMemberAccess]
+        assert "exit agent" not in LOG
+    assert LOG.count("exit agent") == 2
 
 
 @pytest.mark.asyncio
@@ -415,7 +438,7 @@ async def test_apps_sharing_an_identifier_are_refused_before_anything_connects()
 async def test_a_checked_start_refuses_apps_that_do_not_fit_before_anything_connects() -> (
     None
 ):
-    lab = App("lab", providers=[RekuestProvider()])
+    lab = App("lab", provider=fake_provider())
 
     @lab.declare(app="one")
     class One:
@@ -441,8 +464,6 @@ async def test_running_apps_ask_the_server_whether_their_dependencies_would_bind
 ) -> None:
     from types import SimpleNamespace
 
-    from tests.fakes import FakeRekuest
-
     asked: list[str] = []
 
     async def amy_implementation_at(
@@ -466,7 +487,7 @@ async def test_running_apps_ask_the_server_whether_their_dependencies_would_bind
         FakeRekuest, "adependency_tree", adependency_tree, raising=False
     )
 
-    lab = App("lab", providers=[RekuestProvider()])
+    lab = App("lab", provider=fake_provider())
 
     @lab.declare(app="one")
     class One:

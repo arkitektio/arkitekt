@@ -30,7 +30,7 @@ Use this decision tree to help you choose:
 
 ## Detailed Comparison
 
-### 1. Standalone App (The "Easy" Way)
+### 1. Standalone App (The "Script" Way)
 
 **Best for:** Custom GUIs, Integration, Scripting, Prototyping, Local Control.
 

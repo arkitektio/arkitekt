@@ -40,13 +40,13 @@ def cli_app() -> App[None]:
 
     A call is made by the command line, not by the app whose action is called:
     who calls does not depend on what is called. Calling needs only an identity
-    and the rekuest service; it offers nothing, so nothing is provided.
+    and the rekuest caller; it offers nothing, so nothing is provided.
 
     Raises:
         RuntimeNotInstalledError: If rekuest is not installed.
     """
     try:
-        from rekuest.arkitekt import rekuest_caller_service
+        from rekuest.client.client import RekuestCaller
     except ImportError as e:
         raise RuntimeNotInstalledError(
             "Calling actions needs rekuest, which is not installed: "
@@ -56,7 +56,7 @@ def cli_app() -> App[None]:
     return App(
         CLI_APP_IDENTIFIER,
         description="The arkitekt command line, calling actions on the server.",
-        services=[rekuest_caller_service],
+        clients=[RekuestCaller],
     )
 
 

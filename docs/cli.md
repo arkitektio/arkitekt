@@ -73,8 +73,8 @@ documentation. Those links live as constants in
 
 **Shell completion** (`arkitekt --install-completion`) completes values too: the
 app's action names for `call local` / `call remote`, flavour names for
-`plugin build` / `stage` / `validate` / `selector add`, and the app's services for
-`gen init --service`. Completing an action imports the app offline, the way
+`plugin build` / `stage` / `validate` / `selector add`, and the app's clients for
+`gen init --client`. Completing an action imports the app offline, the way
 `check` does: nothing connects or runs.
 
 **Newer releases.** Once a day, in the background, a command asks PyPI for the
@@ -291,7 +291,7 @@ fails at the prompt. `run dev` resolves it again on every reload.
 
 Code for your GraphQL documents is generated with
 [turms](https://github.com/jhnnsrs/turms), which arkitekt neither installs nor
-runs. `gen init` writes the GraphQL config for the services your app declares:
+runs. `gen init` writes the GraphQL config for the clients your app uses:
 
 ```bash
 arkitekt gen init        # schemas/<service>.graphql, graphql/<service>/, graphql.config.yaml
@@ -299,10 +299,10 @@ uvx --with rekuest turms gen     # generate code once
 uvx --with rekuest turms watch   # regenerate whenever documents change
 ```
 
-turms imports each service's client while it generates, so the service packages
-go next to it with `--with`; `gen init` prints the command for your services.
+turms imports each client while it generates, so the client packages go next to
+it with `--with`; `gen init` prints the command for your clients.
 
-Only services that ship a schema and a turms project get a project. Pass
+Only clients that ship a schema and a turms project get a project. Pass
 `--service` to pick some, `--api` to change the output directory (default `api`),
 and `--force` to replace a project the config already has; others are kept.
 
@@ -332,7 +332,7 @@ arkitekt inspect all --json
 | `variables` | Scans the entrypoint for module-level variables: state every task of the app shares. |
 | `requirements` | Prints the service requirements of the app as JSON. |
 | `implementations` | Lists the actions the app offers: the name `call` takes, arguments, results and hash. `--json` prints them in full. |
-| `services` | Lists the service SDKs the app selected, their requirements and codegen assets. `--schema <name>` dumps a service's raw GraphQL SDL. |
+| `clients` | Lists the clients a run of the app builds, their requirements, image and codegen assets. `--schema <name>` dumps a client's raw GraphQL SDL. |
 | `lifecycle` | Lists the agent's startup, shutdown and background hooks. |
 | `all` | Prints the complete agent manifest (implementations, states, locks, requirements, bloks), validated the way the server would validate it. |
 
@@ -353,11 +353,11 @@ the quick way to try an action while writing it.
 
 ```bash
 arkitekt call local add -a a=1 -a b=2
-arkitekt call local segment -a image=12 --online   # the app's services, for real
+arkitekt call local segment -a image=12 --online   # the app's clients, for real
 ```
 
-No server is reached: a service the app uses is there to be handed out, and a
-call through it fails. `--online` connects the app's services to a deployment
+No server is reached: a client the app uses is there to be handed out, and a
+call through it fails. `--online` connects the app's clients to a deployment
 with its saved session, and is what the connection flags (`--url`, `--reauth`,
 ...) belong to. A generator prints each
 result. An unknown action, or a missing or unknown argument, says what the app
@@ -386,7 +386,7 @@ arkitekt check
 ```
 
 Imports the app and validates what it declares the way a run does before it
-connects: every action's arguments and results, every structure and the service
+connects: every action's arguments and results, every structure and the client
 that resolves it. Nothing is connected or logged in to. It prints one line for a
 valid app (`◆ my-app 0.1.0 is valid  3 actions · uses mikro`) and exits with 1,
 saying where the problem is, otherwise -- so it also serves in CI.

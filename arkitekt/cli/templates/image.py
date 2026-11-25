@@ -5,17 +5,18 @@ import numpy as np
 import xarray as xr
 
 from arkitekt import App, run
-from mikro import Mikro, mikro_service
+from mikro import Mikro
 from mikro.api.schema import IdentityTransformInput, LensDerivedFromInput
 from mikro.arkitekt.specs import Image
 
 # The version of the app. A release is the commit tagged with it (v1.2.3).
 __version__ = __APP_VERSION__
 
-# The app is a declaration: who it is, what it offers, and the services it uses.
+# The app is a declaration: who it is and what it offers; the clients it uses
+# (Mikro) are found in its actions' annotations.
 # `arkitekt run` finds it in this module (as `app`) and runs it; so does
 # `python app.py`, below.
-app = App(__APP_ARGUMENTS__, services=[mikro_service])
+app = App(__APP_ARGUMENTS__)
 
 
 # What the actions compute is plain numpy, apart from them: it needs no server,

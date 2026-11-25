@@ -1,17 +1,28 @@
-"""Fake services and clients for the app and runtime tests: no fakts, no server."""
+"""Fake clients and a fake provider for the app and runtime tests: no server.
+
+The clients are ``@client`` classes a run builds through the offline fakts every
+test gets (``conftest``). What they and the agent do is written to :data:`LOG`,
+and each built client to :data:`BUILT`; both are emptied before every test.
+"""
 
 from collections.abc import AsyncIterator, Awaitable, Callable
 from contextlib import AbstractAsyncContextManager, asynccontextmanager
-from typing import Annotated, Any
+from typing import Annotated, Any, Self
 
 from arkitekt_spec.declare.agents.connection import ConnectionListener, TaskListener
 from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.provider import Provider
-from arkitekt_spec.declare.service import Service
 from fakts import Alias, Require
 from rath.expansion import ExpandsStructures
 
+from arkitekt import client, provider, structure
 from arkitekt.app.app import App
+
+LOG: list[str] = []
+"""What the clients a run built and the fake agent did, in order."""
+
+BUILT: list["FakeClient"] = []
+"""Every client a run built, in build order."""
 
 
 class FakeClient:
@@ -21,7 +32,7 @@ class FakeClient:
         self.name = name
         self.log = log if log is not None else []
 
-    async def __aenter__(self) -> "FakeClient":
+    async def __aenter__(self) -> Self:
         self.log.append(f"enter {self.name}")
         return self
 
@@ -35,69 +46,56 @@ class Picture:
         self.owner = owner
 
 
+@client(name="pictures")
 class PictureClient(FakeClient, ExpandsStructures):
-    """A client that expands its service's structures, as a generated client does."""
+    """A client that expands its structures, as a generated client does.
+
+    A run builds ``pictures-1``, ``pictures-2``, ... so two runs can be told apart.
+    """
 
     async def aget_picture(self, id: str) -> Picture:
         return Picture(id, self.name)
 
     EXPANDERS = {"@pictures/picture": aget_picture}
 
-
-def PictureService(  # noqa: N802
-    built: list[PictureClient] | None = None, log: list[str] | None = None
-) -> Service[PictureClient]:
-    """A pictures service. Pass ``built`` to record the client of each build.
-
-    Declared the way an SDK's ``arkitekt.py`` does: one registry, the service
-    first, then the structure whose expander asks for the client it returns.
-    A factory rather than a class: the caller's ``built`` and ``log`` lists are
-    what the closure closes over. Clients are named ``pictures-1``,
-    ``pictures-2``, ... in build order, so two runs can be told apart. Kept
-    capitalised so it still reads as the thing an app is given.
-    """
-    record: list[PictureClient] = built if built is not None else []
-    registry = AppRegistry()
-
-    @registry.service()
-    def pictures(
-        pictures: Annotated[Alias, Require("live.test.pictures")],
-    ) -> PictureClient:
-        """Pictures, for tests."""
-        client = PictureClient(f"pictures-{len(record) + 1}", log)
-        record.append(client)
-        return client
-
-    @registry.structure("@pictures/picture")
-    async def expand_picture(id: str, pictures: PictureClient) -> Picture:
-        """A picture, by id."""
-        return await pictures.aget_picture(id)
-
-    return pictures
+    @classmethod
+    def from_fakts(
+        cls, pictures: Annotated[Alias, Require("live.test.pictures")]
+    ) -> Self:
+        count = sum(isinstance(c, PictureClient) for c in BUILT)
+        built = cls(f"pictures-{count + 1}", LOG)
+        BUILT.append(built)
+        return built
 
 
+@structure("@pictures/picture")
+async def expand_picture(id: str, pictures: PictureClient) -> Picture:
+    """A picture, by id."""
+    return await pictures.aget_picture(id)
+
+
+@client(name="other")
 class OtherClient(FakeClient):
-    pass
+    """A second client, to test ordering and several clients."""
+
+    @classmethod
+    def from_fakts(cls, other: Annotated[Alias, Require("live.test.other")]) -> Self:
+        built = cls("other", LOG)
+        BUILT.append(built)
+        return built
 
 
-def OtherService(  # noqa: N802
-    log: list[str] | None = None, client_cls: type[OtherClient] = OtherClient
-) -> Service[OtherClient]:
-    """A second service, to test ordering and multiple clients.
-
-    ``client_cls`` lets a test hand out a subclass (one that fails to enter, say).
-    """
-
-    @AppRegistry().service()
-    def other(other: Annotated[Alias, Require("live.test.other")]) -> OtherClient:
-        """Something else, for tests."""
-        return client_cls("other", log)
-
-    return other
-
-
+@client(name="rekuest")
 class FakeRekuest(FakeClient, ExpandsStructures):
     """Stands in for the rekuest client. It knows nothing about any agent."""
+
+    @classmethod
+    def from_fakts(
+        cls, rekuest: Annotated[Alias, Require("live.test.rekuest")]
+    ) -> Self:
+        built = cls("rekuest", LOG)
+        BUILT.append(built)
+        return built
 
 
 class FakeAgent:
@@ -129,24 +127,17 @@ class FakeAgent:
         self.log.append("exit agent")
 
 
-def RekuestProvider(log: list[str] | None = None) -> "Provider[FakeAgent]":  # noqa: N802
-    """The fake rekuest service and, beside it, the provider building a :class:`FakeAgent`.
+def fake_provider() -> "Provider[FakeAgent]":
+    """A provider building a :class:`FakeAgent` from the run's :class:`FakeRekuest`.
 
-    An app that offers something registers the real rekuest provider unless one
-    is there already; this is the one to register first, so a run never tries
-    to connect a real agent. Its service is named ``rekuest`` for the same reason.
+    An app that offers something is served by rekuest's provider unless it names
+    one; this is the one to name, so a run never connects a real agent.
     """
-    registry = AppRegistry()
 
-    @registry.service()
-    def rekuest(rekuest: Annotated[Alias, Require("live.test.rekuest")]) -> FakeRekuest:
-        """Rekuest, for tests."""
-        return FakeRekuest("rekuest", log)
-
-    @registry.provider()
+    @provider(clients=[FakeRekuest])
     def rekuest_agent(registry: AppRegistry, client: FakeRekuest) -> FakeAgent:
         """The agent, from the client the run built."""
-        return FakeAgent(client, log)
+        return FakeAgent(client, LOG)
 
     return rekuest_agent
 

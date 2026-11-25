@@ -103,6 +103,7 @@ from arkitekt_spec.declare.blok.validate import (
     validate_blok,
     validate_bsx,
 )
+from arkitekt_spec.declare.bundle import Bundle
 from arkitekt_spec.declare.catalogs import (
     BLOK_ARGS_ROOT,
     BlokCheckMode,
@@ -113,10 +114,12 @@ from arkitekt_spec.declare.catalogs import (
     OperationSpec,
     parse_ui_catalog,
 )
+from arkitekt_spec.declare.client import client
 from arkitekt_spec.declare.coercible_types import ToOptimisticProtocol
 from arkitekt_spec.declare.definition.policy import CallPolicy, policy
 from arkitekt_spec.declare.errors import (
     AgentLost,
+    AppDeclarationError,
     DeniedError,
     DismissedError,
     NonDeterministicWorkflow,
@@ -126,9 +129,10 @@ from arkitekt_spec.declare.errors import (
     StatePreconditionFailed,
 )
 from arkitekt_spec.declare.interactions import AskMethod, InformMethod, ask, inform
-from arkitekt_spec.declare.provider import Provider
+from arkitekt_spec.declare.provider import Provider, provider
 from arkitekt_spec.declare.register import WrappedFunction
-from arkitekt_spec.declare.service import Service
+from arkitekt_spec.declare.stamps import context, declare, interactions, model, state
+from arkitekt_spec.declare.structures.declare import structure
 from arkitekt_spec.declare.structures.model import model_field
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
 from arkitekt_spec.declare.task import (
@@ -149,9 +153,10 @@ from arkitekt_spec.declare.widgets import withEffect, withValidator
 from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.mesh import MeshOptions, MeshProxy
 
-from .app.app import App, merge
+from .app.app import App
 from .app.sources import DISCOVER, Source
 from .checks import DemandFinding, DependencyCheckError, UnmetDependency, check_apps
+from .connected import Connected
 from .inspect import inspect
 from .runtime import (
     DetachedRun,
@@ -168,12 +173,12 @@ from .runtime import (
     run_detached,
 )
 from .serve import serve
-from .shortcuts import Easy, aeasy, easy, interactive
 
 __all__ = [
     # the app and its runs
     "App",
-    "merge",
+    "Bundle",
+    "AppDeclarationError",
     "Source",
     "DISCOVER",
     "Runtime",
@@ -200,10 +205,7 @@ __all__ = [
     "DeviceCodeChallenge",
     "has_stored_login",
     "logout",
-    "Easy",
-    "easy",
-    "aeasy",
-    "interactive",
+    "Connected",
     "inspect",
     # how a run reaches services on the deployment's mesh
     "MeshOptions",
@@ -211,7 +213,14 @@ __all__ = [
     # what goes inside a declaration
     "AppRegistry",
     "AssetKind",
-    "Service",
+    "client",
+    "structure",
+    "model",
+    "state",
+    "context",
+    "declare",
+    "interactions",
+    "provider",
     "Provider",
     "WrappedFunction",
     "Actifier",

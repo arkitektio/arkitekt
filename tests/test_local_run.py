@@ -14,11 +14,11 @@ from arkitekt.app.options import ConnectionOptions
 from arkitekt.runtime import connect, connect_local
 from arkitekt.testing import LocalCallError, local_app
 
-from .fakes import Picture, PictureClient, PictureService
+from .fakes import BUILT, Picture, PictureClient
 
 
-def build_app(log: list[str], built: list[PictureClient]) -> App[None]:
-    app = App("local-run", "0.1.0", services=[PictureService(built=built)])
+def build_app(log: list[str]) -> App[None]:
+    app = App("local-run", "0.1.0")
 
     @app.action
     def add(a: int, b: int = 2) -> int:
@@ -32,7 +32,7 @@ def build_app(log: list[str], built: list[PictureClient]) -> App[None]:
 
     @app.action
     def owner(picture: Picture) -> str:
-        """Who a picture, expanded by the service's client, belongs to"""
+        """Who a picture, expanded by its client, belongs to"""
         return picture.owner
 
     @app.action
@@ -57,13 +57,8 @@ def log() -> list[str]:
 
 
 @pytest.fixture()
-def built() -> list[PictureClient]:
-    return []
-
-
-@pytest.fixture()
-def app(log: list[str], built: list[PictureClient]) -> App[None]:
-    return build_app(log, built)
+def app(log: list[str]) -> App[None]:
+    return build_app(log)
 
 
 def test_an_action_is_called_by_function_and_by_name(app: App[None]) -> None:
@@ -93,26 +88,26 @@ def test_the_app_is_started_and_stopped_around_the_run(
     assert log == ["startup", "shutdown"]
 
 
-def test_a_replaced_client_is_what_actions_and_expanders_get(
-    app: App[None], built: list[PictureClient]
-) -> None:
+def test_a_replaced_client_is_what_actions_and_expanders_get(app: App[None]) -> None:
     fake = PictureClient("fake")
     with local_app(app, clients=[fake]) as rt:
         assert rt.require(PictureClient) is fake
         assert rt.call_local("client_name") == "fake"
         assert rt.call_local("owner", Picture("7", "somebody")) == "fake"
-    assert built == [], "the service it replaces is never built"
+    assert not any(isinstance(c, PictureClient) for c in BUILT), (
+        "the client it replaces is never built"
+    )
 
 
 def test_a_replaced_client_is_entered_and_left_with_the_run(app: App[None]) -> None:
-    """What a client of a real service, started for a test, relies on: its lifetime is the run's."""
+    """What a real client, started for a test, relies on: its lifetime is the run's."""
     client = PictureClient("real")
     with local_app(app, clients=[client]):
         assert client.log == ["enter real"]
     assert client.log == ["enter real", "exit real"]
 
 
-def test_a_service_that_is_not_replaced_points_nowhere(
+def test_a_client_that_is_not_replaced_points_nowhere(
     app: App[None], monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Offline builds its own fakts: the deployment's is never asked for."""
@@ -141,7 +136,7 @@ def test_only_a_local_run_calls_in_process(app: App[None]) -> None:
 
 
 def test_a_local_run_that_is_not_offline_builds_the_deployments_fakts(
-    app: App[None], built: list[PictureClient]
+    app: App[None],
 ) -> None:
     """The conftest's stand-in for the deployment's fakts is what it gets."""
     with connect_local(app, offline=False) as rt:
@@ -276,10 +271,10 @@ def test_a_connected_local_run_is_the_app_a_providing_run_logs_in_as(
     assert {r.key for r in local.requirements or []} >= {"rekuest"}
 
 
-def test_a_local_run_of_an_app_without_services_reaches_no_server(
+def test_a_local_run_of_an_app_without_clients_reaches_no_server(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """The provider's own service is not a reason to log in: the local agent talks to nobody."""
+    """The provider's own client is not a reason to log in: the local agent talks to nobody."""
     bare = App("local-bare", "0.1.0")
 
     @bare.action
@@ -289,7 +284,7 @@ def test_a_local_run_of_an_app_without_services_reaches_no_server(
 
     def never(manifest: Manifest, options: ConnectionOptions) -> None:
         raise AssertionError(
-            "a local run of an app without services built the deployment's fakts"
+            "a local run of an app without clients built the deployment's fakts"
         )
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)

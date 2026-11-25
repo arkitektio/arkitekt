@@ -81,7 +81,7 @@ def test_registering_on_a_qt_app(qapp: object, method: str) -> None:
     getattr(app, method)(implementation)
 
     assert app.registry.implementations, f"{method} registered nothing"
-    assert "rekuest" not in app.services, (
+    assert "rekuest" not in app.registry.clients, (
         "run() brings rekuest; the app declares only what it offers"
     )
 

@@ -139,11 +139,12 @@ def construct_app_banner(
     # Rendered from the declaration, not a snapshot: a declaration the run will
     # reject is the run's error to report, not the banner's.
     rows: dict[str, str] = {}
-    if app.services:
-        rows["services"] = ", ".join(app.services)
+    clients = [cls.__name__ for cls in app.clients()]
+    if clients:
+        rows["clients"] = ", ".join(clients)
 
-    # An app offering actions is served by rekuest's provider without listing the
-    # rekuest service, so the definitions are shown whenever there are any.
+    # An app offering actions is served by rekuest's provider without naming the
+    # rekuest client, so the definitions are shown whenever there are any.
     actions = [
         template.interface or template.definition.name
         for template in app.registry.get_implementations()

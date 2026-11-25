@@ -17,12 +17,12 @@ The trace here is a synthetic one second of membrane potential at 20 kHz.
 """
 
 import numpy as np
-from elektro import elektro_service
+from elektro import Elektro
 from elektro.api.schema import CoordinateAnchorInput, SamplingInput, ValueUnitInput
 from kanne.scalars import Duration, Frequency, Unit
 from numpy.typing import NDArray
 
-from arkitekt import easy
+from arkitekt import connect
 
 RATE_HZ = 20_000.0
 SECONDS = 1.0
@@ -43,7 +43,7 @@ def main() -> None:
     """Upload the trace, then give it the clock it was recorded against."""
     trace = synthesise()
 
-    with easy("trace-upload", elektro_service) as elektro:
+    with connect(Elektro, identifier="trace-upload") as elektro:
         folder = elektro.create_folder(name="examples")
 
         dataset = elektro.create_array_dataset(

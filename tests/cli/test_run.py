@@ -705,19 +705,22 @@ def test_call_remote_without_an_app_calls_as_the_cli_app_with_rekuest(
 
     assert result.exit_code == 0, result.output
     assert seen["app"].identifier == "arkitekt-cli"
-    assert "rekuest" in seen["app"].services
+    assert "rekuest_caller" in seen["app"].registry.clients
 
 
 def test_the_cli_app_uses_rekuest_and_offers_nothing() -> None:
     pytest.importorskip("rekuest")
+    from rekuest.client.client import RekuestCaller
+
     from arkitekt import runtime
     from arkitekt.cli.commands.app.call.remote import cli_app as make_cli_app
 
     app = make_cli_app()
 
-    # It starts tasks as roots: the caller, which brings rekuest with it.
-    assert sorted(app.services) == ["rekuest", "rekuest_caller"]
-    assert app.registry.is_empty()
+    # It starts tasks as roots: the caller, a rekuest client of its own.
+    assert app.clients() == [RekuestCaller]
+    assert list(app.registry.clients) == ["rekuest_caller"]
+    assert app.is_empty()
     # call remote only connects: no agent is built, so nothing is provided.
     assert runtime.connect(app).provider is None
 
@@ -784,11 +787,11 @@ def test_call_local_runs_the_action_here_and_prints_its_result(app_dir: Path) ->
     assert "hi World" in result.output
 
 
-def test_call_local_logs_in_to_nothing_for_an_app_without_services(
+def test_call_local_logs_in_to_nothing_for_an_app_without_clients(
     app_dir: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     def never(manifest: Manifest, options: ConnectionOptions) -> Never:
-        raise AssertionError("a local call of an app without services built a fakts")
+        raise AssertionError("a local call of an app without clients built a fakts")
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", never)
 

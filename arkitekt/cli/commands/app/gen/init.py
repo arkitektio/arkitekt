@@ -5,7 +5,7 @@ import typer
 import yaml
 
 from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
-from arkitekt.cli.completion import complete_services
+from arkitekt.cli.completion import complete_clients
 from arkitekt.cli.errors import cli_error
 from arkitekt.cli.options import LogLevel, LogLevelOption
 from arkitekt.cli.target import DEFAULT_TARGET, TargetArgument, load_app_or_exit
@@ -59,13 +59,13 @@ def _app_project(name: str, project: dict[str, Any], api: str) -> dict[str, Any]
 def init(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
-    services: Annotated[
+    clients: Annotated[
         list[str] | None,
         typer.Option(
-            "--service",
-            "-s",
-            help="A service to set up codegen for (repeatable; default: every service the app declares that ships a turms project)",
-            autocompletion=complete_services,
+            "--client",
+            "-c",
+            help="A client to set up codegen for (repeatable; default: every client the app uses that ships a turms project)",
+            autocompletion=complete_clients,
         ),
     ] = None,
     api: Annotated[
@@ -97,14 +97,14 @@ def init(
     console = get_console(ctx)
     app_directory = get_work_dir(ctx)
 
-    declared = run_snapshot_or_exit(load_app_or_exit(ctx, target)).services
-    if services:
-        unknown = [s for s in services if s not in declared]
+    declared = run_snapshot_or_exit(load_app_or_exit(ctx, target)).clients
+    if clients:
+        unknown = [s for s in clients if s not in declared]
         if unknown:
             cli_error(
-                f"The app declares no service {', '.join(unknown)}. Available: {', '.join(declared) or 'none'}"
+                f"The app uses no client {', '.join(unknown)}. Available: {', '.join(declared) or 'none'}"
             )
-        declared = {name: declared[name] for name in services}
+        declared = {name: declared[name] for name in clients}
 
     config_path = os.path.join(app_directory, config)
     projects: dict[str, Any] = {}

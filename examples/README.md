@@ -8,13 +8,13 @@ uv run --script examples/hello.py
 ```
 
 Every script needs a reachable Arkitekt server. It is taken from `$FAKTS_URL`, or passed
-explicitly — `run(app, url="localhost")`, `easy("name", service, url="localhost")`. The first run
+explicitly — `run(app, url="localhost")`, `connect(Mikro, url="localhost")`. The first run
 opens a browser to authenticate; `headless=True` prints the device code instead.
 
 ## Two directions
 
 An app either **offers** actions (`run(app)` — it stays up and others call it) or **calls** other
-services (`easy(...)` — it does its thing and exits). Most of these show one or the other.
+services (`connect(Mikro)` — it does its thing and exits). Most of these show one or the other.
 
 | Script | Direction | Shows | Needs |
 |---|---|---|---|

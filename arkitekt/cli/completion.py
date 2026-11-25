@@ -92,15 +92,15 @@ def complete_flavours(ctx: typer.Context, incomplete: str) -> list[str]:
     return _starting_with(names, incomplete)
 
 
-def complete_services(ctx: typer.Context, incomplete: str) -> list[str]:
-    """The services the app declares."""
+def complete_clients(ctx: typer.Context, incomplete: str) -> list[str]:
+    """The clients the app uses."""
     app = _app(ctx)
     if app is None:
         return []
     from arkitekt.cli.commands.app.inspect.utils import run_snapshot_or_exit
 
     snapshot = _quietly(lambda: run_snapshot_or_exit(app))
-    return [] if snapshot is None else _starting_with(snapshot.services, incomplete)
+    return [] if snapshot is None else _starting_with(snapshot.clients, incomplete)
 
 
-__all__ = ["complete_actions", "complete_flavours", "complete_services"]
+__all__ = ["complete_actions", "complete_flavours", "complete_clients"]

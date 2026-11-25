@@ -64,8 +64,10 @@ CONNECTS_AT_IMPORT = (
     VALID + "\nfrom arkitekt import connect\nwith connect(app) as rt:\n    print(rt)\n"
 )
 
-EASY_AT_IMPORT = (
-    VALID + "\nfrom arkitekt import easy\nwith easy('checked') as rt:\n    print(rt)\n"
+# A script's ``connect(Client)``; the ``with`` is on line 9 here too.
+CLIENTS_AT_IMPORT = VALID + (
+    "from arkitekt import connect\nfrom tests.fakes import PictureClient\n"
+    "with connect(PictureClient) as pictures:\n    print(pictures)\n"
 )
 
 
@@ -95,7 +97,7 @@ def test_check_imports_an_app_that_runs_at_import_without_running_it(
 
 
 @pytest.mark.parametrize(
-    "source", [CONNECTS_AT_IMPORT, EASY_AT_IMPORT], ids=["connect", "easy"]
+    "source", [CONNECTS_AT_IMPORT, CLIENTS_AT_IMPORT], ids=["app", "clients"]
 )
 def test_check_refuses_an_app_that_connects_at_import(
     tmp_path: Path, no_server: None, source: str
@@ -170,7 +172,7 @@ def test_an_error_in_a_helper_is_reported_where_the_helper_raised(
 
 
 def test_check_refuses_an_app_a_run_would_refuse(tmp_path: Path) -> None:
-    """A port naming a structure no service of the app resolves: found without running."""
+    """A port naming a class nothing declares: found without running."""
     (tmp_path / "app.py").write_text(
         "from arkitekt import App\n"
         "app = App('checked', '1.2.3')\n\n"
@@ -337,9 +339,9 @@ def test_check_json_out_names_the_class_behind_each_identifier(tmp_path: Path) -
     (tmp_path / "app.py").write_text(
         "from arkitekt import App\nfrom shapes import Cell\n"
         "app = App('checked', '1.2.3')\n"
-        "@app.registry.structure_registry.structure('@t/cell', cls=Cell)\n"
         "async def expand(id: str) -> Cell:\n"
         "    return Cell()\n"
+        "app.register_structure(Cell, '@t/cell', expand=expand)\n"
     )
 
     code, report = _report(tmp_path)

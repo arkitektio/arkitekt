@@ -2,7 +2,7 @@ import json
 from typing import Annotated, Any
 
 import typer
-from arkitekt_spec.declare.service import Service
+from arkitekt_spec.declare.client import ClientDeclaration
 from rich.console import Group
 from rich.padding import Padding
 from rich.table import Table
@@ -21,8 +21,8 @@ from arkitekt.cli.utils import configure_logging, emit_machine_readable, json_st
 from arkitekt.cli.vars import get_console
 
 
-def _describe_service(name: str, svc: Service[Any]) -> dict[str, Any]:
-    """Project one registered service into a JSON-friendly record."""
+def _describe_client(name: str, svc: ClientDeclaration[Any]) -> dict[str, Any]:
+    """Project one client into a JSON-friendly record."""
     schema = None
     turms_project = None
     try:
@@ -36,7 +36,8 @@ def _describe_service(name: str, svc: Service[Any]) -> dict[str, Any]:
 
     return {
         "name": name,
-        "class": f"{type(svc).__module__}.{type(svc).__qualname__}",
+        "class": f"{svc.cls.__module__}.{svc.cls.__qualname__}",
+        "image": svc.image,
         "requirements": [r.model_dump(by_alias=True) for r in svc.get_requirements()],
         "has_schema": schema is not None,
         "schema_bytes": len(schema) if schema is not None else 0,
@@ -44,53 +45,48 @@ def _describe_service(name: str, svc: Service[Any]) -> dict[str, Any]:
     }
 
 
-def services(
+def clients(
     ctx: typer.Context,
     target: TargetArgument = DEFAULT_TARGET,
     schema: Annotated[
         str | None,
         typer.Option(
             "--schema",
-            help="Print the raw GraphQL SDL of this one service and exit.",
+            help="Print the raw GraphQL SDL of this one client and exit.",
         ),
     ] = None,
     as_json: JsonOption = False,
     machine_readable: MachineReadableOption = False,
     log_level: LogLevelOption = LogLevel.ERROR,
 ) -> None:
-    """List the service SDKs this app would connect through
+    """List the clients a run of this app would build or be handed.
 
-    Loads the target's app and reports each service it declares, its fakts requirements, and whether it
-    ships a GraphQL schema / turms project for codegen — all without touching a
-    server.
+    Reports each client's requirements and whether it ships a GraphQL schema /
+    turms project for codegen, without touching a server.
     """
     configure_logging(log_level.value)
     console = get_console(ctx)
-    # The services a run of this app would build clients for: those it declares
-    # (`App(services=[...])`, `app.service(...)`) and the one its provider brings
-    # (rekuest's, when it offers something) -- not every one the process imported.
+    # The clients a run would build: those the app uses, and those its provider
+    # brings (rekuest's, when it offers something).
     with json_stdout(as_json):
-        service_builders = run_snapshot_or_exit(load_app_or_exit(ctx, target)).services
+        declared = run_snapshot_or_exit(load_app_or_exit(ctx, target)).clients
 
     if schema is not None:
-        svc = service_builders.get(schema)
+        svc = declared.get(schema)
         if svc is None:
-            cli_error(
-                f"Unknown service '{schema}'. Available: "
-                + ", ".join(service_builders.keys())
-            )
+            cli_error(f"Unknown client '{schema}'. Available: " + ", ".join(declared))
         try:
             sdl = svc.get_graphql_schema()
         except Exception as e:
-            cli_error(f"Service '{schema}' ships no GraphQL schema: {e}")
+            cli_error(f"Client '{schema}' ships no GraphQL schema: {e}")
         # Bytes: a pipe on Windows would encode text as cp1252, and a schema is UTF-8.
         typer.echo((sdl or "").encode("utf-8"))
         return
 
-    records = [_describe_service(name, svc) for name, svc in service_builders.items()]
+    records = [_describe_client(name, svc) for name, svc in declared.items()]
 
     if machine_readable:
-        emit_machine_readable("SERVICES", records)
+        emit_machine_readable("CLIENTS", records)
         return
     if as_json:
         print(json.dumps(records, indent=2))
@@ -106,10 +102,11 @@ def services(
             "Requirements",
             ", ".join(r["key"] for r in record["requirements"]) or "-",
         )
+        table.add_row("Image", record["image"] or "-")
         table.add_row("GraphQL schema", "yes" if record["has_schema"] else "no")
         table.add_row("Turms project", "yes" if record["has_turms_project"] else "no")
         renderables.append(
             Group(f"[bold cyan]{record['name']}[/]", Padding(table, (0, 0, 1, 2)))
         )
 
-    console.print(construct_section("Registered services", Group(*renderables)))
+    console.print(construct_section("Clients", Group(*renderables)))

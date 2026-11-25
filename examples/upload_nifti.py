@@ -27,10 +27,10 @@ from pathlib import Path
 import nibabel as nib
 import numpy as np
 import xarray as xr
-from mikro import mikro_service
+from mikro import Mikro
 from mikro.api.schema import CoordinateAnchorInput
 
-from arkitekt import easy
+from arkitekt import connect
 
 
 def synthesise(path: Path) -> Path:
@@ -53,7 +53,7 @@ def main(path: Path) -> None:
     print(f"{path.name}: {image.shape} (i,j,k) -> {array.shape} (z,y,x)")
     volume = xr.DataArray(array, dims=("z", "y", "x"))
 
-    with easy("nifti-upload", mikro_service) as mikro:
+    with connect(Mikro, identifier="nifti-upload") as mikro:
         dataset = mikro.create_array_dataset(
             data=volume,
             scales=[],

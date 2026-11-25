@@ -63,7 +63,7 @@ lean install? The CLI and packaging tooling are always included — pick only th
 pip install "arkitekt[rekuest,mikro]"
 ```
 
-Declaring, inspecting and packaging an app, and calling services with `easy`, need no runtime; offering
+Declaring, inspecting and packaging an app, and calling services with `connect(Mikro)`, need no runtime; offering
 actions with `run(app)` needs the `rekuest` extra. `arkitekt` requires **Python 3.11+**.
 
 ## Offering actions
@@ -134,17 +134,18 @@ More in [docs/state.md](docs/state.md).
 `device_code_hook` hands the login to your own interface and `task_listener` tells it what remote
 callers do. See [docs/embedding.md](docs/embedding.md).
 
-### Using a service inside an action
+### Using a client inside an action
 
-Actions that need a service client name it in `services=` and take it by annotation — arkitekt injects
-the client, just like the running `Task`:
+Actions take a client by annotation — arkitekt builds it and injects it, just like the running
+`Task`. The annotation is the declaration: a parameter typed `Mikro`, or a `Volume` that `Mikro`
+fetches, is all the app needs to use mikro:
 
 ```python
 from arkitekt import App, Task, run
-from mikro import Mikro, mikro_service
+from mikro import Mikro
 from mikro.arkitekt.specs import Volume
 
-app = App("inspect-volume", "0.1.0", services=[mikro_service])
+app = App("inspect-volume", "0.1.0")
 
 
 @app.action
@@ -163,9 +164,10 @@ live, `@app.startup`/`@app.shutdown` hooks (or both in one async generator, `@ap
 (`App(..., app_context=Setup)` together with `run(app, context=Setup(...))`). The
 [examples](examples/README.md) show one each.
 
-An app can be declared in parts: each part is an `App` or an `AppRegistry` of its own, with the same decorators.
-`App("microscope", registry=merge(stage, camera))` runs them as one, and `app.merge(stage, camera)` takes them into
-an app you already have. What the parts share counts once, and clashing names are refused.
+A package can offer actions of its own as a `Bundle`, which an app takes in with
+`App(..., include=[fluss_actions])` (or `app.include(...)`). Nothing is built while you declare:
+the app is assembled when it is run or inspected, and every problem is reported together as an
+`AppDeclarationError`.
 
 ### Workflows: actions that call other apps
 
@@ -210,32 +212,29 @@ a workflow, `task.retry`, `task.hold` and `task.guard` cover the usual answers t
 
 ## Calling services
 
-Scripts and notebooks that only *call* the platform don't declare actions. `easy` declares an app for
-you, connects it, and hands back the clients of the services you name:
+Scripts and notebooks that only *call* the platform don't declare actions. `connect` hands back
+the clients you name, logged in as an app named after the file (`identifier=` names another):
 
 ```python
-from arkitekt import easy
-from mikro import mikro_service
+from arkitekt import connect
+from mikro import Mikro
 
-with easy("my-script", mikro_service) as mikro:
+with connect(Mikro) as mikro:
     folder = mikro.create_folder(name="examples")
 ```
 
-Name several services and you get a tuple back, in the same order:
+Several clients come back as a tuple, in order:
 
 ```python
-from arkitekt import aeasy, interactive
-from fluss import fluss_service
-from mikro import mikro_service
+from fluss import Fluss
 
-async with aeasy("my-script", mikro_service, fluss_service) as (mikro, fluss):
+async with connect(Mikro, Fluss) as (mikro, fluss):
     ...
 
-# In Jupyter: connects once and stays connected.
-mikro = interactive("notebook", mikro_service)
+mikro = connect(Mikro).enter()  # Jupyter: stays connected
 ```
 
-Every service client exposes each operation as a method, in a blocking and an `a`-prefixed async
+Every client exposes each operation as a method, in a blocking and an `a`-prefixed async
 flavour (`mikro.create_folder(...)`, `await mikro.acreate_folder(...)`).
 
 ### Services on the deployment's mesh
@@ -258,7 +257,7 @@ ARKITEKT_MESH_PROXY=http://localhost:1055 python my_app.py       # go through a 
 ```
 
 The same in code, which wins over the environment: `run(app, mesh=False)`, `mesh=True` (or
-`MeshOptions(...)`), or `easy("my-script", mikro_service, mesh=MeshProxy(url=...))`.
+`MeshOptions(...)`), or `connect(Mikro, mesh=MeshProxy(url=...))`.
 
 To log in again — another user, or a session that went stale — run `arkitekt login --reauth` in
 the app's folder, pass `run(app, reauth=True)`, `--reauth` on a run, or:
@@ -309,8 +308,8 @@ See the full reference in **[docs/cli.md](docs/cli.md)**, and
 Arkitekt serializes and documents standard Python types — `str`, `bool`, `int`, `float`, `Enum`,
 `list`, `dict`, and pydantic models or dataclasses declared with `@app.model`. For heavier data
 (images, arrays, large objects), the platform follows a **store-by-reference** model: data lives in a
-central, scalable store and only a lightweight reference travels between apps. Service clients like
-`mikro` and `elektro` provide ready-made structures for this; within one app,
+central, scalable store and only a lightweight reference travels between apps. Clients like
+`Mikro` and `Elektro` provide ready-made structures for this; within one app,
 `app.memory_structure(...)` lets arbitrary objects cross actions without leaving the agent.
 
 ## Examples

@@ -8,8 +8,9 @@ for a script that calls the API::
         segment(image, mikro=mikro, task=Task.local())
 
 Each of them builds a fresh :class:`Runtime`: a snapshot of the app's registry,
-fakts, a manifest carrying this machine's node id, and one client per service.
-How to connect (url, tokens, ...) is an argument of the run, not part of the app.
+fakts, a manifest carrying this machine's node id, and one client per client the
+app uses -- built with its binder, or handed in (``run(app, clients=[...])``). How to
+connect (url, tokens, ...) is an argument of the run, not part of the app.
 """
 
 import asyncio
@@ -29,8 +30,9 @@ from typing import (
 )
 
 from arkitekt_spec.declare.agents.connection import ConnectionState
+from arkitekt_spec.declare.agents.types import RunAware
+from arkitekt_spec.declare.client import ClientDeclaration
 from arkitekt_spec.declare.provider import Provider
-from arkitekt_spec.declare.service import Service
 from fakts import Fakts, oauth2
 from fakts.grants.remote.authorizers.device_code import (
     DeviceCodeChallenge,
@@ -46,6 +48,7 @@ from koil.composition import KoiledModel
 from pydantic import BaseModel, ConfigDict, Field, PrivateAttr
 
 from arkitekt.app.app import App, Ctx
+from arkitekt.app.binding import build_client, build_provider
 from arkitekt.app.fakts import build_fakts, resolve_insecure_transport, resolve_url
 from arkitekt.app.options import ConnectionOptions
 from arkitekt.app.sessions import forget, read_credentials, read_session, session_path
@@ -60,11 +63,17 @@ if TYPE_CHECKING:
     from koil import KoilFuture
 
     from arkitekt.checks import UnmetDependency
+    from arkitekt.connected import Connected
 
 
 logger = logging.getLogger(__name__)
 
 T = TypeVar("T")
+T1 = TypeVar("T1")
+T2 = TypeVar("T2")
+T3 = TypeVar("T3")
+T4 = TypeVar("T4")
+T5 = TypeVar("T5")
 #: The runtime ``async with`` enters: itself, as the subclass it is.
 _RuntimeT = TypeVar("_RuntimeT", bound="Runtime[Any]")
 
@@ -73,7 +82,7 @@ _RuntimeT = TypeVar("_RuntimeT", bound="Runtime[Any]")
 _ActionRef: TypeAlias = "str | Callable[..., object]"
 
 
-#: Where an offline run's services point: a host that can never resolve.
+#: Where an offline run's clients point: a host that can never resolve.
 OFFLINE_HOST = "offline.invalid"
 
 
@@ -81,15 +90,12 @@ class LocalRun(BaseModel):
     """What makes a run local: nothing is registered, and its own actions are called in-process.
 
     Attributes:
-        clients: Clients to use in place of the ones the app's services build. A
-            service whose client class one of them is an instance of is not built.
-        offline: Reach no server at all. A service that is not replaced then
-            builds its real client against an address that does not exist: it is
-            there to be handed out, and fails when something calls through it.
+        offline: Reach no server at all. A client that is not handed in is then
+            built against an address that does not exist: it is there to be
+            handed out, and fails when something calls through it.
         context: The app context the run is started with.
     """
 
-    clients: list[Any] = Field(default_factory=list)
     offline: bool = True
     context: Any | None = None
 
@@ -100,8 +106,8 @@ class Runtime(KoiledModel, Generic[Ctx]):
     """One run of an app: its fakts, clients and registry snapshot.
 
     Built by :func:`connect` and :func:`run`. Entering it takes the snapshot,
-    builds fakts if anything needs it, builds one client per service, then the
-    app's agent from its provider, and enters them all; leaving it closes
+    builds fakts if anything needs it, builds each client the app uses that was
+    not handed in, then the app's agent from its provider, and enters them all; leaving it closes
     everything. A runtime is used once -- connect again for a second run; the
     app is unchanged by the first.
 
@@ -117,11 +123,12 @@ class Runtime(KoiledModel, Generic[Ctx]):
             what the run actually serves is :attr:`snapshot`.
         options: How it connects.
         snapshot: What this run serves: its manifest, its frozen registry and
-            its services, taken together. Set when entered.
-        fakts: The run's fakts. Set when entered, and only when a service or the
-            provider needs one: a run of an app with no requirements
-            authenticates nothing.
-        clients: The run's built clients, by service name. Empty until entered.
+            its clients, taken together. Set when entered.
+        fakts: The run's fakts. Set when entered, and only when a client or the
+            provider is built through it.
+        clients: The run's clients, by name. Empty until entered.
+        handed: Clients the run was handed (``clients=[...]``), used instead of
+            building the client of their class. The run enters and leaves them.
         agent: The agent providing the app's offerings, built from ``provider``
             when entered. ``None`` for a run that provides nothing.
         provider: What this run builds its agent from: ``None`` for
@@ -135,6 +142,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
     snapshot: RunSnapshot | None = None
     fakts: Fakts | None = None
     clients: dict[str, Any] = Field(default_factory=dict)
+    handed: list[Any] = Field(default_factory=list, exclude=True)
     # ``Any``: an agent is an ``AgentLifecycle``, a Protocol with a data member,
     # which pydantic cannot validate against.
     agent: Any | None = None
@@ -150,21 +158,10 @@ class Runtime(KoiledModel, Generic[Ctx]):
     # Clients                                                            #
     # ------------------------------------------------------------------ #
 
-    @property
-    def services(self) -> Mapping[str, "Service[Any]"]:
-        """The services this run declares, by name.
-
-        The *declared* services, not the built clients: this is what rekuest's
-        ``BoundApp`` protocol reads to warn about a structure whose service the
-        app lacks, which is a question about the declaration. Empty until entered.
-        """
-        return self.snapshot.services if self.snapshot is not None else {}
-
     def get(self, cls: type[T]) -> T | None:
         """Find this run's client of class ``cls``.
 
-        Whatever a service's function returned is its client, so the match is
-        by instance.
+        A client is matched by instance, so a handed-in subclass answers too.
 
         Args:
             cls: The client class, e.g. ``Mikro``.
@@ -187,14 +184,14 @@ class Runtime(KoiledModel, Generic[Ctx]):
             The client.
 
         Raises:
-            LookupError: If the app uses no service building one.
+            LookupError: If the app uses no such client.
         """
         client = self.get(cls)
         if client is None:
             raise LookupError(
                 f"This run has no {cls.__name__}. The app uses: "
-                f"{', '.join(self.services) or 'no services'}. Register the service "
-                f"that builds it: `app.service({cls.__name__.lower()}_service)`."
+                f"{', '.join(self.clients) or 'no clients'}. Use it in the app: "
+                f"`App(clients=[{cls.__name__}])`, or name it in an action's annotation."
             )
         return client
 
@@ -203,36 +200,54 @@ class Runtime(KoiledModel, Generic[Ctx]):
     # ------------------------------------------------------------------ #
 
     def _prepare(self) -> RunSnapshot:
-        """Take the snapshot, with this run's provider in it. Nothing connects yet.
+        """Take the snapshot, with this run's provider in it, and check what it was handed.
 
-        Taking it validates the declaration, before anything connects: a port
-        naming a structure this app cannot resolve would otherwise fail
-        mid-assignment, far from its cause.
+        Taking it assembles and validates the declaration before anything connects.
+
+        Raises:
+            ValueError: If a handed-in client is none the app uses, or is one whose
+                binder needs the run's registry (it was built against another).
         """
         if self.local is not None:
-            # The same snapshot a providing run takes, provider included: the app
-            # is then whole (the structures its provider's package brings resolve)
-            # and, connected, it is the manifest the saved session was made for --
-            # a local call reuses the login of `run`, and does not replace it.
-            # Only the agent differs: it is built here, not by the provider.
+            # The snapshot a providing run takes, provider included: the app is
+            # whole, and connected it is the manifest the saved session was made
+            # for. Only the agent differs: it is built here, not by the provider.
             device_id = (
                 None
                 if self.local.offline
                 else resolve_device_id(self.options.device_id)
             )
-            return self.app.snapshot(
+            snapshot = self.app.snapshot(
                 device_id=device_id, provider=_provider_for(self.app, required=False)
             )
-        device_id = resolve_device_id(self.options.device_id)
-        return self.app.snapshot(device_id=device_id, provider=self.provider)
+        else:
+            device_id = resolve_device_id(self.options.device_id)
+            snapshot = self.app.snapshot(device_id=device_id, provider=self.provider)
+        self._check_handed(snapshot)
+        return snapshot
+
+    def _check_handed(self, snapshot: RunSnapshot) -> None:
+        for given in self.handed:
+            matched = [c for c in snapshot.clients.values() if isinstance(given, c.cls)]
+            if not matched:
+                raise ValueError(
+                    f"This run was handed a {type(given).__name__}, which is none of "
+                    f"the clients the app uses ({', '.join(snapshot.clients) or 'none'})."
+                )
+            for client in matched:
+                if client.takes_registry:
+                    raise ValueError(
+                        f"A {client.cls.__qualname__} cannot be handed in: it works "
+                        "with its run's registry, so the run builds it."
+                    )
 
     def _build_fakts(self, snapshot: RunSnapshot) -> Fakts:
         """The run's fakts: the deployment's, or for an offline run one that reaches nothing.
 
         Offline, every requirement resolves to an address that does not exist
-        (``<key>.offline.invalid``). The services that were not replaced then
-        build their real clients, so the app is whole and its structures bind;
-        a client only fails when something actually calls through it.
+        (``<key>.offline.invalid``). The clients that were not handed in are then
+        built for real, so the app is whole and its structures bind; a client only
+        fails when something actually calls through it.
         """
         if self.local is not None and self._stays_offline(snapshot):
             from fakts.testing import build_testing_fakts
@@ -249,62 +264,57 @@ class Runtime(KoiledModel, Generic[Ctx]):
     def _stays_offline(self, snapshot: RunSnapshot) -> bool:
         """Whether a local run reaches no server: asked to, or with nothing to reach.
 
-        What a local run connects for is the services the app itself uses. The
-        one its provider brings (rekuest's) serves an agent, and a local run's
-        agent talks to nobody: an app using no service logs in to nothing.
+        What a local run connects for is the clients the app itself uses; the one
+        its provider brings (``Rekuest``) serves an agent, and a local run's agent
+        talks to nobody.
         """
         assert self.local is not None
         if self.local.offline:
             return True
-        own = self.app.registry.services
+        own = self.app.declaration().clients
         return not any(
-            service.needs_fakts and self._replacement_for(service) is None
-            for name, service in snapshot.services.items()
+            client.needs_fakts and self._handed_for(client) is None
+            for name, client in snapshot.clients.items()
             if name in own
         )
 
-    def _replacement_for(self, service: "Service[Any]") -> object | None:
-        """The client a local run was handed in place of the one ``service`` builds."""
-        if self.local is None:
-            return None
-        return next(
-            (c for c in self.local.clients if isinstance(c, service.returns)), None
-        )
+    def _handed_for(self, client: ClientDeclaration[Any]) -> object | None:
+        """The client this run was handed in place of building ``client``."""
+        return next((c for c in self.handed if isinstance(c, client.cls)), None)
 
     def _needs_fakts(self, snapshot: RunSnapshot) -> bool:
         """Whether anything this run builds resolves through fakts."""
-        if self.local is not None:
-            return any(
-                service.needs_fakts and self._replacement_for(service) is None
-                for service in snapshot.services.values()
-            )
-        return any(service.needs_fakts for service in snapshot.services.values()) or (
-            self.provider is not None and self.provider.needs_fakts
+        built = any(
+            client.needs_fakts and self._handed_for(client) is None
+            for client in snapshot.clients.values()
         )
+        if self.local is not None:
+            return built
+        return built or (self.provider is not None and self.provider.needs_fakts)
 
     async def _build_clients(
         self, snapshot: RunSnapshot, fakts: Fakts | None
     ) -> dict[str, Any]:
-        """Resolve each service's requirements and build its client.
+        """Build each client the run was not handed, its requirements resolved now.
 
-        Runs after fakts is entered: a service is handed the *resolved* address of
-        each thing it requires, which needs a loaded configuration. An unreachable
-        required service therefore fails here, while the run is still connecting,
-        rather than on the first call that happens to need it.
+        Runs after fakts is entered. An unreachable required service therefore
+        fails here, while the run is still connecting, rather than on the first
+        call that happens to need it.
         """
         clients: dict[str, Any] = {}
-        for name, builder in snapshot.services.items():
-            # Each service takes only what its signature asks for; there is no
-            # bag of parameters every builder has to know about.
-            client = self._replacement_for(builder)
-            if client is None:
-                client = await builder.build(fakts, snapshot.registry)
-            if client is not None:
-                clients[name] = client
+        for name, client in snapshot.clients.items():
+            built = self._handed_for(client)
+            if built is None:
+                built = await build_client(client, fakts, snapshot.registry)
+            clients[name] = built
 
         # Set before binding: the runtime *is* the BoundApp the structures bind
         # from, and a structure's expander finds its client by class through it.
         self.clients = clients
+        for built in clients.values():
+            # What a client's calls return by reference expands through this run.
+            if isinstance(built, RunAware):
+                built.attach(self)
 
         # The snapshot owns its structure maps, so binding here never reaches the
         # app.
@@ -321,7 +331,9 @@ class Runtime(KoiledModel, Generic[Ctx]):
             provider = self.provider
             if provider is None:
                 return None
-            agent = await provider.build(fakts, snapshot.registry, self.clients)
+            agent = await build_provider(
+                provider, fakts, snapshot.registry, self.clients
+            )
         # Bound before entered: the agent reads `bound_app` while registering.
         agent.bound_app = self
         agent.force = self.options.force
@@ -438,7 +450,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
 
     def _require_agent(self) -> "BaseAgent":
         if self.agent is None:
-            if self.app.registry.is_empty():
+            if self.app.is_empty():
                 raise LookupError(
                     "This app offers nothing, so there is nothing to provide: no "
                     "action, state, hook or blok. Use `connect(app)` to only call the API."
@@ -450,9 +462,7 @@ class Runtime(KoiledModel, Generic[Ctx]):
         return self.agent
 
     def _require_context(self, context: object) -> None:
-        self.app.registry.require_app_context(
-            context, whose=f"App {self.app.identifier!r}"
-        )
+        self.app.require_app_context(context)
 
     @overload
     async def arun(self: "Runtime[None]", context: None = None) -> None: ...
@@ -705,12 +715,11 @@ def connect_local(
 
     Args:
         app: The app to run.
-        clients: Clients to use in place of the ones the app's services build,
-            matched by class: a ``Mikro`` in ``clients`` is what an action
-            taking ``mikro: Mikro`` is handed. It is entered and left with
-            the run, so it must not be entered already.
+        clients: Clients to use instead of building them, matched by class: a
+            ``Mikro`` here is what an action taking ``mikro: Mikro`` is handed. The
+            run enters and leaves them, so they must not be entered already.
         context: The app context, for an app that declares one.
-        offline: Reach no server. Off, the services that are not replaced are
+        offline: Reach no server. Off, the clients that are not handed in are
             built against the deployment, with a login as for :func:`connect`
             (which the remaining arguments describe).
 
@@ -719,6 +728,7 @@ def connect_local(
     """
     return Runtime(
         app=app,
+        handed=list(clients),
         options=ConnectionOptions(
             url=url,
             token=token,
@@ -732,9 +742,30 @@ def connect_local(
             mesh=mesh,
             alias_policy=alias_policy,
         ),
-        local=LocalRun(clients=list(clients), offline=offline, context=context),
+        local=LocalRun(offline=offline, context=context),
     )
 
+
+#: The options a script's ``connect(Mikro, ...)`` passes on to ``connect(app)``.
+_SCRIPT_OPTIONS = frozenset(
+    {
+        "url",
+        "token",
+        "mandate_key",
+        "skip_cache",
+        "reauth",
+        "headless",
+        "device_code_hook",
+        "force",
+        "connection_listener",
+        "task_listener",
+        "allow_insecure_transport",
+        "device_id",
+        "supervisor",
+        "mesh",
+        "alias_policy",
+    }
+)
 
 #: What ``run()`` says when an app offers something and no runtime is installed.
 NO_RUNTIME_HINT = (
@@ -757,10 +788,10 @@ def _provider_for(app: App[Any], *, required: bool = True) -> Provider[Any] | No
     :class:`RuntimeNotInstalledError`, and an inspection gets ``None`` -- the app as
     declared, without the requirements rekuest's provider would add.
     """
-    declared = app.registry.provider_declaration
+    declared = app.provider
     if declared is not None:
         return declared
-    if app.registry.is_empty():
+    if app.is_empty():
         return None
     try:
         from rekuest.arkitekt import rekuest_provider
@@ -778,9 +809,12 @@ The run's agent sends it with every ``Register``: it becomes the ``@rekuest/supe
 descriptor of the agent, which that supervisor's actions narrow their pickers on."""
 
 
+@overload
 def connect(
     app: App[Ctx],
+    /,
     *,
+    clients: Sequence[Any] = (),
     provide: bool = False,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -797,22 +831,214 @@ def connect(
     supervisor: str | Source | None = DISCOVER,
     mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
     alias_policy: AliasPolicy | None = None,
-) -> Runtime[Ctx]:
-    """Make a runtime for ``app`` that connects when entered.
+) -> Runtime[Ctx]: ...
 
-    For scripts and notebooks that call the API::
+
+@overload
+def connect(
+    c1: type[T1],
+    /,
+    *,
+    identifier: str | None = None,
+    version: str = "0.0.1",
+    logo: str | None = None,
+    scopes: list[str] | None = None,
+    author: str | None = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
+) -> "Connected[T1]": ...
+
+
+@overload
+def connect(
+    c1: type[T1],
+    c2: type[T2],
+    /,
+    *,
+    identifier: str | None = None,
+    version: str = "0.0.1",
+    logo: str | None = None,
+    scopes: list[str] | None = None,
+    author: str | None = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
+) -> "Connected[tuple[T1, T2]]": ...
+
+
+@overload
+def connect(
+    c1: type[T1],
+    c2: type[T2],
+    c3: type[T3],
+    /,
+    *,
+    identifier: str | None = None,
+    version: str = "0.0.1",
+    logo: str | None = None,
+    scopes: list[str] | None = None,
+    author: str | None = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
+) -> "Connected[tuple[T1, T2, T3]]": ...
+
+
+@overload
+def connect(
+    c1: type[T1],
+    c2: type[T2],
+    c3: type[T3],
+    c4: type[T4],
+    /,
+    *,
+    identifier: str | None = None,
+    version: str = "0.0.1",
+    logo: str | None = None,
+    scopes: list[str] | None = None,
+    author: str | None = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
+) -> "Connected[tuple[T1, T2, T3, T4]]": ...
+
+
+@overload
+def connect(
+    c1: type[T1],
+    c2: type[T2],
+    c3: type[T3],
+    c4: type[T4],
+    c5: type[T5],
+    /,
+    *,
+    identifier: str | None = None,
+    version: str = "0.0.1",
+    logo: str | None = None,
+    scopes: list[str] | None = None,
+    author: str | None = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
+) -> "Connected[tuple[T1, T2, T3, T4, T5]]": ...
+
+
+def connect(
+    target: "App[Any] | type",
+    /,
+    *more: type,
+    clients: Sequence[Any] = (),
+    provide: bool = False,
+    identifier: str | None = None,
+    version: str = "0.0.1",
+    logo: str | None = None,
+    scopes: list[str] | None = None,
+    author: str | None = None,
+    url: str | Source = DISCOVER,
+    token: str | Source | None = DISCOVER,
+    mandate_key: str | Source | None = DISCOVER,
+    skip_cache: bool = False,
+    reauth: bool | Source = DISCOVER,
+    headless: bool = False,
+    device_code_hook: DeviceCodeHook | None = None,
+    force: bool = False,
+    connection_listener: "ConnectionListener | None" = None,
+    task_listener: "TaskListener | None" = None,
+    allow_insecure_transport: bool | Source = DISCOVER,
+    device_id: str | Source | None = DISCOVER,
+    supervisor: str | Source | None = DISCOVER,
+    mesh: MeshOptions | MeshProxy | bool | Source | None = DISCOVER,
+    alias_policy: AliasPolicy | None = None,
+) -> "Runtime[Any] | Connected[Any]":
+    """Connect an app, or a script's clients.
+
+    ``connect(Mikro)`` (one or more ``@client`` classes) is a script's: it declares
+    ``App(<calling file's name>, clients=[...])`` and enters for the clients::
+
+        with connect(Mikro) as mikro: ...
+        with connect(Mikro, Fluss) as (mikro, fluss): ...
+        mikro = connect(Mikro).enter()      # notebook: stays connected
+
+    ``connect(app)`` makes a :class:`Runtime` for an app::
 
         with connect(app) as rt:
             mikro = rt.require(Mikro)
 
-        rt = connect(app).enter()      # notebook: stays connected
-
-    With ``provide=True`` the runtime also builds the app's agent -- from the
-    provider it declares, or rekuest's if it offers anything -- and provides
-    on :meth:`Runtime.run`; that is what :func:`run` does.
+    With ``provide=True`` that runtime also builds the app's agent -- from the
+    provider it declares, or rekuest's if it offers anything -- and provides on
+    :meth:`Runtime.run`; that is what :func:`run` does.
 
     Args:
-        app: The app to run.
+        target: The app, or the first client class of a script.
+        more: More client classes of a script.
+        clients: Clients to use instead of building them, matched by class: the
+            run enters and leaves them. Their requirements stay in the manifest.
+        identifier: A script app's identifier. Defaults to the calling file's name.
+        version: A script app's version.
+        logo: A script app's logo url.
+        scopes: Scopes a script app asks for beyond what its clients need.
+        author: Who wrote the script.
         provide: Whether the runtime builds an agent to provide the app's
             offerings with. Off for a script that only calls the API.
         url: The fakts server, or where to find it (a source, see
@@ -863,8 +1089,36 @@ def connect(
     Returns:
         The runtime, not yet entered.
     """
+    if not isinstance(target, App):
+        from arkitekt.app.app import _caller
+        from arkitekt.connected import connected
+
+        if provide or clients:
+            raise TypeError(
+                "connect(Mikro, ...) connects a script's clients: it provides nothing "
+                "and is handed no instances. Declare an App for that."
+            )
+        options = {
+            key: value for key, value in locals().items() if key in _SCRIPT_OPTIONS
+        }
+        return connected(
+            (target, *more),
+            _caller(),
+            identifier=identifier,
+            version=version,
+            logo=logo,
+            scopes=scopes,
+            author=author,
+            options=options,
+        )
+    if more:
+        raise TypeError(
+            "connect(app) takes one app; client classes go in App(clients=[...])."
+        )
+    app = target
     return Runtime(
         app=app,
+        handed=list(clients),
         options=ConnectionOptions(
             url=url,
             token=token,
@@ -890,6 +1144,7 @@ def connect(
 def run(
     app: App[None],
     *,
+    clients: Sequence[Any] = (),
     context: None = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -911,6 +1166,7 @@ def run(
 def run(
     app: App[Ctx],
     *,
+    clients: Sequence[Any] = (),
     context: Ctx,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -933,6 +1189,7 @@ def run(
 def run(
     app: App[Any],
     *,
+    clients: Sequence[Any] = (),
     context: object = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -961,6 +1218,8 @@ def run(
 
     Args:
         app: The app to provide.
+        clients: Clients to use instead of building them, matched by class: the
+            run enters and leaves them. Their requirements stay in the manifest.
         context: The app context: an instance of the class the app declared
             (``App(..., app_context=Config)``), handed to the hooks and actions
             that ask for it. Required then; nothing for an app declaring none.
@@ -1014,10 +1273,11 @@ def run(
             before anything connects or logs in.
         LookupError: If the app offers nothing.
     """
-    app.registry.require_app_context(context, whose=f"App {app.identifier!r}")
+    app.require_app_context(context)
     runtime = connect(
         app,
         provide=True,
+        clients=clients,
         url=url,
         token=token,
         mandate_key=mandate_key,
@@ -1044,6 +1304,7 @@ def run(
 async def arun(
     app: App[None],
     *,
+    clients: Sequence[Any] = (),
     context: None = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -1065,6 +1326,7 @@ async def arun(
 async def arun(
     app: App[Ctx],
     *,
+    clients: Sequence[Any] = (),
     context: Ctx,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -1087,6 +1349,7 @@ async def arun(
 async def arun(
     app: App[Any],
     *,
+    clients: Sequence[Any] = (),
     context: object = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -1108,6 +1371,8 @@ async def arun(
 
     Args:
         app: The app to provide.
+        clients: Clients to use instead of building them, matched by class: the
+            run enters and leaves them. Their requirements stay in the manifest.
         context: The app context, as for :func:`run`.
         url: The fakts server, or where to find it (a source, see
             :mod:`arkitekt.app.sources`). Defaults to ``"discover"``: ``--url``,
@@ -1159,10 +1424,11 @@ async def arun(
             before anything connects or logs in.
         LookupError: If the app offers nothing.
     """
-    app.registry.require_app_context(context, whose=f"App {app.identifier!r}")
+    app.require_app_context(context)
     runtime = connect(
         app,
         provide=True,
+        clients=clients,
         url=url,
         token=token,
         mandate_key=mandate_key,
@@ -1376,9 +1642,7 @@ async def providing(
             f"`contexts` names apps that are not run: {unknown}. Running: {identifiers}."
         )
     for app in apps:
-        app.registry.require_app_context(
-            contexts.get(app.identifier), whose=f"App {app.identifier!r}"
-        )
+        app.require_app_context(contexts.get(app.identifier))
     if check:
         from arkitekt.checks import DependencyCheckError, check_apps
 
@@ -1688,10 +1952,12 @@ class DetachedRun(Generic[Ctx]):
         app: App[Ctx],
         context: Ctx | None,
         options: ConnectionOptions,
+        clients: Sequence[Any] = (),
     ) -> None:
         self.app = app
         self._context = context
         self._options = options
+        self._clients = list(clients)
         self._state = ConnectionState.STOPPED
         self._error: BaseException | None = None
         self._thread: threading.Thread | None = None
@@ -1737,6 +2003,7 @@ class DetachedRun(Generic[Ctx]):
             # installation is raised to whoever started the run.
             runtime = Runtime(
                 app=self.app,
+                handed=list(self._clients),
                 options=self._options.model_copy(
                     update={
                         "device_code_hook": self._on_device_code,
@@ -1835,6 +2102,7 @@ class DetachedRun(Generic[Ctx]):
 def run_detached(
     app: App[None],
     *,
+    clients: Sequence[Any] = (),
     context: None = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -1856,6 +2124,7 @@ def run_detached(
 def run_detached(
     app: App[Ctx],
     *,
+    clients: Sequence[Any] = (),
     context: Ctx,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -1878,6 +2147,7 @@ def run_detached(
 def run_detached(
     app: App[Any],
     *,
+    clients: Sequence[Any] = (),
     context: object = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -1921,6 +2191,8 @@ def run_detached(
 
     Args:
         app: The app to provide.
+        clients: Clients to use instead of building them, matched by class: the
+            run enters and leaves them. Their requirements stay in the manifest.
         context: The app context, as for :func:`run`.
         connection_listener: Told every change of the run's :attr:`~DetachedRun.state`:
             ``CONNECTING``, ``AWAITING_LOGIN`` (after ``device_code_hook`` was
@@ -1937,7 +2209,7 @@ def run_detached(
         RuntimeNotInstalledError: If the app offers something and no runtime is
             installed.
     """
-    app.registry.require_app_context(context, whose=f"App {app.identifier!r}")
+    app.require_app_context(context)
     running: DetachedRun[Any] = DetachedRun(
         app,
         context,
@@ -1958,6 +2230,7 @@ def run_detached(
             mesh=mesh,
             alias_policy=alias_policy,
         ),
+        clients,
     )
     running.start()
     return running

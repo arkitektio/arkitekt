@@ -14,7 +14,7 @@ server anywhere::
         with local_app(app) as rt:
             assert rt.call_local(add, 1, 2) == 3
 
-A test may hand the app a client in place of the one a service would build::
+A test may hand the app a client in place of the one a run would build::
 
     with local_app(app, clients=[client]) as rt: ...
 
@@ -31,7 +31,7 @@ and a test asks for ``call``::
 That is the unit suite, and where an app is tested. Whether it still works
 against the real services is a second, small suite, run end to end on a runner
 of its own: ``hub_call`` is ``call`` with the app connected to a hub made for
-the test session from the images its services say host them (it needs Docker
+the test session from the images its clients say host their servers (it needs Docker
 and ``konstruktor``, and about a minute to start)::
 
     @pytest.mark.hub
@@ -46,7 +46,7 @@ app's run. Annotate it with the app's context (``None`` for an app without one):
         folder = teststack.call("make_folder", name="results")
         assert teststack.runtime.require(Mikro).get_folder(folder.id).name == "results"
 
-On a hub, a call goes to the app's agent in-process by default: the services are
+On a hub, a call goes to the app's agent in-process by default: the clients are
 real, the server that assigns tasks is not asked. Set
 ``ARKITEKT_CALL_THROUGH_REKUEST=1`` (or override the ``arkitekt_call_through_rekuest``
 fixture) and the app registers with the hub's rekuest and is served, and every
@@ -118,8 +118,8 @@ def call_through_rekuest(
     ``runtime`` is a run of the app that provides it (``connect(app, provide=True)``,
     running): the call is a root task on the app's own implementation, made with the
     AUTO policy, since nobody is there to approve what it asks for. Starting a task takes
-    the caller client, so the app takes in ``rekuest_caller_service`` (:func:`served_app`
-    does that).
+    the caller client, so the app uses ``RekuestCaller`` (:func:`served_app` sees to
+    that).
     """
     from arkitekt_runtime.types import TaskPolicy
     from rekuest.client.client import RekuestCaller
@@ -149,11 +149,10 @@ def local_app(
 
     Args:
         app: The app under test.
-        clients: What the app's actions are handed in place of the clients its
-            services would build, matched by class, and entered and left with
-            the run like them. A service that is not
-            replaced builds its real client against an address that does not
-            exist: there to be handed out, failing only if it is called through.
+        clients: What the app's actions are handed instead of the clients a run
+            would build, matched by class, and entered and left with the run. A
+            client not handed in is built against an address that does not exist:
+            there to be handed out, failing only if it is called through.
         context: The app context, for an app that declares one.
 
     Returns:
@@ -176,17 +175,17 @@ def served_app(
     """``app`` logged in at ``url``, registered with its rekuest and served, until the block is left.
 
     What a hub test runs through rekuest is made of: entered, the app is a real agent
-    rekuest assigns tasks to (:func:`call_through_rekuest`), and its services are the
+    rekuest assigns tasks to (:func:`call_through_rekuest`), and its clients are the
     real ones (``runtime.require(Mikro)``).
 
     Raises:
         TimeoutError: If, once logged in, it does not start and register within ``timeout`` seconds.
     """
-    # A test starts the app's tasks as the app: it takes in the caller, whose scope it then
+    # A test starts the app's tasks as the app: it uses the caller, whose scope it then
     # asks for at login.
-    from rekuest.arkitekt import rekuest_caller_service
+    from rekuest.client.client import RekuestCaller
 
-    app.service(rekuest_caller_service)
+    app.register_client(RekuestCaller)
     with connect(
         app, provide=True, url=url, mandate_key=mandate_key, headless=True
     ) as runtime:
@@ -223,37 +222,37 @@ class TestStack(Generic[Ctx]):
     through_rekuest: bool = False
 
     def call(self, action: _ActionRef, *args: Any, **kwargs: Any) -> Any:  # noqa: ANN401 -- what the app's action returns
-        """Call one of the app's actions, with its services real: ``teststack.call("segment", image)``."""
+        """Call one of the app's actions, with its clients real: ``teststack.call("segment", image)``."""
         if self.through_rekuest:
             return call_through_rekuest(self.runtime, action, *args, **kwargs)
         return self.runtime.call_local(action, *args, **kwargs)
 
 
 class NoImageError(LookupError):
-    """A service the app uses does not say which image hosts it."""
+    """A client the app uses does not say which image hosts its server."""
 
 
-def service_images(app: App[Any]) -> list[str]:
-    """The images that host what ``app`` needs of a deployment, in the order declared.
+def client_images(app: App[Any]) -> list[str]:
+    """The images hosting the servers ``app``'s clients talk to, in the order used.
 
-    Read off the services of a run of the app: its own, and the one its provider
-    brings (an app that offers anything is served by rekuest). This is all a hub
-    for the app's tests is made from.
+    Read off a run of the app: its own clients, and those its provider brings (an
+    app that offers anything is served by rekuest). This is all a hub for the
+    app's tests is made from.
 
     Raises:
-        NoImageError: If a service that requires something of a deployment does
-            not say which image hosts it (``@registry.service(image=...)``).
+        NoImageError: If a client that requires something of a deployment does not
+            say which image hosts its server (``@client(image=...)``).
     """
     snapshot = app.snapshot(device_id=None, provider=_provider_for(app, required=False))
     images: list[str] = []
-    for name, service in snapshot.services.items():
-        if not service.get_requirements():
+    for name, client in snapshot.clients.items():
+        if not client.get_requirements():
             continue
-        image = getattr(service, "image", None)
+        image = client.image
         if image is None:
             raise NoImageError(
-                f"The service '{name}' does not say which image hosts it, so no hub can be "
-                f"made for it: declare it with `@registry.service(image=...)`."
+                f"The client '{name}' does not say which image hosts its server, so no "
+                "hub can be made for it: declare it with `@client(image=...)`."
             )
         if image not in images:
             images.append(image)
@@ -285,10 +284,10 @@ if pytest is not None:
 
     @pytest.fixture()
     def arkitekt_clients() -> Sequence[Any]:
-        """The clients the app's actions are handed in place of its services' own.
+        """The clients the app's actions are handed in place of the ones a run builds.
 
         Empty by default. A client is entered and left by the run, so hand out
-        one that is not entered yet. To test against the real service, ask for
+        one that is not entered yet. To test against the real server, ask for
         ``hub_call`` instead.
         """
         return ()
@@ -338,10 +337,10 @@ if pytest is not None:
         arkitekt_hub_apps: int,
         tmp_path_factory: "TempPathFactory",
     ) -> Iterator["Hub"]:
-        """A hub of the app's own, for the session: the services it uses and a login for it.
+        """A hub of the app's own, for the session: the servers its clients use and a login.
 
-        Made by konstruktor from the images the app's services declare
-        (:func:`service_images`), on a port of its own, and removed afterwards.
+        Made by konstruktor from the images the app's clients declare
+        (:func:`client_images`), on a port of its own, and removed afterwards.
         Tests that ask for it are skipped where no hub can be made.
         """
         # Installed, or this fixture would not exist: said again for the type checker,
@@ -363,7 +362,7 @@ if pytest is not None:
             pytest.skip("A hub runs in Docker, which is not running here.")
 
         hub = request.getfixturevalue("konstruktor_hub")(
-            service_images=service_images(arkitekt_app), mandate_keys=arkitekt_hub_apps
+            service_images=client_images(arkitekt_app), mandate_keys=arkitekt_hub_apps
         )
         with pytest.MonkeyPatch.context() as patch:
             # A hub has a new address on every run: its logins are this session's alone.
@@ -427,7 +426,7 @@ if pytest is not None:
     def hub_call(
         hub_runtime: Runtime[Any], arkitekt_call_through_rekuest: bool
     ) -> Callable[..., Any]:
-        """Call one of the app's actions, with its services real: ``hub_call("segment", image)``."""
+        """Call one of the app's actions, with its clients real: ``hub_call("segment", image)``."""
         if arkitekt_call_through_rekuest:
             return lambda action, *args, **kwargs: call_through_rekuest(
                 hub_runtime, action, *args, **kwargs
@@ -464,7 +463,7 @@ __all__ = [
     "call_through_rekuest_requested",
     "local_app",
     "served_app",
-    "service_images",
+    "client_images",
 ]
 if pytest is not None:
     __all__ += [

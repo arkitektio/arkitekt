@@ -18,6 +18,7 @@ from arkitekt_spec.declare.app import AppRegistry
 from arkitekt_spec.declare.blok.action import action_blok_id
 from arkitekt_spec.declare.catalogs import CatalogWarning
 from arkitekt_spec.declare.demands import DemandFinding, check_demands
+from arkitekt_spec.declare.errors import AppDeclarationError
 from rich.console import Console
 from rich.markup import escape
 
@@ -53,9 +54,9 @@ def summarize(registry: AppRegistry) -> str:
     states = len(registry.state_registry_schemas)
     if states:
         parts.append(_counted(states, "state"))
-    services = sorted(registry.services)
-    if services:
-        parts.append(f"uses {', '.join(services)}")
+    clients = sorted(registry.clients)
+    if clients:
+        parts.append(f"uses {', '.join(clients)}")
     return " · ".join(parts)
 
 
@@ -81,6 +82,13 @@ def warning_record(warning: warnings.WarningMessage) -> dict[str, Any]:
             "call_line": warning.lineno,
         }
     )
+
+
+def error_records(error: BaseException, work_dir: str) -> list[dict[str, Any]]:
+    """What stopped the check: one record per problem an app's assembly found, else one."""
+    if isinstance(error, AppDeclarationError):
+        return [error_record(member, work_dir) for member in error.exceptions]
+    return [error_record(error, work_dir)]
 
 
 def error_record(error: BaseException, work_dir: str) -> dict[str, Any]:
@@ -110,6 +118,11 @@ def error_record(error: BaseException, work_dir: str) -> dict[str, Any]:
             line=error.line,
             column=error.column,
         )
+    # Assembly notes where each problem was declared; that beats any frame of the build.
+    at = getattr(error, "declared_at", None)
+    if at is not None:
+        record.update(file=os.path.abspath(at.filename), call_line=at.lineno)
+        return _compact(record)
     frame = project_frame(error, work_dir)
     if frame is not None:
         record.update(file=os.path.abspath(frame.filename), call_line=frame.lineno)
@@ -506,8 +519,8 @@ def _check(
             ]
             report["diagnostics"] = [warning_record(warning) for warning in findings]
             if exit_.__context__ is not None:
-                report["diagnostics"].append(
-                    error_record(exit_.__context__, get_work_dir(ctx))
+                report["diagnostics"].extend(
+                    error_records(exit_.__context__, get_work_dir(ctx))
                 )
             report_to(report)
             raise

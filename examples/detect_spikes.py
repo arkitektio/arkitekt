@@ -20,14 +20,13 @@ from typing import Annotated
 
 import numpy as np
 import xarray as xr
-from elektro import Elektro, elektro_service
+from elektro import Elektro
 from elektro.specs import SingleChannelTrace, carried_axes
 from scipy.signal import find_peaks
 
 from arkitekt import App, Description, Task, run
 
 app = App("detect-spikes", "0.1.0")
-app.service(elektro_service)
 
 
 @app.action

@@ -310,12 +310,20 @@ def test_inspect_lifecycle_reads_the_apps_hooks(app_dir: Path) -> None:
 
 
 def test_inspect_structures_reads_the_apps_own_registry(app_dir: Path) -> None:
-    (app_dir / "app.py").write_text(APP_STYLE)
+    # A structure is in the app when an annotation names it; it brings its client.
+    (app_dir / "app.py").write_text(
+        "from rekuest.api.schema import Implementation\n"
+        + APP_STYLE.replace(
+            "def from_the_app(x: int) -> int:",
+            "def from_the_app(x: int, implementation: Implementation) -> int:",
+        )
+    )
 
     result = _run_cli(app_dir, "inspect", "structures", "--machine-readable")
     assert result.returncode == 0, result.stderr
 
     structures = _between(result.stdout, "--START_STRUCTURES--", "--END_STRUCTURES--")
     assert isinstance(structures, list)
-    assert "@rekuest/implementation" in {item["identifier"] for item in structures}
-    assert {item["service"] for item in structures} == {"rekuest"}
+    assert [(item["identifier"], item["client"]) for item in structures] == [
+        ("@rekuest/implementation", "rekuest")
+    ]

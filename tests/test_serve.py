@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient  # noqa: E402
 
 from arkitekt import App, Task, serve  # noqa: E402
 
-from .fakes import PictureClient, PictureService  # noqa: E402
+from .fakes import PictureClient  # noqa: E402
 
 
 def test_serving_installs_a_lifespan_that_runs_the_app(tmp_path: Path) -> None:
@@ -61,8 +61,8 @@ def test_serving_refuses_a_missing_context_at_the_call() -> None:
         serve(app, fastapi.FastAPI())  # pyright: ignore[reportArgumentType]
 
 
-def test_a_served_app_with_services_builds_their_clients(tmp_path: Path) -> None:
-    app = App("served-with-clients", services=[PictureService()])
+def test_a_served_app_builds_its_clients(tmp_path: Path) -> None:
+    app = App("served-with-clients")
 
     @app.action
     def show(pictures: PictureClient) -> str:
@@ -74,7 +74,7 @@ def test_a_served_app_with_services_builds_their_clients(tmp_path: Path) -> None
 
     with TestClient(fastapi_app):
         assert runtime.fakts is not None, (
-            "a service with a requirement resolves through fakts"
+            "a client with a requirement resolves through fakts"
         )
         assert isinstance(runtime.get(PictureClient), PictureClient)
         assert runtime.agent is not None, "the lifespan has built the agent"

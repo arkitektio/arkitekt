@@ -38,12 +38,11 @@ noticed when it comes back.
 
 from typing import Protocol
 
-from mikro import mikro_service
 from mikro.arkitekt.specs import LabelMask, SingleChannelImage
 
 from arkitekt import AgentLost, App, StateChanged, Task, run
 
-app = App("plate-workflow", "0.1.0", services=[mikro_service])
+app = App("plate-workflow", "0.1.0")
 
 
 class PlateState(Protocol):

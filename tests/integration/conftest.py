@@ -57,9 +57,13 @@ def hub(konstruktor_hub: HubFactory) -> Hub:
     there is one for every app the tests connect. Each test takes its own with
     ``hub.mandate_key(<a name>)``.
     """
-    from mikro import mikro_service
-    from rekuest.arkitekt import rekuest_service
+    from arkitekt_spec.declare.client import client_of
+    from mikro import Mikro
+    from rekuest.client.client import Rekuest
 
-    return konstruktor_hub(
-        service_images=[rekuest_service.image, mikro_service.image], mandate_keys=8
-    )
+    images = [
+        declared.image
+        for cls in (Rekuest, Mikro)
+        if (declared := client_of(cls)) is not None and declared.image is not None
+    ]
+    return konstruktor_hub(service_images=images, mandate_keys=8)

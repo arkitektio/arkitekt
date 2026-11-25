@@ -10,13 +10,13 @@ from typing import Protocol
 import pytest
 from arkitekt_spec.declare.structures.errors import StructureDefinitionError
 
-from arkitekt import App, Effects
+from arkitekt import App, AppDeclarationError, Effects
 
-from .fakes import RekuestProvider
+from .fakes import fake_provider
 
 
 def _app(identifier: str = "twins") -> App[None]:
-    return App(identifier, providers=[RekuestProvider()])
+    return App(identifier, provider=fake_provider())
 
 
 def move(x: int) -> int:
@@ -108,13 +108,13 @@ def test_a_model_travels_as_its_apps_own_by_default() -> None:
     assert declared.model_for(Limits).identifier == "@stage-control/limits"  # pyright: ignore[reportOptionalMemberAccess]
 
 
-def test_a_model_identifier_the_server_would_refuse_is_refused_where_it_is_written() -> (
-    None
-):
+def test_a_model_identifier_the_server_would_refuse_is_refused_at_assembly() -> None:
     app = _app()
 
-    with pytest.raises(StructureDefinitionError, match="@package/key"):
+    @app.model(identifier="config")
+    class Config:
+        n: int
 
-        @app.model(identifier="config")
-        class Config:
-            n: int
+    with pytest.raises(AppDeclarationError) as refused:
+        app.declaration()
+    assert refused.group_contains(StructureDefinitionError, match="@package/key")

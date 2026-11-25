@@ -10,10 +10,11 @@ clients as any run does, and its actions are handed them by annotation.
 
 import asyncio
 import contextlib
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Sequence
 from typing import TYPE_CHECKING, Any, overload
 
 from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.provider import provider
 from fakts.grants.remote.authorizers.device_code import DeviceCodeHook
 from fakts.mesh import MeshOptions, MeshProxy
 from fakts.models import AliasPolicy
@@ -32,6 +33,7 @@ def serve(
     app: App[None],
     fastapi_app: "FastAPI",
     *,
+    clients: Sequence[Any] = (),
     context: None = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -52,6 +54,7 @@ def serve(
     app: App[Ctx],
     fastapi_app: "FastAPI",
     *,
+    clients: Sequence[Any] = (),
     context: Ctx,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -73,6 +76,7 @@ def serve(
     app: App[Any],
     fastapi_app: "FastAPI",
     *,
+    clients: Sequence[Any] = (),
     context: object = None,
     url: str | Source = DISCOVER,
     token: str | Source | None = DISCOVER,
@@ -149,14 +153,12 @@ def serve(
         AppContextError: If ``context`` is not what the app declared; here, not
             when the server starts.
     """
-    app.registry.require_app_context(context, whose=f"App {app.identifier!r}")
+    app.require_app_context(context)
     from arkitekt_fastapi import FastApiAgent
     from arkitekt_fastapi.routes import configure_fastapi
     from rath.task import task_scope
 
-    registry = AppRegistry()
-
-    @registry.provider()
+    @provider()
     def fastapi_agent(registry: AppRegistry) -> FastApiAgent:
         """The agent serving the run's snapshot over ``fastapi_app``."""
         agent = configure_fastapi(
@@ -169,6 +171,7 @@ def serve(
 
     runtime = Runtime(
         app=app,
+        handed=list(clients),
         options=ConnectionOptions(
             url=url,
             token=token,

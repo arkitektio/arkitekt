@@ -35,7 +35,7 @@ def _describe_structure(
     widget = structure.default_widget
     return {
         "identifier": structure.identifier,
-        "service": structure.service,
+        "client": structure.client,
         "class": f"{cls.__module__}.{cls.__qualname__}",
         "widget": _widget_name(widget),
         "batched": structure.aexpand_many is not None,
@@ -100,13 +100,13 @@ def structures(
 
     table = Table(title=f"Structures ({len(records)})", border_style="green")
     table.add_column("Identifier", style="bold green", no_wrap=True)
-    table.add_column("Service", no_wrap=True)
+    table.add_column("Client", no_wrap=True)
     table.add_column("Widget", no_wrap=True)
     table.add_column("Used by")
     for record in records:
         table.add_row(
             record["identifier"],
-            record["service"] or "[red]none[/]",
+            record["client"] or "-",
             record["widget"] or "-",
             ", ".join(record["used_by"]) or "-",
         )

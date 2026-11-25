@@ -9,8 +9,7 @@ drift from the others:
 
 * the **manifest**, with this machine's node id resolved into it,
 * the **registry**, frozen and validated, holding what the run serves -- the
-  services the run may build clients for included, since they are registered
-  on it.
+  clients the run builds (or is handed) included.
 
 Keeping them in one object is what lets a :class:`~arkitekt.runtime.Runtime` hold
 a single reference instead of an app *and* a registry that looks like the app's
@@ -20,8 +19,8 @@ but is not (it is the frozen copy).
 from typing import Any
 
 from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.client import ClientDeclaration
 from arkitekt_spec.declare.provider import Provider
-from arkitekt_spec.declare.service import Service
 from fakts.models import Manifest
 from pydantic import BaseModel, ConfigDict
 
@@ -35,7 +34,7 @@ class RunSnapshot(BaseModel):
 
     Attributes:
         manifest: What the run tells the server it is, with the device id resolved.
-        registry: What the run serves, the services it uses included. Frozen:
+        registry: What the run serves, the clients it uses included. Frozen:
             registering on it raises, because a run offers what was declared
             when it started.
     """
@@ -46,14 +45,14 @@ class RunSnapshot(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True, frozen=True, extra="forbid")
 
     @property
-    def services(self) -> dict[str, Service[Any]]:
-        """The services the run may build clients for, by name: the registry's."""
-        return self.registry.services
+    def clients(self) -> dict[str, ClientDeclaration[Any]]:
+        """The clients the run builds or is handed, by name."""
+        return self.registry.clients
 
     @property
     def provider(self) -> "Provider[Any] | None":
-        """The one provider the app declared, or ``None`` for an app offering nothing."""
-        return self.registry.provider_declaration
+        """What builds the run's agent, or ``None`` for a run that serves nothing."""
+        return self.registry.provider
 
 
 __all__ = ["RunSnapshot"]

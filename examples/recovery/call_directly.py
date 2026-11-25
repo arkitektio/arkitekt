@@ -14,10 +14,10 @@ The same ``retry`` a workflow's task has is there for the common case.
 The action and dataset ids come from the UI ("Copy id") to keep this short.
 """
 
-from mikro import mikro_service
-from rekuest.arkitekt import rekuest_caller_service
+from mikro import Mikro
+from rekuest.client.client import RekuestCaller
 
-from arkitekt import AgentLost, easy, retry
+from arkitekt import AgentLost, connect, retry
 
 COUNT = "segmentation/count_cells"
 DISPENSE = "liquid-handler/dispense"
@@ -27,7 +27,7 @@ IMAGE_DATASET = "1234"  # an image already in mikro
 
 def main() -> None:
     """Count the cells, then dose: retry the one, ask a person about the other."""
-    with easy("plate-runner", rekuest_caller_service, mikro_service) as (
+    with connect(RekuestCaller, Mikro, identifier="plate-runner") as (
         rekuest,
         mikro,
     ):

@@ -80,7 +80,7 @@ def _offline_fakts(monkeypatch: pytest.MonkeyPatch) -> None:
 
     A runtime builds its fakts from the manifest it is about to send; here that
     becomes a ``TestingFakts`` whose aliases answer every requirement the
-    manifest lists, so services build their clients without a server.
+    manifest lists, so clients are built without a server.
     """
     from fakts.testing import build_testing_fakts
 
@@ -90,6 +90,15 @@ def _offline_fakts(monkeypatch: pytest.MonkeyPatch) -> None:
         )
 
     monkeypatch.setattr("arkitekt.runtime.build_fakts", offline)
+
+
+@pytest.fixture(autouse=True)
+def _fresh_fakes() -> None:
+    """Empty what the fake clients recorded in an earlier test."""
+    from tests.fakes import BUILT, LOG
+
+    BUILT.clear()
+    LOG.clear()
 
 
 @pytest.fixture(autouse=True)

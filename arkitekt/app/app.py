@@ -1,34 +1,35 @@
 """The app: a declaration of what it is and what it offers.
 
 An :class:`App` does no I/O and holds no connection. It says who it is (identifier,
-version, scopes, ...), which services it uses, and what it offers (actions, states,
-hooks, bloks). Running it is someone else's job: :func:`arkitekt.run` provides it,
-:func:`arkitekt.connect` only connects, and each of them builds a fresh
-:class:`~arkitekt.runtime.Runtime` holding everything stateful.
+version, scopes, ...) and what it offers (actions, states, hooks, bloks); the clients
+it uses are found in the annotations of what it offers. Running it is someone
+else's job: :func:`arkitekt.run` provides it, :func:`arkitekt.connect` only
+connects, and each builds a fresh :class:`~arkitekt.runtime.Runtime`.
 
 ```python
 from arkitekt import App, run
-from mikro import Mikro, mikro_service
-from mikro.arkitekt.specs import Image, LabelMask
+from mikro import Mikro
+from mikro.api.schema import Image
 
 app = App("my-app", version="0.1.0")
-app.service(mikro_service)
 
 @app.action
-def segment(image: Image, mikro: Mikro) -> LabelMask: ...
+def segment(image: Image, mikro: Mikro) -> Image: ...
 
 if __name__ == "__main__":
     run(app)
 ```
 
-Because nothing here is stateful, one app can be run any number of times, and
-concurrently: each run takes its own snapshot of the registry.
+Declaring records; nothing is built until the app is assembled
+(:meth:`App.declaration`), so declaration order does not matter and every problem
+is reported at once.
 """
 
 import inspect
 import logging
 import os
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from dataclasses import dataclass, is_dataclass
 from pathlib import Path
 from typing import (
     Any,
@@ -36,7 +37,6 @@ from typing import (
     Literal,
     ParamSpec,
     TypeVar,
-    cast,
     dataclass_transform,
     overload,
 )
@@ -52,17 +52,19 @@ from arkitekt_spec.actions import (
     TestTargetInput,
     ValidatorInput,
 )
+from arkitekt_spec.declare import markers
 from arkitekt_spec.declare.actors.policy import KEEP, DisconnectPolicy
 from arkitekt_spec.declare.actors.types import Actifier
-from arkitekt_spec.declare.app import AppRegistry
+from arkitekt_spec.declare.app import AppRegistry, check_app_context
+from arkitekt_spec.declare.assemble import assemble
 from arkitekt_spec.declare.blok.action import ActionBloks
+from arkitekt_spec.declare.bundle import Bundle
 from arkitekt_spec.declare.catalogs import BlokCheckMode, ComponentSpec, OperationSpec
 from arkitekt_spec.declare.coercible_types import OptimisticCoercible
 from arkitekt_spec.declare.provider import Provider
 from arkitekt_spec.declare.register import WrappedFunction
-from arkitekt_spec.declare.service import Service
 from arkitekt_spec.declare.structures.convert import AppNamespace, source_root
-from arkitekt_spec.declare.structures.model import model_field
+from arkitekt_spec.declare.structures.model import ensure_model_dataclass, model_field
 from arkitekt_spec.declare.structures.utils import id_shrink
 from arkitekt_spec.scalars import JSONSerializable
 from fakts.models import Manifest, PublicSource, Requirement
@@ -80,32 +82,18 @@ C = TypeVar("C", bound=type)
 Ctx = TypeVar("Ctx")
 """The app context: what a run hands the agent, ``run(app, context=...)``."""
 F = TypeVar("F", bound=Callable[..., Any])
-#: The app a builder method returns: itself, as the subclass it is (a QtApp stays one).
-_AppT = TypeVar("_AppT", bound="App[Any]")
-
-
-def _merge_requirements(*groups: Iterable[Requirement]) -> list[Requirement]:
-    """Merge requirement lists, the first of each key winning.
-
-    Args:
-        *groups: Requirement lists, in order of precedence.
-
-    Returns:
-        One requirement per key, sorted by key.
-    """
-    merged: dict[str, Requirement] = {}
-    for group in groups:
-        for requirement in group:
-            merged.setdefault(requirement.key, requirement)
-    return sorted(merged.values(), key=lambda requirement: requirement.key)
 
 
 def _requirements_of(registry: AppRegistry) -> list[Requirement]:
-    """What a registry's services and providers require, merged."""
-    return _merge_requirements(
-        *(builder.get_requirements() for builder in registry.services.values()),
-        *(provider.get_requirements() for provider in registry.providers.values()),
-    )
+    """What an assembled app's clients and provider require, one per key, sorted."""
+    merged: dict[str, Requirement] = {}
+    for group in (
+        *(client.get_requirements() for client in registry.clients.values()),
+        registry.provider.get_requirements() if registry.provider else [],
+    ):
+        for requirement in group:
+            merged.setdefault(requirement.key, requirement)
+    return sorted(merged.values(), key=lambda requirement: requirement.key)
 
 
 #: The scope every app asks for: it logs a user in.
@@ -113,16 +101,16 @@ BASE_SCOPES = ("openid",)
 
 
 def _scopes_of(registry: AppRegistry, asked: Iterable[str] = ()) -> list[str]:
-    """The scopes an app with ``registry`` asks for: its own, what each service's client needs,
-    and what its actions' dynamic asks and calls need."""
+    """What an assembled app asks for: its own, what each client needs, and what its
+    actions' dynamic asks and calls need."""
     return sorted(
         {
             *BASE_SCOPES,
             *asked,
             *(
                 scope
-                for builder in registry.services.values()
-                for scope in builder.get_scopes()
+                for client in registry.clients.values()
+                for scope in client.get_scopes()
             ),
             *registry.get_scopes(),
         }
@@ -130,17 +118,7 @@ def _scopes_of(registry: AppRegistry, asked: Iterable[str] = ()) -> list[str]:
 
 
 def _caller(depth: int = 2) -> tuple[Path, str | None]:
-    """The file and module some caller up the stack is defined in.
-
-    Args:
-        depth: How many frames up the caller is; 2 is the caller of the function
-            that calls this one.
-
-    Returns:
-        That frame's file name -- not a file on disk for code typed into a
-        console (``<stdin>``) -- and its module's ``__name__`` (``__main__`` for a
-        script that is run).
-    """
+    """The file and module some caller up the stack is defined in (2: the caller's caller)."""
     frame = inspect.stack()[depth].frame
     name = frame.f_globals.get("__name__")
     # Path, not "/": on Windows a frame's filename uses backslashes.
@@ -157,87 +135,41 @@ def _app_namespace(identifier: str, caller: tuple[Path, str | None]) -> AppNames
 
 
 def _app_root(constructed_in: Path) -> Path:
-    """The directory of an app constructed in the file ``constructed_in``.
-
-    Code typed into a console has no file: its directory is then the working one.
-    """
+    """The directory of an app constructed in ``constructed_in``; the working one for a console."""
     return constructed_in.resolve().parent if constructed_in.is_file() else Path.cwd()
 
 
-def _registry_of(app: "App[Any] | AppRegistry") -> AppRegistry:
-    return app.registry if isinstance(app, App) else app
-
-
-def merge(
-    first: "App[Any] | AppRegistry", /, *others: "App[Any] | AppRegistry"
-) -> AppRegistry:
-    """One new registry holding what the given apps and registries declare.
-
-    Run it as an app of its own, under its own identifier::
-
-        app = App("microscope", registry=merge(stage, camera))
-
-    What several of them share (a service they all use, a registry they all took) counts
-    once. Clashing names are refused. See :meth:`App.merge` to merge into an existing app.
-
-    Args:
-        first: An app or registry to take.
-        others: Any more. None of them is changed.
-
-    Returns:
-        The new registry.
-    """
-    merged = AppRegistry()
-    for part in (first, *others):
-        merged.merge(_registry_of(part))
-    return merged
-
-
-class App(Generic[Ctx]):
+class App(Bundle, Generic[Ctx]):
     """What an app is and what it offers. Pure declaration: no I/O, no clients.
 
     Args:
         identifier: The app's globally unique identifier. Defaults to the name of
             the file that constructs it. It also namespaces the identifiers derived
             for the enums, memory structures and models the app defines itself
-            (``@<identifier>/...``), so they are the same however the app is
-            launched. A class is the app's own when its module is ``__main__``, the
-            module constructing the app, or a file under that module's top-level
-            package (or script directory) outside ``site-packages``; any other
-            class -- a library's -- keeps the identifier of its module
-            (``@numpy/ndarray``), the same in every app.
-        version: The app's version. An image built from a branch carries the
-            version of that build in ``ARKITEKT_APP_VERSION``, which then wins:
-            the source of a branch still names the last release, and an image must
-            register as the build it is.
-        description: What the app is, in a sentence. It goes into the manifest
-            and, from there, onto the agent that provides the app -- shown
-            beside its name, which is what tells two agents of the same app
-            apart from what they are.
+            (``@<identifier>/...``).
+        version: The app's version. ``ARKITEKT_APP_VERSION`` (set in an image built
+            from a branch) wins.
+        description: What the app is, in a sentence: shown beside its agent's name.
         logo: A public http url of the app's logo.
-        scopes: Scopes the app asks for beyond what its services' clients need (those, and ``openid``, are asked for anyway).
+        scopes: Scopes beyond what its clients need (those, and ``openid``, are
+            asked for anyway).
         author: Who wrote the app. Used when packaging it.
         public_sources: Public sources the app announces in its manifest.
-        services: The services the app uses (``[mikro_service]``). The same as
-            calling :meth:`service` for each.
-        providers: The provider that serves what the app offers. Without one,
-            ``run(app)`` serves it through rekuest's.
-        registry: The registry to declare into. A fresh one by default.
-        root: The app's directory, which the paths of its assets are relative to.
-            Defaults to the directory of the file that constructs the app.
-        app_context: The class of the app context: what a run hands the agent
-            (``run(app, context=Config(...))``) and what a hook or action
-            annotated with it receives. An app declaring one is ``App[Config]``
-            and every run of it must pass an instance; one declaring none is
-            ``App[None]`` and a run passes nothing.
-        effects: What running an action again would do to the world, for the
-            actions that don't say themselves. A robot sets
-            ``Effects.IRREVERSIBLE`` once. Informational: shown to whoever
-            decides about a lost task.
+        clients: ``@client`` classes the app uses although no annotation names them
+            (a blok's query, a script's calls).
+        include: Bundles whose actions the app offers too (``fluss_actions``).
+        provider: What serves the app's offerings. Without one, ``run(app)`` serves
+            it through rekuest's.
+        root: The app's directory, which asset paths are relative to. Defaults to
+            the directory of the file that constructs the app.
+        app_context: The class of the app context, what a run hands the agent
+            (``run(app, context=Config(...))``). An app declaring one is
+            ``App[Config]`` and every run must pass an instance.
+        effects: What running an action again would do, for the actions that don't
+            say themselves. Informational.
 
     Raises:
-        TypeError: If something other than a service is given.
-        ValueError: If two services of one name are given.
+        TypeError: If a client is not a ``@client`` class, or a provider not a provider.
     """
 
     @overload
@@ -251,9 +183,9 @@ class App(Generic[Ctx]):
         scopes: list[str] | None = None,
         author: str | None = None,
         public_sources: list[PublicSource] | None = None,
-        services: Sequence["Service[Any]"] = (),
-        providers: Sequence["Provider[Any]"] = (),
-        registry: AppRegistry | None = None,
+        clients: Sequence[type] = (),
+        include: Sequence[Bundle] = (),
+        provider: Provider[Any] | None = None,
         root: str | Path | None = None,
         app_context: None = None,
         effects: Effects | None = None,
@@ -270,9 +202,9 @@ class App(Generic[Ctx]):
         scopes: list[str] | None = None,
         author: str | None = None,
         public_sources: list[PublicSource] | None = None,
-        services: Sequence["Service[Any]"] = (),
-        providers: Sequence["Provider[Any]"] = (),
-        registry: AppRegistry | None = None,
+        clients: Sequence[type] = (),
+        include: Sequence[Bundle] = (),
+        provider: Provider[Any] | None = None,
         root: str | Path | None = None,
         app_context: type[Ctx],
         effects: Effects | None = None,
@@ -288,129 +220,98 @@ class App(Generic[Ctx]):
         scopes: list[str] | None = None,
         author: str | None = None,
         public_sources: list[PublicSource] | None = None,
-        services: Sequence["Service[Any]"] = (),
-        providers: Sequence["Provider[Any]"] = (),
-        registry: AppRegistry | None = None,
+        clients: Sequence[type] = (),
+        include: Sequence[Bundle] = (),
+        provider: Provider[Any] | None = None,
         root: str | Path | None = None,
         app_context: type[Ctx] | None = None,
         effects: Effects | None = None,
     ) -> None:
+        super().__init__()
         caller = _caller()
         constructed_in = caller[0]
         self.identifier: str = identifier or constructed_in.stem
         self.version = os.environ.get(VERSION_ENV) or version
         self.description = description
         self.logo = logo
-        # What the app asks for beyond what its services' clients need (see `scopes`).
+        # What the app asks for beyond what its clients need (see `scopes`).
         self.asked_scopes: list[str] = list(scopes or [])
         self.author = author
         self.public_sources: list[PublicSource] = list(public_sources or [])
-        self.registry: AppRegistry = registry if registry is not None else AppRegistry()
-        # What a derived identifier (an enum's, a memory structure's, a model's) is
-        # namespaced by: the app for a class it defines itself, never the module
-        # that class happens to be in -- `__main__` when the app's file is run, its
-        # name when it is imported. Library classes keep their module's.
-        # A wrapper constructing the app for its caller (QtApp, easy()) sets it again
-        # from that caller.
-        self.registry.structure_registry.namespace = _app_namespace(
-            self.identifier, caller
+        # What a derived identifier is namespaced by: the app for a class it defines
+        # itself, never the module that class happens to be in. A wrapper
+        # constructing the app for its caller (QtApp, connect(Mikro)) sets it again.
+        self.namespace: AppNamespace = _app_namespace(self.identifier, caller)
+        self.root: Path = (
+            Path(root).resolve() if root is not None else _app_root(constructed_in)
         )
-        if root is not None:
-            self.registry.root = Path(root).resolve()
-        elif self.registry.root is None:
-            self.registry.root = _app_root(constructed_in)
-        if app_context is not None:
-            self.registry.app_context(app_context)
-        if effects is not None:
-            # What running an action again would do, for the actions that don't say.
-            self.registry.default_effects = effects
-        self.service(*services)
-        self.provider(*providers)
+        self._app_context: type[Ctx] | None = app_context
+        self.default_effects: Effects | None = effects
+        if provider is not None and not isinstance(provider, Provider):
+            raise TypeError(
+                f"{provider!r} is not a provider: pass what a package exports, e.g. "
+                "`from rekuest.arkitekt import rekuest_provider`."
+            )
+        self.provider: Provider[Any] | None = provider
+        self.register_client(*clients)
+        self.include(*include)
+        self._assembled: dict[object, tuple[object, AppRegistry]] = {}
 
     @property
     def app_context(self) -> type[Ctx] | None:
-        """The class a run's ``context=`` must be an instance of, or ``None``.
+        """The class a run's ``context=`` must be an instance of, or ``None``."""
+        return self._app_context
 
-        Read off the registry, which is where the declaration lives: an app made
-        over a registry that already declares one reports it too.
+    def require_app_context(self, value: object, *, whose: str | None = None) -> None:
+        """Refuse a run whose ``context=`` does not fit what this app declares.
+
+        Raises:
+            AppContextError: If it does not.
         """
-        return cast(type[Ctx] | None, self.registry.app_context_class)
+        check_app_context(
+            self._app_context, value, whose=whose or f"App {self.identifier!r}"
+        )
 
     def __repr__(self) -> str:
-        return f"App({self.identifier!r}, version={self.version!r}, services={self.services!r})"
+        return f"App({self.identifier!r}, version={self.version!r})"
 
     # ------------------------------------------------------------------ #
-    # Services                                                           #
+    # Assembly                                                           #
     # ------------------------------------------------------------------ #
 
-    def service(self: _AppT, *services: "Service[Any]") -> _AppT:
-        """Use these services: ``app.service(mikro_service)``.
+    def declaration(self, provider: Provider[Any] | None = None) -> AppRegistry:
+        """What this app declares, assembled: every client, structure, action, hook and blok.
 
-        Each is registered on this app's registry, which takes in its structures
-        and implementations right away, so an action registered next can name
-        their types. Registering a service twice does nothing. A parameter
-        annotated with what a registered service returns (``mikro: Mikro``) is
-        handed that client; one annotated with a class no registered service
-        returns is a port, and is refused as unregistered when the action is
-        registered.
+        Assembled once per change: declaring something more, or a class being
+        marked, assembles it again.
 
         Args:
-            *services: The services, as their packages export them
-                (``from mikro import mikro_service``).
-
-        Returns:
-            The app, so calls chain.
+            provider: The provider a run serves it through, when the app names
+                none (rekuest's, for ``run(app)``).
 
         Raises:
-            TypeError: If something other than a service is given -- a client
-                class, say. There is no catalog to look one up in.
-            ValueError: If a second service of an already registered name is given.
+            AppDeclarationError: Every problem found, each with where it was declared.
         """
-        for declared in services:
-            if not isinstance(declared, Service):
-                shown = (
-                    declared.__name__ if isinstance(declared, type) else repr(declared)
-                )
-                raise TypeError(
-                    f"{shown} is not a service. Pass the service object the package "
-                    f"exports, e.g. `from mikro import mikro_service`; there is no "
-                    "catalog to look a client class up in."
-                )
-            self.registry.register_service(declared)
-        return self
-
-    def provider(self: _AppT, *providers: "Provider[Any]") -> _AppT:
-        """Serve what this app offers through these providers: ``app.provider(...)``.
-
-        A provider builds the agent a run drives; an app is served by one. Each
-        is registered on this app's registry, which takes in the service beside
-        it and the structures its package brings.
-
-        Raises:
-            TypeError: If something other than a provider is given.
-            ValueError: If a different provider is registered already.
-        """
-        for declared in providers:
-            if not isinstance(declared, Provider):
-                shown = (
-                    declared.__name__ if isinstance(declared, type) else repr(declared)
-                )
-                raise TypeError(
-                    f"{shown} is not a provider. Pass the provider object the package "
-                    "exports, e.g. `from rekuest.arkitekt import rekuest_provider`."
-                )
-            self.registry.register_provider(declared)
-        return self
+        provider = self.provider or provider
+        key = (self.fingerprint(), markers.EPOCH, self.namespace, self.root)
+        cached = self._assembled.get(id(provider))
+        if cached is not None and cached[0] == key:
+            return cached[1]
+        registry = assemble(
+            self,
+            namespace=self.namespace,
+            root=self.root,
+            app_context=self._app_context,
+            default_effects=self.default_effects,
+            provider=provider,
+        )
+        self._assembled[id(provider)] = (key, registry)
+        return registry
 
     @property
-    def services(self) -> list[str]:
-        """The names of the services this app uses, in the order they were registered."""
-        return list(self.registry.services)
-
-    @property
-    def service_builders(self) -> dict[str, "Service[Any]"]:
-        """The services this app uses, by name: what a runtime builds clients from."""
-        return dict(self.registry.services)
+    def registry(self) -> AppRegistry:
+        """This app's declaration, assembled (:meth:`declaration`). Read it; declare on the app."""
+        return self.declaration()
 
     # ------------------------------------------------------------------ #
     # Identity                                                           #
@@ -418,39 +319,22 @@ class App(Generic[Ctx]):
 
     @property
     def scopes(self) -> list[str]:
-        """What this app asks to be allowed to do: what its services' clients need, and its own.
-
-        Each service says what its client's operations need at the server (its
-        generated code gathers it from the schema), so an app rarely names a
-        scope itself: ``App(scopes=...)`` adds to them, for something no client
-        here does. A run adds what its provider's services need; see
-        :meth:`snapshot`.
-        """
-        return _scopes_of(self.registry, self.asked_scopes)
+        """What this app asks to be allowed to do: what its clients need, and its own."""
+        return _scopes_of(self.declaration(), self.asked_scopes)
 
     @property
     def requirements(self) -> list[Requirement]:
-        """What this app requires of a deployment: exactly what its services need.
+        """What this app requires of a deployment: what its clients (and provider) need.
 
-        An app cannot require anything on its own. Everything it needs from a
-        deployment comes through a service, which is also what builds the client
-        for it -- so to need another deployment service, declare (or write) the
-        :meth:`~rekuest.app.AppRegistry.service` for it. A run adds what its
-        provider requires (rekuest's, for ``run(app)``); see :meth:`snapshot`.
+        A run adds what its provider requires when the app names none; see :meth:`snapshot`.
         """
-        return _requirements_of(self.registry)
+        return _requirements_of(self.declaration())
 
     @property
     def manifest(self) -> Manifest:
-        """What this app tells the server it is. Pure data, read off the declaration.
-
-        It carries no device id: that names the device a run happens on, and the
-        runtime adds it.
-        """
+        """What this app tells the server it is. Carries no device id: a run adds it."""
         from arkitekt.app.spec import app_manifest
 
-        # The login manifest is the spec's AppManifest plus the login-only fields,
-        # built from the same identity every other shape of the app is.
         return Manifest(
             **dict(app_manifest(self)),
             requirements=self.requirements,
@@ -462,32 +346,18 @@ class App(Generic[Ctx]):
     ) -> "RunSnapshot":
         """Take what a run of this app would serve, without connecting.
 
-        Everything a run needs to know about the app, taken together so the two
-        parts cannot drift: the manifest, and the frozen registry with the
-        services on it. A run takes its own; this is also how an app is inspected.
-
         Args:
             device_id: The device the run happens on, written into the manifest.
-                ``None`` leaves it unset, which is what inspecting an app wants.
-            provider: The provider the run builds its agent from. One this app
-                did not declare (rekuest's, for ``run(app)``) is taken into the
-                run's registry -- with the service and structures its package
-                brings -- and its requirements into the run's manifest. The app
-                itself is left as declared.
+            provider: The provider the run builds its agent from, when the app names
+                none: taken in with the clients it uses.
 
         Returns:
             The snapshot: validated, frozen, with no clients bound.
 
         Raises:
-            StructureRegistryError: If a port names a structure this app cannot
-                resolve -- usually a service it does not declare.
+            AppDeclarationError: If the app cannot be assembled.
         """
-        registry = self.registry
-        if provider is not None and provider.name not in registry.providers:
-            registry = AppRegistry()
-            registry.merge(self.registry)
-            registry.register_provider(provider)
-
+        registry = self.declaration(provider)
         manifest = self.manifest.model_copy(
             update={
                 "requirements": _requirements_of(registry),
@@ -573,8 +443,8 @@ class App(Generic[Ctx]):
         """Offer a function as an action: ``@app.action`` or ``@app.action(name=...)``.
 
         Parameters annotated with a client class (``mikro: Mikro``) or with
-        :class:`~arkitekt_spec.declare.task.Task` are injected rather than becoming ports, and
-        declare their service on this app.
+        :class:`~arkitekt_spec.declare.task.Task` are injected rather than becoming ports;
+        the client is then used by the app.
 
         Args:
             function: The function, when used bare as ``@app.action``.
@@ -644,9 +514,8 @@ class App(Generic[Ctx]):
             :meth:`Task.local() <arkitekt_spec.declare.task.Task.local>` to call it with no
             runtime -- or, with options, a decorator returning it.
 
-        Raises:
-            DefinitionError: If a parameter cannot become a port, e.g. a
-                structure of a service this app does not declare.
+        Nothing is built here: a parameter that cannot become a port is reported
+        when the app is assembled (:class:`~arkitekt_spec.declare.errors.AppDeclarationError`).
         """
 
         def offer(function: Callable[P, R]) -> WrappedFunction[P, R]:
@@ -724,46 +593,38 @@ class App(Generic[Ctx]):
         Returns:
             The function, still callable as itself.
 
-        Raises:
-            DefinitionError: If a parameter cannot become a port, e.g. a
-                structure of a service this app does not declare.
+        Nothing is built here: a parameter that cannot become a port is reported
+        when the app is assembled (:class:`~arkitekt_spec.declare.errors.AppDeclarationError`).
         """
-        # Through the registry rather than rekuest's module-level decorator: the registry
-        # is what owns the declaration, and it supplies itself and its structures. The cast
-        # is because `AppRegistry.register` forwards `**kwargs` untyped -- this method's own
-        # signature is what types the surface a user sees.
-        decorate = cast(
-            "Callable[[Callable[P, R]], WrappedFunction[P, R]]",
-            self.registry.register(
-                name=name,
-                description=description,
-                actifier=actifier,
-                interface=interface,
-                stateful=stateful,
-                widgets=widgets,
-                collections=collections,
-                port_groups=port_groups,
-                is_test_for=is_test_for,
-                validators=validators,
-                optimistics=optimistics,
-                in_process=in_process,
-                locks=locks,
-                concurrency=concurrency,
-                policy=policy,
-                version=version,
-                catalogs=catalogs,
-                protocols=protocols,
-                effects=effects,
-                logo=logo,
-                bloks=bloks,
-                dynamic_asks=dynamic_asks,
-                dynamic_calls=dynamic_calls,
-                dynamic_informs=dynamic_informs,
-                estimated_runtime=estimated_runtime,
-                estimated_runtime_ui=estimated_runtime_ui,
-            ),
+        options = dict(
+            name=name,
+            description=description,
+            actifier=actifier,
+            interface=interface,
+            stateful=stateful,
+            widgets=widgets,
+            collections=collections,
+            port_groups=port_groups,
+            is_test_for=is_test_for,
+            validators=validators,
+            optimistics=optimistics,
+            in_process=in_process,
+            locks=locks,
+            concurrency=concurrency,
+            policy=policy,
+            version=version,
+            catalogs=catalogs,
+            protocols=protocols,
+            effects=effects,
+            logo=logo,
+            bloks=bloks,
+            dynamic_asks=dynamic_asks,
+            dynamic_calls=dynamic_calls,
+            dynamic_informs=dynamic_informs,
+            estimated_runtime=estimated_runtime,
+            estimated_runtime_ui=estimated_runtime_ui,
         )
-        return decorate(function)
+        return self._offer("register_action", function, options)
 
     @overload
     def workflow(self, function: Callable[P, R], /) -> WrappedFunction[P, R]: ...
@@ -845,8 +706,8 @@ class App(Generic[Ctx]):
         any exception, or with ``task.retry(...)`` / ``task.hold(...)``.
 
         Parameters annotated with a client class (``mikro: Mikro``) or with
-        :class:`~arkitekt_spec.declare.task.Task` are injected rather than becoming ports, and
-        declare their service on this app.
+        :class:`~arkitekt_spec.declare.task.Task` are injected rather than becoming ports;
+        the client is then used by the app.
 
         Args:
             function: The function, when used bare as ``@app.action``.
@@ -916,9 +777,8 @@ class App(Generic[Ctx]):
             :meth:`Task.local() <arkitekt_spec.declare.task.Task.local>` to call it with no
             runtime -- or, with options, a decorator returning it.
 
-        Raises:
-            DefinitionError: If a parameter cannot become a port, e.g. a
-                structure of a service this app does not declare.
+        Nothing is built here: a parameter that cannot become a port is reported
+        when the app is assembled (:class:`~arkitekt_spec.declare.errors.AppDeclarationError`).
         """
 
         def offer(function: Callable[P, R]) -> WrappedFunction[P, R]:
@@ -996,47 +856,39 @@ class App(Generic[Ctx]):
         Returns:
             The function, still callable as itself.
 
-        Raises:
-            DefinitionError: If a parameter cannot become a port, e.g. a
-                structure of a service this app does not declare.
+        Nothing is built here: a parameter that cannot become a port is reported
+        when the app is assembled (:class:`~arkitekt_spec.declare.errors.AppDeclarationError`).
         """
-        # Through the registry rather than rekuest's module-level decorator: the registry
-        # is what owns the declaration, and it supplies itself and its structures. The cast
-        # is because `AppRegistry.register` forwards `**kwargs` untyped -- this method's own
-        # signature is what types the surface a user sees.
-        decorate = cast(
-            "Callable[[Callable[P, R]], WrappedFunction[P, R]]",
-            self.registry.register(
-                name=name,
-                description=description,
-                actifier=actifier,
-                interface=interface,
-                stateful=stateful,
-                widgets=widgets,
-                collections=collections,
-                port_groups=port_groups,
-                is_test_for=is_test_for,
-                validators=validators,
-                optimistics=optimistics,
-                in_process=in_process,
-                locks=locks,
-                concurrency=concurrency,
-                policy=policy,
-                version=version,
-                catalogs=catalogs,
-                protocols=protocols,
-                effects=effects,
-                logo=logo,
-                execution=Execution.WORKFLOW,
-                bloks=bloks,
-                dynamic_asks=dynamic_asks,
-                dynamic_calls=dynamic_calls,
-                dynamic_informs=dynamic_informs,
-                estimated_runtime=estimated_runtime,
-                estimated_runtime_ui=estimated_runtime_ui,
-            ),
+        options = dict(
+            name=name,
+            description=description,
+            actifier=actifier,
+            interface=interface,
+            stateful=stateful,
+            widgets=widgets,
+            collections=collections,
+            port_groups=port_groups,
+            is_test_for=is_test_for,
+            validators=validators,
+            optimistics=optimistics,
+            in_process=in_process,
+            locks=locks,
+            concurrency=concurrency,
+            policy=policy,
+            version=version,
+            catalogs=catalogs,
+            protocols=protocols,
+            effects=effects,
+            logo=logo,
+            execution=Execution.WORKFLOW,
+            bloks=bloks,
+            dynamic_asks=dynamic_asks,
+            dynamic_calls=dynamic_calls,
+            dynamic_informs=dynamic_informs,
+            estimated_runtime=estimated_runtime,
+            estimated_runtime_ui=estimated_runtime_ui,
         )
-        return decorate(function)
+        return self._offer("register_action", function, options)
 
     @overload
     def state(
@@ -1109,8 +961,10 @@ class App(Generic[Ctx]):
         Returns:
             The class.
         """
-        self.registry.state(
-            cls, name=name, required_locks=required_locks, persist=persist
+        if not is_dataclass(cls):
+            dataclass(cls)
+        self._record(
+            "state", cls, name=name, required_locks=required_locks, persist=persist
         )
         return cls
 
@@ -1160,7 +1014,7 @@ class App(Generic[Ctx]):
         Returns:
             The class.
         """
-        self.registry.context(cls, name=name, locks=locks)
+        self._record("context", cls, name=name, locks=locks)
         return cls
 
     @overload
@@ -1202,8 +1056,7 @@ class App(Generic[Ctx]):
         Returns:
             The class, or, with options, a decorator returning it.
 
-        Raises:
-            StructureDefinitionError: If the identifier is not ``@package/key``.
+        A malformed identifier (not ``@package/key``) is reported when the app is assembled.
         """
 
         def declare(cls: C) -> C:
@@ -1229,17 +1082,11 @@ class App(Generic[Ctx]):
         Returns:
             The class, made a dataclass.
 
-        Raises:
-            StructureDefinitionError: If the identifier is not ``@package/key``.
+        A malformed identifier (not ``@package/key``) is reported when the app is assembled.
         """
-        return cast(
-            C,
-            self.registry.model(
-                cls,
-                identifier=identifier,
-                description=description,
-            ),
-        )
+        ensure_model_dataclass(cls)
+        self._record("model", cls, identifier=identifier, description=description)
+        return cls
 
     def _hook(
         self, kind: str, function: F | None, name: str | None
@@ -1252,7 +1099,7 @@ class App(Generic[Ctx]):
         return hook
 
     def _register_hook(self, kind: str, function: F, name: str | None) -> F:
-        getattr(self.registry, kind)(function, name=name)
+        self._record(kind, function, name=name)
         return function
 
     @overload
@@ -1284,27 +1131,6 @@ class App(Generic[Ctx]):
             The function.
         """
         return self._register_hook("startup", function, name)
-
-    def merge(self, *others: "App[Any] | AppRegistry") -> "App[Ctx]":
-        """Take what other apps or registries declare into this app, in place.
-
-        Declare parts of an app apart from each other, and bring them together here::
-
-            app = App("microscope").merge(stage, camera)
-
-        It takes what they hold now: what is declared on them afterwards does not
-        follow. Each part's actions keep the ``effects`` they were declared with, this
-        app's default only reaches what is declared on it. Clashing names are refused.
-
-        Args:
-            others: The apps or registries to take. They are not changed.
-
-        Returns:
-            This app.
-        """
-        for other in others:
-            self.registry.merge(_registry_of(other))
-        return self
 
     @overload
     def lifecycle(self, function: F, /) -> F: ...
@@ -1458,7 +1284,8 @@ class App(Generic[Ctx]):
                 language (a :class:`~arkitekt_spec.blok.vocabulary.BlokError` with its
                 code), or the declaration contradicts itself.
         """
-        self.registry.register_blok(
+        self._record(
+            "register_blok",
             name,
             component,
             description=description,
@@ -1521,7 +1348,7 @@ class App(Generic[Ctx]):
             ref: The hash of the file at ``source``: ``"sha256:"`` and the hex
                 SHA-256 of its exact bytes. Required with ``source``.
         """
-        self.registry.register_asset(name, path, kind, source=source, ref=ref)
+        self._record("register_asset", name, path, kind, source=source, ref=ref)
 
     def ui_catalog(
         self,
@@ -1550,7 +1377,8 @@ class App(Generic[Ctx]):
             ValueError: If it redefines a base operation, or a different module is
                 already declared under ``name``.
         """
-        self.registry.declare_ui_catalog(
+        self._record(
+            "declare_ui_catalog",
             name,
             components=components,
             operations=operations,
@@ -1595,13 +1423,23 @@ class App(Generic[Ctx]):
         Returns:
             A class decorator returning the class.
 
-        Raises:
-            DefinitionError: If a demand names a class this app cannot make a
-                port of -- usually a structure of a service it does not declare.
+        A demand naming a class the app cannot make a port of is reported when the
+        app is assembled.
         """
-        return self.registry.declare(
-            app, auto_resolvable=auto_resolvable, min=min, max=max, version=version
-        )
+
+        def decorate(cls: C) -> C:
+            self._record(
+                "declare",
+                cls,
+                app=app,
+                auto_resolvable=auto_resolvable,
+                min=min,
+                max=max,
+                version=version,
+            )
+            return cls
+
+        return decorate
 
     def interactions(self, cls: C, /) -> C:
         """Declare an interactions protocol: the bloks an action asks a person through or
@@ -1634,15 +1472,15 @@ class App(Generic[Ctx]):
         Returns:
             The class, unchanged.
 
-        Raises:
-            DefinitionError: If a public method is neither an ask nor an inform, or its blok breaks a rule.
+        A public method that is neither an ask nor an inform, or a blok breaking a rule,
+        is reported when the app is assembled.
         """
-        self.registry.register_interactions(cls)
+        self._record("register_interactions", cls)
         return cls
 
     def register_interactions(self, cls: type[Any], /) -> None:
         """Declare an interactions protocol, as a plain call: the twin of :meth:`interactions`."""
-        self.registry.register_interactions(cls)
+        self._record("register_interactions", cls)
 
     def register_protocol(
         self,
@@ -1660,9 +1498,8 @@ class App(Generic[Ctx]):
         Returns:
             The class, unchanged.
 
-        Raises:
-            DefinitionError: If a demand names a class this app cannot make a
-                port of -- usually a structure of a service it does not declare.
+        A demand naming a class the app cannot make a port of is reported when the
+        app is assembled.
         """
         return self.declare(
             app, auto_resolvable=auto_resolvable, min=min, max=max, version=version
@@ -1682,9 +1519,8 @@ class App(Generic[Ctx]):
         """Declare a type that travels by id, with your own way of fetching it back.
 
         For a type a *shared library* defines -- one that both the sending and the
-        receiving app know, because both import it. A service's own types do not
-        go through here: the service declares those on its own registry
-        (``@registry.structure``), and they are expanded by that service's client.
+        receiving app know, because both import it, and no ``@structure`` marks. A
+        client package's own types are marked with ``@structure`` instead.
 
         The expander says what it needs by annotation, the same way an action
         does, and a run hands it exactly those::
@@ -1697,9 +1533,7 @@ class App(Generic[Ctx]):
         It must be a named function with annotated parameters: a lambda has no
         annotations, so there would be nothing to read.
 
-        Unlike an action, this does **not** declare the services it names. Whether
-        a declared service can build them is checked when the app is inspected or
-        run, together with everything else -- see :meth:`snapshot`.
+        The clients its expander asks for are used by the app, like an action's.
 
         Args:
             cls: The class that travels.
@@ -1715,11 +1549,11 @@ class App(Generic[Ctx]):
                 and its ``Provides`` when one goes out, and fails the task on a
                 mismatch. A key it does not return is not tested.
 
-        Raises:
-            StructureDefinitionError: If the identifier is not ``@package/key``,
-                or the expander's parameters cannot be read or are not clients.
+        A malformed identifier, or an expander whose parameters cannot be read or are
+        not clients, is reported when the app is assembled.
         """
-        self.registry.structure_registry.register_as_structure(
+        self._record(
+            "register_as_structure",
             cls,
             identifier=identifier,
             aexpand=expand,
@@ -1734,8 +1568,8 @@ class App(Generic[Ctx]):
     ) -> None:
         """Declare a class whose instances stay on the agent: ``app.memory_structure(np.ndarray)``.
 
-        Nothing is registered automatically, so a port may only name a class the
-        app knows: one its services declared, or one declared here.
+        Nothing is registered automatically: a port names a class some client's
+        ``@structure`` declares, or one declared here.
 
         Args:
             cls: The class to keep on the agent.
@@ -1744,6 +1578,9 @@ class App(Generic[Ctx]):
                 module (``numpy.ndarray`` -> ``@numpy/ndarray``).
             description: What it is, for the UI.
         """
-        self.registry.register_memory_structure(
-            cls, identifier=identifier, description=description
+        self._record(
+            "register_memory_structure",
+            cls,
+            identifier=identifier,
+            description=description,
         )
