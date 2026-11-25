@@ -134,21 +134,22 @@ def test_the_stubs_are_gone_after_the_check(tmp_path: Path, no_server: None) -> 
     "command", [["check"], ["run", "prod"], ["inspect", "all"], ["status"]]
 )
 @pytest.mark.parametrize(
-    ("source", "where", "why"),
+    ("source", "where", "why", "header"),
     [
-        (UNTYPED, "app.py:4", "type hint for a"),
-        (UNCLOSED, "app.py:2", "never closed"),
+        # Imports fine; assembling it finds the port it cannot build, at its line.
+        (UNTYPED, "app.py:4", "type hint for a", "is not valid"),
+        (UNCLOSED, "app.py:2", "never closed", "Importing 'app' failed"),
     ],
 )
 def test_an_app_that_does_not_import_is_a_few_lines_not_a_traceback(
-    tmp_path: Path, command: list[str], source: str, where: str, why: str
+    tmp_path: Path, command: list[str], source: str, where: str, why: str, header: str
 ) -> None:
     (tmp_path / "app.py").write_text(source)
 
     result = _invoke(tmp_path, *command)
 
     assert result.exit_code == 1
-    assert "Importing 'app' failed" in result.output
+    assert header in result.output
     assert where in result.output
     assert why in result.output
     assert "Traceback" not in result.output

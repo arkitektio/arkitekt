@@ -26,6 +26,7 @@ from types import ModuleType
 from typing import Annotated, Any
 
 import typer
+from arkitekt_spec.declare.errors import AppDeclarationError
 
 from arkitekt.app.app import App
 from arkitekt.cli.errors import cli_error
@@ -389,9 +390,10 @@ def describe_import_failure(error: BaseException, module: str, work_dir: str) ->
 
 
 def load_app_or_exit(ctx: typer.Context, target: str) -> App[Any]:
-    """The App a command acts on; a missing module or app exits with guidance.
+    """The App a command acts on; a missing module, app or invalid declaration exits with guidance.
 
-    Loading only imports and resolves: nothing is connected or built.
+    Loading imports, resolves and assembles the app (every problem with what it
+    declares is told here, each at its line): nothing is connected.
 
     Args:
         ctx: The command's context, which holds the console and work dir.
@@ -402,9 +404,20 @@ def load_app_or_exit(ctx: typer.Context, target: str) -> App[Any]:
     """
     module, parsed = import_target_or_exit(ctx, target)
     try:
-        return require_app(module, parsed.attribute)
+        app = require_app(module, parsed.attribute)
     except ValueError as e:
         cli_error(str(e))
+    try:
+        app.declaration()
+    except AppDeclarationError as e:
+        cli_error(invalid_app(app, e))
+    return app
+
+
+def invalid_app(app: App[Any], error: BaseException) -> str:
+    """How a command says an app's declaration is not valid: one line per problem."""
+    said = error.message if isinstance(error, AppDeclarationError) else str(error)
+    return f"The app '{app.identifier}' is not valid: {said}"
 
 
 def infer_package_manager(work_dir: str) -> str:

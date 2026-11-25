@@ -79,24 +79,6 @@
                     "lineCount": 1
                 }
             }
-        ],
-        "./tests/test_qt_app.py": [
-            {
-                "code": "reportRedeclaration",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            },
-            {
-                "code": "reportRedeclaration",
-                "range": {
-                    "startColumn": 12,
-                    "endColumn": 26,
-                    "lineCount": 1
-                }
-            }
         ]
     }
 }

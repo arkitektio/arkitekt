@@ -103,7 +103,7 @@ from arkitekt_spec.declare.blok.validate import (
     validate_blok,
     validate_bsx,
 )
-from arkitekt_spec.declare.bundle import Bundle
+from arkitekt_spec.declare.bundle import Bundle, Entry
 from arkitekt_spec.declare.catalogs import (
     BLOK_ARGS_ROOT,
     BlokCheckMode,
@@ -134,6 +134,7 @@ from arkitekt_spec.declare.register import WrappedFunction
 from arkitekt_spec.declare.stamps import context, declare, interactions, model, state
 from arkitekt_spec.declare.structures.declare import structure
 from arkitekt_spec.declare.structures.model import model_field
+from arkitekt_spec.declare.structures.types import ManyExpander, Shrinker
 from arkitekt_spec.declare.targets import CallTarget, ImplementationTarget
 from arkitekt_spec.declare.task import (
     AssignmentHook,
@@ -150,6 +151,7 @@ from arkitekt_spec.declare.task import (
     retry,
 )
 from arkitekt_spec.declare.widgets import withEffect, withValidator
+from arkitekt_spec.declare.wiring import Require
 from fakts.grants.remote.authorizers.device_code import DeviceCodeChallenge
 from fakts.mesh import MeshOptions, MeshProxy
 
@@ -178,6 +180,7 @@ __all__ = [
     # the app and its runs
     "App",
     "Bundle",
+    "Entry",
     "AppDeclarationError",
     "Source",
     "DISCOVER",
@@ -214,7 +217,10 @@ __all__ = [
     "AppRegistry",
     "AssetKind",
     "client",
+    "Require",
     "structure",
+    "ManyExpander",
+    "Shrinker",
     "model",
     "state",
     "context",

@@ -84,6 +84,20 @@ def warning_record(warning: warnings.WarningMessage) -> dict[str, Any]:
     )
 
 
+def _catalog_findings(
+    caught: Iterable[warnings.WarningMessage],
+) -> list[warnings.WarningMessage]:
+    """The catalog warnings told, each once: an app is assembled again for its snapshot."""
+    seen: set[tuple[str, str, int]] = set()
+    findings: list[warnings.WarningMessage] = []
+    for warning in caught:
+        key = (str(warning.message), warning.filename, warning.lineno)
+        if issubclass(warning.category, CatalogWarning) and key not in seen:
+            seen.add(key)
+            findings.append(warning)
+    return findings
+
+
 def error_records(error: BaseException, work_dir: str) -> list[dict[str, Any]]:
     """What stopped the check: one record per problem an app's assembly found, else one."""
     if isinstance(error, AppDeclarationError):
@@ -512,11 +526,7 @@ def _check(
                 }
         except typer.Exit as exit_:
             # cli_error raised the exit while handling what went wrong: that is its context.
-            findings = [
-                warning
-                for warning in caught
-                if issubclass(warning.category, CatalogWarning)
-            ]
+            findings = _catalog_findings(caught)
             report["diagnostics"] = [warning_record(warning) for warning in findings]
             if exit_.__context__ is not None:
                 report["diagnostics"].extend(
@@ -524,9 +534,7 @@ def _check(
                 )
             report_to(report)
             raise
-    findings = [
-        warning for warning in caught if issubclass(warning.category, CatalogWarning)
-    ]
+    findings = _catalog_findings(caught)
     for warning in findings:
         notice(console, escape(str(warning.message)))
     report.update(

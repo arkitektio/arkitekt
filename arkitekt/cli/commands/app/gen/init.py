@@ -63,7 +63,6 @@ def init(
         list[str] | None,
         typer.Option(
             "--client",
-            "-c",
             help="A client to set up codegen for (repeatable; default: every client the app uses that ships a turms project)",
             autocompletion=complete_clients,
         ),

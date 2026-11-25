@@ -7,6 +7,7 @@ from arkitekt_spec.declare.app import AppRegistry
 from arkitekt.app.app import App
 from arkitekt.app.snapshot import RunSnapshot
 from arkitekt.cli.errors import cli_error
+from arkitekt.cli.target import invalid_app
 from arkitekt.runtime import _provider_for
 
 NOTHING_TO_PROVIDE = "This app offers nothing: no action, state, hook or blok."
@@ -27,7 +28,7 @@ def run_snapshot_or_exit(app: App[Any]) -> RunSnapshot:
     try:
         return app.snapshot(provider=_provider_for(app, required=False))
     except Exception as e:
-        cli_error(f"The app '{app.identifier}' is not valid: {e}")
+        cli_error(invalid_app(app, e))
 
 
 def snapshot_or_exit(app: App[Any]) -> AppRegistry:
