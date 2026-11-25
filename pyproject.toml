@@ -118,7 +118,7 @@ dev = [
     "python-semantic-release>=9.21.1",
     # Builds the hubs tests/integration and tests/mesh run against; 0.41 is where a hub's
     # media server is reached over its mesh.
-    "konstruktor>=0.41",
+    "konstruktor>=0.44",
     "qtpy>=2.4.3",
     "numpy>=2",
     "rekuest>=19",

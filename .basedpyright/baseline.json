@@ -60,6 +60,26 @@
                 }
             }
         ],
+        "./examples/denoise_volume.py": [
+            {
+                "code": "reportAttributeAccessIssue",
+                "range": {
+                    "startColumn": 78,
+                    "endColumn": 82,
+                    "lineCount": 1
+                }
+            }
+        ],
+        "./examples/recovery/declare_analysis.py": [
+            {
+                "code": "reportAttributeAccessIssue",
+                "range": {
+                    "startColumn": 82,
+                    "endColumn": 86,
+                    "lineCount": 1
+                }
+            }
+        ],
         "./tests/test_qt_app.py": [
             {
                 "code": "reportRedeclaration",

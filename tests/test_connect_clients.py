@@ -24,6 +24,6 @@ def test_the_identifier_defaults_to_the_calling_file() -> None:
 
 def test_script_and_app_forms_do_not_mix() -> None:
     with pytest.raises(TypeError, match="connects a script's clients"):
-        connect(PictureClient, provide=True)  # pyright: ignore[reportCallIssue]
+        connect(PictureClient, provide=True)  # pyright: ignore[reportCallIssue, reportArgumentType]
     with pytest.raises(TypeError, match="takes one app"):
-        connect(App("app"), PictureClient)  # pyright: ignore[reportCallIssue]
+        connect(App("app"), PictureClient)  # pyright: ignore[reportCallIssue, reportArgumentType]

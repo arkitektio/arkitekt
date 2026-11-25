@@ -421,7 +421,7 @@ dev = [
     { name = "elektro", specifier = ">=7" },
     { name = "fluss", specifier = ">=7" },
     { name = "kabinet", specifier = ">=10" },
-    { name = "konstruktor", specifier = ">=0.41" },
+    { name = "konstruktor", specifier = ">=0.44" },
     { name = "kraph", specifier = ">=8" },
     { name = "lovekit", specifier = ">=7" },
     { name = "mikro", specifier = ">=15" },
@@ -1474,18 +1474,18 @@ wheels = [
 
 [[package]]
 name = "konstruktor"
-version = "0.41.0"
+version = "0.44.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dokker" },
 ]
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/10/34/8cc69b267c180bf21a98a9f80efb084da5f8ef9b0f189d09b5be3bb84a71/konstruktor-0.41.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:7b58e519d80b1984899e96f84b4216f2310c925ba3816df31558dcce036edf43", size = 5378002, upload-time = "2026-11-21T13:47:33.156Z" },
-    { url = "https://files.pythonhosted.org/packages/b7/2e/8affc27b9c5e32cee9d4f160d5c127645294f2ed8ab547813ccb2cc52ff4/konstruktor-0.41.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:4ee74c8ba4454b3c4ff4d4181bcb832083671e200e0c80022eeea1686e496340", size = 5159841, upload-time = "2026-11-21T13:47:35.154Z" },
-    { url = "https://files.pythonhosted.org/packages/e7/a6/87a4ba95c8edad57fa237d39a1c7c4ad6f742ab7df3d83d6ed94b5c5415b/konstruktor-0.41.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:256407d4747145c5513dc750fa5bff6e352cf2deb259a4f9f9642309a6be0f21", size = 5206715, upload-time = "2026-11-21T13:47:37.294Z" },
-    { url = "https://files.pythonhosted.org/packages/0f/79/378df104a7145d23ca31075859d62b14122f712956ae253fc875652cc974/konstruktor-0.41.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:51637db19c8b73bcf3037a87f7cae97f8cbe2097c6371e09e451af9c5a9cb6d0", size = 5527974, upload-time = "2026-11-21T13:47:39.018Z" },
-    { url = "https://files.pythonhosted.org/packages/48/68/a78d0e711c5d928af548ae2a08929872d631c5e07da06f51d728ffd917da/konstruktor-0.41.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:121f14efa114e0dc25be3dca4d7676f2cefddd38064f81b72d15b4c954ed66ae", size = 5628459, upload-time = "2026-11-21T13:47:40.912Z" },
-    { url = "https://files.pythonhosted.org/packages/0f/fd/c8307ad7fb545e76aaa5f595ed7eb22b889006cd8d5ef286c74e0ac2aa88/konstruktor-0.41.0-py3-none-win_amd64.whl", hash = "sha256:e010d9ae014235e1df3f319a54989259ea8f5e86665e0143c33aa5921c6753b4", size = 5605130, upload-time = "2026-11-21T13:47:42.485Z" },
+    { url = "https://files.pythonhosted.org/packages/66/d7/677d4346a1da3ed59ce7e968b20b87bedddffa80e979e2d9c3ea7ccdb9a9/konstruktor-0.44.0-py3-none-macosx_10_12_x86_64.whl", hash = "sha256:ccf884132f7e38783059318edc93960596b0d7ff5c57633140f69ec617370abf", size = 5373918, upload-time = "2026-11-23T11:54:22.293Z" },
+    { url = "https://files.pythonhosted.org/packages/69/45/63df1a450724e0cea67f4dfdf32be6ba16648147a1e8b095e2efbe0b4a00/konstruktor-0.44.0-py3-none-macosx_11_0_arm64.whl", hash = "sha256:6271ab8dc73d5261b88e21cfb33717b1fc3c7d51e6798a208a175d2591769194", size = 5158042, upload-time = "2026-11-23T11:54:23.901Z" },
+    { url = "https://files.pythonhosted.org/packages/9c/10/f18515471e67e7234abcd2b6389be1aa5119c0f34d56407aa32bf2c28257/konstruktor-0.44.0-py3-none-manylinux_2_28_aarch64.whl", hash = "sha256:b9fc20d3ca4d2b088634cccb9b78f8cfb44f8f585868a2aceccbc57ee0ea5699", size = 5209944, upload-time = "2026-11-23T11:54:25.367Z" },
+    { url = "https://files.pythonhosted.org/packages/14/13/103dd791340e736601b478a96166072edc4d67bb989a08c705938f3d778a/konstruktor-0.44.0-py3-none-manylinux_2_28_x86_64.whl", hash = "sha256:615af7f3f67c164d0cb47c026c8ae8e84897bda54f0bbdb8d1b7c9b980b60fa3", size = 5526366, upload-time = "2026-11-23T11:54:26.857Z" },
+    { url = "https://files.pythonhosted.org/packages/08/e4/b9fb8c7697d5c9bbafce4247e775355a4fa83bd97a0a9fe885037cac018b/konstruktor-0.44.0-py3-none-musllinux_1_2_x86_64.whl", hash = "sha256:4c68261d52db6ef2eb49acbd75b8e8a1ac4bfae43e9f24fbd74962e6b57642b5", size = 5629687, upload-time = "2026-11-23T11:54:28.466Z" },
+    { url = "https://files.pythonhosted.org/packages/33/c1/70b915100163f1eb74157d35b44504bcb24f31273d17010a1bf1f3e35770/konstruktor-0.44.0-py3-none-win_amd64.whl", hash = "sha256:05fd554e0bf788e37c7a26bbf0704e948178d8d5827e17b254a7e34d4dbd6fdd", size = 5615054, upload-time = "2026-11-23T11:54:30.143Z" },
 ]
 
 [[package]]

@@ -37,6 +37,7 @@ from typing import (
     Literal,
     ParamSpec,
     TypeVar,
+    cast,
     dataclass_transform,
     overload,
 )
@@ -553,7 +554,7 @@ class App(Bundle, Generic[Ctx]):
             return offer(function)
         return offer
 
-    def register_action(
+    def register_action(  # pyright: ignore[reportIncompatibleMethodOverride] -- typed options
         self,
         function: Callable[P, R],
         /,
@@ -816,7 +817,7 @@ class App(Bundle, Generic[Ctx]):
             return offer(function)
         return offer
 
-    def register_workflow(
+    def register_workflow(  # pyright: ignore[reportIncompatibleMethodOverride] -- typed options
         self,
         function: Callable[P, R],
         /,
@@ -966,7 +967,7 @@ class App(Bundle, Generic[Ctx]):
         self._record(
             "state", cls, name=name, required_locks=required_locks, persist=persist
         )
-        return cls
+        return cast(C, cls)
 
     @overload
     def context(self, cls: C, /) -> C: ...
