@@ -132,6 +132,8 @@ def error_record(error: BaseException, work_dir: str) -> dict[str, Any]:
             line=error.line,
             column=error.column,
         )
+    # A blok read from a .bsx file: its line and column are that file's.
+    record["bsx_file"] = getattr(error, "bsx_file", None)
     # Assembly notes where each problem was declared; that beats any frame of the build.
     at = getattr(error, "declared_at", None)
     if at is not None:
@@ -194,7 +196,7 @@ def blok_records(registry: AppRegistry) -> list[dict[str, Any]]:
     decorator's line); an action's blok is named
     :func:`~arkitekt_spec.declare.blok.action.action_blok_id`.
     """
-    # Built again for the dependencies a blok's ``self`` reads; what it warns was told already.
+    # Built again for the dependencies a blok's ``self`` reads; assembly refused what fails.
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         try:
@@ -215,6 +217,7 @@ def blok_records(registry: AppRegistry) -> list[dict[str, Any]]:
                     "source": declaration.source,
                     "file": os.path.abspath(at.filename) if at is not None else None,
                     "call_line": at.lineno if at is not None else None,
+                    "bsx_file": declaration.file,
                     "scope": scope_record(
                         kinds=("agent", "action")
                         if context == ComponentContext.LOGO.value

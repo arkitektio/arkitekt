@@ -1231,7 +1231,7 @@ class App(Bundle, Generic[Ctx]):
     def blok(
         self,
         name: str,
-        component: str | ComponentNodeInput,
+        component: str | Path | ComponentNodeInput,
         description: str | None = None,
         *,
         demo: BlokDemoInput | Mapping[str, JSONSerializable] | None = None,
@@ -1262,7 +1262,8 @@ class App(Bundle, Generic[Ctx]):
             name: The blok's name.
             component: The ``<Blok>``, as v2 BSX or already parsed. A scene holds one
                 ``<Scene>``, a logo one ``<Logo>``. A ``<Space>`` belongs to an action
-                (``bloks=``).
+                (``bloks=``). A ``Path`` is a ``.bsx`` file, relative to the app's directory:
+                ``arkitekt check`` and the editor check that file against the app.
             description: What the blok shows.
             demo: What a preview renders it with, mirroring the roots it reads:
                 ``{"deps": {"self": {...}}, "args": {...}, "queries": {...}}``.
