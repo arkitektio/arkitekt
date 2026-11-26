@@ -3,6 +3,7 @@
 import sys
 import warnings
 from collections.abc import Iterator
+from datetime import datetime
 
 import pytest
 from arkitekt_spec.blok.catalogs import checking_catalogs
@@ -156,6 +157,16 @@ def test_a_blok_reading_an_undeclared_local_is_refused() -> None:
     assert refusal(app).group_contains(BlokError)
 
 
+def _with_run(app: App) -> App:
+    """An app with the ``run`` state its blok reads."""
+
+    @app.state(name="run")
+    class Run:
+        started: datetime | None = None
+
+    return app
+
+
 def test_a_blok_reads_then_and_draws_relative_time_with_the_time_component() -> None:
     """Nothing ticks in an expression: ``now`` and ``time.since`` are gone, ``then`` is the
     viewed moment and ``<Time relative>`` ticks by itself."""
@@ -163,7 +174,7 @@ def test_a_blok_reads_then_and_draws_relative_time_with_the_time_component() -> 
     now.blok("clock", '<Blok kind="agent" context="panel"><Text>{now}</Text></Blok>')
     assert refusal(now).group_contains(BlokError, match=r"roots\.unknown")
 
-    since = App("demo")
+    since = _with_run(App("demo"))
     since.blok(
         "since",
         '<Blok kind="agent" context="panel"><Text>{time.since(t: self.run.started)}</Text></Blok>',
@@ -171,7 +182,7 @@ def test_a_blok_reads_then_and_draws_relative_time_with_the_time_component() -> 
     with pytest.warns(CatalogWarning, match=r"\[expr\.unknown_function\]"):
         since.declaration()
 
-    then = App("demo")
+    then = _with_run(App("demo"))
     then.blok(
         "clock",
         '<Blok kind="agent" context="panel"><Card><Time value={self.run.started} relative /><Text>{then}</Text></Card></Blok>',
